@@ -707,43 +707,216 @@
   function classNext(){if(!state.classMode)return;if(state.classMode.index<state.classMode.training.questions.length-1){state.classMode.index++;state.classMode.revealed=false;renderClassModeScreen()}else exitClassMode()}
   function exitClassMode(){stopClassModeTimer();state.classMode=null;state.teacherTab="classmode";renderTeacher()}
 
+
+  async function savePdfPages(pageHtmls, filename, orientation="portrait"){
+    if(!window.html2canvas || !window.jspdf){
+      alert("PDF libraries did not load. Please refresh the page and try again.");
+      return;
+    }
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation,unit:"mm",format:"a4"});
+    const pageW=doc.internal.pageSize.getWidth();
+    const pageH=doc.internal.pageSize.getHeight();
+    const margin=8;
+    const maxW=pageW-(margin*2);
+    const maxH=pageH-(margin*2);
+
+    for(let i=0;i<pageHtmls.length;i++){
+      const host=document.createElement("div");
+      host.setAttribute("dir","ltr");
+      host.style.cssText=`
+        position:fixed;left:-12000px;top:0;
+        width:${orientation==="landscape"?"1120px":"780px"};
+        background:#ffffff;color:#1d2a35;padding:28px;
+        font-family:Arial,Tahoma,"Segoe UI",sans-serif;
+        box-sizing:border-box;z-index:-9999;
+      `;
+      host.innerHTML=pageHtmls[i];
+      document.body.appendChild(host);
+
+      if(document.fonts && document.fonts.ready){
+        try{await document.fonts.ready}catch(e){}
+      }
+
+      const canvas=await html2canvas(host,{
+        scale:2,
+        backgroundColor:"#ffffff",
+        useCORS:true,
+        logging:false,
+        windowWidth:host.scrollWidth,
+        windowHeight:host.scrollHeight
+      });
+      document.body.removeChild(host);
+
+      if(i>0)doc.addPage();
+      const ratio=Math.min(maxW/canvas.width,maxH/canvas.height);
+      const imgW=canvas.width*ratio;
+      const imgH=canvas.height*ratio;
+      const x=(pageW-imgW)/2;
+      const y=margin;
+      doc.addImage(canvas.toDataURL("image/jpeg",0.94),"JPEG",x,y,imgW,imgH);
+    }
+    doc.save(filename);
+  }
+
+  function pdfReportStyles(){
+    return `
+      <style>
+        *{box-sizing:border-box}
+        body{margin:0}
+        .report{font-family:Arial,Tahoma,"Segoe UI",sans-serif;color:#1d2a35}
+        h1{font-size:24px;margin:0 0 8px;color:#17324d}
+        h2{font-size:18px;margin:18px 0 9px;color:#17324d}
+        .meta{font-size:13px;line-height:1.7;margin-bottom:14px}
+        .kpis{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px}
+        .kpiBox{border:1px solid #d8e0e6;border-radius:8px;padding:10px 12px;min-width:120px}
+        .kpiBox strong{display:block;font-size:20px;color:#17324d}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th{background:#2b6088;color:#fff;padding:8px;text-align:left}
+        td{padding:8px;border-bottom:1px solid #e7edf1;vertical-align:top}
+        tr:nth-child(even) td{background:#f7f9fa}
+        [dir="auto"]{unicode-bidi:plaintext}
+        .nameCell{font-weight:700;font-size:13px}
+        .small{font-size:11px;color:#6b7984}
+        .skillRow{display:grid;grid-template-columns:220px 1fr 55px;gap:8px;align-items:center;margin:8px 0}
+        .bar{height:8px;background:#e7edf1;border-radius:99px;overflow:hidden}
+        .fill{height:100%;background:#2f7784}
+        .footer{margin-top:14px;font-size:10px;color:#84919a;text-align:right}
+      </style>
+    `;
+  }
+
   async function downloadStudentPDF(studentId){
     const s=await getUserById(studentId); if(!s)return alert("Student not found.");
     const attempts=(await getAttempts({studentId})).sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt));
-    if(!window.jspdf)return print();
-    const {jsPDF}=window.jspdf, doc=new jsPDF();
-    doc.setFontSize(17);doc.text("PROVE IT | Student Progress Report",14,18);
-    doc.setFontSize(11);doc.text(`Student: ${s.displayName}`,14,28);doc.text(`Class: ${s.classCode||""}`,14,35);
-    const avg=attempts.length?Math.round(attempts.reduce((n,a)=>n+a.percentage,0)/attempts.length):0;doc.text(`Overall average: ${avg}%`,14,42);
-    doc.autoTable({startY:50,head:[["Training","Type","Score","Time","Date"]],body:attempts.map(a=>[a.trainingTitle,a.trainingType,`${a.score}/${a.total} (${a.percentage}%)`,fmtTime(a.elapsedSeconds),new Date(a.submittedAt).toLocaleDateString()])});
-    const map={};attempts.forEach(a=>(a.answers||[]).forEach(x=>{map[x.skill]??={ok:0,total:0};map[x.skill].total++;if(x.correct)map[x.skill].ok++;}));
-    const skillRows=Object.entries(map).map(([k,v])=>[k,`${Math.round(v.ok/v.total*100)}%`]);
-    let y=doc.lastAutoTable.finalY+10;doc.text("Skill Profile",14,y);doc.autoTable({startY:y+4,head:[["Skill","Mastery"]],body:skillRows});
-    doc.save(`PROVE_IT_${slug(s.displayName)||"student"}_report.pdf`);
-  }
+    const avg=attempts.length?Math.round(attempts.reduce((n,a)=>n+a.percentage,0)/attempts.length):0;
 
+    const map={};
+    attempts.forEach(a=>(a.answers||[]).forEach(x=>{
+      map[x.skill]??={ok:0,total:0};
+      map[x.skill].total++;
+      if(x.correct)map[x.skill].ok++;
+    }));
+    const skillRows=Object.entries(map).map(([k,v])=>({
+      skill:k,pct:Math.round(v.ok/v.total*100)
+    }));
+
+    const chunks=[];
+    for(let i=0;i<attempts.length;i+=16)chunks.push(attempts.slice(i,i+16));
+    if(!chunks.length)chunks.push([]);
+
+    const pages=chunks.map((chunk,idx)=>`
+      ${pdfReportStyles()}
+      <div class="report">
+        <h1>PROVE IT | Student Progress Report</h1>
+        <div class="meta">
+          <strong>Student / الطالبة:</strong> <span dir="auto">${esc(s.displayName)}</span><br>
+          <strong>Class / الفصل:</strong> <span dir="auto">${esc(s.classCode||"")}</span><br>
+          <strong>Overall average / المتوسط:</strong> ${avg}%
+        </div>
+        ${idx===0?`<div class="kpis">
+          <div class="kpiBox"><strong>${attempts.length}</strong><span>Attempts</span></div>
+          <div class="kpiBox"><strong>${avg}%</strong><span>Overall</span></div>
+        </div>`:""}
+        <h2>${idx===0?"Attempt History / سجل المحاولات":"Attempt History - continued"}</h2>
+        <table>
+          <thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Time</th><th>Date</th></tr></thead>
+          <tbody>
+            ${chunk.map(a=>`<tr>
+              <td dir="auto">${esc(a.trainingTitle)}</td>
+              <td>${esc(a.trainingType)}</td>
+              <td>${a.score}/${a.total} (${a.percentage}%)</td>
+              <td>${fmtTime(a.elapsedSeconds)}</td>
+              <td>${new Date(a.submittedAt).toLocaleDateString("en-GB")}</td>
+            </tr>`).join("") || `<tr><td colspan="5">No attempts yet.</td></tr>`}
+          </tbody>
+        </table>
+        <div class="footer">PROVE IT | STEP Training Lab</div>
+      </div>
+    `);
+
+    pages.push(`
+      ${pdfReportStyles()}
+      <div class="report">
+        <h1>Skill Profile / ملف المهارات</h1>
+        <div class="meta"><strong>Student / الطالبة:</strong> <span dir="auto">${esc(s.displayName)}</span></div>
+        ${skillRows.length?skillRows.map(x=>`
+          <div class="skillRow">
+            <div dir="auto">${esc(x.skill)}</div>
+            <div class="bar"><div class="fill" style="width:${x.pct}%"></div></div>
+            <div>${x.pct}%</div>
+          </div>`).join(""):`<p>No skill data yet.</p>`}
+        <div class="footer">PROVE IT | STEP Training Lab</div>
+      </div>
+    `);
+
+    await savePdfPages(pages,`PROVE_IT_${slug(s.displayName)||"student"}_report.pdf`,"portrait");
+  }
 
   async function exportClassPDF(){
     if(!state.selectedClassId)return alert("Select a class first.");
     const r=await classReportData(state.selectedClassId);
     if(!r.cls)return;
-    if(!window.jspdf)return alert("PDF library did not load.");
-    const {jsPDF}=window.jspdf, doc=new jsPDF({orientation:"landscape"});
-    doc.setFontSize(17);doc.text("PROVE IT | Class Report",14,16);
-    doc.setFontSize(10);
-    doc.text(`Teacher: ${state.profile.displayName}`,14,25);
-    doc.text(`Class: ${r.cls.name}   Code: ${r.cls.code}`,14,31);
-    doc.text(`Students: ${r.students.length}   Completion: ${r.completion}%   Reading: ${r.readingAvg}%   Grammar: ${r.grammarAvg}%`,14,37);
-    doc.autoTable({
-      startY:44,
-      head:[["Student","Completed","Reading","Grammar","Overall","Last activity"]],
-      body:r.studentRows.map(s=>[s.name,`${s.completed}/${s.totalTrainings}`,`${s.reading}%`,`${s.grammar}%`,`${s.overall}%`,s.last?new Date(s.last).toLocaleDateString():"-"])
-    });
+
+    const studentChunks=[];
+    for(let i=0;i<r.studentRows.length;i+=18)studentChunks.push(r.studentRows.slice(i,i+18));
+    if(!studentChunks.length)studentChunks.push([]);
+
+    const pages=studentChunks.map((chunk,idx)=>`
+      ${pdfReportStyles()}
+      <div class="report">
+        <h1>PROVE IT | Class Report</h1>
+        <div class="meta">
+          <strong>Teacher / المعلمة:</strong> <span dir="auto">${esc(state.profile.displayName)}</span><br>
+          <strong>Class / الفصل:</strong> <span dir="auto">${esc(r.cls.name)}</span>
+          &nbsp;&nbsp; <strong>Code:</strong> ${esc(r.cls.code)}
+        </div>
+        ${idx===0?`<div class="kpis">
+          <div class="kpiBox"><strong>${r.students.length}</strong><span>Students</span></div>
+          <div class="kpiBox"><strong>${r.completion}%</strong><span>Completion</span></div>
+          <div class="kpiBox"><strong>${r.readingAvg}%</strong><span>Reading</span></div>
+          <div class="kpiBox"><strong>${r.grammarAvg}%</strong><span>Grammar</span></div>
+        </div>`:""}
+        <h2>${idx===0?"Students / الطالبات":"Students - continued"}</h2>
+        <table>
+          <thead>
+            <tr><th>Student / الطالبة</th><th>Completed</th><th>Reading</th><th>Grammar</th><th>Overall</th><th>Last activity</th></tr>
+          </thead>
+          <tbody>
+            ${chunk.map(s=>`<tr>
+              <td class="nameCell" dir="auto">${esc(s.name)}</td>
+              <td>${s.completed}/${s.totalTrainings}</td>
+              <td>${s.reading||0}%</td>
+              <td>${s.grammar||0}%</td>
+              <td>${s.overall||0}%</td>
+              <td>${s.last?new Date(s.last).toLocaleDateString("en-GB"):"-"}</td>
+            </tr>`).join("") || `<tr><td colspan="6">No students yet.</td></tr>`}
+          </tbody>
+        </table>
+        <div class="footer">PROVE IT | STEP Training Lab</div>
+      </div>
+    `);
+
     const stats=skillStats(r.attempts);
-    const y=doc.lastAutoTable.finalY+8;
-    doc.text("Skill Performance",14,y);
-    doc.autoTable({startY:y+4,head:[["Skill","Mastery"]],body:stats.map(s=>[s.skill,`${s.pct}%`])});
-    doc.save(`PROVE_IT_${slug(r.cls.name)||"class"}_report.pdf`);
+    pages.push(`
+      ${pdfReportStyles()}
+      <div class="report">
+        <h1>Skill Performance / أداء المهارات</h1>
+        <div class="meta">
+          <strong>Class / الفصل:</strong> <span dir="auto">${esc(r.cls.name)}</span>
+          &nbsp;&nbsp; <strong>Code:</strong> ${esc(r.cls.code)}
+        </div>
+        ${stats.length?stats.map(s=>`
+          <div class="skillRow">
+            <div dir="auto">${esc(s.skill)}</div>
+            <div class="bar"><div class="fill" style="width:${s.pct}%"></div></div>
+            <div>${s.pct}%</div>
+          </div>`).join(""):`<p>No skill data yet.</p>`}
+        <div class="footer">PROVE IT | STEP Training Lab</div>
+      </div>
+    `);
+
+    await savePdfPages(pages,`PROVE_IT_${slug(r.cls.name)||"class"}_report.pdf`,"landscape");
   }
 
   async function exportClassExcel(){
