@@ -1,9 +1,9 @@
 window.PROVEIT_CONFIG = {
-  appName: "PROVE IT | STEP Training Lab",
+  appName: "StepUp | STEP Training Lab",
   ownerEmail: "t.nuha0500@gmail.com",
   firebase: {
     enabled: true,
-    apiKey: "AIzaSyC8_V2fAO3azFsuCluI7W0MNX4Vy1b6Ol4",
+    apiKey: "AIzaSyC8_V2fA03azFsucLuI7W0MNX4Vy1b6Ol4",
     authDomain: "step-c44ef.firebaseapp.com",
     projectId: "step-c44ef",
     storageBucket: "step-c44ef.firebasestorage.app",

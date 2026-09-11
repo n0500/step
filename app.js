@@ -81,7 +81,7 @@
   function shell(content, title=""){
     return `
       <header class="appbar">
-        <div class="brand"><div class="logo">PI</div><div><strong>PROVE IT | STEP Training Lab</strong><small>${esc(title)}</small></div></div>
+        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>STEP Training Lab • ${esc(title)}</small></div></div>
         <div class="nav-actions">
           ${state.profile?`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span><button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`:""}
         </div>
@@ -93,9 +93,11 @@
     app.innerHTML = `
       <div class="auth-shell">
         <div class="card hero">
-          <div class="eyebrow">Mega Goal 1 • STEP-style Training</div>
-          <h1>PROVE IT | STEP Training Lab</h1>
-          <p class="muted">Reading + Grammar practice, progress tracking, and teacher reports.</p>
+          <div class="hero-badge">✨ StepUp</div>
+          <div class="eyebrow" style="margin-top:12px">Mega Goal 1 • STEP-style Training</div>
+          <h1>StepUp</h1>
+          <p class="hero-subtitle">STEP Training Lab</p>
+          <p class="muted">A modern training space for STEP reading and grammar practice, progress tracking, and teacher reports.</p>
           ${!state.fb?`<div class="notice">Demo mode is active. Connect Firebase before sharing with students.</div>`:""}
           <h3>Choose your role</h3>
           <div class="auth-role">
@@ -149,8 +151,10 @@
       <div class="auth-shell">
         <div class="card student-entry-card">
           <div class="student-entry-head">
-            <div class="eyebrow">PROVE IT | Student Access</div>
+            <div class="hero-badge">StepUp</div>
+            <div class="eyebrow" style="margin-top:12px">Student Access</div>
             <h1>Welcome 👋</h1>
+            <p class="hero-subtitle">STEP Training Lab</p>
             <div class="class-badge">📘 ${esc(classObj.name||"Your Class")}</div>
             ${classObj.school?`<p class="muted">${esc(classObj.school)}</p>`:""}
           </div>
@@ -971,7 +975,7 @@
     const pages=chunks.map((chunk,idx)=>`
       ${pdfReportStyles()}
       <div class="report">
-        <h1>PROVE IT | Student Progress Report</h1>
+        <h1>StepUp | Student Progress Report</h1>
         <div class="meta">
           <div class="metaLine"><span class="biLabel"><span>Student</span><span>/</span><span class="ar">الطالبة</span><span>:</span></span><span class="valueAuto">${esc(s.displayName)}</span></div>
           <div class="metaLine"><span class="biLabel"><span>Class</span><span>/</span><span class="ar">الفصل</span><span>:</span></span><span class="valueAuto">${esc(s.classCode||"")}</span></div>
@@ -994,7 +998,7 @@
             </tr>`).join("") || `<tr><td colspan="5">No attempts yet.</td></tr>`}
           </tbody>
         </table>
-        <div class="footer">PROVE IT | STEP Training Lab</div>
+        <div class="footer">StepUp | STEP Training Lab</div>
       </div>
     `);
 
@@ -1009,7 +1013,7 @@
             <div class="bar"><div class="fill" style="width:${x.pct}%"></div></div>
             <div>${x.pct}%</div>
           </div>`).join(""):`<p>No skill data yet.</p>`}
-        <div class="footer">PROVE IT | STEP Training Lab</div>
+        <div class="footer">StepUp | STEP Training Lab</div>
       </div>
     `);
 
@@ -1028,7 +1032,7 @@
     const pages=studentChunks.map((chunk,idx)=>`
       ${pdfReportStyles()}
       <div class="report">
-        <h1>PROVE IT | Class Report</h1>
+        <h1>StepUp | Class Report</h1>
         <div class="meta">
           <div class="metaLine"><span class="biLabel"><span>Teacher</span><span>/</span><span class="ar">المعلمة</span><span>:</span></span><span class="valueAuto">${esc(state.profile.displayName)}</span></div>
           <div class="metaLine"><span class="biLabel"><span>Class</span><span>/</span><span class="ar">الفصل</span><span>:</span></span><span class="valueAuto">${esc(r.cls.name)}</span><span style="margin-inline-start:12px;font-weight:700">Code:</span><span>${esc(r.cls.code)}</span></div>
@@ -1055,7 +1059,7 @@
             </tr>`).join("") || `<tr><td colspan="6">No students yet.</td></tr>`}
           </tbody>
         </table>
-        <div class="footer">PROVE IT | STEP Training Lab</div>
+        <div class="footer">StepUp | STEP Training Lab</div>
       </div>
     `);
 
@@ -1073,7 +1077,7 @@
             <div class="bar"><div class="fill" style="width:${s.pct}%"></div></div>
             <div>${s.pct}%</div>
           </div>`).join(""):`<p>No skill data yet.</p>`}
-        <div class="footer">PROVE IT | STEP Training Lab</div>
+        <div class="footer">StepUp | STEP Training Lab</div>
       </div>
     `);
 
@@ -1087,7 +1091,7 @@
     if(!r.cls)return;
     const wb=XLSX.utils.book_new();
     const summary=[
-      ["PROVE IT | Class Report",""],
+      ["StepUp | Class Report",""],
       ["Teacher",state.profile.displayName],
       ["School",state.profile.school||""],
       ["Class",r.cls.name],
@@ -1121,7 +1125,7 @@
     const latest=latestPerTraining(attempts);
     const wb=XLSX.utils.book_new();
     const summary=[
-      ["PROVE IT | Student Progress Report",""],
+      ["StepUp | Student Progress Report",""],
       ["Student",s.displayName],
       ["Class",s.classCode||""],
       ["Overall %",pctAverage(latest.length?latest:attempts)],
