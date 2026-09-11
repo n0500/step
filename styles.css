@@ -51,3 +51,34 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;bor
 
 /* v3 navigation + automatic path + class mode */
 .role-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 20px;position:sticky;top:64px;z-index:20;background:var(--bg);padding:8px 0}.role-tab{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:10px 13px;font-weight:800;cursor:pointer}.role-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}.next-step{border:2px solid #c9dde7;background:linear-gradient(180deg,#fff,#f5fafc);border-radius:14px;padding:22px;margin-bottom:16px}.next-step h2{margin:5px 0 6px;color:var(--navy)}.lock-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #edf1f4}.locked-chip{background:#eef1f3;color:#6c7881}.open-chip{background:#e8f5ee;color:var(--ok)}.auto-message{font-size:18px;line-height:1.6}.classmode-shell{min-height:100vh;background:#f7f9fa}.classmode-toolbar{background:var(--navy);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}.classmode-content{max-width:1400px;margin:0 auto;padding:22px}.classmode-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:0 7px 22px #17324d12}.classmode-stem{font-size:30px;font-weight:900;line-height:1.45;margin:18px 0}.classmode-choice{font-size:23px;border:2px solid #d6dfe5;padding:15px 17px;border-radius:10px;margin:10px 0}.classmode-choice.correct{border-color:var(--ok);background:#edf8f1}.classmode-explain{margin-top:18px;background:#f0f6f8;border-left:5px solid var(--teal);padding:15px;border-radius:7px;font-size:18px}@media(max-width:700px){.role-tabs{position:fixed;bottom:0;top:auto;left:0;right:0;margin:0;padding:7px 8px;background:#fff;border-top:1px solid var(--line);justify-content:space-around}.role-tab{border:0;padding:8px 7px;font-size:12px;background:transparent}.role-tab.active{background:#eaf1f5;color:var(--navy)}main.container{padding-bottom:82px}.classmode-stem{font-size:24px}.classmode-choice{font-size:19px}}
+/* Easy student entry + class sharing */
+.student-entry-card{max-width:620px;margin:44px auto}
+.student-entry-head{text-align:center;margin-bottom:20px}
+.student-entry-head h1{margin:8px 0;color:var(--navy)}
+.class-badge{
+  display:inline-flex;align-items:center;gap:7px;background:#eaf2f6;color:var(--navy);
+  border:1px solid #d3e1e8;border-radius:999px;padding:7px 12px;font-weight:800
+}
+.share-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.qr-overlay{
+  position:fixed;inset:0;background:#102536aa;display:flex;align-items:center;
+  justify-content:center;padding:20px;z-index:9999
+}
+.qr-modal{
+  width:min(92vw,430px);background:#fff;border-radius:16px;padding:24px;text-align:center;
+  box-shadow:0 18px 50px #0004
+}
+.qr-modal h2{margin:0 0 6px;color:var(--navy)}
+.qr-box{
+  width:230px;height:230px;margin:18px auto;display:grid;place-items:center;
+  padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px
+}
+.qr-link{
+  font-size:12px;word-break:break-all;background:#f3f6f8;padding:10px;border-radius:8px;
+  text-align:left;color:#53636e
+}
+.quick-entry-note{font-size:13px;color:var(--muted);margin-top:10px}
+@media(max-width:700px){
+  .student-entry-card{margin:18px auto}
+  .share-actions .btn{flex:1}
+}

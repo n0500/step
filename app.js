@@ -40,6 +40,11 @@
     saveAttempt(at){let a=this.attempts();a.push(at);this.set("attempts",a)}
   };
 
+  function classCodeFromUrl(){
+    const code=new URLSearchParams(window.location.search).get("class");
+    return code ? code.trim().toUpperCase() : "";
+  }
+
   async function boot(){
     if(state.fb){
       state.fb.auth.onAuthStateChanged(async user=>{
@@ -48,7 +53,10 @@
           await loadProfile();
           await renderDashboard();
         }else{
-          state.profile=null; renderLanding();
+          state.profile=null;
+          const classCode=classCodeFromUrl();
+          if(classCode) await renderClassJoin(classCode);
+          else renderLanding();
         }
       });
     } else {
@@ -58,7 +66,9 @@
         state.profile=local.users().find(x=>x.id===sess.uid)||null;
         if(state.profile) return renderDashboard();
       }
-      renderLanding();
+      const classCode=classCodeFromUrl();
+      if(classCode) await renderClassJoin(classCode);
+      else renderLanding();
     }
   }
 
@@ -85,7 +95,7 @@
         <div class="card hero">
           <div class="eyebrow">Mega Goal 1 • STEP-style Training</div>
           <h1>PROVE IT | STEP Training Lab</h1>
-          <p class="muted">Reading + Grammar practice, progress tracking, and downloadable reports.</p>
+          <p class="muted">Reading + Grammar practice, progress tracking, and teacher reports.</p>
           ${!state.fb?`<div class="notice">Demo mode is active. Connect Firebase before sharing with students.</div>`:""}
           <h3>Choose your role</h3>
           <div class="auth-role">
@@ -104,12 +114,15 @@
     const box=document.getElementById("authBox");
     if(role==="student"){
       box.innerHTML=`
-        <div class="tabs" style="margin-top:18px">
-          <button class="tab active" id="stLoginTab" onclick="PROVE.studentAuthTab('login')">Login</button>
-          <button class="tab" id="stCreateTab" onclick="PROVE.studentAuthTab('create')">Create profile</button>
-        </div>
-        <div id="studentAuthForm"></div>`;
-      studentAuthTab("login");
+        <div style="margin-top:18px">
+          <div class="form-grid">
+            <div class="field"><label>Full name / الاسم الكامل</label><input id="stName" autocomplete="name"></div>
+            <div class="field"><label>Class code / كود الفصل</label><input id="stClassCode" autocapitalize="characters"></div>
+            <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+          </div>
+          <div class="quick-entry-note">First time? Your profile will be created automatically. Returning student? The same button signs you in.</div>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="PROVE.studentContinue()">Continue</button>
+        </div>`;
     } else {
       box.innerHTML=`
         <div class="form-grid" style="margin-top:18px">
@@ -124,30 +137,101 @@
     }
   }
 
-  function studentAuthTab(mode){
-    const login=document.getElementById("stLoginTab"), create=document.getElementById("stCreateTab");
-    if(login) login.classList.toggle("active",mode==="login");
-    if(create) create.classList.toggle("active",mode==="create");
-    document.getElementById("studentAuthForm").innerHTML = mode==="login" ? `
-      <div class="form-grid">
-        <div class="field"><label>Full name / الاسم الكامل</label><input id="stName"></div>
-        <div class="field"><label>Class code / كود الفصل</label><input id="stClassCode"></div>
-        <div class="field"><label>PIN (4 digits)</label><input id="stPin" inputmode="numeric" maxlength="4"></div>
-      </div>
-      <button class="btn btn-primary" style="margin-top:12px" onclick="PROVE.studentLogin()">Login</button>` : `
-      <div class="form-grid">
-        <div class="field"><label>Full name / الاسم الكامل</label><input id="stName"></div>
-        <div class="field"><label>Class code / كود الفصل</label><input id="stClassCode"></div>
-        <div class="field"><label>Create PIN (4 digits)</label><input id="stPin" inputmode="numeric" maxlength="4"></div>
-      </div>
-      <div class="notice">Your class code is created by your teacher. Your PIN lets you return to your progress from another device.</div>
-      <button class="btn btn-primary" onclick="PROVE.studentRegister()">Create My Profile</button>`;
+  async function renderClassJoin(classCode){
+    const classObj=await findClassByCode(classCode);
+    if(!classObj){
+      history.replaceState({}, "", window.location.pathname);
+      renderLanding();
+      setTimeout(()=>alert("This class link is not valid."),50);
+      return;
+    }
+    app.innerHTML=`
+      <div class="auth-shell">
+        <div class="card student-entry-card">
+          <div class="student-entry-head">
+            <div class="eyebrow">PROVE IT | Student Access</div>
+            <h1>Welcome 👋</h1>
+            <div class="class-badge">📘 ${esc(classObj.name||"Your Class")}</div>
+            ${classObj.school?`<p class="muted">${esc(classObj.school)}</p>`:""}
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Full name / الاسم الكامل</label><input id="stName" autocomplete="name"></div>
+            <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+          </div>
+          <div class="quick-entry-note">Use the same name and PIN every time. If this is your first visit, your profile is created automatically.</div>
+          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="PROVE.studentContinue('${esc(classCode)}')">Continue</button>
+          <div style="text-align:center;margin-top:14px"><button class="btn btn-secondary" onclick="PROVE.goMainLogin()">Teacher / Owner login</button></div>
+        </div>
+      </div>`;
+  }
+
+  function goMainLogin(){
+    history.replaceState({}, "", window.location.pathname);
+    renderLanding();
   }
 
   async function studentCreds(name,classCode,pin){
     const normalized = `${classCode.toUpperCase().trim()}|${name.toLowerCase().trim().replace(/\s+/g," ")}`;
     const h = await sha256(normalized);
     return { email:`s_${h.slice(0,24)}@students.proveit.local`, password:`${pin}Aa!${h.slice(0,4)}` };
+  }
+
+  async function studentContinue(forcedClassCode=""){
+    const name=(document.getElementById("stName")?.value||"").trim();
+    const classCode=(forcedClassCode || document.getElementById("stClassCode")?.value || "").trim().toUpperCase();
+    const pin=(document.getElementById("stPin")?.value||"").trim();
+
+    if(!name || !classCode || !/^\d{4}$/.test(pin)){
+      return alert("Please enter your full name and a 4-digit PIN.");
+    }
+
+    const classObj=await findClassByCode(classCode);
+    if(!classObj)return alert("Class not found. Check the class link or code.");
+
+    const c=await studentCreds(name,classCode,pin);
+
+    if(state.fb){
+      try{
+        // Returning student: sign in.
+        await state.fb.auth.signInWithEmailAndPassword(c.email,c.password);
+        return;
+      }catch(loginError){
+        // First visit: create profile automatically.
+        try{
+          const cr=await state.fb.auth.createUserWithEmailAndPassword(c.email,c.password);
+          const prof={
+            role:"student",displayName:name,classId:classObj.id,classCode,
+            teacherId:classObj.teacherId,school:classObj.school||"",createdAt:nowISO()
+          };
+          await state.fb.db.collection("users").doc(cr.user.uid).set(prof);
+          state.profile={id:cr.user.uid,...prof};
+          state.studentTab="home";
+          await renderDashboard();
+          return;
+        }catch(createError){
+          if(createError.code==="auth/email-already-in-use"){
+            return alert("The name is already registered. Check your PIN and try again.");
+          }
+          return alert("Could not continue: "+createError.message);
+        }
+      }
+    }else{
+      const existing=local.users().find(x=>x.loginEmail===c.email);
+      if(existing){
+        if(existing.loginPassword!==c.password)return alert("Incorrect PIN.");
+        local.set("session",{uid:existing.id,email:c.email});
+        state.user={uid:existing.id,email:c.email};state.profile=existing;state.studentTab="home";
+        return renderDashboard();
+      }
+      const id=uid(),prof={
+        id,role:"student",displayName:name,classId:classObj.id,classCode,
+        teacherId:classObj.teacherId,school:classObj.school||"",
+        loginEmail:c.email,loginPassword:c.password,createdAt:nowISO()
+      };
+      local.saveUser(prof);local.set("session",{uid:id,email:c.email});
+      state.user={uid:id,email:c.email};state.profile=prof;state.studentTab="home";
+      return renderDashboard();
+    }
   }
 
   async function studentRegister(){
@@ -492,10 +576,83 @@
       <div class="grid grid-4"><div class="card kpi"><div class="num">${r.students.length}</div><div class="label">Students</div></div><div class="card kpi"><div class="num">${r.completion}%</div><div class="label">Completion</div></div><div class="card kpi"><div class="num">${r.readingAvg}%</div><div class="label">Reading</div></div><div class="card kpi"><div class="num">${r.grammarAvg}%</div><div class="label">Grammar</div></div></div>
       <div class="grid grid-2"><div class="card"><h2>Class Needs</h2>${renderNeeds(r.attempts)}</div><div class="card"><h2>Quick Insight</h2>${weak?`<p class="auto-message"><strong>${esc(weak.skill)}</strong> is currently the lowest skill at <strong>${weak.pct}%</strong>.</p>`:"<p class='muted'>Results will appear after students begin.</p>"}</div></div>`;
   }
+  function studentClassLink(code){
+    const base=window.location.origin+window.location.pathname;
+    return `${base}?class=${encodeURIComponent(code)}`;
+  }
+
+  async function copyStudentLink(code){
+    const link=studentClassLink(code);
+    try{
+      await navigator.clipboard.writeText(link);
+      alert("Student link copied.");
+    }catch(e){
+      prompt("Copy this student link:",link);
+    }
+  }
+
+  function showClassQR(code,className=""){
+    const link=studentClassLink(code);
+    const overlay=document.createElement("div");
+    overlay.className="qr-overlay";
+    overlay.id="classQrOverlay";
+    overlay.innerHTML=`
+      <div class="qr-modal">
+        <div class="eyebrow">Student Access</div>
+        <h2>${esc(className||"Class QR")}</h2>
+        <p class="muted">Students scan this QR and enter only their name + PIN.</p>
+        <div id="classQrBox" class="qr-box"></div>
+        <div class="qr-link">${esc(link)}</div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-primary" style="flex:1" onclick="PROVE.copyStudentLink('${esc(code)}')">Copy Link</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="PROVE.closeClassQR()">Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    if(window.QRCode){
+      new QRCode(document.getElementById("classQrBox"),{
+        text:link,width:205,height:205,
+        colorDark:"#17324d",colorLight:"#ffffff",
+        correctLevel:QRCode.CorrectLevel.M
+      });
+    }else{
+      document.getElementById("classQrBox").innerHTML="<span>QR library did not load. Use Copy Link.</span>";
+    }
+  }
+
+  function closeClassQR(){
+    document.getElementById("classQrOverlay")?.remove();
+  }
+
   async function teacherClasses(classes,cls){
     const students=await getStudentsForTeacher(state.profile.id);
-    const cards=classes.map(c=>`<div class="card"><div class="report-head"><div><h2>${esc(c.name)}</h2><p class="muted">Class Code: <strong>${esc(c.code)}</strong> • ${students.filter(s=>s.classId===c.id).length} students</p></div><button class="btn btn-secondary" onclick="PROVE.selectClass('${c.id}')">Select</button></div><h3>Unit Access</h3>${DATA.units.map(u=>{const isOpen=(c.openUnits||["u1"]).includes(u.id),ready=(u.trainings||[]).length>0;return `<div class="lock-row"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${!ready?"Content not added yet":isOpen?"Available to students":"Hidden from students"}</div></div><div><span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"Open":"Locked"}</span> ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"Lock":"Open Unit"}</button>`:""}</div></div>`}).join("")}</div>`).join("");
-    return `<div class="report-head"><div><div class="eyebrow">Classes</div><h1>Classes & Unit Access</h1><p class="muted">The path is automatic inside each open unit. You decide when the next unit opens.</p></div><button class="btn btn-success" onclick="PROVE.createClass()">+ Create Class</button></div>${cards||"<div class='notice'>No classes yet.</div>"}`;
+    const cards=classes.map(c=>`
+      <div class="card">
+        <div class="report-head">
+          <div>
+            <h2>${esc(c.name)}</h2>
+            <p class="muted">Class Code: <strong>${esc(c.code)}</strong> • ${students.filter(s=>s.classId===c.id).length} students</p>
+            <div class="share-actions">
+              <button class="btn btn-primary" onclick="PROVE.copyStudentLink('${esc(c.code)}')">Copy Student Link</button>
+              <button class="btn btn-secondary" onclick="PROVE.showClassQR('${esc(c.code)}','${esc(c.name).replace(/'/g,"&#39;")}')">Class QR</button>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="PROVE.selectClass('${c.id}')">Select</button>
+        </div>
+        <h3>Unit Access</h3>
+        ${DATA.units.map(u=>{
+          const isOpen=(c.openUnits||["u1"]).includes(u.id),ready=(u.trainings||[]).length>0;
+          return `<div class="lock-row">
+            <div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${!ready?"Content not added yet":isOpen?"Available to students":"Hidden from students"}</div></div>
+            <div><span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"Open":"Locked"}</span>
+            ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"Lock":"Open Unit"}</button>`:""}</div>
+          </div>`;
+        }).join("")}
+      </div>`).join("");
+    return `<div class="report-head">
+      <div><div class="eyebrow">Classes</div><h1>Classes & Unit Access</h1><p class="muted">Share one class link or QR. Students do not need to type the class code.</p></div>
+      <button class="btn btn-success" onclick="PROVE.createClass()">+ Create Class</button>
+    </div>${cards||"<div class='notice'>No classes yet.</div>"}`;
   }
   function findRecommendedClassTraining(openUnits,attempts){
     const ordered=openUnits.flatMap(u=>u.trainings.map(t=>({...t,unitId:u.id})));if(!ordered.length)return null;let best=ordered[0],bestCount=Infinity;
@@ -994,8 +1151,8 @@
   function printPage(){window.print()}
 
   window.PROVE = {
-    pickRole,studentAuthTab,studentRegister,studentLogin,teacherRegister,emailLogin,logout,
-    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,setStudentTab,setTeacherTab,startTraining,startRemedial,choose,goQ,toggleFlag,prevQ,nextQ,
+    pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
+    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,setStudentTab,setTeacherTab,startTraining,startRemedial,choose,goQ,toggleFlag,prevQ,nextQ,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage
   };
