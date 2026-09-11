@@ -240,6 +240,39 @@
     return local.classes().find(x=>x.code===code)||null;
   }
 
+
+  function studentTabs(){
+    const items=[
+      ["home","🏠 Home"],
+      ["practice","📝 Practice"],
+      ["progress","📈 Progress"],
+      ["results","✓ Results"],
+      ["profile","👤 Profile"]
+    ];
+    return `<nav class="role-tabs">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" onclick="PROVE.setStudentTab('${id}')">${label}</button>`).join("")}</nav>`;
+  }
+
+  function teacherTabs(){
+    const items=[
+      ["home","🏠 Home"],
+      ["classes","👥 Classes"],
+      ["classmode","🖥️ Class Mode"],
+      ["reports","📊 Reports"],
+      ["profile","👤 Profile"]
+    ];
+    return `<nav class="role-tabs">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
+  }
+
+  function setStudentTab(tab){
+    state.studentTab=tab;
+    renderStudent();
+  }
+
+  function setTeacherTab(tab){
+    state.teacherTab=tab;
+    renderTeacher();
+  }
+
   async function renderDashboard(){
     if(!state.profile)return renderLanding();
     if(state.profile.role==="owner")return renderOwner();
