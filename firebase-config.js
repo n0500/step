@@ -7,7 +7,7 @@ window.PROVEIT_CONFIG = {
     enabled: true,
     model: "gemini-3.7-flash",
     // Public reCAPTCHA Enterprise site key (not a secret)
-    appCheckSiteKey: "6LcNcbctAAAAAKfLCGRHoIMkOVtQCTNhRxao8IIc"
+    appCheckSiteKey: "6LcNcbctAAAAAKfLCGRHolMkOVtQCTNhRxao8llc"
   },
 
   firebase: {
