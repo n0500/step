@@ -7,7 +7,8 @@ const KB = window.MG1_KB || { units:{}, vocabulary:{}, real_talk_meanings:{}, ch
 const WRITING_COACH_URL = "https://app.briskteaching.com/ws/s56xav";
 const AI_CFG = {
   enabled: CFG.ai?.enabled !== false,
-  model: CFG.ai?.model || "gemini-3.7-flash",
+  model: CFG.ai?.model || "gemini-3.8-flash",
+  fallbackModel: CFG.ai?.fallbackModel || "gemini-3.5-flash-lite",
   appCheckSiteKey: CFG.ai?.appCheckSiteKey || ""
 };
 
@@ -17,6 +18,7 @@ const assistantState = {
   messages: [],
   busy: false,
   model: null,
+  fallbackModel: null,
   appCheck: null,
   aiReady: false,
   aiError: "",
@@ -34,10 +36,12 @@ Never invent textbook content.
 STYLE
 - Answer the exact request directly.
 - No greeting, praise, motivational filler, or unnecessary closing question.
-- Default: 1–3 short sentences or up to 3 short bullets.
+- ABSOLUTE DEFAULT LIMIT: maximum 3 short bullets OR 3 short sentences, and normally under 80 words.
 - Arabic question -> Arabic explanation; keep English grammar terms, vocabulary, and examples in English when helpful.
 - English question -> English answer.
-- Expand only when explicitly asked.
+- Expand only when the student explicitly asks "explain more", "more detail", "اشرح أكثر", or equivalent.
+- If the student only asks to switch language (for example "اشرح عربي", "بالعربي", "in Arabic"), keep the SAME scope as the previous question. Do not add extra rules or examples.
+- If the message is only a greeting, do not chat. Reply only: "Ask me about MegaGoal 1." or Arabic equivalent.
 
 SOURCE PRIORITY
 1) Student Book rules/content.
@@ -49,6 +53,7 @@ If sources conflict, Student Book wins. A teacher revision worksheet is practice
 
 GRAMMAR
 Give: rule -> one short example -> one important note only if needed.
+For a broad unit-grammar request, summarize at most 3 key points unless the student explicitly asks for more.
 
 VOCABULARY
 Give the meaning in MegaGoal context, part of speech only if useful, and one short example if useful. For Real Talk, use the textbook meaning first.
@@ -110,13 +115,17 @@ function initAI() {
       });
     }
     const ai = getAI(aiApp, { backend: new GoogleAIBackend() });
+    const modelOptions = {
+      systemInstruction: SYSTEM_INSTRUCTION,
+      generationConfig: { maxOutputTokens: 220 }
+    };
     assistantState.model = getGenerativeModel(ai, {
       model: AI_CFG.model,
-      systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: {
-        temperature: 0.15,
-        maxOutputTokens: 420
-      }
+      ...modelOptions
+    });
+    assistantState.fallbackModel = getGenerativeModel(ai, {
+      model: AI_CFG.fallbackModel,
+      ...modelOptions
     });
     assistantState.aiReady = true;
   } catch (e) {
@@ -155,6 +164,24 @@ function isFullWritingRequest(query="") {
     "write my paragraph","write a paragraph","write my essay","write an essay","rewrite my paragraph","check my paragraph","improve my paragraph","email","letter",
     "اكتب لي فقره","اكتب الفقره","اكتب موضوع","صحح فقرتي","راجع فقرتي","حسن فقرتي","اكتب ايميل","اكتب رساله"
   ]);
+}
+
+function isGreetingOnly(query="") {
+  const n = normalize(query);
+  return ["hi","hello","hey","مرحبا","هلا","السلام عليكم","السلام عليكم ورحمة الله"].includes(n);
+}
+function isLanguageOnlyFollowup(query="") {
+  const n = normalize(query);
+  return [
+    "اشرح عربي","اشرح بالعربي","بالعربي","عربي","بالعربي لو سمحت",
+    "in arabic","arabic please","explain in arabic"
+  ].includes(n);
+}
+function previousUserQuery() {
+  for (let i=assistantState.messages.length-2;i>=0;i--) {
+    if (assistantState.messages[i]?.role==="user") return assistantState.messages[i].text || "";
+  }
+  return "";
 }
 function exerciseStage(query="") {
   if (includesAny(query,["check my answer","is my answer correct","am i correct","تاكد من اجابتي","تأكد من إجابتي","هل اجابتي صحيحه","هل إجابتي صحيحة"])) return "check";
@@ -252,9 +279,10 @@ function directLocalReference(query, unit, intent) {
 }
 
 function formatText(text="") {
-  const safe=esc(text);
+  let safe=esc(text);
+  safe = safe.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
   return safe
-    .replace(/^•\s?(.*)$/gm,"<li>$1</li>")
+    .replace(/^(?:•|-|\*)\s?(.*)$/gm,"<li>$1</li>")
     .replace(/(?:<li>.*<\/li>\n?)+/g, m=>`<ul>${m}</ul>`)
     .replace(/\n/g,"<br>");
 }
@@ -391,6 +419,31 @@ function paintMessages(){
   box.scrollTop=box.scrollHeight;
 }
 
+function waitMs(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
+function isTransientAIError(error){
+  const msg=String(error?.message||error||"").toLowerCase();
+  return /\b500\b|\b503\b|high demand|temporar|overload|resource exhausted|unavailable|internal error|server error/.test(msg);
+}
+async function generateWithResilience(prompt){
+  let lastError=null;
+  const attempts=[
+    {model:assistantState.model, delay:0},
+    {model:assistantState.model, delay:900},
+    {model:assistantState.fallbackModel, delay:500}
+  ];
+  for(const attempt of attempts){
+    if(!attempt.model) continue;
+    if(attempt.delay) await waitMs(attempt.delay);
+    try{
+      return await attempt.model.generateContent(prompt);
+    }catch(error){
+      lastError=error;
+      if(!isTransientAIError(error)) throw error;
+    }
+  }
+  throw lastError || new Error("AI service unavailable");
+}
+
 async function sendCurrent(){
   if(assistantState.busy)return;
   const input=document.getElementById("mg1Input");
@@ -399,13 +452,19 @@ async function sendCurrent(){
   assistantState.messages.push({role:"user",text:query});
   paintMessages();
 
+  if(isGreetingOnly(query)){
+    assistantState.messages.push({role:"ai",text:hasArabic(query)?"اسألي عن MegaGoal 1.":"Ask me about MegaGoal 1."});
+    paintMessages(); return;
+  }
+
   if(isFullWritingRequest(query)){
     assistantState.messages.push({role:"ai",text:hasArabic(query)?"استخدمي تبويب Writing Coach لمراجعة الكتابة خطوة بخطوة.":"Use the Writing Coach tab for step-by-step writing support."});
     paintMessages(); return;
   }
 
   const stage=exerciseStage(query);
-  const retrievalQuery=resolveExerciseContext(query,stage);
+  const priorQuery = isLanguageOnlyFollowup(query) ? previousUserQuery() : "";
+  const retrievalQuery=resolveExerciseContext(priorQuery || query,stage);
   const unit=detectUnit(retrievalQuery);
   const intent=detectIntent(retrievalQuery);
   const localAnswer=directLocalReference(retrievalQuery,unit,intent);
@@ -441,7 +500,7 @@ async function sendCurrent(){
       throw new Error("[APP_CHECK] App Check was not initialized.");
     }
 
-    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}`;
+    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nRESPONSE LIMIT: maximum 3 short bullets or 3 short sentences unless the student explicitly asked for more detail.`;
 
     let result;
     try {
@@ -456,11 +515,12 @@ async function sendCurrent(){
     assistantState.messages.push({role:"ai",text:text.trim()|| (hasArabic(query)?"لم أجد هذه المعلومة في مواد MG1 المتاحة.":"I can't find this in the available MG1 materials.")});
   }catch(e){
     console.error("MG1 Assistant request failed",e);
-    const msg=String(e?.message||e);
-    const shortMsg = msg.length > 700 ? msg.slice(0,700) + "…" : msg;
+    const transient=isTransientAIError(e);
     assistantState.messages.push({
       role:"system",
-      text:(hasArabic(query)?"تعذر تشغيل المساعد. تفاصيل التشخيص:\n":"Assistant request failed. Diagnostic details:\n") + shortMsg
+      text:transient
+        ? (hasArabic(query)?"الخدمة مزدحمة الآن. حاولي بعد قليل.":"The AI service is busy right now. Please try again shortly.")
+        : (hasArabic(query)?"تعذر الاتصال بالمساعد الآن. حاولي مرة أخرى.":"The assistant couldn't connect right now. Please try again.")
     });
   }finally{
     assistantState.busy=false;

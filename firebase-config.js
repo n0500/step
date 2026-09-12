@@ -5,7 +5,8 @@ window.PROVEIT_CONFIG = {
   // MG1 Assistant — Firebase AI Logic + App Check
   ai: {
     enabled: true,
-    model: "gemini-3.7-flash",
+    model: "gemini-3.8-flash",
+    fallbackModel: "gemini-3.5-flash-lite",
     // Public reCAPTCHA Enterprise site key (not a secret)
     appCheckSiteKey: "6LcNcbctAAAAAKfLCGRHolMkOVtQCTNhRxao8llc"
   },
