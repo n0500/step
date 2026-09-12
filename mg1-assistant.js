@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-ai.js";
+import { getAI, getGenerativeModel, GoogleAIBackend, ThinkingLevel } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-ai.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app-check.js";
 
 const CFG = window.PROVEIT_CONFIG || {};
@@ -137,7 +137,12 @@ function initAI() {
     const ai = getAI(aiApp, { backend: new GoogleAIBackend() });
     const modelOptions = {
       systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: { maxOutputTokens: 600 }
+      generationConfig: {
+        maxOutputTokens: 4096,
+        thinkingConfig: {
+          thinkingLevel: ThinkingLevel.LOW
+        }
+      }
     };
     assistantState.model = getGenerativeModel(ai, {
       model: AI_CFG.model,
@@ -444,7 +449,7 @@ function renderAssistant(){
         ${[1,2,3,4,5,6].map(n=>`<button class="mg1-chip ${assistantState.selectedUnit===n?"active":""}" data-unit="${n}">Unit ${n}</button>`).join("")}
       </div>
       <div class="mg1-shortcuts">
-        <button class="mg1-shortcut" data-prompt="Give me a complete but concise overview of Unit 1 grammar.">Unit grammar</button>
+        <button class="mg1-shortcut" data-prompt="Give me a complete but concise overview of all Grammar topics in Unit 1, including the related FMF lesson. Do not stop until every distinct topic in the retrieved Unit 1 context has been covered.">Unit grammar</button>
         <button class="mg1-shortcut" data-prompt="Explain the Form, Meaning and Function lesson in Unit 1 briefly.">Unit FMF</button>
         <button class="mg1-shortcut" data-prompt="Vocabulary Unit 1">Unit vocabulary</button>
         <button class="mg1-shortcut quick" id="mg1QuickPractice">Quick practice</button>
@@ -716,7 +721,7 @@ async function sendCurrent(){
 
     const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nGRAMMAR/FMF RULE: Grammar is the umbrella. If Intent is grammar and the request is broad (for example "Grammar", "Unit grammar", or an overview), cover ALL distinct Grammar topics supported by the retrieved unit context, including the related FMF lesson. Use 4–8 concise bullets if needed. If Intent is fmf, cover the selected unit's FMF lesson only, but cover all distinct FMF points supported by the retrieved context. Do not treat "meaning" as vocabulary in an FMF request.
 PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds.
-RESPONSE LENGTH: focused question = 1–3 concise bullets/sentences. Whole-unit or whole-lesson overview = complete coverage in 4–8 concise bullets, normally under about 220 words. Never truncate a requested overview after only one or two points.`;
+RESPONSE LENGTH: focused question = 1–3 concise bullets/sentences. Whole-unit or whole-lesson overview = complete coverage in 4–8 concise bullets, normally under about 220 words. Never truncate a requested overview after only one or two points. For broad Grammar/FMF overviews, finish all requested points before ending the response.`;
 
     let result;
     try {

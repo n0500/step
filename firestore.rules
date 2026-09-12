@@ -15,39 +15,82 @@ service cloud.firestore {
     }
 
     match /joinCodes/{code} {
-      // A student can verify one exact class code before signing in.
-      // Listing all codes is blocked.
+      // Students may verify one exact class code before signing in.
       allow get: if true;
-      allow list: if false;
+
+      // A teacher may list only their own codes. This is used to archive,
+      // restore, move, or fully delete a class without exposing other codes.
+      allow list: if isTeacher()
+        && resource.data.teacherId == request.auth.uid;
+
       allow create: if isTeacher()
         && request.resource.data.teacherId == request.auth.uid;
-      allow update, delete: if isTeacher()
+
+      allow update: if isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && request.resource.data.teacherId == request.auth.uid;
+
+      allow delete: if isTeacher()
         && resource.data.teacherId == request.auth.uid;
     }
 
     match /users/{uid} {
       allow create: if signedIn() && request.auth.uid == uid;
+
       allow read: if signedIn() && (
         request.auth.uid == uid ||
         isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid)
       );
-      allow update: if signedIn() && request.auth.uid == uid;
-      allow delete: if isOwner();
+
+      allow update: if signedIn() && (
+        request.auth.uid == uid ||
+        (
+          isTeacher() &&
+          resource.data.role == "student" &&
+          resource.data.teacherId == request.auth.uid &&
+          request.resource.data.teacherId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["classId"])
+        )
+      );
+
+      allow delete: if isOwner() || (
+        isTeacher() &&
+        resource.data.role == "student" &&
+        resource.data.teacherId == request.auth.uid
+      );
     }
 
     match /classes/{classId} {
       allow create: if isTeacher()
         && request.resource.data.teacherId == request.auth.uid;
+
       allow read: if signedIn() && (
         isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid) ||
         (isStudent() && me().data.classId == classId)
       );
+
       allow update: if isTeacher()
         && resource.data.teacherId == request.auth.uid;
+
       allow delete: if isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+
+    match /archivedClasses/{classId} {
+      allow read: if isOwner() || (
+        isTeacher() && resource.data.teacherId == request.auth.uid
+      ) || (
+        isStudent() && me().data.classId == classId
+      );
+
+      allow create: if isTeacher()
+        && request.resource.data.teacherId == request.auth.uid;
+
+      allow update, delete: if isOwner() || (
+        isTeacher() && resource.data.teacherId == request.auth.uid
+      );
     }
 
     match /attempts/{attemptId} {
@@ -62,7 +105,15 @@ service cloud.firestore {
         (isTeacher() && resource.data.teacherId == request.auth.uid)
       );
 
-      allow update, delete: if false;
+      // When a teacher moves a class, only the classId may change.
+      allow update: if isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && request.resource.data.teacherId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["classId"]);
+
+      allow delete: if isOwner() || (
+        isTeacher() && resource.data.teacherId == request.auth.uid
+      );
     }
   }
 }
