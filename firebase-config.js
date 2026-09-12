@@ -1,6 +1,15 @@
 window.PROVEIT_CONFIG = {
   appName: "StepUp | STEP Training Lab",
   ownerEmail: "t.nuha0500@gmail.com",
+
+  // MG1 Assistant — Firebase AI Logic + App Check
+  ai: {
+    enabled: true,
+    model: "gemini-3.7-flash",
+    // Public reCAPTCHA Enterprise site key (not a secret)
+    appCheckSiteKey: "6LcNcbctAAAAAKfLCGRHoIMkOVtQCTNhRxao8IIc"
+  },
+
   firebase: {
     enabled: true,
     apiKey: "AIzaSyC8_V2fAO3azFsuCluI7W0MNX4Vy1b6Ol4",
