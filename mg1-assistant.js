@@ -52,8 +52,19 @@ SOURCE PRIORITY
 If sources conflict, Student Book wins. A teacher revision worksheet is practice only; never call its answer official unless an official key is in the context.
 
 GRAMMAR
-Give: rule -> one short example -> one important note only if needed.
-For a broad unit-grammar request, summarize at most 3 key points unless the student explicitly asks for more.
+- Grammar is the umbrella category. It includes the unit's main Grammar lesson AND the related Form, Meaning & Function lesson.
+- If the student asks broadly for "Grammar" in a unit, include both: the key Grammar rule(s) plus the relevant Form, Meaning & Function point(s).
+- Keep the broad answer compact: up to 3 short Grammar bullets plus 1 short FMF bullet when needed.
+- For a specific grammar question, answer only that point unless the student asks for the whole unit.
+- Use: rule -> one short example -> one important note only if needed.
+
+FORM, MEANING & FUNCTION
+- Form, Meaning & Function (FMF) is a grammar-related lesson in every MegaGoal 1 unit.
+- It belongs under Grammar academically, but it also has its own selectable category in MG1 Assistant so a student can study that lesson directly.
+- Treat "Form, Meaning and Function", "Form Meaning Function", "FMF", and "form/meaning/function" as the FMF lesson.
+- If the student selects the FMF category or asks specifically about FMF, retrieve and explain only the FMF lesson from the selected unit.
+- Do not treat the word "meaning" as Vocabulary when the request is about FMF.
+- Explain only what the student asks for. For a broad FMF request, give at most 3 short points with one brief example when useful.
 
 VOCABULARY
 Give the meaning in MegaGoal context, part of speech only if useful, and one short example if useful. For Real Talk, use the textbook meaning first.
@@ -117,7 +128,7 @@ function initAI() {
     const ai = getAI(aiApp, { backend: new GoogleAIBackend() });
     const modelOptions = {
       systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: { maxOutputTokens: 220 }
+      generationConfig: { maxOutputTokens: 360 }
     };
     assistantState.model = getGenerativeModel(ai, {
       model: AI_CFG.model,
@@ -153,10 +164,16 @@ function detectUnit(query="") {
   return assistantState.selectedUnit;
 }
 function detectIntent(query="") {
+  if (includesAny(query,[
+    "form meaning and function","form meaning function","form/meaning/function","fmf",
+    "form, meaning and function","form meaning & function",
+    "فورم ميننق فنكشن","فورم مينينق فنكشن","المعنى والوظيفه","المعنى والوظيفة"
+  ])) return "fmf";
   if (includesAny(query,["grammar","rule","tense","قاعده","قواعد","زمن"])) return "grammar";
   if (includesAny(query,["vocabulary","vocab","meaning","mean","word","expression","real talk","مفردات","معنى","كلمه","عباره"])) return "vocabulary";
   if (includesAny(query,["reading","main idea","inference","reference","comprehension","قراءة","قراءه","الفكره الرئيسيه","استنتاج","مرجع","فهم"])) return "reading";
   if (includesAny(query,["practice","quiz me","test me","workbook","worksheet","exercise","تمرين","تدريب","اختبرني","ورقه عمل"])) return "practice";
+  if (assistantState.selectedMode==="fmf") return "fmf";
   return assistantState.selectedMode || "ask";
 }
 function isFullWritingRequest(query="") {
@@ -219,9 +236,17 @@ function scoreChunk(c, query, unit, intent) {
   for (const w of q) if (t.has(w)) score += 1;
   if (unit && c.unit===unit) score += 5;
   if (intent==="grammar") {
-    if (c.source_kind==="student_book" && ["grammar","form_meaning_function"].includes(c.section)) score += 8;
+    if (c.source_kind==="student_book" && c.section==="grammar") score += 12;
+    if (c.source_kind==="student_book" && c.section==="form_meaning_function") score += 11;
+    if (c.section==="form_meaning_function") score += 4;
     if (c.source_kind==="teacher_revision") score += 2;
     if (c.source_kind==="workbook") score += 2;
+  }
+  if (intent==="fmf") {
+    if (c.source_kind==="student_book" && c.section==="form_meaning_function") score += 18;
+    if (c.section==="form_meaning_function") score += 10;
+    if ((c.tags||[]).includes("form_meaning_function")) score += 8;
+    if (c.source_kind==="workbook") score += 1;
   }
   if (intent==="vocabulary") {
     if (c.source_kind==="vocabulary_master") score += 10;
@@ -281,6 +306,7 @@ function directLocalReference(query, unit, intent) {
 function formatText(text="") {
   let safe=esc(text);
   safe = safe.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  safe = safe.replace(/\*([^*\n]+?)\*/g,"<em>$1</em>");
   return safe
     .replace(/^(?:•|-|\*)\s?(.*)$/gm,"<li>$1</li>")
     .replace(/(?:<li>.*<\/li>\n?)+/g, m=>`<ul>${m}</ul>`)
@@ -355,17 +381,18 @@ function renderAssistant(){
     <div class="mg1-assistant-hero">
       <div class="eyebrow">MegaGoal 1 • Units 1–6</div>
       <h1>MG1 Assistant</h1>
-      <p class="mg1-assistant-sub">Grammar • Vocabulary • Reading • Practice — quick answers, no long chat.</p>
+      <p class="mg1-assistant-sub">Grammar (includes FMF) • Vocabulary • Reading • Practice</p>
       <div class="mg1-status ${assistantState.aiReady?"ok":"wait"}">${assistantState.aiReady?`● AI ready • ${esc(AI_CFG.model)}`:"● AI setup pending • textbook reference mode is available"}</div>
       <div class="mg1-control-row" id="mg1Modes">
-        ${[["grammar","Grammar"],["vocabulary","Vocabulary"],["reading","Reading"],["practice","Practice"],["ask","Ask anything"]].map(([id,l])=>`<button class="mg1-chip ${assistantState.selectedMode===id?"active":""}" data-mode="${id}">${l}</button>`).join("")}
+        ${[["grammar","Grammar"],["fmf","Form, Meaning & Function"],["vocabulary","Vocabulary"],["reading","Reading"],["practice","Practice"],["ask","Ask anything"]].map(([id,l])=>`<button class="mg1-chip ${assistantState.selectedMode===id?"active":""}" data-mode="${id}">${l}</button>`).join("")}
       </div>
       <div class="mg1-control-row mg1-units" id="mg1Units">
         <button class="mg1-chip ${assistantState.selectedUnit===null?"active":""}" data-unit="">All</button>
         ${[1,2,3,4,5,6].map(n=>`<button class="mg1-chip ${assistantState.selectedUnit===n?"active":""}" data-unit="${n}">Unit ${n}</button>`).join("")}
       </div>
       <div class="mg1-shortcuts">
-        <button class="mg1-shortcut" data-prompt="Explain the grammar in Unit 1 briefly.">Unit grammar</button>
+        <button class="mg1-shortcut" data-prompt="Explain the grammar in Unit 1 briefly, including its Form, Meaning and Function lesson.">Unit grammar</button>
+        <button class="mg1-shortcut" data-prompt="Explain the Form, Meaning and Function lesson in Unit 1 briefly.">Unit FMF</button>
         <button class="mg1-shortcut" data-prompt="Vocabulary Unit 1">Unit vocabulary</button>
         <button class="mg1-shortcut" data-prompt="Quiz me on Unit 1 grammar, one question at a time.">Quick practice</button>
       </div>
@@ -500,11 +527,11 @@ async function sendCurrent(){
       throw new Error("[APP_CHECK] App Check was not initialized.");
     }
 
-    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nRESPONSE LIMIT: maximum 3 short bullets or 3 short sentences unless the student explicitly asked for more detail.`;
+    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nGRAMMAR/FM F RULE: if Intent is grammar and the request is broad, include both the main Grammar content and the related Form, Meaning & Function lesson. If Intent is fmf, answer only the selected unit's Form, Meaning & Function lesson. Do not treat "meaning" as vocabulary in an FMF request.\nRESPONSE LIMIT: maximum 3 short bullets or 3 short sentences unless the student explicitly asked for more detail.`;
 
     let result;
     try {
-      result = await assistantState.model.generateContent(prompt);
+      result = await generateWithResilience(prompt);
     } catch (aiError) {
       const code = aiError?.code ? ` ${aiError.code}` : "";
       const message = aiError?.message || String(aiError);
