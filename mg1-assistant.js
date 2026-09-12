@@ -427,20 +427,41 @@ async function sendCurrent(){
   assistantState.busy=true;
   const send=document.getElementById("mg1Send"); if(send){send.disabled=true;send.textContent="...";}
   try{
-    // Verify App Check before the first/next AI request so enforcement failures are clear.
-    if (assistantState.appCheck) await getToken(assistantState.appCheck, false);
+    // Diagnose App Check separately from the AI request.
+    if (assistantState.appCheck) {
+      try {
+        const tokenResult = await getToken(assistantState.appCheck, false);
+        if (!tokenResult?.token) throw new Error("No App Check token returned.");
+      } catch (appCheckError) {
+        const code = appCheckError?.code ? ` ${appCheckError.code}` : "";
+        const message = appCheckError?.message || String(appCheckError);
+        throw new Error(`[APP_CHECK${code}] ${message}`);
+      }
+    } else {
+      throw new Error("[APP_CHECK] App Check was not initialized.");
+    }
+
     const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}`;
-    const result=await assistantState.model.generateContent(prompt);
+
+    let result;
+    try {
+      result = await assistantState.model.generateContent(prompt);
+    } catch (aiError) {
+      const code = aiError?.code ? ` ${aiError.code}` : "";
+      const message = aiError?.message || String(aiError);
+      throw new Error(`[AI_LOGIC${code}] ${message}`);
+    }
+
     const text=result?.response?.text?.()||"";
     assistantState.messages.push({role:"ai",text:text.trim()|| (hasArabic(query)?"لم أجد هذه المعلومة في مواد MG1 المتاحة.":"I can't find this in the available MG1 materials.")});
   }catch(e){
     console.error("MG1 Assistant request failed",e);
     const msg=String(e?.message||e);
-    if(/app.?check|403|permission|unauthorized/i.test(msg)){
-      assistantState.messages.push({role:"system",text:hasArabic(query)?"يلزم إكمال إعداد Firebase AI Logic وApp Check مرة واحدة قبل تشغيل المساعد للطالبات.":"Firebase AI Logic and App Check setup must be completed once before AI answers can run."});
-    }else{
-      assistantState.messages.push({role:"system",text:hasArabic(query)?"تعذر تشغيل المساعد الآن. حاولي مرة أخرى.":"The assistant couldn't respond right now. Please try again."});
-    }
+    const shortMsg = msg.length > 700 ? msg.slice(0,700) + "…" : msg;
+    assistantState.messages.push({
+      role:"system",
+      text:(hasArabic(query)?"تعذر تشغيل المساعد. تفاصيل التشخيص:\n":"Assistant request failed. Diagnostic details:\n") + shortMsg
+    });
   }finally{
     assistantState.busy=false;
     const b=document.getElementById("mg1Send"); if(b){b.disabled=false;b.textContent="Send";}
