@@ -23,7 +23,8 @@ const assistantState = {
   aiReady: false,
   aiError: "",
   lastExerciseQuery: "",
-  lastExerciseStage: "none"
+  lastExerciseStage: "none",
+  quickPractice: {active:false, unit:null, topic:"grammar", number:0, current:null}
 };
 
 const SYSTEM_INSTRUCTION = `You are MG1 Assistant, a concise curriculum assistant for Saudi Grade 10 students using MegaGoal 1 Units 1–6.
@@ -36,7 +37,9 @@ Never invent textbook content.
 STYLE
 - Answer the exact request directly.
 - No greeting, praise, motivational filler, or unnecessary closing question.
-- ABSOLUTE DEFAULT LIMIT: maximum 3 short bullets OR 3 short sentences, and normally under 80 words.
+- Default for a focused question: 1–3 short bullets or sentences.
+- IMPORTANT EXCEPTION: when the student asks for a whole-unit overview such as "Grammar", "Unit grammar", or the whole FMF lesson, completeness is more important than the default short limit. Cover all distinct points supported by the retrieved unit context, using 4–8 concise bullets and normally no more than about 220 words.
+- Never stop after only one or two rules when the student asked for the whole lesson or whole unit.
 - Arabic question -> Arabic explanation; keep English grammar terms, vocabulary, and examples in English when helpful.
 - English question -> English answer.
 - Expand only when the student explicitly asks "explain more", "more detail", "اشرح أكثر", or equivalent.
@@ -54,7 +57,8 @@ If sources conflict, Student Book wins. A teacher revision worksheet is practice
 GRAMMAR
 - Grammar is the umbrella category. It includes the unit's main Grammar lesson AND the related Form, Meaning & Function lesson.
 - If the student asks broadly for "Grammar" in a unit, include both: the key Grammar rule(s) plus the relevant Form, Meaning & Function point(s).
-- Keep the broad answer compact: up to 3 short Grammar bullets plus 1 short FMF bullet when needed.
+- For a broad unit Grammar request, give a complete but concise overview of every distinct Grammar topic found in the retrieved unit context, including the related FMF lesson. Usually 4–8 short bullets are appropriate.
+- Each bullet should name the rule/topic and give a very short explanation or example when useful.
 - For a specific grammar question, answer only that point unless the student asks for the whole unit.
 - Use: rule -> one short example -> one important note only if needed.
 
@@ -64,7 +68,7 @@ FORM, MEANING & FUNCTION
 - Treat "Form, Meaning and Function", "Form Meaning Function", "FMF", and "form/meaning/function" as the FMF lesson.
 - If the student selects the FMF category or asks specifically about FMF, retrieve and explain only the FMF lesson from the selected unit.
 - Do not treat the word "meaning" as Vocabulary when the request is about FMF.
-- Explain only what the student asks for. For a broad FMF request, give at most 3 short points with one brief example when useful.
+- Explain only what the student asks for. For a broad FMF lesson request, cover all distinct FMF points found in the selected unit, using concise bullets and one brief example when useful.
 
 VOCABULARY
 Give the meaning in MegaGoal context, part of speech only if useful, and one short example if useful. For Real Talk, use the textbook meaning first.
@@ -81,7 +85,12 @@ Follow the EXERCISE STAGE supplied with the request:
 Do not dump a full answer key unless the student explicitly asks for all answers.
 
 PRACTICE
-Do not start practice unless asked. Prefer Workbook or teacher revision questions. Give one item at a time unless a set is explicitly requested. If you invent a new item, label it "AI-generated practice".
+- Do not start practice unless asked.
+- Quick Practice must always be multiple choice with exactly 4 options (A–D).
+- Give ONE question at a time. Do not reveal the answer before the student chooses.
+- Prefer Workbook or teacher revision material when clearly present in the retrieved context.
+- If a question must be generated, keep it strictly aligned to retrieved MG1 material and never call it an official textbook or STEP question.
+- After the student answers, give only Correct/Incorrect, the correct answer if needed, and one brief reason.
 
 STEP
 STEP always means the Saudi Standardized Test of English Proficiency. Full simulation belongs in the separate STEP area. Here, only give brief strategy/reasoning when requested.
@@ -128,7 +137,7 @@ function initAI() {
     const ai = getAI(aiApp, { backend: new GoogleAIBackend() });
     const modelOptions = {
       systemInstruction: SYSTEM_INSTRUCTION,
-      generationConfig: { maxOutputTokens: 360 }
+      generationConfig: { maxOutputTokens: 600 }
     };
     assistantState.model = getGenerativeModel(ai, {
       model: AI_CFG.model,
@@ -164,12 +173,15 @@ function detectUnit(query="") {
   return assistantState.selectedUnit;
 }
 function detectIntent(query="") {
-  if (includesAny(query,[
+  const asksGrammar = includesAny(query,["grammar","rule","tense","قاعده","قواعد","زمن"]);
+  const asksFMF = includesAny(query,[
     "form meaning and function","form meaning function","form/meaning/function","fmf",
     "form, meaning and function","form meaning & function",
     "فورم ميننق فنكشن","فورم مينينق فنكشن","المعنى والوظيفه","المعنى والوظيفة"
-  ])) return "fmf";
-  if (includesAny(query,["grammar","rule","tense","قاعده","قواعد","زمن"])) return "grammar";
+  ]);
+  if (asksGrammar && asksFMF) return "grammar";
+  if (asksFMF) return "fmf";
+  if (asksGrammar) return "grammar";
   if (includesAny(query,["vocabulary","vocab","meaning","mean","word","expression","real talk","مفردات","معنى","كلمه","عباره"])) return "vocabulary";
   if (includesAny(query,["reading","main idea","inference","reference","comprehension","قراءة","قراءه","الفكره الرئيسيه","استنتاج","مرجع","فهم"])) return "reading";
   if (includesAny(query,["practice","quiz me","test me","workbook","worksheet","exercise","تمرين","تدريب","اختبرني","ورقه عمل"])) return "practice";
@@ -319,21 +331,60 @@ function injectStyles(){
   style.id="mg1AssistantStyles";
   style.textContent=`
     .mg1-tab-special{border-color:#6d5dfc!important;background:linear-gradient(135deg,#f7f5ff,#fff)!important}
-    .mg1-assistant-shell{max-width:980px;margin:0 auto 36px}
-    .mg1-assistant-hero{padding:22px;border-radius:22px;background:linear-gradient(135deg,#f5f3ff,#f7fbff);border:1px solid #e6e0ff;margin-bottom:16px}
-    .mg1-assistant-hero h1{margin:4px 0 6px;font-size:30px}.mg1-assistant-sub{color:#667085;margin:0}
+    .mg1-assistant-shell{max-width:1080px;margin:0 auto 42px;font-family:Arial,Tahoma,"Segoe UI",sans-serif}
+    .mg1-assistant-hero{padding:24px 26px;border-radius:24px;background:linear-gradient(135deg,#f7f5ff,#f8fbff);border:1px solid #e4e1f6;margin-bottom:18px;box-shadow:0 8px 24px rgba(35,46,80,.05)}
+    .mg1-assistant-hero h1{margin:5px 0 8px;font-size:31px;line-height:1.2;color:#172033}
+    .mg1-assistant-sub{color:#667085;margin:0;font-size:15px;line-height:1.6}
     .mg1-status{font-size:12px;margin-top:10px}.mg1-status.ok{color:#0f8a5f}.mg1-status.wait{color:#9b6a00}
-    .mg1-control-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.mg1-chip{border:1px solid #d9dce3;background:#fff;border-radius:999px;padding:9px 13px;cursor:pointer;font-weight:700;color:#344054}
-    .mg1-chip.active{background:#4938d4;color:#fff;border-color:#4938d4}.mg1-units .mg1-chip{min-width:42px;text-align:center}
-    .mg1-chat{background:#fff;border:1px solid #e7e9ee;border-radius:20px;min-height:330px;display:flex;flex-direction:column;overflow:hidden}
-    .mg1-messages{padding:18px;display:flex;flex-direction:column;gap:12px;min-height:250px;max-height:58vh;overflow:auto}
-    .mg1-msg{max-width:82%;padding:12px 14px;border-radius:16px;line-height:1.55;font-size:15px}.mg1-msg.user{align-self:flex-end;background:#4635d2;color:#fff;border-bottom-right-radius:5px}.mg1-msg.ai{align-self:flex-start;background:#f5f7fa;color:#172033;border-bottom-left-radius:5px}.mg1-msg.system{align-self:center;background:#fff7e8;color:#775600;border:1px solid #f0d99a;max-width:94%}
-    .mg1-msg ul{margin:6px 0;padding-inline-start:20px}.mg1-msg li{margin:3px 0}
-    .mg1-empty{margin:auto;text-align:center;color:#667085;max-width:560px;padding:32px}.mg1-empty strong{display:block;color:#172033;font-size:18px;margin-bottom:7px}
-    .mg1-compose{display:flex;gap:10px;padding:12px;border-top:1px solid #e7e9ee;background:#fbfcfe}.mg1-compose textarea{flex:1;resize:none;min-height:50px;max-height:130px;border:1px solid #d5d9e2;border-radius:14px;padding:13px;font:inherit}.mg1-send{min-width:92px;border:0;border-radius:14px;background:#4635d2;color:#fff;font-weight:800;cursor:pointer}.mg1-send:disabled{opacity:.55;cursor:not-allowed}
-    .mg1-shortcuts{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.mg1-shortcut{font-size:12px;border:1px solid #ddd8ff;background:#fff;color:#4938d4;border-radius:10px;padding:7px 10px;cursor:pointer}
-    .mg1-writing-card{max-width:720px;margin:30px auto;padding:28px;text-align:center}.mg1-writing-card h1{margin-bottom:8px}
-    @media(max-width:650px){.mg1-msg{max-width:92%}.mg1-assistant-hero h1{font-size:25px}.mg1-compose{align-items:stretch}.mg1-send{min-width:72px}.mg1-control-row{gap:6px}.mg1-chip{padding:8px 10px;font-size:13px}}
+    .mg1-control-label{font-size:12px;font-weight:800;color:#667085;margin:16px 0 7px;text-transform:uppercase;letter-spacing:.03em}
+    .mg1-control-row{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 8px}
+    .mg1-chip{border:1px solid #d9dce3;background:#fff;border-radius:999px;padding:10px 14px;min-height:42px;cursor:pointer;font-weight:700;font-size:14px;color:#344054}
+    .mg1-chip.active{background:#4938d4;color:#fff;border-color:#4938d4}
+    .mg1-units .mg1-chip{min-width:54px;text-align:center}
+    .mg1-shortcuts{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+    .mg1-shortcut{font-size:13px;font-weight:700;border:1px solid #d9d4ff;background:#fff;color:#4938d4;border-radius:12px;padding:9px 12px;min-height:40px;cursor:pointer}
+    .mg1-shortcut.quick{background:#4938d4;color:#fff;border-color:#4938d4}
+    .mg1-chat{background:#f8fafc;border:1px solid #e3e7ee;border-radius:22px;min-height:390px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(35,46,80,.06)}
+    .mg1-messages{padding:24px;display:flex;flex-direction:column;gap:18px;min-height:300px;max-height:62vh;overflow:auto;scroll-behavior:smooth}
+    .mg1-msg{max-width:78%;padding:15px 17px;border-radius:18px;line-height:1.75;font-size:17px;letter-spacing:.005em;word-break:break-word}
+    .mg1-msg.user{align-self:flex-end;background:#4635d2;color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 12px rgba(70,53,210,.14)}
+    .mg1-msg.ai{align-self:flex-start;background:#fff;color:#172033;border:1px solid #e4e8ef;border-bottom-left-radius:6px;box-shadow:0 3px 10px rgba(35,46,80,.05)}
+    .mg1-msg.system{align-self:center;background:#fff8e8;color:#775600;border:1px solid #f0d99a;max-width:92%;font-size:15px}
+    .mg1-msg ul{margin:9px 0 2px;padding-inline-start:24px}.mg1-msg li{margin:7px 0}
+    .mg1-empty{margin:auto;text-align:center;color:#667085;max-width:600px;padding:42px 28px;font-size:16px;line-height:1.7}
+    .mg1-empty strong{display:block;color:#172033;font-size:20px;margin-bottom:8px}
+    .mg1-compose{display:flex;gap:12px;padding:14px;border-top:1px solid #e2e6ed;background:#fff;align-items:flex-end}
+    .mg1-compose textarea{flex:1;resize:none;min-height:58px;max-height:150px;border:1px solid #cfd5df;border-radius:15px;padding:14px 15px;font:inherit;font-size:16.5px;line-height:1.5;background:#fff;color:#172033}
+    .mg1-compose textarea:focus{outline:2px solid #d8d2ff;border-color:#6d5dfc}
+    .mg1-send{min-width:96px;min-height:56px;border:0;border-radius:14px;background:#4635d2;color:#fff;font-size:15px;font-weight:800;cursor:pointer}
+    .mg1-send:disabled{opacity:.55;cursor:not-allowed}
+    .mg1-practice-card{align-self:flex-start;width:min(760px,94%);background:#fff;border:1px solid #dedff0;border-radius:20px;padding:20px;box-shadow:0 5px 16px rgba(35,46,80,.07);color:#172033}
+    .mg1-practice-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:11px;font-size:12px;font-weight:800;color:#6b7280}
+    .mg1-practice-tag{display:inline-flex;align-items:center;border-radius:999px;background:#f0edff;color:#4938d4;padding:5px 9px}
+    .mg1-practice-stem{font-size:18px;font-weight:800;line-height:1.65;margin:9px 0 14px}
+    .mg1-options{display:grid;gap:10px}
+    .mg1-option{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:start;border:1px solid #d8dde6;background:#fff;border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.55;color:#172033;cursor:pointer}
+    .mg1-option:hover{border-color:#8d83e8;background:#faf9ff}
+    .mg1-option:disabled{cursor:default;opacity:1}
+    .mg1-option.correct{border-color:#78c8a7;background:#effbf5}
+    .mg1-option.wrong{border-color:#e6a0a0;background:#fff3f3}
+    .mg1-option-letter{flex:0 0 28px;height:28px;border-radius:9px;background:#f0f2f6;display:grid;place-items:center;font-weight:900}
+    .mg1-practice-feedback{margin-top:14px;padding:12px 14px;border-radius:13px;background:#f7f8fb;font-size:15.5px;line-height:1.65}
+    .mg1-next-practice{margin-top:12px;border:0;border-radius:12px;background:#172033;color:#fff;font-weight:800;padding:10px 14px;cursor:pointer}
+    .mg1-writing-card{max-width:720px;margin:30px auto;padding:28px;text-align:center}
+    @media(max-width:650px){
+      .mg1-assistant-hero{padding:18px;border-radius:18px}
+      .mg1-assistant-hero h1{font-size:26px}
+      .mg1-chip{padding:9px 11px;font-size:13px;min-height:39px}
+      .mg1-messages{padding:14px;gap:14px;max-height:64vh}
+      .mg1-msg{max-width:94%;font-size:16.5px;line-height:1.72;padding:13px 14px}
+      .mg1-compose{padding:10px;gap:8px}
+      .mg1-compose textarea{font-size:16px;min-height:54px}
+      .mg1-send{min-width:72px;min-height:54px}
+      .mg1-practice-card{width:100%;padding:15px;border-radius:16px}
+      .mg1-practice-stem{font-size:17px}
+      .mg1-option{font-size:15.5px;padding:11px 12px}
+    }
   `;
   document.head.appendChild(style);
 }
@@ -383,18 +434,20 @@ function renderAssistant(){
       <h1>MG1 Assistant</h1>
       <p class="mg1-assistant-sub">Grammar (includes FMF) • Vocabulary • Reading • Practice</p>
       <div class="mg1-status ${assistantState.aiReady?"ok":"wait"}">${assistantState.aiReady?`● AI ready • ${esc(AI_CFG.model)}`:"● AI setup pending • textbook reference mode is available"}</div>
+      <div class="mg1-control-label">Choose a skill</div>
       <div class="mg1-control-row" id="mg1Modes">
         ${[["grammar","Grammar"],["fmf","Form, Meaning & Function"],["vocabulary","Vocabulary"],["reading","Reading"],["practice","Practice"],["ask","Ask anything"]].map(([id,l])=>`<button class="mg1-chip ${assistantState.selectedMode===id?"active":""}" data-mode="${id}">${l}</button>`).join("")}
       </div>
+      <div class="mg1-control-label">Choose a unit</div>
       <div class="mg1-control-row mg1-units" id="mg1Units">
         <button class="mg1-chip ${assistantState.selectedUnit===null?"active":""}" data-unit="">All</button>
         ${[1,2,3,4,5,6].map(n=>`<button class="mg1-chip ${assistantState.selectedUnit===n?"active":""}" data-unit="${n}">Unit ${n}</button>`).join("")}
       </div>
       <div class="mg1-shortcuts">
-        <button class="mg1-shortcut" data-prompt="Explain the grammar in Unit 1 briefly, including its Form, Meaning and Function lesson.">Unit grammar</button>
+        <button class="mg1-shortcut" data-prompt="Give me a complete but concise overview of Unit 1 grammar.">Unit grammar</button>
         <button class="mg1-shortcut" data-prompt="Explain the Form, Meaning and Function lesson in Unit 1 briefly.">Unit FMF</button>
         <button class="mg1-shortcut" data-prompt="Vocabulary Unit 1">Unit vocabulary</button>
-        <button class="mg1-shortcut" data-prompt="Quiz me on Unit 1 grammar, one question at a time.">Quick practice</button>
+        <button class="mg1-shortcut quick" id="mg1QuickPractice">Quick practice</button>
       </div>
     </div>
     <div class="mg1-chat">
@@ -430,20 +483,153 @@ function bindAssistantUI(){
     const p=b.dataset.prompt.replace(/Unit 1/g,`Unit ${assistantState.selectedUnit||1}`);
     const input=document.getElementById("mg1Input"); if(input){input.value=p;input.focus();}
   }));
+  document.getElementById("mg1QuickPractice")?.addEventListener("click",()=>startQuickPractice());
   document.getElementById("mg1Send")?.addEventListener("click",sendCurrent);
   document.getElementById("mg1Input")?.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendCurrent();}
   });
 }
 
+function renderPracticeCard(m){
+  const q=m.question||{};
+  const selected=Number.isInteger(m.selectedIndex)?m.selectedIndex:null;
+  const answered=!!m.answered;
+  const letters=["A","B","C","D"];
+  const choices=(q.choices||[]).map((choice,i)=>{
+    let cls="mg1-option";
+    if(answered && i===q.answerIndex) cls+=" correct";
+    else if(answered && i===selected && i!==q.answerIndex) cls+=" wrong";
+    return `<button class="${cls}" data-practice-choice="${i}" ${answered?"disabled":""}>
+      <span class="mg1-option-letter">${letters[i]}</span><span>${esc(choice)}</span>
+    </button>`;
+  }).join("");
+  const feedback=answered ? `<div class="mg1-practice-feedback" dir="auto">${formatText(m.feedback||"")}</div>
+    <button class="mg1-next-practice" data-next-practice="1">Next question</button>` : "";
+  return `<div class="mg1-practice-card" dir="auto">
+    <div class="mg1-practice-meta">
+      <span class="mg1-practice-tag">Quick Practice</span>
+      <span>Unit ${esc(q.unit||assistantState.selectedUnit||1)}</span>
+      <span>•</span><span>${esc(q.topicLabel||"Grammar")}</span>
+    </div>
+    <div class="mg1-practice-stem">${esc(q.stem||"")}</div>
+    <div class="mg1-options">${choices}</div>
+    ${feedback}
+  </div>`;
+}
+function bindPracticeCards(){
+  document.querySelectorAll("[data-practice-choice]").forEach(btn=>{
+    btn.addEventListener("click",()=>choosePracticeAnswer(Number(btn.dataset.practiceChoice)));
+  });
+  document.querySelectorAll("[data-next-practice]").forEach(btn=>{
+    btn.addEventListener("click",()=>startQuickPractice(true));
+  });
+}
 function paintMessages(){
   const box=document.getElementById("mg1Messages"); if(!box)return;
   if(!assistantState.messages.length){
-    box.innerHTML=`<div class="mg1-empty"><strong>Ask one question at a time.</strong><span>Examples: “Explain present perfect”, “وش معنى fit in؟”, or paste a workbook question for a hint.</span></div>`;
+    box.innerHTML=`<div class="mg1-empty"><strong>Ask one question at a time.</strong><span>Ask about the lesson, or choose Quick practice for a multiple-choice question.</span></div>`;
     return;
   }
-  box.innerHTML=assistantState.messages.map(m=>`<div class="mg1-msg ${m.role}" dir="auto">${formatText(m.text)}</div>`).join("");
+  box.innerHTML=assistantState.messages.map(m=>{
+    if(m.role==="practice") return renderPracticeCard(m);
+    return `<div class="mg1-msg ${m.role}" dir="auto">${formatText(m.text)}</div>`;
+  }).join("");
+  bindPracticeCards();
   box.scrollTop=box.scrollHeight;
+}
+
+
+function quickPracticeTopic(){
+  return ["grammar","fmf","vocabulary","reading"].includes(assistantState.selectedMode)
+    ? assistantState.selectedMode : "grammar";
+}
+function quickPracticeTopicLabel(topic){
+  return ({grammar:"Grammar",fmf:"Form, Meaning & Function",vocabulary:"Vocabulary",reading:"Reading"})[topic] || "Grammar";
+}
+function parsePracticeJSON(raw=""){
+  const cleaned=String(raw).trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");
+  const start=cleaned.indexOf("{"), end=cleaned.lastIndexOf("}");
+  if(start<0 || end<=start) throw new Error("Invalid practice JSON.");
+  const obj=JSON.parse(cleaned.slice(start,end+1));
+  if(typeof obj.stem!=="string" || !Array.isArray(obj.choices) || obj.choices.length!==4) throw new Error("Invalid practice fields.");
+  const answerIndex=Number(obj.answerIndex);
+  if(!Number.isInteger(answerIndex) || answerIndex<0 || answerIndex>3) throw new Error("Invalid answer index.");
+  return {stem:obj.stem.trim(),choices:obj.choices.map(x=>String(x).trim()),answerIndex,explanation:String(obj.explanation||"").trim()};
+}
+async function startQuickPractice(isNext=false){
+  if(assistantState.busy)return;
+  const unit=assistantState.selectedUnit||1;
+  const topic=quickPracticeTopic();
+  const label=quickPracticeTopicLabel(topic);
+  assistantState.quickPractice={active:true,unit,topic,number:(assistantState.quickPractice.number||0)+1,current:null};
+  if(!isNext){
+    assistantState.messages.push({role:"user",text:`Quick practice • Unit ${unit} • ${label}`});
+    paintMessages();
+  }
+  if(!assistantState.aiReady){
+    assistantState.messages.push({role:"system",text:"Quick Practice needs the AI connection."});
+    paintMessages(); return;
+  }
+  const retrievalQuery=`Unit ${unit} ${label} multiple choice practice`;
+  const chunks=retrieve(retrievalQuery,unit,topic,10);
+  const context=buildContext(chunks);
+  if(!context){
+    assistantState.messages.push({role:"ai",text:"I can't find enough MG1 material for this practice."});
+    paintMessages(); return;
+  }
+  assistantState.busy=true;
+  const send=document.getElementById("mg1Send"); if(send){send.disabled=true;send.textContent="...";}
+  try{
+    if(assistantState.appCheck) await getToken(assistantState.appCheck,false);
+    const prompt=`RETRIEVED MG1 CONTEXT
+${context}
+
+END CONTEXT
+
+Create exactly ONE source-aligned multiple-choice Quick Practice question for MegaGoal 1.
+Unit: ${unit}
+Skill: ${label}
+
+RULES:
+- Use ONLY the retrieved context.
+- Exactly 4 choices (A-D).
+- Exactly one correct answer.
+- One concise Grade 10 question.
+- Do not reveal the answer in the stem.
+- Explanation: one short sentence.
+- If a suitable Workbook or teacher revision item is clearly present, you may adapt it. Otherwise create a source-aligned practice item.
+- Never call a generated item official.
+- Return JSON only:
+{"stem":"...","choices":["...","...","...","..."],"answerIndex":0,"explanation":"..."}`;
+    const result=await generateWithResilience(prompt);
+    const q=parsePracticeJSON(result?.response?.text?.()||"");
+    const question={...q,unit,topic,topicLabel:label,number:assistantState.quickPractice.number};
+    assistantState.quickPractice.current=question;
+    assistantState.messages.push({role:"practice",question,answered:false,selectedIndex:null,feedback:""});
+  }catch(e){
+    console.error("Quick Practice failed",e);
+    assistantState.messages.push({role:"system",text:"Quick Practice couldn't load right now. Try again."});
+  }finally{
+    assistantState.busy=false;
+    const b=document.getElementById("mg1Send"); if(b){b.disabled=false;b.textContent="Send";}
+    paintMessages();
+  }
+}
+function choosePracticeAnswer(index){
+  const q=assistantState.quickPractice.current;
+  if(!q || !Number.isInteger(index))return;
+  for(let i=assistantState.messages.length-1;i>=0;i--){
+    const m=assistantState.messages[i];
+    if(m.role==="practice" && !m.answered){
+      m.selectedIndex=index;
+      m.answered=true;
+      const correct=index===q.answerIndex;
+      const letter=["A","B","C","D"][q.answerIndex];
+      m.feedback=correct ? `Correct. ${q.explanation}` : `Incorrect. The correct answer is ${letter}. ${q.explanation}`;
+      break;
+    }
+  }
+  paintMessages();
 }
 
 function waitMs(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
@@ -503,7 +689,8 @@ async function sendCurrent(){
     paintMessages(); return;
   }
 
-  const chunks=retrieve(retrievalQuery,unit,intent,8);
+  const retrievalDepth=(intent==="grammar"||intent==="fmf")?12:8;
+  const chunks=retrieve(retrievalQuery,unit,intent,retrievalDepth);
   const context=buildContext(chunks);
   if(!context){
     assistantState.messages.push({role:"ai",text:hasArabic(query)?"لم أجد هذه المعلومة في مواد MG1 المتاحة.":"I can't find this in the available MG1 materials."});
@@ -527,7 +714,9 @@ async function sendCurrent(){
       throw new Error("[APP_CHECK] App Check was not initialized.");
     }
 
-    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nGRAMMAR/FM F RULE: if Intent is grammar and the request is broad, include both the main Grammar content and the related Form, Meaning & Function lesson. If Intent is fmf, answer only the selected unit's Form, Meaning & Function lesson. Do not treat "meaning" as vocabulary in an FMF request.\nRESPONSE LIMIT: maximum 3 short bullets or 3 short sentences unless the student explicitly asked for more detail.`;
+    const prompt=`RETRIEVED MG1 CONTEXT\n${context}\n\nEND CONTEXT\n\nSelected unit: ${unit||"not specified"}\nIntent: ${intent}\nEXERCISE STAGE: ${stage}\nOriginal exercise/question: ${retrievalQuery}\nCurrent student message: ${query}\nLanguage-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}\nGRAMMAR/FMF RULE: Grammar is the umbrella. If Intent is grammar and the request is broad (for example "Grammar", "Unit grammar", or an overview), cover ALL distinct Grammar topics supported by the retrieved unit context, including the related FMF lesson. Use 4–8 concise bullets if needed. If Intent is fmf, cover the selected unit's FMF lesson only, but cover all distinct FMF points supported by the retrieved context. Do not treat "meaning" as vocabulary in an FMF request.
+PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds.
+RESPONSE LENGTH: focused question = 1–3 concise bullets/sentences. Whole-unit or whole-lesson overview = complete coverage in 4–8 concise bullets, normally under about 220 words. Never truncate a requested overview after only one or two points.`;
 
     let result;
     try {
@@ -561,4 +750,4 @@ const observer=new MutationObserver(()=>addTabs());
 observer.observe(document.body,{childList:true,subtree:true});
 addTabs();
 
-window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach};
+window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,startQuickPractice,choosePracticeAnswer};
