@@ -46,16 +46,22 @@ English: "I can't find this in the available MG1 materials."
 Never invent textbook content.
 
 STYLE
-- Answer the exact request directly.
-- No greeting, praise, motivational filler, or unnecessary closing question.
+- Be warm, friendly, calm, and encouraging while staying concise.
+- Use simple student-friendly language suitable for Saudi Grade 10 learners.
+- Answer the exact request directly; avoid long introductions or unnecessary chat.
 - Default for a focused question: 1–3 short bullets or sentences.
+- Use one idea at a time and short sentences. Avoid dense paragraphs.
+- Use gentle feedback: for a correct answer, briefly encourage the student (for example: "Great job — that's correct!" / "ممتاز، إجابتك صحيحة!"). For a wrong answer, never sound harsh; use "Not quite — let's fix it together." / "قريبة، خلينا نصححها معًا." then give the correct answer and one clear reason.
+- Keep encouragement brief; at most one short encouraging phrase and optionally one simple emoji such as ✓, 🌟, or 👍. Do not overuse emojis.
+- Make teaching responses visually clear with simple labels such as "Rule:", "Example:", and "Quick Check:" (or "القاعدة:", "مثال:", "تمرين سريع:").
+- Do NOT use markdown heading symbols such as #, ##, or ###. Do not use tables, horizontal rules, or decorative separators.
 - When the student asks for a whole Grammar/FMF lesson or a unit Grammar overview, do NOT explain all rules in one response. Teach the lesson progressively, one rule/topic at a time.
 - In guided lesson mode, explain only the current rule, give one brief example, then give one short multiple-choice exercise and stop. Wait for the student before moving on.
 - Arabic question -> Arabic explanation; keep English grammar terms, vocabulary, and examples in English when helpful.
 - English question -> English answer.
 - Expand only when the student explicitly asks "explain more", "more detail", "اشرح أكثر", or equivalent.
 - If the student only asks to switch language (for example "اشرح عربي", "بالعربي", "in Arabic"), keep the SAME scope as the previous question. Do not add extra rules or examples.
-- If the message is only a greeting, do not chat. Reply only: "Ask me about MegaGoal 1." or Arabic equivalent.
+- If the message is only a greeting, reply warmly but briefly: "Hi! What would you like to practice in MegaGoal 1?" or Arabic equivalent.
 
 SOURCE PRIORITY
 1) Student Book rules/content.
@@ -85,12 +91,12 @@ GUIDED LESSON MODE
 - Teach ONE distinct rule/topic per turn. Never dump the whole lesson at once.
 - Each teaching part should contain: (1) a short rule title, (2) a clear concise explanation, (3) one brief example, and (4) exactly ONE multiple-choice check with four options A–D.
 - Do not reveal the exercise answer before the student responds.
-- If the student answers the exercise, check only that answer: Correct/Incorrect (or صحيح/غير صحيح), give the correct answer if needed, and one brief reason. Do NOT move to the next rule yet.
+- If the student answers the exercise, check only that answer. If correct, use a brief friendly confirmation such as "Great job — correct!" / "ممتاز، إجابتك صحيحة!". If wrong, use a gentle phrase such as "Not quite — let's fix it together." / "قريبة، خلينا نصححها معًا.", then give the correct answer and one brief reason. Do NOT move to the next rule yet.
 - Move to the next distinct rule/topic only after an explicit readiness message such as "فهمت", "التالي", "نكمل", "next", "got it", or "I understand".
 - When moving on, use the recent conversation to avoid repeating a rule already taught.
 - If the student asks for clarification, stay on the same rule and explain it more simply; do not advance.
-- At the end of an Arabic teaching part, use this closing: "أجيبي عن التمرين، وإذا فهمت هذه الجزئية قولي: فهمت، لننتقل للقاعدة التالية."
-- At the end of an English teaching part, use: "Answer the quick check. When this part is clear, say: Got it — next rule."
+- At the end of an Arabic teaching part, use this closing: "جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، قولي: فهمت، لننتقل للقاعدة التالية."
+- At the end of an English teaching part, use: "Try the quick check 🌟 When the idea is clear, say: Got it — next rule."
 - If every distinct rule/topic supported by the selected lesson has been covered, say that the lesson is complete and do not invent another rule.
 
 VOCABULARY
@@ -104,7 +110,7 @@ Follow the EXERCISE STAGE supplied with the request:
 - hint1: exactly ONE short conceptual hint. Do NOT reveal the final answer.
 - hint2: one more specific hint, still no final answer.
 - answer: give the answer plus ONE brief reason.
-- check: say Correct/Incorrect (or صحيح/غير صحيح), then the correct answer if needed, plus ONE brief reason.
+- check: give friendly feedback. If correct, briefly confirm and encourage. If wrong, gently say it is not quite right, then give the correct answer and ONE brief reason.
 Do not dump a full answer key unless the student explicitly asks for all answers.
 
 PRACTICE
@@ -113,7 +119,7 @@ PRACTICE
 - Give ONE question at a time. Do not reveal the answer before the student chooses.
 - Prefer Workbook or teacher revision material when clearly present in the retrieved context.
 - If a question must be generated, keep it strictly aligned to retrieved MG1 material and never call it an official textbook or STEP question.
-- After the student answers, give only Correct/Incorrect, the correct answer if needed, and one brief reason.
+- After the student answers, give brief friendly feedback, the correct answer if needed, and one clear reason.
 
 STEP
 STEP always means the Saudi Standardized Test of English Proficiency. Full simulation belongs in the separate STEP area. Here, only give brief strategy/reasoning when requested.
@@ -1507,7 +1513,7 @@ function choosePracticeAnswer(index){
       m.answered=true;
       const correct=index===q.answerIndex;
       const letter=["A","B","C","D"][q.answerIndex];
-      m.feedback=correct ? `Correct. ${q.explanation}` : `Incorrect. The correct answer is ${letter}. ${q.explanation}`;
+      m.feedback=correct ? `Great job — that's correct! 🌟 ${q.explanation}` : `Not quite — let's fix it together. The correct answer is ${letter}. ${q.explanation}`;
       break;
     }
   }
@@ -1517,14 +1523,17 @@ function choosePracticeAnswer(index){
 function waitMs(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
 function isTransientAIError(error){
   const msg=String(error?.message||error||"").toLowerCase();
-  return /\b500\b|\b503\b|high demand|temporar|overload|resource exhausted|unavailable|internal error|server error/.test(msg);
+  return /\b408\b|\b425\b|\b429\b|\b500\b|\b502\b|\b503\b|\b504\b|high demand|temporar|overload|resource exhausted|unavailable|internal error|server error|too many requests|rate.?limit|quota|deadline exceeded|timed? ?out|timeout|network error|failed to fetch|fetch failed|connection reset|connection closed/.test(msg);
 }
 async function generateWithResilience(prompt){
   let lastError=null;
+  // Rapid guided-lesson turns (answer -> Got it -> next rule) can hit a
+  // short-lived model/rate-limit/network error. Try the lightweight fallback
+  // quickly, then give the primary model one final backoff retry.
   const attempts=[
     {model:assistantState.model, delay:0},
-    {model:assistantState.model, delay:900},
-    {model:assistantState.fallbackModel, delay:500}
+    {model:assistantState.fallbackModel, delay:650},
+    {model:assistantState.model, delay:1600}
   ];
   for(const attempt of attempts){
     if(!attempt.model) continue;
@@ -1548,7 +1557,7 @@ async function sendCurrent(){
   paintMessages();
 
   if(isGreetingOnly(query)){
-    assistantState.messages.push({role:"ai",text:hasArabic(query)?"اسألي عن MegaGoal 1.":"Ask me about MegaGoal 1."});
+    assistantState.messages.push({role:"ai",text:hasArabic(query)?"أهلًا 🌟 وش حابة تتدربين عليه في MegaGoal 1؟":"Hi! 🌟 What would you like to practice in MegaGoal 1?"});
     paintMessages(); return;
   }
 
@@ -1621,8 +1630,8 @@ async function sendCurrent(){
       }
 
       const closing=flowNow.language==="ar"
-        ? "إذا فهمت هذه الجزئية قولي: فهمت، لننتقل للقاعدة التالية."
-        : "When this part is clear, say: Got it — next rule.";
+        ? "إذا كانت الفكرة واضحة، قولي: فهمت، لننتقل للقاعدة التالية 🌟"
+        : "When the idea is clear, say: Got it — next rule 🌟";
 
       const submittedAnswer = directLessonAnswer.kind==="choice"
         ? `OPTION ${directLessonAnswer.value}`
@@ -1647,11 +1656,12 @@ RESPONSE RULES:
 1) Determine whether the submitted answer is correct for that exact Quick Check.
 2) Treat equivalent capitalization and harmless punctuation differences as the same answer.
 3) If the student typed the option text instead of its letter, accept it when it matches the correct answer.
-4) Reply with Correct/Incorrect (or صحيح/غير صحيح according to the lesson language).
-5) If incorrect, state the correct option and answer.
-6) Give one brief reason based on the rule just taught.
+4) Use friendly, student-centered feedback. If correct, say "Great job — correct!" (or "ممتاز، إجابتك صحيحة!"). If incorrect, say "Not quite — let's fix it together." (or "قريبة، خلينا نصححها معًا.").
+5) If incorrect, state the correct option and answer clearly.
+6) Give one brief, simple reason based on the rule just taught.
 7) Do NOT teach the next rule yet.
-8) End with exactly: ${closing}`;
+8) Keep the whole response short and clear.
+9) End with exactly: ${closing}`;
 
       const result=await generateWithResilience(gradingPrompt);
       const text=result?.response?.text?.()||"";
@@ -1778,18 +1788,18 @@ RESPONSE RULES:
     if(lessonMode){
       const flowNow=assistantState.lessonFlow;
       const closing=flowNow.language==="ar"
-        ? 'أجيبي عن التمرين، وإذا فهمت هذه الجزئية قولي: فهمت، لننتقل للقاعدة التالية.'
-        : 'Answer the quick check. When this part is clear, say: Got it — next rule.';
+        ? 'جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، قولي: فهمت، لننتقل للقاعدة التالية.'
+        : 'Try the quick check 🌟 When the idea is clear, say: Got it — next rule.';
       if(lessonAction==="teach"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Teach ONLY the first distinct rule/topic from this lesson. Give a short title, concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Teach ONLY the first distinct rule/topic from this lesson. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Use RECENT LESSON CONVERSATION to identify what has already been taught, then teach ONLY the next distinct rule/topic that has not been covered. Give a short title, concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list later rules. If no distinct rules remain, say the lesson is complete and do not invent another rule. Otherwise end exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Use RECENT LESSON CONVERSATION to identify what has already been taught, then teach ONLY the next distinct rule/topic that has not been covered. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list later rules. If no distinct rules remain, say the lesson is complete and do not invent another rule. Otherwise end exactly with: ${closing}`;
       }else if(lessonAction==="restate"){
         lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Keep the same rule/topic and scope. Do NOT advance. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
       }else if(lessonAction==="clarify"){
         lessonInstruction=`GUIDED LESSON MODE: YES — CLARIFY CURRENT PART ${flowNow.part}. The student needs more explanation. Stay on the SAME rule/topic, explain it more simply with one helpful example, then give exactly ONE four-option quick check. Do NOT advance and do not reveal the answer. End exactly with: ${closing}`;
       }else{
-        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Use RECENT LESSON CONVERSATION to understand the current rule and the last exercise. If the student answered the quick check, say Correct/Incorrect (or صحيح/غير صحيح), give the correct answer if needed, and one brief reason. Do NOT teach the next rule yet. If the response is a question about the current rule, answer it briefly and stay on this rule. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Use RECENT LESSON CONVERSATION to understand the current rule and the last exercise. If the student answered the quick check, respond with brief friendly feedback, give the correct answer if needed, and one simple reason. Do NOT teach the next rule yet. If the response is a question about the current rule, answer it briefly and stay on this rule. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
       }
     }
 
@@ -1808,7 +1818,7 @@ ${lessonInstruction}
 ${lessonMode?`RECENT LESSON CONVERSATION:\n${lessonHistory}\nEND RECENT CONVERSATION`:""}
 GRAMMAR/FMF RULE: Grammar is the umbrella. A broad Grammar/FMF lesson must be taught progressively in guided lesson mode, ONE distinct rule/topic at a time. Never dump the entire lesson in one response. A specific grammar question should stay focused on that point.
 PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds.
-RESPONSE LENGTH: keep each guided teaching part concise. One rule/topic, one short example, one quick check. Do not include the next rule until the student explicitly says they are ready.`;
+RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Use short lines and simple labels (Rule / Example / Quick Check), no markdown # headings, and no dense paragraphs. Keep each guided teaching part concise: one rule/topic, one short example, one quick check. Do not include the next rule until the student explicitly says they are ready.`;
 
     let result;
     try {
