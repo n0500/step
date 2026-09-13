@@ -82,6 +82,29 @@ service cloud.firestore {
       allow update, delete: if isOwner() || (isTeacher() && resource.data.teacherId == request.auth.uid);
     }
 
+    match /savedWords/{wordId} {
+      allow create: if isStudent()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().data.teacherId
+        && request.resource.data.classId == me().data.classId;
+
+      allow read: if signedIn() && (
+        isOwner() ||
+        (isStudent() && resource.data.studentId == request.auth.uid) ||
+        (isTeacher() && resource.data.teacherId == request.auth.uid)
+      );
+
+      allow update: if isStudent()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == resource.data.teacherId
+        && request.resource.data.classId == resource.data.classId;
+
+      allow delete: if isOwner() ||
+        (isStudent() && resource.data.studentId == request.auth.uid) ||
+        (isTeacher() && resource.data.teacherId == request.auth.uid);
+    }
+
     match /attempts/{attemptId} {
       allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
