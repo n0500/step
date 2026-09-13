@@ -13,36 +13,39 @@ service cloud.firestore {
     function isStudent() {
       return signedIn() && me().data.role == "student";
     }
+    function ownsTeacherData() {
+      return isTeacher() && resource.data.teacherId == request.auth.uid;
+    }
+    function createsOwnTeacherData() {
+      return isTeacher() && request.resource.data.teacherId == request.auth.uid;
+    }
+    function ownsStudentData() {
+      return isStudent() && resource.data.studentId == request.auth.uid;
+    }
+    function createsOwnStudentData() {
+      return isStudent()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().data.teacherId
+        && request.resource.data.classId == me().data.classId;
+    }
 
     match /joinCodes/{code} {
-      // Students may verify one exact class code before signing in.
       allow get: if true;
-
-      // A teacher may list only their own codes. This is used to archive,
-      // restore, move, or fully delete a class without exposing other codes.
-      allow list: if isTeacher()
-        && resource.data.teacherId == request.auth.uid;
-
-      allow create: if isTeacher()
-        && request.resource.data.teacherId == request.auth.uid;
-
+      allow list: if isTeacher() && resource.data.teacherId == request.auth.uid;
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
       allow update: if isTeacher()
         && resource.data.teacherId == request.auth.uid
         && request.resource.data.teacherId == request.auth.uid;
-
-      allow delete: if isTeacher()
-        && resource.data.teacherId == request.auth.uid;
+      allow delete: if isTeacher() && resource.data.teacherId == request.auth.uid;
     }
 
     match /users/{uid} {
       allow create: if signedIn() && request.auth.uid == uid;
-
       allow read: if signedIn() && (
         request.auth.uid == uid ||
         isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid)
       );
-
       allow update: if signedIn() && (
         request.auth.uid == uid ||
         (
@@ -53,7 +56,6 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(["classId"])
         )
       );
-
       allow delete: if isOwner() || (
         isTeacher() &&
         resource.data.role == "student" &&
@@ -62,58 +64,130 @@ service cloud.firestore {
     }
 
     match /classes/{classId} {
-      allow create: if isTeacher()
-        && request.resource.data.teacherId == request.auth.uid;
-
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
       allow read: if signedIn() && (
         isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid) ||
         (isStudent() && me().data.classId == classId)
       );
-
-      allow update: if isTeacher()
-        && resource.data.teacherId == request.auth.uid;
-
-      allow delete: if isOwner() ||
-        (isTeacher() && resource.data.teacherId == request.auth.uid);
+      allow update: if isTeacher() && resource.data.teacherId == request.auth.uid;
+      allow delete: if isOwner() || (isTeacher() && resource.data.teacherId == request.auth.uid);
     }
 
     match /archivedClasses/{classId} {
-      allow read: if isOwner() || (
-        isTeacher() && resource.data.teacherId == request.auth.uid
-      ) || (
-        isStudent() && me().data.classId == classId
-      );
-
-      allow create: if isTeacher()
-        && request.resource.data.teacherId == request.auth.uid;
-
-      allow update, delete: if isOwner() || (
-        isTeacher() && resource.data.teacherId == request.auth.uid
-      );
+      allow read: if isOwner() ||
+        (isTeacher() && resource.data.teacherId == request.auth.uid) ||
+        (isStudent() && me().data.classId == classId);
+      allow create: if isTeacher() && request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if isOwner() || (isTeacher() && resource.data.teacherId == request.auth.uid);
     }
 
     match /attempts/{attemptId} {
-      allow create: if isStudent()
-        && request.resource.data.studentId == request.auth.uid
-        && request.resource.data.teacherId == me().data.teacherId
-        && request.resource.data.classId == me().data.classId;
-
+      allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
         isOwner() ||
         (isStudent() && resource.data.studentId == request.auth.uid) ||
         (isTeacher() && resource.data.teacherId == request.auth.uid)
       );
-
-      // When a teacher moves a class, only the classId may change.
       allow update: if isTeacher()
         && resource.data.teacherId == request.auth.uid
         && request.resource.data.teacherId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["classId"]);
+      allow delete: if isOwner() || (isTeacher() && resource.data.teacherId == request.auth.uid);
+    }
 
-      allow delete: if isOwner() || (
-        isTeacher() && resource.data.teacherId == request.auth.uid
+    // Saved MG1 Assistant + Writing Coach conversations.
+    match /assistantMessages/{messageId} {
+      allow create: if createsOwnStudentData();
+      allow read: if signedIn() && (
+        isOwner() || ownsStudentData() || ownsTeacherData()
       );
+      allow update: if false;
+      allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
+    }
+
+    // Student writing drafts and rubric history.
+    match /writingHistory/{historyId} {
+      allow create: if createsOwnStudentData();
+      allow read: if signedIn() && (
+        isOwner() || ownsStudentData() || ownsTeacherData()
+      );
+      allow update: if isStudent()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().data.teacherId
+        && request.resource.data.classId == me().data.classId;
+      allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
+    }
+
+    // Teacher-created class assignments.
+    match /assignments/{assignmentId} {
+      allow create: if createsOwnTeacherData();
+      allow read: if signedIn() && (
+        isOwner() ||
+        ownsTeacherData() ||
+        (isStudent() && resource.data.classId == me().data.classId)
+      );
+      allow update: if isOwner() || (
+        isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && request.resource.data.teacherId == request.auth.uid
+      );
+      allow delete: if isOwner() || ownsTeacherData();
+    }
+
+    // Student completion records for assignments.
+    match /assignmentSubmissions/{submissionId} {
+      allow create: if createsOwnStudentData();
+      allow read: if signedIn() && (
+        isOwner() || ownsStudentData() || ownsTeacherData()
+      );
+      allow update: if isStudent()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().data.teacherId
+        && request.resource.data.classId == me().data.classId;
+      allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
+    }
+
+    // Student learning goals; teachers may view but not edit them.
+    match /studentGoals/{goalId} {
+      allow create: if createsOwnStudentData();
+      allow read: if signedIn() && (
+        isOwner() || ownsStudentData() || ownsTeacherData()
+      );
+      allow update: if isStudent()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == me().data.teacherId
+        && request.resource.data.classId == me().data.classId;
+      allow delete: if isOwner() || ownsStudentData();
+    }
+
+    // Private teacher notes. Students never receive read access.
+    match /teacherNotes/{noteId} {
+      allow create: if createsOwnTeacherData();
+      allow read: if isOwner() || ownsTeacherData();
+      allow update: if isOwner() || (
+        isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && request.resource.data.teacherId == request.auth.uid
+      );
+      allow delete: if isOwner() || ownsTeacherData();
+    }
+
+    // Read-only parent progress snapshots. Exact document get is public so
+    // the secret link works without exposing student conversations or notes.
+    match /parentViews/{accessCode} {
+      allow get: if true;
+      allow list: if isOwner() || ownsTeacherData();
+      allow create: if createsOwnTeacherData();
+      allow update: if isOwner() || (
+        isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && request.resource.data.teacherId == request.auth.uid
+      );
+      allow delete: if isOwner() || ownsTeacherData();
     }
   }
 }
