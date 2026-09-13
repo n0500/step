@@ -34,7 +34,8 @@ const assistantState = {
   fallbackDictionaryModel: null,
   dictionaryEntry: null,
   dictionaryAudio: "",
-  savedWords: []
+  savedWords: [],
+  dictionaryRequestId: 0
 };
 
 const SYSTEM_INSTRUCTION = `You are MG1 Assistant, a concise curriculum assistant for Saudi Grade 10 students using MegaGoal 1 Units 1–6.
@@ -236,7 +237,10 @@ function initAI() {
     };
     const dictionaryModelOptions = {
       systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
-      generationConfig
+      generationConfig: {
+        maxOutputTokens: 900,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
     };
     assistantState.model = getGenerativeModel(ai, {
       model: AI_CFG.model,
@@ -812,9 +816,48 @@ function mg1WordTag(word=""){
   return units.length ? `MG1 Vocabulary • Unit ${units.join(", ")}` : "";
 }
 
-async function tryPublicDictionary(word){
+const DICTIONARY_CACHE_KEY = "stepup_dictionary_cache_v2";
+const DICTIONARY_CACHE_TTL = 1000 * 60 * 60 * 24 * 30;
+const DICTIONARY_CACHE_MAX = 120;
+
+function dictionaryCacheKey(word=""){
+  return String(word||"").trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function readDictionaryCache(word){
   try{
-    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,{cache:"no-store"});
+    const key=dictionaryCacheKey(word);
+    const cache=JSON.parse(localStorage.getItem(DICTIONARY_CACHE_KEY)||"{}");
+    const item=cache?.[key];
+    if(!item?.entry || !item?.savedAt)return null;
+    if(Date.now()-Number(item.savedAt)>DICTIONARY_CACHE_TTL){
+      delete cache[key];
+      localStorage.setItem(DICTIONARY_CACHE_KEY,JSON.stringify(cache));
+      return null;
+    }
+    return item.entry;
+  }catch(e){return null;}
+}
+
+function writeDictionaryCache(entry){
+  try{
+    const key=dictionaryCacheKey(entry?.word);
+    if(!key)return;
+    const cache=JSON.parse(localStorage.getItem(DICTIONARY_CACHE_KEY)||"{}");
+    cache[key]={savedAt:Date.now(),entry:{...entry,enriching:false}};
+    const rows=Object.entries(cache).sort((a,b)=>(b[1]?.savedAt||0)-(a[1]?.savedAt||0)).slice(0,DICTIONARY_CACHE_MAX);
+    localStorage.setItem(DICTIONARY_CACHE_KEY,JSON.stringify(Object.fromEntries(rows)));
+  }catch(e){}
+}
+
+async function tryPublicDictionary(word){
+  const controller=typeof AbortController!=="undefined"?new AbortController():null;
+  const timer=controller?setTimeout(()=>controller.abort(),3200):null;
+  try{
+    const r=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,{
+      cache:"force-cache",
+      signal:controller?.signal
+    });
     if(!r.ok)return null;
     const data=await r.json();
     const e=Array.isArray(data)?data[0]:null;
@@ -837,6 +880,8 @@ async function tryPublicDictionary(word){
     return {word:e.word||word,ipa,partOfSpeech:pos,englishDefinition:definition,example,audio};
   }catch(e){
     return null;
+  }finally{
+    if(timer)clearTimeout(timer);
   }
 }
 
@@ -897,6 +942,8 @@ function renderDictionary(){
 
 function dictionaryResultHTML(entry){
   const tag=entry.mg1Tag||mg1WordTag(entry.word);
+  const arabicMeaning=entry.arabicMeaning || (entry.enriching?"جار إضافة المعنى العربي...":"—");
+  const exampleArabic=entry.exampleArabic || (entry.enriching?"جار إضافة ترجمة المثال...":"—");
   return `<div class="mg1-dict-result">
     <div class="mg1-dict-head">
       <div>
@@ -904,19 +951,20 @@ function dictionaryResultHTML(entry){
         <div class="mg1-dict-ipa">${esc(entry.ipa||"")}</div>
         ${entry.partOfSpeech?`<span class="mg1-dict-pos">${esc(entry.partOfSpeech)}</span>`:""}
         ${tag?`<div class="mg1-dict-mg1">📚 ${esc(tag)}</div>`:""}
+        ${entry.enriching?`<div class="mg1-dict-mg1">⚡ English result ready • adding Arabic...</div>`:""}
       </div>
       <div class="mg1-dict-actions">
         ${entry.audio?`<button data-dict-audio="${esc(entry.audio)}">🔊 Audio</button>`:""}
         <button data-dict-speak="en-US">🔊 US</button>
         <button data-dict-speak="en-GB">🔊 UK</button>
-        <button class="primary" id="mg1SaveWord">⭐ Save</button>
+        <button class="primary" id="mg1SaveWord" ${entry.enriching?"disabled":""}>⭐ Save</button>
       </div>
     </div>
     <div class="mg1-dict-grid">
-      <div class="mg1-dict-box"><strong>English definition</strong><p>${esc(entry.englishDefinition||"")}</p></div>
-      <div class="mg1-dict-box" dir="rtl"><strong>المعنى العربي</strong><p>${esc(entry.arabicMeaning||"")}</p></div>
-      <div class="mg1-dict-box"><strong>Example</strong><p>${esc(entry.example||"")}</p></div>
-      <div class="mg1-dict-box" dir="rtl"><strong>ترجمة المثال</strong><p>${esc(entry.exampleArabic||"")}</p></div>
+      <div class="mg1-dict-box"><strong>English definition</strong><p>${esc(entry.englishDefinition||"—")}</p></div>
+      <div class="mg1-dict-box" dir="rtl"><strong>المعنى العربي</strong><p>${esc(arabicMeaning)}</p></div>
+      <div class="mg1-dict-box"><strong>Example</strong><p>${esc(entry.example||"—")}</p></div>
+      <div class="mg1-dict-box" dir="rtl"><strong>ترجمة المثال</strong><p>${esc(exampleArabic)}</p></div>
       ${entry.forms?`<div class="mg1-dict-box"><strong>Useful forms</strong><p>${esc(entry.forms)}</p></div>`:""}
     </div>
   </div>`;
@@ -951,22 +999,91 @@ async function lookupDictionaryCurrent(){
   if(!query)return;
   if(query.length>80 || !/[A-Za-z]/.test(query))return alert("Please enter an English word or short expression.");
 
+  const requestId=++assistantState.dictionaryRequestId;
   assistantState.dictionaryBusy=true;
   const btn=document.getElementById("mg1DictSearch");
   const box=document.getElementById("mg1DictResult");
   if(btn){btn.disabled=true;btn.textContent="Searching...";}
-  if(box)box.innerHTML=`<div class="mg1-dict-result"><div class="mg1-empty-small">Looking up <strong>${esc(query)}</strong>...</div></div>`;
+
+  const cached=readDictionaryCache(query);
+  if(cached){
+    const entry={...cached,enriching:false};
+    entry.mg1Tag=entry.mg1Tag||mg1WordTag(entry.word);
+    assistantState.dictionaryEntry=entry;
+    assistantState.dictionaryAudio=entry.audio||"";
+    if(box)box.innerHTML=dictionaryResultHTML(entry);
+    bindDictionaryResultActions();
+    assistantState.dictionaryBusy=false;
+    if(btn){btn.disabled=false;btn.textContent="Search";}
+    return;
+  }
+
+  if(box)box.innerHTML=`<div class="mg1-dict-result"><div class="mg1-empty-small">Searching the English dictionary for <strong>${esc(query)}</strong>...</div></div>`;
 
   try{
     const publicData=await tryPublicDictionary(query);
-    let aiData={};
+    if(requestId!==assistantState.dictionaryRequestId)return;
 
-    if(assistantState.aiReady && assistantState.dictionaryModel){
-      if(assistantState.appCheck){
-        const tokenResult=await getToken(assistantState.appCheck,false);
-        if(!tokenResult?.token)throw new Error("App Check failed.");
+    if(publicData){
+      const quickEntry={
+        word:publicData.word||query,
+        ipa:publicData.ipa||"",
+        partOfSpeech:publicData.partOfSpeech||"",
+        englishDefinition:publicData.englishDefinition||"",
+        arabicMeaning:"",
+        example:publicData.example||"",
+        exampleArabic:"",
+        forms:"",
+        audio:publicData.audio||"",
+        enriching:!!(assistantState.aiReady&&assistantState.dictionaryModel)
+      };
+      quickEntry.mg1Tag=mg1WordTag(quickEntry.word);
+      assistantState.dictionaryEntry=quickEntry;
+      assistantState.dictionaryAudio=quickEntry.audio||"";
+      if(box)box.innerHTML=dictionaryResultHTML(quickEntry);
+      bindDictionaryResultActions();
+
+      // The student can use the English result immediately. AI enrichment continues in the background.
+      assistantState.dictionaryBusy=false;
+      if(btn){btn.disabled=false;btn.textContent="Search";}
+
+      if(assistantState.aiReady && assistantState.dictionaryModel){
+        enrichDictionaryInBackground(query,publicData,requestId);
+      }else{
+        writeDictionaryCache(quickEntry);
       }
-      const reference=publicData?`
+      return;
+    }
+
+    // Public dictionary did not find the term. Fall back to AI as the primary lookup.
+    if(!(assistantState.aiReady && assistantState.dictionaryModel))throw new Error("Dictionary service is not ready.");
+    const aiData=await fetchDictionaryAI(query,null);
+    if(requestId!==assistantState.dictionaryRequestId)return;
+    const entry={...aiData,audio:"",enriching:false};
+    entry.mg1Tag=mg1WordTag(entry.word||query);
+    assistantState.dictionaryEntry=entry;
+    assistantState.dictionaryAudio="";
+    writeDictionaryCache(entry);
+    if(box)box.innerHTML=dictionaryResultHTML(entry);
+    bindDictionaryResultActions();
+  }catch(e){
+    console.error("Dictionary lookup failed",e);
+    if(requestId===assistantState.dictionaryRequestId && box){
+      box.innerHTML=`<div class="mg1-dict-result"><div class="mg1-empty-small">I couldn't find that word right now. Check the spelling and try again.</div></div>`;
+    }
+  }finally{
+    if(requestId===assistantState.dictionaryRequestId){
+      assistantState.dictionaryBusy=false;
+      if(btn){btn.disabled=false;btn.textContent="Search";}
+    }
+  }
+}
+
+async function fetchDictionaryAI(query,publicData=null){
+  if(assistantState.appCheck){
+    try{await getToken(assistantState.appCheck,false);}catch(e){console.warn("Dictionary App Check token unavailable",e);}
+  }
+  const reference=publicData?`
 REFERENCE FROM ENGLISH DICTIONARY:
 Headword: ${publicData.word||query}
 IPA: ${publicData.ipa||""}
@@ -974,15 +1091,16 @@ Part of speech: ${publicData.partOfSpeech||""}
 Definition: ${publicData.englishDefinition||""}
 Example: ${publicData.example||""}
 Use these reference fields when they are present. Do not contradict them.`:"";
-      const prompt=`SEARCH TERM: ${query}
+  const prompt=`SEARCH TERM: ${query}
 ${reference}
 Return the required dictionary JSON for this exact English term.`;
-      const result=await generateDictionaryWithResilience(prompt);
-      aiData=cleanDictionaryJSON((await result.response).text());
-    }else if(!publicData){
-      throw new Error("Dictionary service is not ready.");
-    }
+  const result=await generateDictionaryWithResilience(prompt);
+  return cleanDictionaryJSON((await result.response).text());
+}
 
+async function enrichDictionaryInBackground(query,publicData,requestId){
+  try{
+    const aiData=await fetchDictionaryAI(query,publicData);
     const entry={
       word:publicData?.word||aiData.word||query,
       ipa:publicData?.ipa||aiData.ipa||"",
@@ -993,18 +1111,27 @@ Return the required dictionary JSON for this exact English term.`;
       exampleArabic:aiData.exampleArabic||"",
       forms:aiData.forms||"",
       audio:publicData?.audio||"",
+      enriching:false
     };
     entry.mg1Tag=mg1WordTag(entry.word);
+    writeDictionaryCache(entry);
+    if(requestId!==assistantState.dictionaryRequestId)return;
     assistantState.dictionaryEntry=entry;
     assistantState.dictionaryAudio=entry.audio||"";
+    const box=document.getElementById("mg1DictResult");
     if(box)box.innerHTML=dictionaryResultHTML(entry);
     bindDictionaryResultActions();
   }catch(e){
-    console.error("Dictionary lookup failed",e);
-    if(box)box.innerHTML=`<div class="mg1-dict-result"><div class="mg1-empty-small">I couldn't find that word right now. Check the spelling and try again.</div></div>`;
-  }finally{
-    assistantState.dictionaryBusy=false;
-    if(btn){btn.disabled=false;btn.textContent="Search";}
+    console.warn("Dictionary Arabic enrichment failed",e);
+    if(requestId!==assistantState.dictionaryRequestId)return;
+    const current=assistantState.dictionaryEntry;
+    if(current && dictionaryCacheKey(current.word)===dictionaryCacheKey(publicData?.word||query)){
+      current.enriching=false;
+      writeDictionaryCache(current);
+      const box=document.getElementById("mg1DictResult");
+      if(box)box.innerHTML=dictionaryResultHTML(current);
+      bindDictionaryResultActions();
+    }
   }
 }
 
