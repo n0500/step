@@ -417,11 +417,32 @@ function isBroadLessonRequest(query="", intent="") {
       "درس fmf","شرح fmf","شرح form meaning","المعنى والوظيفه","المعنى والوظيفة"
     ]);
   }
-  if(includesAny(query,["unit grammar","grammar unit","قواعد الوحده","قواعد الوحدة","شرح القواعد","درس القواعد","whole grammar","all grammar","grammar lesson"])) return true;
+
+  // Treat natural requests such as "Teach me Unit 2 grammar step by step"
+  // as a guided lesson. The old check only matched the literal phrase
+  // "unit grammar", so the shortcut could generate a Quick Check without
+  // activating lessonFlow. Then A/B/C/D or answer text was misread as a
+  // workbook exercise/reference query.
+  if(includesAny(query,[
+    "unit grammar","grammar unit","قواعد الوحده","قواعد الوحدة","شرح القواعد","درس القواعد",
+    "whole grammar","all grammar","grammar lesson","grammar step by step","teach me grammar",
+    "teach me the grammar","explain the grammar","شرح قواعد الوحدة","علمني قواعد","علمني القواعد"
+  ])) return true;
+  if(/\bunit\s*[1-6]\s+grammar\b/.test(n)) return true;
+  if(/\bgrammar\s+(?:for\s+)?unit\s*[1-6]\b/.test(n)) return true;
   if(/^grammar(?:\s+unit\s*[1-6])?$/.test(n)) return true;
   if(/^قواعد(?:\s+الوحد[هة]\s*[1-6١-٦])?$/.test(n)) return true;
   if((/^unit\s*[1-6]$/.test(n) || /^الوحد[هة]\s*[1-6١-٦]$/.test(n)) && assistantState.selectedMode==="grammar") return true;
   return false;
+}
+
+function looksLikeGuidedQuickCheck(text="") {
+  const t=String(text||"");
+  if(!t.trim()) return false;
+  const hasQuickCheck=/\bquick\s*check\b|تمرين\s*(?:سريع|قصير)|تحقق\s*سريع/i.test(t);
+  const optionCount=[/\bA[\)\.:-]\s*/i,/\bB[\)\.:-]\s*/i,/\bC[\)\.:-]\s*/i,/\bD[\)\.:-]\s*/i]
+    .reduce((n,re)=>n+(re.test(t)?1:0),0);
+  return hasQuickCheck && optionCount>=3;
 }
 
 function recentLessonConversation(limit=8) {
@@ -1543,12 +1564,27 @@ async function sendCurrent(){
   // - 1/2/3/4
   // - the actual answer text (for example: "goes")
   // Always grade it against the latest Quick Check.
-  if(assistantState.lessonFlow.active && directLessonAnswer){
+  // Also recover safely if an earlier AI response displayed a guided Quick Check
+  // before lessonFlow was activated (for example "Teach me Unit 2 grammar...").
+  const previousLessonMessage=[...assistantState.messages]
+    .slice(0,-1)
+    .reverse()
+    .find(m=>m?.role==="ai" && typeof m.text==="string" && m.text.trim());
+  const recoverGuidedAnswer = !!(directLessonAnswer && previousLessonMessage && looksLikeGuidedQuickCheck(previousLessonMessage.text));
+  if((assistantState.lessonFlow.active || recoverGuidedAnswer) && directLessonAnswer){
+    if(!assistantState.lessonFlow.active){
+      const inferredUnit=assistantState.selectedUnit || explicitUnitInQuery(previousUserQuery()) || 1;
+      const inferredIntent=assistantState.selectedMode==="fmf" ? "fmf" : "grammar";
+      assistantState.lessonFlow={
+        active:true,
+        unit:inferredUnit,
+        intent:inferredIntent,
+        sourceQuery:`Unit ${inferredUnit} ${inferredIntent==="fmf"?"Form, Meaning and Function":"grammar"}`,
+        part:1,
+        language:hasArabic(previousLessonMessage.text)?"ar":"en"
+      };
+    }
     const flowNow=assistantState.lessonFlow;
-    const previousLessonMessage=[...assistantState.messages]
-      .slice(0,-1)
-      .reverse()
-      .find(m=>m?.role==="ai" && typeof m.text==="string" && m.text.trim());
 
     if(!previousLessonMessage){
       assistantState.messages.push({
