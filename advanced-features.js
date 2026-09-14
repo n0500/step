@@ -115,8 +115,9 @@
     if(!nav)return null;
     const navClone=nav;
     [...main.children].forEach(ch=>{if(ch!==navClone)ch.remove();});
-    $$(".role-tab",navClone).forEach(b=>b.classList.toggle("active",b.id===customTabId));
-    const host=document.createElement("section"); host.className="adv-wrap"; main.appendChild(host); return host;
+    const studentMode=navClone.dataset.role==="student";
+    $$(".role-tab",navClone).forEach(b=>b.classList.toggle("active",studentMode?b.dataset.studentTab==="tools":b.id===customTabId));
+    const host=document.createElement("section"); host.className=studentMode?"adv-wrap student-view student-tool-view":"adv-wrap"; main.appendChild(host); return host;
   }
 
   async function renderTeacherHub(mode=ADV.hubMode){
@@ -285,7 +286,10 @@
     ]);
     const latest=latestPerTraining(attempts); const overall=avg(latest.map(a=>a.percentage)); const reading=avg(latest.filter(a=>a.trainingType==="reading").map(a=>a.percentage)); const grammar=avg(latest.filter(a=>a.trainingType==="grammar").map(a=>a.percentage));
     const goal=sortByDateDesc(goals,"updatedAt")[0]||null; const achievements=computeAchievements(attempts,writing,goal,{overall,reading,grammar}); const doneIds=new Set(subs.map(s=>s.assignmentId));
-    host.innerHTML=`<div class="adv-head"><div><div class="eyebrow">My Growth</div><h1>${esc(profile.displayName||"Student")}</h1><p class="muted">Goals, assignments, achievements, and writing history.</p></div></div>
+    const journey=studentJourneySummary(attempts,achievements,overall);
+    host.innerHTML=`<div class="student-tool-breadcrumb"><button type="button" onclick="window.PROVE?.setStudentTab('tools')">Tools</button><span>›</span><strong>My Growth</strong></div>
+      ${renderStudentJourneyHero(profile,journey)}
+      <div class="adv-head student-growth-head"><div><div class="eyebrow">My Growth</div><h1>Your learning, in one place</h1><p class="muted">Goals, assignments, achievements, and writing history.</p></div></div>
       <div class="adv-grid"><div class="adv-card"><h2>My Goal</h2>${goal?renderGoal(goal,{overall,reading,grammar}):"<p class='adv-empty'>Set one clear target for yourself.</p>"}<div class="adv-form-grid"><div><label class="adv-label">Metric</label><select id="advGoalMetric" class="adv-select"><option value="overall">Overall</option><option value="reading">Reading</option><option value="grammar">Grammar</option></select></div><div><label class="adv-label">Target %</label><input id="advGoalTarget" class="adv-input" type="number" min="60" max="100" value="80"></div></div><button id="advSaveGoal" class="btn btn-primary" style="margin-top:12px">${goal?"Update Goal":"Set Goal"}</button></div>
       <div class="adv-card"><h2>Achievements</h2><div class="adv-grid">${achievements.map(a=>`<div class="adv-achievement"><div class="icon">${a.icon}</div><div><strong>${esc(a.title)}</strong><div class="muted">${esc(a.text)}</div></div></div>`).join("")||"<div class='adv-empty'>Your achievements will appear as you practice.</div>"}</div></div></div>
       <div class="adv-card"><h2>My Assignments</h2>${assignments.length?sortByDateDesc(assignments).map(a=>`<div class="adv-row"><div><strong>${esc(a.title)}</strong> <span class="adv-chip">${esc(a.type)}</span><div class="muted">${esc(a.prompt||"")}</div>${a.dueAt?`<div class="muted" style="font-size:11px">Due ${esc(a.dueAt)}</div>`:""}</div><div class="adv-actions">${doneIds.has(a.id)?`<span class="adv-chip good">Done ✓</span>`:`${a.type==="writing"?`<button class="btn btn-primary" data-open-writing="${a.id}">Open Writing Coach</button>`:a.type==="remedial"?`<button class="btn btn-primary" data-smart-start="${a.id}">Start Smart Review</button>`:""}<button class="btn btn-secondary" data-mark-done="${a.id}">Mark Done</button>`}</div></div>`).join(""):"<div class='adv-empty'>No active assignments.</div>"}</div>
@@ -296,6 +300,49 @@
     $$('[data-smart-start]').forEach(b=>b.addEventListener("click",()=>startSmartAssignment(profile,assignments.find(a=>a.id===b.dataset.smartStart))));
   }
 
+
+  function studentJourneySummary(attempts,achievements,overall){
+    const now=new Date();
+    const mondayIndex=(now.getDay()+6)%7;
+    const start=new Date(now); start.setHours(0,0,0,0); start.setDate(start.getDate()-mondayIndex);
+    const activeDays=new Set();
+    attempts.forEach(a=>{
+      const d=new Date(a.submittedAt||a.createdAt||0);
+      if(!Number.isNaN(d.getTime())&&d>=start&&d<=now) activeDays.add(d.toLocaleDateString("en-CA"));
+    });
+    const days=Math.min(activeDays.size,7);
+    const level=days>=5?"Diamond":days===4?"Gold":days===3?"Silver":days>=1?"Bronze":"Ready";
+    const recent=sortByDateDesc(attempts,"submittedAt")[0]||null;
+    const unitNumber=Number(recent?.unitNumber||0);
+    const unitLabel=unitNumber?`Unit ${unitNumber}`:"Start your first unit";
+    const growthScore=Math.min(5,Math.max(1,Math.ceil((Math.min(100,Number(overall||0))/100)*3)+Math.min(2,Math.floor((achievements?.length||0)/3))));
+    const stages=["Seed","Sprout","Growing","Blooming","Flourishing"];
+    return {days,level,unitLabel,growthStage:growthScore,growthLabel:stages[growthScore-1]||"Seed",overall:Number(overall||0)};
+  }
+
+  function renderStudentJourneyHero(profile,j){
+    const dots=Array.from({length:5},(_,i)=>`<span class="journey-stage-dot ${i<j.growthStage?"active":""}"></span>`).join("");
+    return `<section class="stepup-journey-hero">
+      <div class="journey-hero-top">
+        <div>
+          <div class="journey-hero-kicker">My StepUp Journey</div>
+          <h1>${esc(profile.displayName||"Student")}</h1>
+          <p>${esc(j.unitLabel)} • Keep moving forward, one step at a time.</p>
+        </div>
+        <div class="journey-hero-mark" aria-hidden="true">SU</div>
+      </div>
+      <div class="journey-hero-stats">
+        <div><span>Weekly level</span><strong>${esc(j.level)}</strong></div>
+        <div><span>Active days</span><strong>${j.days}/5</strong></div>
+        <div><span>Growth stage</span><strong>${j.growthStage}/5</strong></div>
+      </div>
+      <div class="journey-growth-strip">
+        <div class="journey-growth-copy"><span>Growth</span><strong>${esc(j.growthLabel)}</strong></div>
+        <div class="journey-stage-track">${dots}</div>
+      </div>
+    </section>`;
+  }
+
   function renderGoal(goal,scores){const current=Number(scores[goal.metric]||0),target=Number(goal.target||80),pct=Math.min(100,Math.round(current/target*100));return `<div style="margin-bottom:14px"><div class="adv-row"><strong>${esc(goal.metric)} target</strong><span class="adv-chip ${current>=target?"good":"warn"}">${current}% / ${target}%</span></div><div class="adv-progress"><div style="width:${pct}%"></div></div></div>`;}
   async function saveGoal(profile,goal){const F=fb();if(!F)return;const metric=$("#advGoalMetric")?.value||"overall";const target=Math.max(60,Math.min(100,Number($("#advGoalTarget")?.value||80)));const ref=goal?F.db.collection("studentGoals").doc(goal.id):F.db.collection("studentGoals").doc();await ref.set({studentId:profile.id,studentName:profile.displayName,teacherId:profile.teacherId,classId:profile.classId,metric,target,status:"active",createdAt:goal?.createdAt||nowISO(),updatedAt:nowISO()},{merge:true});renderStudentGrowth();}
 
@@ -304,7 +351,9 @@
   function renderWritingHistory(w,i){const r=w.rubric;return `<div class="adv-row"><div style="flex:1"><strong>${r?`Rubric Check ${i+1}`:`Draft ${i+1}`}</strong><div class="muted">${esc((w.draft||"").slice(0,160))}${(w.draft||"").length>160?"…":""}</div><div class="muted" style="font-size:11px">${fmtDateTime(w.createdAt)}</div>${r?`<div class="adv-rubric-grid" style="margin-top:10px"><div class="adv-rubric"><strong>${r.organization??"-"}</strong><span>Organization</span></div><div class="adv-rubric"><strong>${r.grammar??"-"}</strong><span>Grammar</span></div><div class="adv-rubric"><strong>${r.vocabulary??"-"}</strong><span>Vocabulary</span></div><div class="adv-rubric"><strong>${r.mechanics??"-"}</strong><span>Mechanics</span></div></div><p class="muted"><strong>Total:</strong> ${r.total??"-"}/100 • <strong>Priority:</strong> ${esc(r.priority||"")}</p>`:""}</div></div>`;}
 
   async function markAssignmentDone(profile,a){if(!a)return;const F=fb();if(!F)return;const existing=(await getStudentCollection("assignmentSubmissions",profile.id)).find(s=>s.assignmentId===a.id);if(existing)return alert("Already marked as done.");await F.db.collection("assignmentSubmissions").add({assignmentId:a.id,assignmentTitle:a.title,studentId:profile.id,studentName:profile.displayName,teacherId:profile.teacherId,classId:profile.classId,status:"done",createdAt:nowISO(),completedAt:nowISO()});renderStudentGrowth();}
-  function openWritingForAssignment(a){const tab=$("#mg1WritingTab");if(tab){tab.click();setTimeout(()=>{const input=$("#writingInput");if(input){input.value=`Assignment: ${a.title}\n${a.prompt}`;input.focus();}},250);}else alert("Writing Coach is not available on this screen yet. Return to Student Home and try again.");}
+  function openWritingForAssignment(a){if(window.MG1Assistant?.openWritingCoach){window.MG1Assistant.openWritingCoach();setTimeout(()=>{const input=$("#writingInput");if(input){input.value=`Assignment: ${a.title}
+${a.prompt}`;input.focus();}},250);return;}const tab=$("#mg1WritingTab");if(tab){tab.click();setTimeout(()=>{const input=$("#writingInput");if(input){input.value=`Assignment: ${a.title}
+${a.prompt}`;input.focus();}},250);}else alert("Writing Coach is still loading. Try again in a moment.");}
 
   async function startSmartAssignment(profile,a){
     if(!a)return; const DATA=window.PROVEIT_DATA; if(!DATA)return alert("Training data is unavailable.");
@@ -352,9 +401,6 @@
     const nav=$(".role-tabs"); if(!nav)return;
     if(profile.role==="teacher"&&!$("#stepupTeachingHubTab")){
       const b=document.createElement("button");b.id="stepupTeachingHubTab";b.className="role-tab";b.textContent="🧠 Teaching Hub";b.addEventListener("click",()=>renderTeacherHub("overview"));nav.appendChild(b);
-    }
-    if(profile.role==="student"&&!$("#stepupGrowthTab")){
-      const b=document.createElement("button");b.id="stepupGrowthTab";b.className="role-tab";b.textContent="🌱 My Growth";b.addEventListener("click",renderStudentGrowth);nav.appendChild(b);
     }
   }
 

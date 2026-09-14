@@ -80,11 +80,15 @@
   }
 
   function shell(content, title=""){
+    const isStudent=state.profile?.role==="student";
+    const initial=esc((state.profile?.displayName||"S").trim().charAt(0).toUpperCase()||"S");
     return `
-      <header class="appbar">
-        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>STEP Training Lab • ${esc(title)}</small></div></div>
+      <header class="appbar ${isStudent?"student-appbar":""}">
+        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>STEP Training Lab${title?` • ${esc(title)}`:""}</small></div></div>
         <div class="nav-actions">
-          ${state.profile?`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span><button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`:""}
+          ${state.profile?(isStudent
+            ?`<button class="student-header-avatar" aria-label="Open profile" onclick="PROVE.setStudentTab('profile')">${initial}</button>`
+            :`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span><button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`):""}
         </div>
       </header>
       ${content}`;
@@ -345,15 +349,26 @@
   }
 
 
+  function navIcon(id){
+    const icons={
+      home:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.7 12 3l9 7.7v9.1a1.2 1.2 0 0 1-1.2 1.2H15v-6H9v6H4.2A1.2 1.2 0 0 1 3 19.8z"/></svg>`,
+      practice:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 4.5v17M9 6h7M9 10h7M9 14h5"/></svg>`,
+      tools:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/><path d="m18.5 13 .9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>`,
+      progress:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>`,
+      profile:`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>`
+    };
+    return icons[id]||"";
+  }
+
   function studentTabs(){
     const items=[
-      ["home","🏠 Home"],
-      ["practice","📝 Practice"],
-      ["progress","📈 Progress"],
-      ["results","✓ Results"],
-      ["profile","👤 Profile"]
+      ["home","Home"],
+      ["practice","Practice"],
+      ["tools","Tools"],
+      ["progress","Progress"],
+      ["profile","Profile"]
     ];
-    return `<nav class="role-tabs">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" onclick="PROVE.setStudentTab('${id}')">${label}</button>`).join("")}</nav>`;
+    return `<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" data-student-tab="${id}" onclick="PROVE.setStudentTab('${id}')"><span class="student-nav-icon">${navIcon(id)}</span><span class="student-nav-label">${label}</span></button>`).join("")}</nav>`;
   }
 
   function teacherTabs(){
@@ -364,7 +379,7 @@
       ["reports","📊 Reports"],
       ["profile","👤 Profile"]
     ];
-    return `<nav class="role-tabs">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
+    return `<nav class="role-tabs" data-role="teacher">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
   }
 
   function setStudentTab(tab){
@@ -1097,7 +1112,7 @@
       eyebrow:"Completed",
       title:`Unit ${step.unit.number} completed ✅`,
       desc:`Nice work. The next unit will open soon.`,
-      primary:`<button class="btn btn-secondary" onclick="PROVE.setStudentTab('results')">View Results</button>`
+      primary:`<button class="btn btn-secondary" onclick="PROVE.setStudentTab('progress')">View Progress</button>`
     };
     return {
       eyebrow:"Start Here",
@@ -1189,84 +1204,173 @@
     const ctx=await buildStudentContext();let body="";
     if(state.studentTab==="home")body=studentHome(ctx);
     if(state.studentTab==="practice")body=studentPractice(ctx);
+    if(state.studentTab==="tools")body=studentTools(ctx);
     if(state.studentTab==="progress")body=studentProgress(ctx);
-    if(state.studentTab==="results")body=studentResults(ctx);
     if(state.studentTab==="profile")body=studentProfile(ctx);
-    app.innerHTML=shell(`<main class="container">${studentTabs()}${body}</main>`,"Student");
+    if(!body){state.studentTab="home";body=studentHome(ctx);}
+    app.innerHTML=shell(`<main class="container student-app-shell">${studentTabs()}<section class="student-view">${body}</section></main>`,"Student");
   }
+
+  function studentToolIcon(kind){
+    const icons={
+      assistant:`<svg viewBox="0 0 24 24"><path d="M12 2.8 13.7 8l5.2 1.7-5.2 1.7L12 16.6l-1.7-5.2-5.2-1.7L10.3 8z"/><path d="m18.4 14.3.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z"/></svg>`,
+      writing:`<svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16z"/><path d="m13.5 6.5 4 4M4 20h16"/></svg>`,
+      dictionary:`<svg viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 4.5v17M8 7h8M8 11h6"/></svg>`,
+      growth:`<svg viewBox="0 0 24 24"><path d="M12 21V11M12 14c-4.5 0-7-2.3-7-6 4.5 0 7 2.3 7 6ZM12 11c0-4.5 2.3-7 6-7 0 4.5-2.3 7-6 7Z"/></svg>`
+    };
+    return icons[kind]||"";
+  }
+
+  function learningToolsList(compact=false){
+    const tools=[
+      {id:"assistant",title:"MG1 Assistant",tag:"AI Tutor",desc:"Learn MegaGoal 1 step by step with guided practice."},
+      {id:"writing",title:"Writing Coach",tag:"Writing",desc:"Plan, revise, and improve your writing one step at a time."},
+      {id:"dictionary",title:"Dictionary",tag:"Quick",desc:"English meaning, Arabic support, IPA, examples, and pronunciation."},
+      {id:"growth",title:"My Growth",tag:"Progress",desc:"Goals, assignments, achievements, and your learning history."}
+    ];
+    const rows=tools.map((t,i)=>`<button class="student-tool-row ${i===0?"featured":""}" onclick="PROVE.openStudentTool('${t.id}')">
+      <span class="student-tool-icon tool-${t.id}">${studentToolIcon(t.id)}</span>
+      <span class="student-tool-copy"><span class="student-tool-title-line"><strong>${t.title}</strong><span class="student-tool-tag">${t.tag}</span></span><small>${t.desc}</small></span>
+      <span class="student-tool-arrow" aria-hidden="true">›</span>
+    </button>`).join("");
+    return `<div class="student-tools-list ${compact?"compact":""}">${rows}</div>`;
+  }
+
+  function weeklyJourney(attempts){
+    const now=new Date();
+    const day=(now.getDay()+6)%7; // Monday = 0
+    const start=new Date(now); start.setHours(0,0,0,0); start.setDate(start.getDate()-day);
+    const active=new Set();
+    attempts.forEach(a=>{
+      const d=new Date(a.submittedAt||a.createdAt||0);
+      if(!Number.isNaN(d.getTime()) && d>=start && d<=now) active.add(d.toLocaleDateString("en-CA"));
+    });
+    const days=Math.min(active.size,7);
+    const goal=5;
+    const level=days>=5?"Diamond":days===4?"Gold":days===3?"Silver":days>=1?"Bronze":"Ready";
+    const pct=Math.min(100,Math.round(days/goal*100));
+    const dots=Array.from({length:goal},(_,i)=>`<span class="journey-dot ${i<days?"done":""}"></span>`).join("");
+    return `<section class="student-weekly-card">
+      <div class="weekly-copy"><div class="section-kicker">My Weekly Journey</div><h2>${days} active ${days===1?"day":"days"} this week</h2><p>Complete practice on ${Math.max(0,goal-days)} more ${goal-days===1?"day":"days"} to reach the weekly goal.</p></div>
+      <div class="weekly-status"><span class="weekly-level">${level}</span><strong>${pct}%</strong></div>
+      <div class="journey-track" aria-label="${days} of ${goal} active practice days">${dots}</div>
+    </section>`;
+  }
+
   function studentHome(ctx){
     const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
-    const stats=skillStats(latest);
     const reading=trainingTypeAverage(latest,"reading");
     const grammar=trainingTypeAverage(latest,"grammar");
-    const overall=pctAverage(latest);
     const available=ctx.openUnits.flatMap(u=>u.trainings);
     const completed=new Set(ctx.attempts.filter(a=>a.trainingType!=="remedial").map(a=>a.trainingId)).size;
     const completion=available.length?Math.round(Math.min(completed,available.length)/available.length*100):0;
     const step=nextStudentStep(ctx);
     const stepCopy=studentStepCopy(step);
-    const currentUnit=ctx.openUnits[ctx.openUnits.length-1];
-    return `<div class="student-home-v2">
-      <section class="student-hero-card card">
-        <div class="student-hero-main">
-          <div class="eyebrow">My Dashboard</div>
-          <h1>${esc(state.profile.displayName)}</h1>
-          <p class="muted">Class: ${esc(state.profile.classCode||"")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p>
-          <div class="hero-inline-meta">
-            <span class="class-badge">📘 ${esc(ctx.cls?.name||"Your Class")}</span>
-            <span class="pill">${completed}/${available.length||0} core practices completed</span>
-            ${currentUnit?`<span class="pill">Open unit: ${currentUnit.number}</span>`:""}
-          </div>
-        </div>
-        <div class="student-hero-action">
-          <div class="eyebrow">${stepCopy.eyebrow}</div>
-          <h2>${stepCopy.title}</h2>
-          <p class="muted">${stepCopy.desc}</p>
-          <div class="hero-actions">${stepCopy.primary}<button class="btn btn-secondary" onclick="PROVE.setStudentTab('progress')">View Progress</button></div>
-        </div>
+    const firstName=esc((state.profile.displayName||"Student").trim().split(/\s+/)[0]);
+    return `<div class="student-home-clean">
+      <div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>
+
+      <section class="student-continue-card">
+        <div class="continue-copy"><div class="section-kicker">${stepCopy.eyebrow}</div><h2>${stepCopy.title}</h2><p>${stepCopy.desc}</p></div>
+        <div class="continue-action">${stepCopy.primary}</div>
       </section>
 
-      <section class="grid grid-4 student-metric-grid">
-        <div class="card metric-card"><div class="metric-label">Overall Progress</div><div class="metric-value">${completion}%</div><div class="mini-stat">Across currently open content</div></div>
-        <div class="card metric-card"><div class="metric-label">Reading</div><div class="metric-value">${reading}%</div><div class="mini-stat">Current reading level</div></div>
-        <div class="card metric-card"><div class="metric-label">Grammar</div><div class="metric-value">${grammar}%</div><div class="mini-stat">Current grammar level</div></div>
-        <div class="card metric-card"><div class="metric-label">Completed</div><div class="metric-value">${completed}/${available.length||0}</div><div class="mini-stat">Core practices finished</div></div>
+      <section class="student-home-section tools-home-section">
+        <div class="student-section-head"><div><div class="section-kicker">Smart support</div><h2>Learning Tools</h2></div><button class="text-link" onclick="PROVE.setStudentTab('tools')">View all</button></div>
+        ${learningToolsList(true)}
       </section>
 
-      <section class="grid grid-2">
-        <div class="card">
-          <div class="dashboard-section-title"><div><div class="eyebrow">Priority</div><h2>What to improve</h2></div><button class="btn btn-secondary" onclick="PROVE.setStudentTab('practice')">Open Practice</button></div>
-          ${renderStudentFocusCards(stats)}
-        </div>
-        <div class="card">
-          <div class="dashboard-section-title"><div><div class="eyebrow">Recent Performance</div><h2>Last activity</h2></div>${ctx.attempts[0]?`<span class="pill">${new Date(ctx.attempts[0].submittedAt).toLocaleDateString()}</span>`:""}</div>
-          ${renderStudentRecentAttempt(ctx.attempts)}
-        </div>
-      </section>
+      ${weeklyJourney(ctx.attempts)}
 
-      <section class="grid grid-2">
-        <div class="card">
-          <div class="dashboard-section-title"><div><div class="eyebrow">Strengths</div><h2>Best skills</h2></div></div>
-          ${renderStudentSkillHighlights(stats,"strong")}
-        </div>
-        <div class="card">
-          <div class="dashboard-section-title"><div><div class="eyebrow">At a glance</div><h2>Skill overview</h2></div><button class="btn btn-secondary" onclick="PROVE.setStudentTab('progress')">View All Skills</button></div>
-          ${renderCompactSkillOverview(stats)}
+      <section class="student-home-section">
+        <div class="student-section-head"><div><div class="section-kicker">At a glance</div><h2>Your Progress</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">Details</button></div>
+        <div class="student-quick-stats">
+          <div><span>Overall</span><strong>${completion}%</strong></div>
+          <div><span>Reading</span><strong>${reading}%</strong></div>
+          <div><span>Grammar</span><strong>${grammar}%</strong></div>
         </div>
       </section>
     </div>`;
   }
+
   function studentPractice(ctx){
     const openSet=new Set(ctx.openUnits.map(u=>u.id));
-    const cards=DATA.units.map(u=>{const ready=(u.trainings||[]).length>0,open=ready&&openSet.has(u.id);return `<div class="card unit-card ${open?"":"locked"}"><span class="pill ${open?"ok":"warn"}">${open?"Available":"🔒 Coming Soon"}</span><h3>Unit ${u.number}: ${esc(u.title)}</h3>${open?u.trainings.map(t=>{const at=latestAttemptFor(ctx.attempts,t.id);return `<div class="training-card"><div><h4>${t.type==="reading"?"📖":"✍️"} ${esc(t.title)}</h4><div class="muted">${esc(t.subtitle)}</div>${at?`<div class="pill">Latest: ${at.percentage}%</div>`:""}</div><button class="btn btn-primary" onclick="PROVE.startTraining('${t.id}')">${at?"Practice Again":"Start"}</button></div>`}).join(""):`<p class="muted">This unit is not open yet.</p>`}</div>`}).join("");
-    return `<div class="eyebrow">Practice</div><h1>Training Library</h1><p class="muted">Choose any practice that is currently open.</p><div class="grid grid-2">${cards}</div>`;
+    const cards=DATA.units.map(u=>{const ready=(u.trainings||[]).length>0,open=ready&&openSet.has(u.id);return `<div class="card unit-card ${open?"":"locked"}"><span class="pill ${open?"ok":"warn"}">${open?"Available":"🔒 Coming Soon"}</span><h3>Unit ${u.number}: ${esc(u.title)}</h3>${open?u.trainings.map(t=>{const at=latestAttemptFor(ctx.attempts,t.id);return `<div class="training-card"><div><h4>${t.type==="reading"?"Reading":"Grammar"} • ${esc(t.title)}</h4><div class="muted">${esc(t.subtitle)}</div>${at?`<div class="pill">Latest: ${at.percentage}%</div>`:""}</div><button class="btn btn-primary" onclick="PROVE.startTraining('${t.id}')">${at?"Practice Again":"Start"}</button></div>`}).join(""):`<p class="muted">This unit is not open yet.</p>`}</div>`}).join("");
+    return `<div class="student-page-head"><div class="section-kicker">Practice</div><h1>Training Library</h1><p>Choose an open unit and continue at your pace.</p></div><div class="grid grid-2">${cards}</div>`;
   }
+
+  function studentTools(){
+    return `<div class="student-page-head"><div class="section-kicker">Learning Tools</div><h1>Learn smarter</h1><p>Choose the support you need. Every tool stays inside StepUp.</p></div>${learningToolsList(false)}`;
+  }
+
   function studentProgress(ctx){
-    const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=Math.round(done/u.trainings.length*100);return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
-    const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));return `<div class="eyebrow">Progress</div><h1>My Progress</h1><div class="grid grid-2">${cards}</div><div class="card"><h2>Current Skill Profile</h2>${renderStudentSkillBars(latest)}</div><div class="card"><h2>Recommended Focus</h2>${renderStudentNeeds(latest)}</div>`;
+    const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=u.trainings.length?Math.round(done/u.trainings.length*100):0;return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
+    const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
+    const rows=ctx.attempts.slice(0,12).map(a=>{const l=resultLevel(a.percentage);return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.percentage}%</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`}).join("");
+    return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>Your results, skill profile, and recommended focus in one place.</p></div>
+      <div class="grid grid-2">${cards}</div>
+      <div class="card"><h2>Current Skill Profile</h2>${renderStudentSkillBars(latest)}</div>
+      <div class="card"><h2>Recommended Focus</h2>${renderStudentNeeds(latest)}</div>
+      <div class="card"><div class="student-section-head"><div><div class="section-kicker">History</div><h2>Recent Results</h2></div></div><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='5'>No results yet.</td></tr>"}</tbody></table></div></div>`;
   }
-  function studentResults(ctx){const rows=ctx.attempts.map(a=>{const l=resultLevel(a.percentage);return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.score}/${a.total} (${a.percentage}%)</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${fmtTime(a.elapsedSeconds)}</td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`}).join("");return `<div class="eyebrow">Results</div><h1>My Results</h1><div class="card"><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Time</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='6'>No results yet.</td></tr>"}</tbody></table></div></div>`}
-  function studentProfile(ctx){return `<div class="eyebrow">Profile</div><h1>My Profile</h1><div class="card"><div class="form-grid"><div class="field"><label>Name</label><input readonly value="${esc(state.profile.displayName||"")}"></div><div class="field"><label>Class Code</label><input readonly value="${esc(state.profile.classCode||"")}"></div><div class="field"><label>School</label><input readonly value="${esc(state.profile.school||"")}"></div></div></div>`}
+
+  function studentProfile(){
+    return `<div class="student-page-head"><div class="section-kicker">Profile</div><h1>My Profile</h1><p>Keep your name accurate. Class and school information are managed by your teacher.</p></div>
+      <div class="student-profile-clean card">
+        <div class="student-profile-avatar">${esc((state.profile.displayName||"S").trim().charAt(0).toUpperCase()||"S")}</div>
+        <div class="student-profile-main"><strong>${esc(state.profile.displayName||"")}</strong><span>StepUp Student</span></div>
+        <button class="btn btn-secondary" onclick="PROVE.editStudentName()">Edit Name</button>
+      </div>
+      <div class="card student-profile-details">
+        <div><span>Class</span><strong>${esc(state.profile.classCode||"—")}</strong></div>
+        <div><span>School</span><strong>${esc(state.profile.school||"—")}</strong></div>
+        <div><span>Account</span><strong>Student</strong></div>
+      </div>
+      <button class="btn btn-outline student-logout-btn" onclick="PROVE.logout()">Log out</button>`;
+  }
+
+  async function openStudentTool(kind){
+    state.studentTab="tools";
+    if(kind==="assistant" && window.MG1Assistant?.render)return window.MG1Assistant.render();
+    if(kind==="writing" && window.MG1Assistant?.openWritingCoach)return window.MG1Assistant.openWritingCoach();
+    if(kind==="dictionary" && window.MG1Assistant?.openDictionary)return window.MG1Assistant.openDictionary();
+    if(kind==="growth" && window.STEPUP_ADV?.renderStudentGrowth)return window.STEPUP_ADV.renderStudentGrowth();
+    alert("This tool is still loading. Please try again in a moment.");
+  }
+
+  async function editStudentName(){
+    const current=(state.profile.displayName||"").trim();
+    const next=(prompt("Enter the student name:",current)||"").trim().replace(/\s+/g," ");
+    if(!next || next===current)return;
+    if(next.length<2 || next.length>80)return alert("Please enter a valid name.");
+    const pin=(prompt("Enter your current 4-digit PIN to confirm the name change:")||"").trim();
+    if(!/^\d{4}$/.test(pin))return alert("Enter your current 4-digit PIN.");
+    try{
+      if(state.fb){
+        const user=state.fb.auth.currentUser;
+        if(!user)throw new Error("You are not signed in.");
+        const oldCreds=await studentCreds(current,state.profile.classCode,pin);
+        const newCreds=await studentCreds(next,state.profile.classCode,pin);
+        const credential=firebase.auth.EmailAuthProvider.credential(oldCreds.email,oldCreds.password);
+        await user.reauthenticateWithCredential(credential);
+        if(user.email!==newCreds.email)await user.updateEmail(newCreds.email);
+        await user.updatePassword(newCreds.password);
+        await state.fb.db.collection("users").doc(state.profile.id).update({displayName:next});
+        state.profile.displayName=next;
+      }else{
+        const oldCreds=await studentCreds(current,state.profile.classCode,pin);
+        if(state.profile.loginEmail!==oldCreds.email || state.profile.loginPassword!==oldCreds.password)throw new Error("Incorrect PIN.");
+        const newCreds=await studentCreds(next,state.profile.classCode,pin);
+        state.profile.displayName=next; state.profile.loginEmail=newCreds.email; state.profile.loginPassword=newCreds.password;
+        local.saveUser(state.profile);
+      }
+      alert("Name updated. Use the new name with the same PIN the next time you sign in.");
+      renderStudent();
+    }catch(e){
+      console.error("Name update failed",e);
+      alert(e?.code==="auth/email-already-in-use"?"That name is already in use in this class.":"Could not update the name. Check your PIN and try again.");
+    }
+  }
 
   function findTraining(id){
     for(const u of DATA.units){const t=u.trainings.find(x=>x.id===id);if(t)return {...t,unitId:u.id,unitNumber:u.number,unitTitle:u.title}}
@@ -1333,11 +1437,56 @@
     const by={};a.answers.forEach(x=>{by[x.skill]??={ok:0,total:0,need:x.need};by[x.skill].total++;if(x.correct)by[x.skill].ok++;});
     const skills=Object.entries(by).map(([k,v])=>{const p=Math.round(v.ok/v.total*100);return `<div class="skill-row"><div>${esc(k)}</div><div class="bar"><div class="fill" style="width:${p}%"></div></div><div>${p}%</div></div>`}).join("");
     const needs=weak.length?`<ul class="action-list">${[...new Map(weak.map(x=>[x.skill,x])).values()].map(x=>`<li><strong>${esc(x.skill)}:</strong> ${esc(x.need||"Review this skill and try a short focused practice.")}</li>`).join("")}</ul>`:"<div class='notice success'>Excellent — no weak skill was detected in this attempt.</div>";
-    const review=t.questions.map((q,i)=>{const s=a.answers[i].selected;return `<div style="border-top:1px solid #edf1f4;padding:12px 0"><strong>Q${i+1}. ${esc(q.stem)}</strong><p class="${a.answers[i].correct?"status ok":"status bad"}">${a.answers[i].correct?"Correct":"Needs review"}</p><p>Your answer: ${s===null?"No answer":esc(q.choices[s])}</p>${a.answers[i].correct?"":`<p>Correct answer: <strong>${esc(q.choices[q.answer])}</strong></p>`}<p class="muted">${esc(q.explanation)}</p></div>`}).join("");
-    app.innerHTML=shell(`<main class="container"><div class="report-head"><div><div class="eyebrow">My STEP Report</div><h1>${esc(t.title)}</h1><p class="muted">Unit ${t.unitNumber} • ${esc(t.type)}</p></div><div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setStudentTab('home')">Back to My Dashboard</button></div></div>
+    const review=t.questions.map((q,i)=>{const s=a.answers[i].selected;return `<div class="student-review-item"><strong>Q${i+1}. ${esc(q.stem)}</strong><p class="${a.answers[i].correct?"status ok":"status bad"}">${a.answers[i].correct?"Correct":"Needs review"}</p><p>Your answer: ${s===null?"No answer":esc(q.choices[s])}</p>${a.answers[i].correct?"":`<p>Correct answer: <strong>${esc(q.choices[q.answer])}</strong></p>`}<p class="muted">${esc(q.explanation)}</p>${a.answers[i].correct?"":`<button class="btn btn-secondary explain-mistake-btn no-print" onclick="PROVE.explainMyMistake(${i})"><span class="explain-mistake-spark">✦</span> Explain my mistake</button>`}</div>`}).join("");
+    app.innerHTML=shell(`<main class="container student-app-shell">${studentTabs()}<section class="student-view"><div class="report-head"><div><div class="eyebrow">My STEP Report</div><h1>${esc(t.title)}</h1><p class="muted">Unit ${t.unitNumber} • ${esc(t.type)}</p></div><div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setStudentTab('home')">Back to My Dashboard</button></div></div>
       <div class="card"><div class="score">${a.score}/${a.total} <span style="font-size:22px">(${a.percentage}%)</span></div><p>Time used: ${fmtTime(a.elapsedSeconds)}</p></div>
       <div class="grid grid-2"><div class="card"><h2>Skill Breakdown</h2>${skills}</div><div class="card"><h2>What I Need</h2>${needs}</div></div>
-      <div class="card"><h2>Review</h2>${review}</div></main>`,"Student Report");
+      <div class="card"><h2>Review</h2>${review}</div></section></main>`,"Student Report");
+  }
+
+  async function explainMyMistake(questionIndex){
+    const t=state.activeTraining;
+    const q=t?.questions?.[questionIndex];
+    const selected=state.exam?.answers?.[questionIndex];
+    if(!t || !q || !window.MG1Assistant?.render){
+      alert("MG1 Assistant is still loading. Please try again in a moment.");
+      return;
+    }
+
+    const cleanContextText=(value,max)=>String(value??"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,max);
+    const selectedText=selected===null || selected===undefined
+      ? "No answer"
+      : `${String.fromCharCode(65+selected)}) ${cleanContextText(q.choices?.[selected],70)}`;
+    const correctText=`${String.fromCharCode(65+q.answer)}) ${cleanContextText(q.choices?.[q.answer],70)}`;
+    const rawPassage=t.type==="reading" ? cleanContextText(t.passage,100) : "";
+    const passageContext=rawPassage ? `\nPassage context: ${rawPassage}` : "";
+    const prompt=`Explain my mistake from StepUp Practice.
+Unit ${t.unitNumber}: ${cleanContextText(t.unitTitle,40)}
+Skill: ${cleanContextText(q.skill||t.type,40)}
+Question: ${cleanContextText(q.stem,130)}
+My answer: ${selectedText}
+Correct answer: ${correctText}${passageContext}
+Explain this mistake briefly and clearly. Why is my answer wrong, and why does the correct answer work? Stay on this question.`;
+
+    state.studentTab="tools";
+    await renderStudent();
+    window.MG1Assistant.render();
+
+    // Use the assistant exactly as configured; only prefill the current Practice context.
+    let tries=0;
+    const sendWhenReady=()=>{
+      const input=document.getElementById("mg1Input");
+      const send=document.getElementById("mg1Send");
+      if(input && send){
+        input.value=prompt;
+        input.focus();
+        send.click();
+        return;
+      }
+      if(++tries<12)setTimeout(sendWhenReady,50);
+      else alert("MG1 Assistant is still loading. Please try again.");
+    };
+    setTimeout(sendWhenReady,0);
   }
 
   function stopClassModeTimer(){if(state.classMode?.timer){clearInterval(state.classMode.timer);state.classMode.timer=null}}
@@ -1643,7 +1792,7 @@
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,startTraining,startRemedial,choose,goQ,toggleFlag,prevQ,nextQ,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage
   };

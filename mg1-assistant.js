@@ -333,19 +333,57 @@ function isLanguageOnlyFollowup(query="") {
 }
 function isLessonAdvance(query="") {
   const n=normalize(query);
-  const exact=new Set([
-    "فهمت","واضح","واضحه","واضحة","التالي","نكمل","كمل","كملي","ننتقل","تم",
-    "next","continue","got it","understood","i understand","clear","next rule"
-  ]);
-  if(exact.has(n)) return true;
-  return includesAny(query,["لننتقل","ننتقل للقاعده التاليه","ننتقل للقاعدة التالية","go to the next rule","move to the next rule"]);
+  if(!n) return false;
+
+  // If the student is explicitly confused, never treat the message as readiness.
+  if(isLessonClarification(query)) return false;
+
+  const exactPhrases=[
+    // Arabic readiness / transition language.
+    "فهمت","فهمتها","فهمته","فهمت القاعدة","فهمت القاعده","فهمت الفكرة","فهمت الفكره",
+    "واضح","واضحة","واضحه","الفكرة واضحة","الفكره واضحه","واضحة الفكرة","واضحه الفكره","صارت واضحة","صارت واضحه","وضحت",
+    "تمام","تمام فهمت","تمام نكمل","اوكي","أوكي","اوك","اوكي فهمت","طيب","ماشي",
+    "جاهز","جاهزة","جاهزه","انا جاهز","انا جاهزة","أنا جاهز","أنا جاهزة",
+    "التالي","اللي بعده","اللي بعدها","القاعدة التالية","القاعده التاليه","النقطة التالية","النقطه التاليه",
+    "نكمل","خلينا نكمل","يلا نكمل","نواصل","كمل","كملي","تابع","تابعي","ننتقل","خلينا ننتقل",
+    "ننتقل للقاعدة التالية","ننتقل للقاعده التاليه","يلا التالي","خلاص فهمت","اي فهمت","إي فهمت","ايوه فهمت","أيوه فهمت",
+    "نعم","نعم فهمت","ايه","إيه","تم",
+
+    // English readiness / transition language.
+    "got it","i got it","i get it","gotcha","understood","i understand","i understood",
+    "makes sense","that makes sense","it makes sense","clear","it is clear","it's clear","its clear","that is clear","that's clear","thats clear","all clear",
+    "ok","okay","alright","all right","ready","i am ready","im ready","i'm ready",
+    "next","next one","next rule","next point","continue","go on","move on","keep going","proceed",
+    "lets continue","let's continue","let us continue","lets go","let's go","go to next","go to the next rule","move to the next rule",
+    "ready for next","ready for the next rule","yes","yes i understand","yep","done"
+  ];
+  if(exactPhrases.some(x=>n===normalize(x))) return true;
+
+  // Natural longer messages such as "Yes, I understand now — next".
+  const strongPhrases=[
+    "خلاص فهمت","تمام فهمت","اي فهمت","إي فهمت","ايوه فهمت","أيوه فهمت","نعم فهمت",
+    "خلينا نكمل","يلا نكمل","ننتقل للقاعدة التالية","ننتقل للقاعده التاليه","القاعدة التالية","القاعده التاليه",
+    "i understand now","i get it now","i got it now","got it next","got it continue","okay next","ok next",
+    "ready for next","ready for the next rule","lets continue","let's continue","move on","go to the next rule","next rule"
+  ];
+  return strongPhrases.some(x=>n.includes(normalize(x)));
 }
 
 function isLessonClarification(query="") {
-  return includesAny(query,[
-    "اشرح اكثر","اشرح أكثر","وضح اكثر","وضح أكثر","مو واضح","غير واضح","ما فهمت","لم افهم","لم أفهم",
-    "explain more","explain again","more detail","not clear","i don't understand","i dont understand"
-  ]);
+  const n=normalize(query);
+  if(!n) return false;
+  const clarificationPhrases=[
+    // Arabic confusion / clarification language.
+    "اشرح","اشرح لي","اشرح ليش","اشرح اكثر","اشرح أكثر","وضح","وضح لي","وضح اكثر","وضح أكثر",
+    "مو واضح","مو واضحة","مو واضحه","مش واضح","مش واضحة","مش واضحه","غير واضح","غير واضحة","غير واضحه","ما هو واضح","ماهي واضحة","ما هي واضحة","ماهي واضحه","ما هي واضحه","ما فهمت","مافهمت","ما فهمتها","مافهمتها",
+    "لم افهم","لم أفهم","مو فاهم","مو فاهمة","مو فاهمه","مش فاهم","مش فاهمة","مش فاهمه","محتارة","محتاره","ليش","لماذا",
+
+    // English confusion / clarification language.
+    "explain","explain more","explain again","can you explain","please explain","more detail","not clear","not really clear","unclear",
+    "i don't understand","i dont understand","i do not understand","i don't get it","i dont get it","i do not get it",
+    "i am confused","im confused","i'm confused","confused","not sure","i am not sure","im not sure","i'm not sure","isn't clear","isnt clear","what do you mean","why is that","why"
+  ];
+  return clarificationPhrases.some(x=>n===normalize(x) || n.startsWith(normalize(x)+" ") || n.includes(" "+normalize(x)+" ") || n.endsWith(" "+normalize(x)));
 }
 
 
@@ -372,12 +410,12 @@ function lessonAnswerInput(query="") {
   const raw=String(query||"").trim();
   if(!raw)return null;
 
-  // Never treat progress / help / explanation requests as an answer.
+  // Never treat readiness, progress, help, or explanation requests as a quiz answer.
   const n=normalize(raw);
+  if(isLessonAdvance(raw) || isLessonClarification(raw) || isLanguageOnlyFollowup(raw)) return null;
   const nonAnswers=[
-    "got it","next","next rule","continue","understood","i understand",
-    "i dont understand","i don't understand","explain","explain more","help","why",
-    "فهمت","التالي","نكمل","كمل","اشرح","اشرح اكثر","اشرح أكثر","ما فهمت","لم افهم","لم أفهم","ساعدني","ليش","لماذا"
+    "help","help me","can you help","repeat","again",
+    "ساعدني","مساعدة","مساعده","عيد","اعد","أعد"
   ];
   if(nonAnswers.some(x=>n===normalize(x) || n.startsWith(normalize(x)+" "))) return null;
 
@@ -683,6 +721,7 @@ function injectStyles(){
 function addTabs(){
   const nav=document.querySelector(".role-tabs");
   if(!nav) return;
+  if(nav.dataset.role==="student") return;
   const existingText=nav.textContent||"";
   if(!/Home|Practice|Progress|Results|Profile/.test(existingText)) return;
   if(!document.getElementById("mg1AssistantTab")){
@@ -705,8 +744,20 @@ function addTabs(){
   }
 }
 
-function deactivateBaseTabs(){
-  document.querySelectorAll(".role-tabs .role-tab").forEach(x=>x.classList.remove("active"));
+function deactivateBaseTabs(root=document){
+  root.querySelectorAll(".role-tabs .role-tab").forEach(x=>x.classList.remove("active"));
+}
+
+function markStudentToolsActive(root=document){
+  const nav=root.querySelector?.(".role-tabs[data-role='student']")||document.querySelector(".role-tabs[data-role='student']");
+  if(!nav)return false;
+  nav.querySelectorAll(".role-tab").forEach(x=>x.classList.remove("active"));
+  nav.querySelector("[data-student-tab='tools']")?.classList.add("active");
+  return true;
+}
+
+function studentToolBreadcrumb(label){
+  return `<div class="student-tool-breadcrumb"><button type="button" onclick="window.PROVE?.setStudentTab('tools')">Tools</button><span>›</span><strong>${esc(label)}</strong></div>`;
 }
 
 function renderAssistant(){
@@ -722,9 +773,10 @@ function renderAssistant(){
   const a=main.querySelector("#mg1AssistantTab"); if(a){a.addEventListener("click",()=>renderAssistant());}
   const w=main.querySelector("#mg1WritingTab"); if(w){w.addEventListener("click",()=>renderWritingCoach());}
   const d=main.querySelector("#mg1DictionaryTab"); if(d){d.addEventListener("click",()=>renderDictionary());}
-  deactivateBaseTabs();
-  main.querySelector("#mg1AssistantTab")?.classList.add("active");
-
+  const studentMode=markStudentToolsActive(main);
+  if(!studentMode){deactivateBaseTabs(main);main.querySelector("#mg1AssistantTab")?.classList.add("active");}
+  const contentHost=studentMode?document.createElement("section"):main;
+  if(studentMode){contentHost.className="student-view student-tool-view";main.appendChild(contentHost);const bc=document.createElement("div");bc.innerHTML=studentToolBreadcrumb("MG1 Assistant");contentHost.appendChild(bc.firstElementChild);}
   const wrap=document.createElement("section"); wrap.className="mg1-assistant-shell";
   wrap.innerHTML=`
     <div class="mg1-assistant-hero">
@@ -755,7 +807,7 @@ function renderAssistant(){
         <button class="mg1-send" id="mg1Send">Send</button>
       </div>
     </div>`;
-  main.appendChild(wrap);
+  contentHost.appendChild(wrap);
   bindAssistantUI();
   paintMessages();
 }
@@ -769,7 +821,10 @@ function renderWritingCoach(){
   const a=main.querySelector("#mg1AssistantTab"); if(a)a.addEventListener("click",()=>renderAssistant());
   const w=main.querySelector("#mg1WritingTab"); if(w)w.addEventListener("click",()=>renderWritingCoach());
   const d=main.querySelector("#mg1DictionaryTab"); if(d)d.addEventListener("click",()=>renderDictionary());
-  deactivateBaseTabs(); main.querySelector("#mg1WritingTab")?.classList.add("active");
+  const studentMode=markStudentToolsActive(main);
+  if(!studentMode){deactivateBaseTabs(main);main.querySelector("#mg1WritingTab")?.classList.add("active");}
+  const contentHost=studentMode?document.createElement("section"):main;
+  if(studentMode){contentHost.className="student-view student-tool-view";main.appendChild(contentHost);const bc=document.createElement("div");bc.innerHTML=studentToolBreadcrumb("Writing Coach");contentHost.appendChild(bc.firstElementChild);}
 
   const wrap=document.createElement("section");
   wrap.className="mg1-writing-shell";
@@ -792,7 +847,7 @@ function renderWritingCoach(){
         <button class="mg1-send" id="writingSend">Send</button>
       </div>
     </div>`;
-  main.appendChild(wrap);
+  contentHost.appendChild(wrap);
   bindWritingUI();
   paintWritingMessages();
 }
@@ -937,7 +992,10 @@ function renderDictionary(){
   const a=main.querySelector("#mg1AssistantTab"); if(a)a.addEventListener("click",()=>renderAssistant());
   const w=main.querySelector("#mg1WritingTab"); if(w)w.addEventListener("click",()=>renderWritingCoach());
   const d=main.querySelector("#mg1DictionaryTab"); if(d)d.addEventListener("click",()=>renderDictionary());
-  deactivateBaseTabs(); main.querySelector("#mg1DictionaryTab")?.classList.add("active");
+  const studentMode=markStudentToolsActive(main);
+  if(!studentMode){deactivateBaseTabs(main);main.querySelector("#mg1DictionaryTab")?.classList.add("active");}
+  const contentHost=studentMode?document.createElement("section"):main;
+  if(studentMode){contentHost.className="student-view student-tool-view";main.appendChild(contentHost);const bc=document.createElement("div");bc.innerHTML=studentToolBreadcrumb("Dictionary");contentHost.appendChild(bc.firstElementChild);}
 
   const wrap=document.createElement("section");
   wrap.className="mg1-dict-shell";
@@ -956,7 +1014,7 @@ function renderDictionary(){
       <div class="report-head"><div><div class="eyebrow">My Words</div><h2 style="margin:4px 0">Saved vocabulary</h2></div><button class="btn btn-secondary" id="mg1ReloadWords">Refresh</button></div>
       <div id="mg1SavedWords"><div class="mg1-empty-small">Loading saved words...</div></div>
     </div>`;
-  main.appendChild(wrap);
+  contentHost.appendChild(wrap);
 
   document.getElementById("mg1DictSearch")?.addEventListener("click",lookupDictionaryCurrent);
   document.getElementById("mg1DictInput")?.addEventListener("keydown",e=>{
@@ -1630,8 +1688,8 @@ async function sendCurrent(){
       }
 
       const closing=flowNow.language==="ar"
-        ? "إذا كانت الفكرة واضحة، قولي: فهمت، لننتقل للقاعدة التالية 🌟"
-        : "When the idea is clear, say: Got it — next rule 🌟";
+        ? "إذا كانت الفكرة واضحة، اكتبي: فهمت أو نكمل 🌟"
+        : "When you're ready, type: Got it or Next 🌟";
 
       const submittedAnswer = directLessonAnswer.kind==="choice"
         ? `OPTION ${directLessonAnswer.value}`
@@ -1696,7 +1754,14 @@ RESPONSE RULES:
   const explicitUnit=explicitUnitInQuery(query);
   const sameLessonContext=flow.active && (!explicitUnit || explicitUnit===flow.unit);
 
-  if(sameLessonContext && isLessonAdvance(query)){
+  if(sameLessonContext && isLessonClarification(query)){
+    retrievalQuery=flow.sourceQuery;
+    unit=flow.unit;
+    intent=flow.intent;
+    lessonMode=true;
+    lessonAction="clarify";
+    stage="none";
+  } else if(sameLessonContext && isLessonAdvance(query)){
     flow.part += 1;
     retrievalQuery=flow.sourceQuery;
     unit=flow.unit;
@@ -1711,13 +1776,6 @@ RESPONSE RULES:
     intent=flow.intent;
     lessonMode=true;
     lessonAction="restate";
-    stage="none";
-  } else if(sameLessonContext && isLessonClarification(query)){
-    retrievalQuery=flow.sourceQuery;
-    unit=flow.unit;
-    intent=flow.intent;
-    lessonMode=true;
-    lessonAction="clarify";
     stage="none";
   } else if(sameLessonContext && (isLessonAnswerLike(query) || (!explicitUnit && !includesAny(query,["vocabulary","vocab","reading","writing","مفردات","قراءة","كتابة"])))){
     retrievalQuery=flow.sourceQuery;
@@ -1788,8 +1846,8 @@ RESPONSE RULES:
     if(lessonMode){
       const flowNow=assistantState.lessonFlow;
       const closing=flowNow.language==="ar"
-        ? 'جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، قولي: فهمت، لننتقل للقاعدة التالية.'
-        : 'Try the quick check 🌟 When the idea is clear, say: Got it — next rule.';
+        ? 'جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، اكتبي: فهمت أو نكمل.'
+        : 'Try the quick check 🌟 When you are ready, type: Got it or Next.';
       if(lessonAction==="teach"){
         lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Teach ONLY the first distinct rule/topic from this lesson. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
