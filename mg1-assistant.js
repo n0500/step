@@ -297,10 +297,33 @@ function normalize(s="") {
 function tokenSet(s="") { return new Set(normalize(s).split(/\s+/).filter(x=>x.length>1)); }
 function includesAny(s, arr) { const n=normalize(s); return arr.some(x=>n.includes(normalize(x))); }
 function arabicDigitToLatin(ch){ return ({"١":"1","٢":"2","٣":"3","٤":"4","٥":"5","٦":"6"})[ch]||ch; }
+
+function unitTokenToNumber(token="") {
+  const t=normalize(String(token||"")).replace(/\s+/g," ").trim();
+  const map={
+    "1":1,"١":1,"one":1,"first":1,"اول":1,"الاولي":1,"الاول":1,"واحد":1,"الاوله":1,
+    "2":2,"٢":2,"two":2,"second":2,"ثاني":2,"الثانيه":2,"الثاني":2,"اثنين":2,"اثنان":2,
+    "3":3,"٣":3,"three":3,"third":3,"ثالث":3,"الثالثه":3,"الثالث":3,"ثلاثه":3,"ثلاث":3,
+    "4":4,"٤":4,"four":4,"fourth":4,"رابع":4,"الرابعه":4,"الرابع":4,"اربعه":4,"اربع":4,
+    "5":5,"٥":5,"five":5,"fifth":5,"خامس":5,"الخامسه":5,"الخامس":5,"خمسه":5,"خمس":5,
+    "6":6,"٦":6,"six":6,"sixth":6,"سادس":6,"السادسه":6,"السادس":6,"سته":6,"ست":6
+  };
+  return map[t]||null;
+}
+
+function explicitUnitInQuery(query="") {
+  const raw=String(query||"");
+  const n=normalize(raw);
+  const tokenPattern="(1|2|3|4|5|6|١|٢|٣|٤|٥|٦|one|two|three|four|five|six|first|second|third|fourth|fifth|sixth|اول|الاولي|الاول|واحد|ثاني|الثانيه|الثاني|اثنين|اثنان|ثالث|الثالثه|الثالث|ثلاثه|ثلاث|رابع|الرابعه|الرابع|اربعه|اربع|خامس|الخامسه|الخامس|خمسه|خمس|سادس|السادسه|السادس|سته|ست)";
+  const after=new RegExp(`(?:unit|يونت|الوحده)\\s*(?:(?:number|no|رقم)\\s*)?${tokenPattern}(?=\\s|$)`,"i").exec(n);
+  if(after) return unitTokenToNumber(after[1]);
+  const before=new RegExp(`${tokenPattern}\\s+(?:unit|يونت)(?=\\s|$)`,"i").exec(n);
+  if(before) return unitTokenToNumber(before[1]);
+  return null;
+}
+
 function detectUnit(query="") {
-  const m = query.match(/(?:unit|الوحد[هة])\s*([1-6١-٦])/i);
-  if (m) return Number(arabicDigitToLatin(m[1]));
-  return assistantState.selectedUnit;
+  return explicitUnitInQuery(query) || assistantState.selectedUnit;
 }
 function detectIntent(query="") {
   const asksGrammar = includesAny(query,["grammar","rule","tense","قاعده","قواعد","زمن"]);
@@ -328,6 +351,56 @@ function isFullWritingRequest(query="") {
 function isGreetingOnly(query="") {
   const n = normalize(query);
   return ["hi","hello","hey","مرحبا","هلا","السلام عليكم","السلام عليكم ورحمة الله"].includes(n);
+}
+
+function isUnitNavigationQuery(query="") {
+  const n=normalize(query);
+  const phrases=[
+    "where can i find","where do i find","where is","how can i find","how do i find","how can i open","how do i open","show me where","take me to","go to",
+    "وين القى","وين القي","وين الاقي","اين اجد","اين القى","اين القي","كيف افتح","كيف اروح","كيف اصل","وديني","خذني"
+  ];
+  return phrases.some(x=>n.includes(normalize(x)));
+}
+
+function clearAssistantLessonContext(){
+  resetLessonFlow();
+  assistantState.lastExerciseQuery="";
+  assistantState.lastExerciseStage="none";
+  assistantState.quickPractice={active:false,unit:null,topic:"grammar",number:0,current:null};
+}
+
+function syncAssistantControls(){
+  document.querySelectorAll("#mg1Units [data-unit]").forEach(b=>{
+    const value=b.dataset.unit?Number(b.dataset.unit):null;
+    b.classList.toggle("active",value===assistantState.selectedUnit);
+  });
+  document.querySelectorAll("#mg1Modes [data-mode]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.mode===assistantState.selectedMode);
+  });
+}
+
+function applyAssistantContext(unit=null,intent=""){
+  const nextUnit=Number.isInteger(unit)&&unit>=1&&unit<=6?unit:null;
+  const nextMode=["grammar","fmf","vocabulary","reading","practice","ask"].includes(intent)?intent:"";
+  const unitChanged=nextUnit!==null && assistantState.selectedUnit!==nextUnit;
+  const flowUnitConflict=nextUnit!==null && assistantState.lessonFlow.active && assistantState.lessonFlow.unit!==nextUnit;
+  const flowModeConflict=nextMode && assistantState.lessonFlow.active && assistantState.lessonFlow.intent!==nextMode;
+  if(unitChanged||flowUnitConflict||flowModeConflict) clearAssistantLessonContext();
+  if(nextUnit!==null) assistantState.selectedUnit=nextUnit;
+  if(nextMode) assistantState.selectedMode=nextMode;
+  syncAssistantControls();
+}
+
+function navigationReply(query="",unit=null,intent="ask") {
+  if(!unit)return null;
+  const ar=hasArabic(query);
+  const target=intent==="fmf"?"Unit FMF":intent==="vocabulary"?"Unit vocabulary":intent==="practice"?"Quick practice":intent==="reading"?"Reading":"Unit grammar";
+  if(ar){
+    if(intent==="reading") return `تم تحديد Unit ${unit} ✓\nاختاري Reading من المهارات، ثم اسألي عن الجزء الذي تريدينه.`;
+    return `تم تحديد Unit ${unit} ✓\nاضغطي ${target} للبدء.`;
+  }
+  if(intent==="reading") return `Unit ${unit} is selected ✓\nChoose Reading, then ask about the part you want.`;
+  return `Unit ${unit} is selected ✓\nTap ${target} to start.`;
 }
 function isLanguageOnlyFollowup(query="") {
   const n = normalize(query);
@@ -452,11 +525,6 @@ function isLessonAnswerLike(query="") {
   return includesAny(query,["اجابتي","إجابتي","اختياري","الخيار","my answer","i choose","i think the answer"]);
 }
 
-function explicitUnitInQuery(query="") {
-  const m=String(query).match(/(?:unit|الوحد[هة])\s*([1-6١-٦])/i);
-  return m ? Number(arabicDigitToLatin(m[1])) : null;
-}
-
 function isBroadLessonRequest(query="", intent="") {
   if(intent!=="grammar" && intent!=="fmf") return false;
   const n=normalize(query);
@@ -477,6 +545,7 @@ function isBroadLessonRequest(query="", intent="") {
     "whole grammar","all grammar","grammar lesson","grammar step by step","teach me grammar",
     "teach me the grammar","explain the grammar","شرح قواعد الوحدة","علمني قواعد","علمني القواعد"
   ])) return true;
+  if(explicitUnitInQuery(query) && includesAny(query,["grammar","قواعد"]) && !isUnitNavigationQuery(query)) return true;
   if(/\bunit\s*[1-6]\s+grammar\b/.test(n)) return true;
   if(/\bgrammar\s+(?:for\s+)?unit\s*[1-6]\b/.test(n)) return true;
   if(/^grammar(?:\s+unit\s*[1-6])?$/.test(n)) return true;
@@ -1444,8 +1513,18 @@ async function sendWritingCurrent(){
 }
 
 function bindAssistantUI(){
-  document.querySelectorAll("#mg1Modes [data-mode]").forEach(b=>b.addEventListener("click",()=>{assistantState.selectedMode=b.dataset.mode;renderAssistant()}));
-  document.querySelectorAll("#mg1Units [data-unit]").forEach(b=>b.addEventListener("click",()=>{assistantState.selectedUnit=b.dataset.unit?Number(b.dataset.unit):null;renderAssistant()}));
+  document.querySelectorAll("#mg1Modes [data-mode]").forEach(b=>b.addEventListener("click",()=>{
+    const next=b.dataset.mode;
+    if(next!==assistantState.selectedMode) clearAssistantLessonContext();
+    assistantState.selectedMode=next;
+    renderAssistant();
+  }));
+  document.querySelectorAll("#mg1Units [data-unit]").forEach(b=>b.addEventListener("click",()=>{
+    const next=b.dataset.unit?Number(b.dataset.unit):null;
+    if(next!==assistantState.selectedUnit) clearAssistantLessonContext();
+    assistantState.selectedUnit=next;
+    renderAssistant();
+  }));
   document.querySelectorAll(".mg1-shortcut[data-prompt]").forEach(b=>b.addEventListener("click",()=>{
     const p=b.dataset.prompt.replace(/Unit 1/g,`Unit ${assistantState.selectedUnit||1}`);
     const input=document.getElementById("mg1Input"); if(input){input.value=p;input.focus();}
@@ -1646,6 +1725,19 @@ async function sendCurrent(){
     paintMessages(); return;
   }
 
+  // An explicitly named unit always overrides an older lesson context.
+  // This supports numeric and natural forms such as Unit 2, Unit two, and الوحدة الثانية.
+  const explicitUnitEarly=explicitUnitInQuery(query);
+  const explicitIntentEarly=detectIntent(query);
+  if(explicitUnitEarly){
+    applyAssistantContext(explicitUnitEarly,explicitIntentEarly);
+    if(isUnitNavigationQuery(query)){
+      assistantState.messages.push({role:"ai",text:navigationReply(query,explicitUnitEarly,explicitIntentEarly)});
+      paintMessages();
+      return;
+    }
+  }
+
   const directLessonAnswer=lessonAnswerInput(query);
 
   // In guided Grammar/FMF lessons, accept either:
@@ -1662,7 +1754,7 @@ async function sendCurrent(){
   const recoverGuidedAnswer = !!(directLessonAnswer && previousLessonMessage && looksLikeGuidedQuickCheck(previousLessonMessage.text));
   if((assistantState.lessonFlow.active || recoverGuidedAnswer) && directLessonAnswer){
     if(!assistantState.lessonFlow.active){
-      const inferredUnit=assistantState.selectedUnit || explicitUnitInQuery(previousUserQuery()) || 1;
+      const inferredUnit=explicitUnitInQuery(previousUserQuery()) || assistantState.selectedUnit || 1;
       const inferredIntent=assistantState.selectedMode==="fmf" ? "fmf" : "grammar";
       assistantState.lessonFlow={
         active:true,
@@ -1867,19 +1959,20 @@ RESPONSE RULES:
     let lessonInstruction="GUIDED LESSON MODE: NO";
     if(lessonMode){
       const flowNow=assistantState.lessonFlow;
+      const lessonContextLabel=`Unit ${flowNow.unit} • ${flowNow.intent==="fmf"?"Form, Meaning & Function":"Grammar"}`;
       const closing=flowNow.language==="ar"
         ? 'جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، اكتبي: فهمت أو نكمل.'
         : 'Try the quick check 🌟 When you are ready, type: Got it or Next.';
       if(lessonAction==="teach"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Teach ONLY the first distinct rule/topic from this lesson. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". Teach ONLY the first distinct rule/topic from this lesson. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Use RECENT LESSON CONVERSATION to identify what has already been taught, then teach ONLY the next distinct rule/topic that has not been covered. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list later rules. If no distinct rules remain, say the lesson is complete and do not invent another rule. Otherwise end exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Begin with this context line on its own line: "${lessonContextLabel}". Use RECENT LESSON CONVERSATION to identify what has already been taught, then teach ONLY the next distinct rule/topic that has not been covered. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list later rules. If no distinct rules remain, say the lesson is complete and do not invent another rule. Otherwise end exactly with: ${closing}`;
       }else if(lessonAction==="restate"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Keep the same rule/topic and scope. Do NOT advance. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Begin with this context line on its own line: "${lessonContextLabel}". Keep the same rule/topic and scope. Do NOT advance. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
       }else if(lessonAction==="clarify"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — CLARIFY CURRENT PART ${flowNow.part}. The student needs more explanation. Stay on the SAME rule/topic, explain it more simply with one helpful example, then give exactly ONE four-option quick check. Do NOT advance and do not reveal the answer. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — CLARIFY CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". The student needs more explanation. Stay on the SAME rule/topic, explain it more simply with one helpful example, then give exactly ONE four-option quick check. Do NOT advance and do not reveal the answer. End exactly with: ${closing}`;
       }else{
-        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Use RECENT LESSON CONVERSATION to understand the current rule and the last exercise. If the student answered the quick check, respond with brief friendly feedback, give the correct answer if needed, and one simple reason. Do NOT teach the next rule yet. If the response is a question about the current rule, answer it briefly and stay on this rule. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". Use RECENT LESSON CONVERSATION to understand the current rule and the last exercise. If the student answered the quick check, respond with brief friendly feedback, give the correct answer if needed, and one simple reason. Do NOT teach the next rule yet. If the response is a question about the current rule, answer it briefly and stay on this rule. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
       }
     }
 
