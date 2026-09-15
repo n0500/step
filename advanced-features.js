@@ -92,7 +92,7 @@
     const m={};
     attempts.forEach(a=>(a.answers||[]).forEach(x=>{
       const k=x.skill||"Other"; m[k]??={ok:0,total:0,wrong:0,units:{}};
-      m[k].total++; if(x.correct)m[k].ok++; else {m[k].wrong++;m[k].units[a.unitId]=(m[k].units[a.unitId]||0)+1;}
+      m[k].total++; if(x.correct)m[k].ok++; else {m[k].wrong++;const unitId=x.sourceUnitId||a.unitId||"";if(unitId)m[k].units[unitId]=(m[k].units[unitId]||0)+1;}
     }));
     return Object.entries(m).map(([skill,v])=>({skill,...v,pct:v.total?Math.round(v.ok/v.total*100):0})).sort((a,b)=>a.pct-b.pct);
   }
@@ -272,6 +272,23 @@
   }
   async function revokeParentLink(id){if(!confirm("Revoke this parent link?"))return;const F=fb();if(!F)return;await F.db.collection("parentViews").doc(id).delete();renderTeacherHub("parents");}
 
+  function renderWeeklyFocus(attempts){
+    const recent=sortByDateDesc(attempts,"submittedAt").slice(0,10);
+    const stats=skillStats(recent);
+    const weak=stats.filter(x=>x.total>0&&x.pct<80).slice(0,2);
+    if(!recent.length){
+      return `<div class="adv-card weekly-focus-card"><div class="section-kicker">This week</div><h2>Weekly Focus</h2><p class="adv-empty">Complete your first practice to unlock a personalized weekly focus.</p></div>`;
+    }
+    if(!weak.length){
+      return `<div class="adv-card weekly-focus-card"><div class="weekly-focus-head"><div><div class="section-kicker">This week</div><h2>Weekly Focus</h2><p class="muted">Your recent skills are holding at 80% or higher. Keep the momentum with timed mixed practice.</p></div><span class="adv-chip good">On track</span></div><div class="weekly-focus-footer"><span>Next step:</span><button class="text-link" onclick="window.PROVE?.setStudentTab('practice')">Take a timed Mini STEP Challenge →</button></div></div>`;
+    }
+    const focus=weak;
+    return `<div class="adv-card weekly-focus-card"><div class="weekly-focus-head"><div><div class="section-kicker">This week</div><h2>Weekly Focus</h2><p class="muted">Review one clue, complete a short focused practice, then test yourself again.</p></div><span class="adv-chip">Personalized</span></div>
+      <div class="weekly-focus-list">${focus.map(s=>{const unitId=topUnitForSkill(s);const safeSkill=encodeURIComponent(s.skill).replace(/'/g,"%27");return `<div class="weekly-focus-row"><div><strong>${esc(s.skill)}</strong><span>${s.pct}% current mastery</span></div><div class="weekly-focus-next"><small>Next step</small><b>Review the clue + 3 focused questions</b></div><button class="btn btn-secondary" onclick="window.PROVE?.reviewError('${esc(unitId)}','${safeSkill}')">Start Review</button></div>`}).join("")}</div>
+      <div class="weekly-focus-footer"><span>Then:</span><button class="text-link" onclick="window.PROVE?.setStudentTab('practice')">Take a timed Mini STEP Challenge →</button></div>
+    </div>`;
+  }
+
   async function renderStudentGrowth(){
     const profile=await getProfile(); if(!profile||profile.role!=="student")return;
     const host=preserveRoleNav("stepupGrowthTab"); if(!host)return;
@@ -284,11 +301,13 @@
       getClassAssignments(profile.classId),
       getStudentCollection("assignmentSubmissions",profile.id)
     ]);
-    const latest=latestPerTraining(attempts); const overall=avg(latest.map(a=>a.percentage)); const reading=avg(latest.filter(a=>a.trainingType==="reading").map(a=>a.percentage)); const grammar=avg(latest.filter(a=>a.trainingType==="grammar").map(a=>a.percentage));
+    const coreAttempts=attempts.filter(a=>a.trainingType==="reading"||a.trainingType==="grammar");
+    const latest=latestPerTraining(coreAttempts); const overall=avg(latest.map(a=>a.percentage)); const reading=avg(latest.filter(a=>a.trainingType==="reading").map(a=>a.percentage)); const grammar=avg(latest.filter(a=>a.trainingType==="grammar").map(a=>a.percentage));
     const goal=sortByDateDesc(goals,"updatedAt")[0]||null; const achievements=computeAchievements(attempts,writing,goal,{overall,reading,grammar}); const doneIds=new Set(subs.map(s=>s.assignmentId));
     const journey=studentJourneySummary(attempts,achievements,overall);
     host.innerHTML=`<div class="student-tool-breadcrumb"><button type="button" onclick="window.PROVE?.setStudentTab('tools')">Tools</button><span>›</span><strong>My Growth</strong></div>
       ${renderStudentJourneyHero(profile,journey)}
+      ${renderWeeklyFocus(attempts)}
       <div class="adv-head student-growth-head"><div><div class="eyebrow">My Growth</div><h1>Your learning, in one place</h1><p class="muted">Goals, assignments, achievements, and writing history.</p></div></div>
       <div class="adv-grid"><div class="adv-card"><h2>My Goal</h2>${goal?renderGoal(goal,{overall,reading,grammar}):"<p class='adv-empty'>Set one clear target for yourself.</p>"}<div class="adv-form-grid"><div><label class="adv-label">Metric</label><select id="advGoalMetric" class="adv-select"><option value="overall">Overall</option><option value="reading">Reading</option><option value="grammar">Grammar</option></select></div><div><label class="adv-label">Target %</label><input id="advGoalTarget" class="adv-input" type="number" min="60" max="100" value="80"></div></div><button id="advSaveGoal" class="btn btn-primary" style="margin-top:12px">${goal?"Update Goal":"Set Goal"}</button></div>
       <div class="adv-card"><h2>Achievements</h2><div class="adv-grid">${achievements.map(a=>`<div class="adv-achievement"><div class="icon">${a.icon}</div><div><strong>${esc(a.title)}</strong><div class="muted">${esc(a.text)}</div></div></div>`).join("")||"<div class='adv-empty'>Your achievements will appear as you practice.</div>"}</div></div></div>
@@ -316,29 +335,33 @@
     const unitNumber=Number(recent?.unitNumber||0);
     const unitLabel=unitNumber?`Unit ${unitNumber}`:"Start your first unit";
     const growthScore=Math.min(5,Math.max(1,Math.ceil((Math.min(100,Number(overall||0))/100)*3)+Math.min(2,Math.floor((achievements?.length||0)/3))));
-    const stages=["Seed","Sprout","Growing","Blooming","Flourishing"];
-    return {days,level,unitLabel,growthStage:growthScore,growthLabel:stages[growthScore-1]||"Seed",overall:Number(overall||0)};
+    const stages=["Start","Build","Advance","Strong","Peak"];
+    return {days,level,unitLabel,growthStage:growthScore,growthLabel:stages[growthScore-1]||"Start",overall:Number(overall||0)};
   }
 
   function renderStudentJourneyHero(profile,j){
-    const dots=Array.from({length:5},(_,i)=>`<span class="journey-stage-dot ${i<j.growthStage?"active":""}"></span>`).join("");
+    const labels=["Start","Build","Advance","Strong","Peak"];
+    const steps=labels.map((label,i)=>`<div class="journey-step ${i<j.growthStage?"active":""} ${i===j.growthStage-1?"current":""}">
+      <span class="journey-step-node">${i+1}</span><small>${label}</small>
+    </div>`).join("");
     return `<section class="stepup-journey-hero">
       <div class="journey-hero-top">
         <div>
-          <div class="journey-hero-kicker">My StepUp Journey</div>
+          <div class="journey-hero-kicker">My StepUp Path</div>
           <h1>${esc(profile.displayName||"Student")}</h1>
           <p>${esc(j.unitLabel)} • Keep moving forward, one step at a time.</p>
         </div>
-        <div class="journey-hero-mark" aria-hidden="true">SU</div>
+        <div class="journey-hero-mark journey-stepup-mark" aria-hidden="true"><span>STEP</span><strong>UP</strong></div>
       </div>
+      <div class="journey-current-level"><span>Current level</span><strong>Level ${j.growthStage} · ${esc(j.growthLabel)}</strong></div>
       <div class="journey-hero-stats">
         <div><span>Weekly level</span><strong>${esc(j.level)}</strong></div>
         <div><span>Active days</span><strong>${j.days}/5</strong></div>
-        <div><span>Growth stage</span><strong>${j.growthStage}/5</strong></div>
+        <div><span>StepUp level</span><strong>${j.growthStage}/5</strong></div>
       </div>
-      <div class="journey-growth-strip">
-        <div class="journey-growth-copy"><span>Growth</span><strong>${esc(j.growthLabel)}</strong></div>
-        <div class="journey-stage-track">${dots}</div>
+      <div class="journey-path-strip">
+        <div class="journey-path-head"><span>StepUp Path</span><strong>${esc(j.growthLabel)}</strong></div>
+        <div class="journey-step-track">${steps}</div>
       </div>
     </section>`;
   }

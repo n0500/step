@@ -553,14 +553,16 @@
     }
     const available=(cls?.openUnits||["u1"]).flatMap(id=>(unitById(id)?.trainings||[]));
     const totalTrainings=available.length;
+    const availableIds=new Set(available.map(t=>t.id));
+    const coreAttempts=attempts.filter(a=>availableIds.has(a.trainingId));
     const studentRows=students.map(s=>{
-      const sa=attempts.filter(a=>a.studentId===s.id),latest=latestPerTraining(sa.filter(a=>a.trainingType!=="remedial"));
-      const completed=new Set(sa.filter(a=>a.trainingType!=="remedial").map(a=>a.trainingId)).size;
+      const sa=attempts.filter(a=>a.studentId===s.id),core=sa.filter(a=>availableIds.has(a.trainingId)),latest=latestPerTraining(core);
+      const completed=new Set(core.map(a=>a.trainingId)).size;
       return {id:s.id,name:s.displayName,attempts:sa.length,completed,totalTrainings,overall:pctAverage(latest),reading:trainingTypeAverage(latest,"reading"),grammar:trainingTypeAverage(latest,"grammar"),last:sa.length?[...sa].sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt))[0].submittedAt:""};
     });
-    const completedPairs=new Set(attempts.filter(a=>a.trainingType!=="remedial").map(a=>`${a.studentId}|${a.trainingId}`)).size;
+    const completedPairs=new Set(coreAttempts.map(a=>`${a.studentId}|${a.trainingId}`)).size;
     const possible=students.length*totalTrainings;
-    return {cls,students,attempts,studentRows,totalTrainings,completion:possible?Math.round(completedPairs/possible*100):0,readingAvg:trainingTypeAverage(attempts,"reading"),grammarAvg:trainingTypeAverage(attempts,"grammar"),overallAvg:pctAverage(attempts)};
+    return {cls,students,attempts,studentRows,totalTrainings,completion:possible?Math.round(completedPairs/possible*100):0,readingAvg:trainingTypeAverage(coreAttempts,"reading"),grammarAvg:trainingTypeAverage(coreAttempts,"grammar"),overallAvg:pctAverage(latestPerTraining(coreAttempts))};
   }
 
   async function renderOwner(){
@@ -1216,7 +1218,7 @@
       assistant:`<svg viewBox="0 0 24 24"><path d="M12 2.8 13.7 8l5.2 1.7-5.2 1.7L12 16.6l-1.7-5.2-5.2-1.7L10.3 8z"/><path d="m18.4 14.3.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z"/></svg>`,
       writing:`<svg viewBox="0 0 24 24"><path d="M4 20h4l11-11-4-4L4 16z"/><path d="m13.5 6.5 4 4M4 20h16"/></svg>`,
       dictionary:`<svg viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 4.5v17M8 7h8M8 11h6"/></svg>`,
-      growth:`<svg viewBox="0 0 24 24"><path d="M12 21V11M12 14c-4.5 0-7-2.3-7-6 4.5 0 7 2.3 7 6ZM12 11c0-4.5 2.3-7 6-7 0 4.5-2.3 7-6 7Z"/></svg>`
+      growth:`<svg viewBox="0 0 24 24"><path d="M4 18h4v-4h4v-4h4V6h4"/><path d="m16 6 4 0 0 4"/></svg>`
     };
     return icons[kind]||"";
   }
@@ -1226,7 +1228,7 @@
       {id:"assistant",title:"MG1 Assistant",tag:"AI Tutor",desc:"Learn MegaGoal 1 step by step with guided practice."},
       {id:"writing",title:"Writing Coach",tag:"Writing",desc:"Plan, revise, and improve your writing one step at a time."},
       {id:"dictionary",title:"Dictionary",tag:"Quick",desc:"English meaning, Arabic support, IPA, examples, and pronunciation."},
-      {id:"growth",title:"My Growth",tag:"Progress",desc:"Goals, assignments, achievements, and your learning history."}
+      {id:"growth",title:"My Growth",tag:"StepUp Path",desc:"See your level, goals, achievements, and learning progress."}
     ];
     const rows=tools.map((t,i)=>`<button class="student-tool-row ${i===0?"featured":""}" onclick="PROVE.openStudentTool('${t.id}')">
       <span class="student-tool-icon tool-${t.id}">${studentToolIcon(t.id)}</span>
@@ -1258,11 +1260,13 @@
   }
 
   function studentHome(ctx){
-    const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
+    const available=ctx.openUnits.flatMap(u=>u.trainings);
+    const availableIds=new Set(available.map(t=>t.id));
+    const coreAttempts=ctx.attempts.filter(a=>availableIds.has(a.trainingId));
+    const latest=latestPerTraining(coreAttempts);
     const reading=trainingTypeAverage(latest,"reading");
     const grammar=trainingTypeAverage(latest,"grammar");
-    const available=ctx.openUnits.flatMap(u=>u.trainings);
-    const completed=new Set(ctx.attempts.filter(a=>a.trainingType!=="remedial").map(a=>a.trainingId)).size;
+    const completed=new Set(coreAttempts.map(a=>a.trainingId)).size;
     const completion=available.length?Math.round(Math.min(completed,available.length)/available.length*100):0;
     const step=nextStudentStep(ctx);
     const stepCopy=studentStepCopy(step);
@@ -1295,12 +1299,59 @@
 
   function studentPractice(ctx){
     const openSet=new Set(ctx.openUnits.map(u=>u.id));
+    const challengeAttempts=ctx.attempts.filter(a=>a.trainingType==="challenge").sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
+    const latestChallenge=challengeAttempts[0]||null;
+    const availableQuestionCount=ctx.openUnits.reduce((n,u)=>n+(u.trainings||[]).reduce((m,t)=>m+(t.questions||[]).length,0),0);
+    const challengeCard=availableQuestionCount>=3?`<section class="mini-challenge-card">
+      <div class="mini-challenge-copy"><div class="section-kicker">Timed practice</div><h2>Mini STEP Challenge</h2><p>Up to 10 mixed questions • 15 minutes • Three-Pass Method</p>${latestChallenge?`<span class="mini-challenge-latest">Latest ${latestChallenge.percentage}%</span>`:""}</div>
+      <div class="mini-challenge-actions"><div class="three-pass-mini"><span>1 Easy</span><span>2 Check</span><span>3 Eliminate</span></div><button class="btn btn-primary" onclick="PROVE.startMiniChallenge()">Start Challenge</button></div>
+    </section>`:"";
     const cards=DATA.units.map(u=>{const ready=(u.trainings||[]).length>0,open=ready&&openSet.has(u.id);return `<div class="card unit-card ${open?"":"locked"}"><span class="pill ${open?"ok":"warn"}">${open?"Available":"🔒 Coming Soon"}</span><h3>Unit ${u.number}: ${esc(u.title)}</h3>${open?u.trainings.map(t=>{const at=latestAttemptFor(ctx.attempts,t.id);return `<div class="training-card"><div><h4>${t.type==="reading"?"Reading":"Grammar"} • ${esc(t.title)}</h4><div class="muted">${esc(t.subtitle)}</div>${at?`<div class="pill">Latest: ${at.percentage}%</div>`:""}</div><button class="btn btn-primary" onclick="PROVE.startTraining('${t.id}')">${at?"Practice Again":"Start"}</button></div>`}).join(""):`<p class="muted">This unit is not open yet.</p>`}</div>`}).join("");
-    return `<div class="student-page-head"><div class="section-kicker">Practice</div><h1>Training Library</h1><p>Choose an open unit and continue at your pace.</p></div><div class="grid grid-2">${cards}</div>`;
+    return `<div class="student-page-head"><div class="section-kicker">Practice</div><h1>Training Library</h1><p>Choose an open unit and continue at your pace.</p></div>${challengeCard}<div class="grid grid-2">${cards}</div>`;
   }
 
   function studentTools(){
     return `<div class="student-page-head"><div class="section-kicker">Learning Tools</div><h1>Learn smarter</h1><p>Choose the support you need. Every tool stays inside StepUp.</p></div>${learningToolsList(false)}`;
+  }
+
+  function renderErrorReview(attempts){
+    const rows=[];
+    const sorted=[...(attempts||[])].sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
+    for(const a of sorted){
+      for(const x of (a.answers||[])){
+        if(x.correct)continue;
+        const unitId=x.sourceUnitId||a.unitId||"";
+        const key=`${unitId}|${x.skill||"Other"}`;
+        if(rows.some(r=>r.key===key))continue;
+        rows.push({
+          key,unitId,unitNumber:x.sourceUnitNumber||a.unitNumber||null,skill:x.skill||"Other",
+          clue:x.clue||x.need||"Identify the strongest clue before choosing the answer.",
+          score:a.percentage??0,date:a.submittedAt||""
+        });
+        if(rows.length>=5)break;
+      }
+      if(rows.length>=5)break;
+    }
+    if(!rows.length)return `<div class="card error-review-card"><div class="student-section-head"><div><div class="section-kicker">Error review</div><h2>Clues to Fix</h2></div></div><div class="notice success">No recent errors to review. Keep going.</div></div>`;
+    return `<div class="card error-review-card"><div class="student-section-head"><div><div class="section-kicker">Error review</div><h2>Clues to Fix</h2></div><span class="error-review-count">${rows.length} focus ${rows.length===1?"area":"areas"}</span></div>
+      <div class="error-review-list">${rows.map(r=>{const safeSkill=encodeURIComponent(r.skill).replace(/'/g,"%27");return `<div class="error-review-row"><div class="error-review-main"><div class="error-review-skill">${esc(r.skill)}</div><div class="error-review-clue"><span>Clue to notice</span>${esc(r.clue)}</div><small>${r.unitNumber?`Unit ${esc(r.unitNumber)} • `:""}Attempt score ${esc(r.score)}%</small></div><button class="btn btn-secondary" onclick="PROVE.reviewError('${esc(r.unitId)}','${safeSkill}')">Review this skill</button></div>`}).join("")}</div>
+    </div>`;
+  }
+
+  async function reviewError(unitId,encodedSkill=""){
+    const skill=decodeURIComponent(encodedSkill||"");
+    const unit=unitById(unitId);
+    if(!unit){state.studentTab="practice";return renderStudent();}
+    let pool=[];
+    (unit.trainings||[]).forEach(t=>(t.questions||[]).forEach(q=>{
+      if(!skill || String(q.skill||"").toLowerCase()===skill.toLowerCase())pool.push({...q});
+    }));
+    if(pool.length<3)(unit.trainings||[]).forEach(t=>(t.questions||[]).forEach(q=>{if(pool.length<3&&!pool.some(x=>x.stem===q.stem))pool.push({...q})}));
+    pool=pool.slice(0,3);
+    if(!pool.length){state.studentTab="practice";return renderStudent();}
+    const t={id:`focused-${unit.id}-${Date.now()}`,type:"remedial",title:skill?`Focused Review • ${skill}`:`Unit ${unit.number} Focused Review`,subtitle:"Short practice based on your error review",durationSeconds:180,questions:pool,unitId:unit.id,unitNumber:unit.number,unitTitle:unit.title,topics:skill?[skill]:[...new Set(pool.map(x=>x.skill).filter(Boolean))]};
+    state.activeTraining=t;state.exam={current:0,answers:Array(pool.length).fill(null),flagged:Array(pool.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null};
+    renderExam();state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
   }
 
   function studentProgress(ctx){
@@ -1310,6 +1361,7 @@
     return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>Your results, skill profile, and recommended focus in one place.</p></div>
       <div class="grid grid-2">${cards}</div>
       <div class="card"><h2>Current Skill Profile</h2>${renderStudentSkillBars(latest)}</div>
+      ${renderErrorReview(ctx.attempts)}
       <div class="card"><h2>Recommended Focus</h2>${renderStudentNeeds(latest)}</div>
       <div class="card"><div class="student-section-head"><div><div class="section-kicker">History</div><h2>Recent Results</h2></div></div><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='5'>No results yet.</td></tr>"}</tbody></table></div></div>`;
   }
@@ -1393,15 +1445,172 @@
     renderExam();state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
   }
 
+  function practiceStrategy(t){
+    const text=`${t?.title||""} ${(t?.topics||[]).join(" ")} ${t?.subtitle||""}`.toLowerCase();
+    if(t?.type==="challenge"){
+      return {
+        title:"STEP Strategy",
+        tip:"Use the Three-Pass Method: answer easy questions first, return for one careful check, then use elimination on the hardest questions.",
+        steps:["Easy first","Review later","Check clue","Eliminate"]
+      };
+    }
+    if(t?.type==="reading"){
+      return {
+        title:"Reading Strategy",
+        tip:"Read the question first, mark 1–2 keywords, scan for the same idea or a synonym, then eliminate unsupported, too broad, or contradictory options.",
+        steps:["Question","Keywords","Match evidence","Eliminate"]
+      };
+    }
+    const rules=[
+      [/subject|agreement/,"Find the true subject first. Words between the subject and verb do not change the real subject."],
+      [/countable|uncountable|quantity/,"Look at the noun before choosing the quantity word. Do not use a or an with an uncountable noun."],
+      [/article/,"Listen to the sound, not only the first letter: an hour, a university."],
+      [/present simple/,"A frequency word can be a strong clue, but still check the subject."],
+      [/present continuous|progressive/,"If the action is happening now or is temporary, test the be + verb-ing pattern."],
+      [/past simple/,"A finished time such as yesterday, last, or ago usually closes the action."],
+      [/past continuous/,"When often introduces the shorter action; while often introduces the longer action."],
+      [/present perfect/,"Since starts a point in time; for gives a period of time. Check the connection to now."],
+      [/past perfect/,"Put had + past participle on the action that happened first."],
+      [/future/,"Ask: prediction, plan, or arranged appointment?"],
+      [/modal/,"After a modal, use the base verb."],
+      [/gerund|infinitive/,"Check the word immediately before the blank. It often controls the next form."],
+      [/passive/,"Keep the tense inside be + past participle."],
+      [/conditional/,"Match both halves. One verb often reveals the conditional type."],
+      [/compar/,"Than signals a comparison. The + a group often signals a superlative."],
+      [/pronoun|relative/,"For reference, look backward for the nearest noun that matches meaning and number."],
+      [/preposition/,"Learn prepositions in phrases, not as isolated words."],
+      [/conjunction|connector/,"Read both sides and name the relationship before looking at the options."],
+      [/writing|accuracy|capital|punctuation/,"Test one feature at a time: agreement, tense, form, article, preposition, word order, capitalization, then punctuation."]
+    ];
+    const hit=rules.find(([re])=>re.test(text));
+    return {
+      title:"Smart Move",
+      tip:hit?.[1]||"Before you choose, identify what the blank needs: a noun, verb, adjective, adverb, connector, or preposition.",
+      steps:[]
+    };
+  }
+
+  function strategyCardHTML(t){
+    const st=practiceStrategy(t);
+    return `<details class="step-strategy-card">
+      <summary><span class="step-strategy-icon">✦</span><span>${esc(st.title)}</span><small>Tap for a quick clue</small></summary>
+      <div class="step-strategy-body">
+        <p>${esc(st.tip)}</p>
+        ${st.steps?.length?`<div class="step-strategy-steps">${st.steps.map((x,i)=>`<span><b>${i+1}</b>${esc(x)}</span>`).join("")}</div>`:""}
+      </div>
+    </details>`;
+  }
+
+  function cloneChallengeQuestion(q,t,u){
+    return {
+      ...q,
+      _sourceType:t.type,
+      _sourceTitle:t.title,
+      _passage:t.type==="reading"?t.passage:"",
+      _sourceUnitId:u.id,
+      _sourceUnitNumber:u.number,
+      _sourceUnitTitle:u.title
+    };
+  }
+
+  async function startMiniChallenge(){
+    const ctx=await buildStudentContext();
+    let grammar=[],reading=[];
+    ctx.openUnits.forEach(u=>(u.trainings||[]).forEach(t=>{
+      (t.questions||[]).forEach(q=>{
+        const item=cloneChallengeQuestion(q,t,u);
+        if(t.type==="reading")reading.push(item); else if(t.type==="grammar")grammar.push(item);
+      });
+    }));
+    const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+    grammar=shuffle(grammar); reading=shuffle(reading);
+    const targetCount=Math.min(10,grammar.length+reading.length);
+    if(targetCount<3)return alert("Complete/open more practice content before starting the Mini STEP Challenge.");
+    const readingCount=Math.min(reading.length,Math.max(0,Math.min(4,Math.floor(targetCount*.4))));
+    const grammarCount=Math.min(grammar.length,targetCount-readingCount);
+    let pool=[...grammar.slice(0,grammarCount),...reading.slice(0,readingCount)];
+    if(pool.length<targetCount){
+      const used=new Set(pool.map(x=>`${x._sourceTitle}|${x.stem}`));
+      const extra=shuffle([...grammar,...reading]).filter(x=>!used.has(`${x._sourceTitle}|${x.stem}`)).slice(0,targetCount-pool.length);
+      pool.push(...extra);
+    }
+    pool=shuffle(pool).slice(0,targetCount);
+    const t={
+      id:`mini-step-${Date.now()}`,
+      type:"challenge",
+      title:"Mini STEP Challenge",
+      subtitle:`${pool.length} questions • 15 minutes • Three-Pass Method`,
+      durationSeconds:900,
+      questions:pool,
+      unitId:"mixed",
+      unitNumber:null,
+      unitTitle:"Mixed STEP Practice",
+      topics:[...new Set(pool.map(q=>q.skill).filter(Boolean))].slice(0,6)
+    };
+    state.activeTraining=t;
+    state.exam={current:0,answers:Array(pool.length).fill(null),flagged:Array(pool.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null,pass:1};
+    renderExam();
+    state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
+  }
+
+  function challengePassCopy(pass){
+    if(pass===1)return {title:"Pass 1 • Answer the easy ones",text:"Answer what you know quickly. Mark anything that needs another look."};
+    if(pass===2)return {title:"Pass 2 • Careful check",text:"Return to marked or unanswered questions. Unflag a question when you are confident; keep it flagged for Pass 3."};
+    return {title:"Pass 3 • Eliminate & confirm",text:"Use elimination on the hardest questions, then confirm your final answers."};
+  }
+
+  function challengeTargets(pass=state.exam?.pass||1){
+    const e=state.exam||{};
+    if(pass===1)return (state.activeTraining?.questions||[]).map((_,i)=>i);
+    if(pass===2)return (state.activeTraining?.questions||[]).map((_,i)=>i).filter(i=>e.flagged?.[i]||e.answers?.[i]===null);
+    return (state.activeTraining?.questions||[]).map((_,i)=>i).filter(i=>e.flagged?.[i]);
+  }
+
+  function advanceChallengePass(){
+    const e=state.exam;
+    if(!e)return;
+    if(e.pass===1){
+      const targets=challengeTargets(2);
+      if(!targets.length)return submitExam(false);
+      e.pass=2;e.current=targets[0];return renderExam();
+    }
+    if(e.pass===2){
+      const targets=challengeTargets(3);
+      if(!targets.length)return submitExam(false);
+      e.pass=3;e.current=targets[0];return renderExam();
+    }
+    submitExam(false);
+  }
+
   function renderExam(){
     const t=state.activeTraining,e=state.exam,q=t.questions[e.current];
-    const left=t.type==="reading"?`<section class="passage"><div class="eyebrow">Reading Passage</div><h2>${esc(t.title)}</h2><div class="muted" style="font-size:12px;margin-bottom:12px">${esc(t.source)}</div><div class="passage-text">${t.passage}</div></section>`:`<section class="passage"><div class="eyebrow">${t.type==="remedial"?"Quick Review":"Grammar Focus"}</div><h2>${esc(t.title)}</h2>${t.source?`<p class="muted">${esc(t.source)}</p>`:""}<h3>Skills in this practice</h3><ul>${(t.topics||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="notice">Choose the best answer. No explanations are shown until you submit.</div></section>`;
+    const isChallenge=t.type==="challenge";
+    const unitLine=isChallenge?"Mixed STEP Practice":`Unit ${t.unitNumber}: ${esc(t.unitTitle)}`;
+    const challengePass=isChallenge?challengePassCopy(e.pass||1):null;
+    const passBanner=isChallenge?`<div class="three-pass-banner"><div><strong>${esc(challengePass.title)}</strong><span>${esc(challengePass.text)}</span></div><span class="three-pass-pill">${e.pass||1}/3</span></div>`:"";
+    const readingContext=isChallenge&&q._sourceType==="reading"&&q._passage
+      ?`<div class="challenge-reading-context"><div class="eyebrow">Reading context • Unit ${esc(q._sourceUnitNumber||"")}</div><div class="passage-text">${q._passage}</div></div>`:"";
+    const left=t.type==="reading"
+      ?`<section class="passage"><div class="eyebrow">Reading Passage</div><h2>${esc(t.title)}</h2><div class="muted" style="font-size:12px;margin-bottom:12px">${esc(t.source)}</div>${strategyCardHTML(t)}<div class="passage-text">${t.passage}</div></section>`
+      :`<section class="passage"><div class="eyebrow">${isChallenge?"Mini STEP Challenge":t.type==="remedial"?"Quick Review":"Grammar Focus"}</div><h2>${esc(t.title)}</h2>${t.source?`<p class="muted">${esc(t.source)}</p>`:""}${isChallenge?"":strategyCardHTML(t)}${isChallenge?`<div class="three-pass-method"><strong>Three-Pass Method</strong><ol><li>Answer easy questions immediately.</li><li>Return to questions that need a careful check.</li><li>Use elimination for the hardest questions and confirm.</li></ol></div>`:`<h3>Skills in this practice</h3><ul>${(t.topics||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="notice">Choose the best answer. No explanations are shown until you submit.</div>`}</section>`;
+    const flagText=isChallenge?(e.pass===1?"⚑ Review later":e.pass===2?"⚑ Keep for Pass 3":"⚑ Hard question"):"⚑ Flag for Review";
+    const targets=isChallenge&&e.pass>1?challengeTargets(e.pass):null;
+    const targetSet=new Set(targets||[]);
+    const targetPos=targets?targets.indexOf(e.current):-1;
+    const prevDisabled=isChallenge&&e.pass>1?targetPos<=0:e.current===0;
+    let nextLabel;
+    if(isChallenge){
+      if(e.pass===1)nextLabel=e.current===t.questions.length-1?"Go to Pass 2":"Save & Next";
+      else if(e.pass===2)nextLabel=targetPos===targets.length-1?"Go to Pass 3":"Save & Next";
+      else nextLabel=targetPos===targets.length-1?"Submit Challenge":"Save & Next";
+    }else nextLabel=e.current===t.questions.length-1?"Submit Test":"Save & Next";
+
     app.innerHTML=`
-      <header class="exam-top"><div><strong>${esc(t.subtitle)}</strong><div style="font-size:12px;opacity:.8">Unit ${t.unitNumber}: ${esc(t.unitTitle)}</div></div><div class="exam-metrics"><div class="metric">Answered <strong id="ansCount"></strong></div><div class="metric">Time <strong id="examTimer"></strong></div></div></header>
-      <main class="exam-shell">${left}<section class="question-side"><div class="qnav">${t.questions.map((_,i)=>`<button class="qdot ${e.answers[i]!==null?"answered":""} ${i===e.current?"current":""} ${e.flagged[i]?"flagged":""}" onclick="PROVE.goQ(${i})">${i+1}</button>`).join("")}</div>
-      <div class="qbox"><div style="display:flex;justify-content:space-between;align-items:center"><span class="muted">Question ${e.current+1} of ${t.questions.length}</span><button class="flag ${e.flagged[e.current]?"active":""}" onclick="PROVE.toggleFlag()">⚑ Flag for Review</button></div><div class="stem">${esc(q.stem)}</div>
+      <header class="exam-top"><div><strong>${esc(t.subtitle)}</strong><div style="font-size:12px;opacity:.8">${unitLine}</div></div><div class="exam-metrics"><div class="metric">Answered <strong id="ansCount"></strong></div><div class="metric">Time <strong id="examTimer"></strong></div></div></header>
+      <main class="exam-shell">${left}<section class="question-side">${passBanner}<div class="qnav">${t.questions.map((_,i)=>{const blocked=isChallenge&&e.pass>1&&!targetSet.has(i);return `<button class="qdot ${e.answers[i]!==null?"answered":""} ${i===e.current?"current":""} ${e.flagged[i]?"flagged":""} ${blocked?"pass-muted":""}" ${blocked?"disabled":""} onclick="PROVE.goQ(${i})">${i+1}</button>`}).join("")}</div>
+      <div class="qbox"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="muted">Question ${e.current+1} of ${t.questions.length}</span><button class="flag ${e.flagged[e.current]?"active":""}" onclick="PROVE.toggleFlag()">${flagText}</button></div>${readingContext}<div class="stem">${esc(q.stem)}</div>
       ${q.choices.map((c,i)=>`<label class="choice ${e.answers[e.current]===i?"selected":""}" onclick="PROVE.choose(${i})"><input type="radio" ${e.answers[e.current]===i?"checked":""}><strong>${String.fromCharCode(65+i)}.</strong><span>${esc(c)}</span></label>`).join("")}
-      <div class="exam-actions"><button class="btn btn-secondary" ${e.current===0?"disabled":""} onclick="PROVE.prevQ()">Previous</button><button class="btn btn-primary" onclick="PROVE.nextQ()">${e.current===t.questions.length-1?"Submit Test":"Save & Next"}</button></div></div></section></main>`;
+      <div class="exam-actions"><button class="btn btn-secondary" ${prevDisabled?"disabled":""} onclick="PROVE.prevQ()">Previous</button><button class="btn btn-primary" onclick="PROVE.nextQ()">${nextLabel}</button></div></div></section></main>`;
     updateExamTimer();
   }
   function updateExamTimer(){
@@ -1411,8 +1620,35 @@
   function choose(i){state.exam.answers[state.exam.current]=i;renderExam()}
   function goQ(i){state.exam.current=i;renderExam()}
   function toggleFlag(){state.exam.flagged[state.exam.current]=!state.exam.flagged[state.exam.current];renderExam()}
-  function prevQ(){if(state.exam.current>0){state.exam.current--;renderExam()}}
-  function nextQ(){if(state.exam.current<state.activeTraining.questions.length-1){state.exam.current++;renderExam()}else submitExam(false)}
+  function prevQ(){
+    if(state.activeTraining?.type==="challenge" && (state.exam?.pass||1)>1){
+      const targets=challengeTargets(state.exam.pass),pos=targets.indexOf(state.exam.current);
+      if(pos>0){state.exam.current=targets[pos-1];renderExam()}
+      return;
+    }
+    if(state.exam.current>0){state.exam.current--;renderExam()}
+  }
+  function nextQ(){
+    if(state.activeTraining?.type==="challenge"){
+      const pass=state.exam?.pass||1;
+      if(pass===1){
+        if(state.exam.current<state.activeTraining.questions.length-1){state.exam.current++;renderExam()}
+        else advanceChallengePass();
+        return;
+      }
+      const targets=challengeTargets(pass),pos=targets.indexOf(state.exam.current);
+      if(pos>=0&&pos<targets.length-1){state.exam.current=targets[pos+1];renderExam()}
+      else advanceChallengePass();
+      return;
+    }
+    if(state.exam.current<state.activeTraining.questions.length-1){state.exam.current++;renderExam()}else submitExam(false)
+  }
+
+  function clueForQuestion(q,t){
+    const sourceType=q?._sourceType||t?.type;
+    const context={...t,type:sourceType,title:q?._sourceTitle||t?.title,topics:[q?.skill,...(t?.topics||[])].filter(Boolean)};
+    return q?.need||practiceStrategy(context).tip;
+  }
 
   async function submitExam(auto){
     if(!auto){
@@ -1421,12 +1657,26 @@
     }
     clearInterval(state.exam.timer);
     const t=state.activeTraining;let score=0;
-    const answers=t.questions.map((q,i)=>{const correct=state.exam.answers[i]===q.answer;if(correct)score++;return {question:i+1,skill:q.skill,selected:state.exam.answers[i],correctAnswer:q.answer,correct,need:q.need||""}});
+    const answers=t.questions.map((q,i)=>{
+      const selected=state.exam.answers[i],correct=selected===q.answer;if(correct)score++;
+      return {
+        question:i+1,skill:q.skill,selected,correctAnswer:q.answer,correct,need:q.need||"",
+        stem:q.stem||"",
+        selectedText:selected===null||selected===undefined?"":String(q.choices?.[selected]||""),
+        correctText:String(q.choices?.[q.answer]||""),
+        clue:clueForQuestion(q,t),
+        explanation:q.explanation||"",
+        sourceType:q._sourceType||t.type,
+        sourceTitle:q._sourceTitle||t.title,
+        sourceUnitId:q._sourceUnitId||t.unitId||"",
+        sourceUnitNumber:q._sourceUnitNumber||t.unitNumber||null
+      };
+    });
     const attempt={
       studentId:state.profile.id,studentName:state.profile.displayName,classId:state.profile.classId,classCode:state.profile.classCode,
       teacherId:state.profile.teacherId,trainingId:t.id,trainingTitle:t.title,trainingType:t.type,unitId:t.unitId,unitNumber:t.unitNumber,
       score,total:t.questions.length,percentage:Math.round(score/t.questions.length*100),elapsedSeconds:Math.min(t.durationSeconds,Math.round((Date.now()-state.exam.startedAt)/1000)),
-      autoSubmitted:auto,answers,submittedAt:nowISO()
+      autoSubmitted:auto,answers,studyMethod:t.type==="challenge"?"three-pass":"standard",submittedAt:nowISO()
     };
     if(state.fb) await state.fb.db.collection("attempts").add(attempt); else{attempt.id=uid();local.saveAttempt(attempt)}
     showAttemptReport(attempt,t);
@@ -1437,8 +1687,9 @@
     const by={};a.answers.forEach(x=>{by[x.skill]??={ok:0,total:0,need:x.need};by[x.skill].total++;if(x.correct)by[x.skill].ok++;});
     const skills=Object.entries(by).map(([k,v])=>{const p=Math.round(v.ok/v.total*100);return `<div class="skill-row"><div>${esc(k)}</div><div class="bar"><div class="fill" style="width:${p}%"></div></div><div>${p}%</div></div>`}).join("");
     const needs=weak.length?`<ul class="action-list">${[...new Map(weak.map(x=>[x.skill,x])).values()].map(x=>`<li><strong>${esc(x.skill)}:</strong> ${esc(x.need||"Review this skill and try a short focused practice.")}</li>`).join("")}</ul>`:"<div class='notice success'>Excellent — no weak skill was detected in this attempt.</div>";
-    const review=t.questions.map((q,i)=>{const s=a.answers[i].selected;return `<div class="student-review-item"><strong>Q${i+1}. ${esc(q.stem)}</strong><p class="${a.answers[i].correct?"status ok":"status bad"}">${a.answers[i].correct?"Correct":"Needs review"}</p><p>Your answer: ${s===null?"No answer":esc(q.choices[s])}</p>${a.answers[i].correct?"":`<p>Correct answer: <strong>${esc(q.choices[q.answer])}</strong></p>`}<p class="muted">${esc(q.explanation)}</p>${a.answers[i].correct?"":`<button class="btn btn-secondary explain-mistake-btn no-print" onclick="PROVE.explainMyMistake(${i})"><span class="explain-mistake-spark">✦</span> Explain my mistake</button>`}</div>`}).join("");
-    app.innerHTML=shell(`<main class="container student-app-shell">${studentTabs()}<section class="student-view"><div class="report-head"><div><div class="eyebrow">My STEP Report</div><h1>${esc(t.title)}</h1><p class="muted">Unit ${t.unitNumber} • ${esc(t.type)}</p></div><div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setStudentTab('home')">Back to My Dashboard</button></div></div>
+    const review=t.questions.map((q,i)=>{const ans=a.answers[i],sel=ans.selected;return `<div class="student-review-item"><strong>Q${i+1}. ${esc(q.stem)}</strong><p class="${ans.correct?"status ok":"status bad"}">${ans.correct?"Correct":"Needs review"}</p><p>Your answer: ${sel===null?"No answer":esc(q.choices[sel])}</p>${ans.correct?"":`<p>Correct answer: <strong>${esc(q.choices[q.answer])}</strong></p><div class="clue-missed"><span>Clue to notice</span><strong>${esc(ans.clue||clueForQuestion(q,t))}</strong></div>`}<p class="muted">${esc(q.explanation)}</p>${ans.correct?"":`<button class="btn btn-secondary explain-mistake-btn no-print" onclick="PROVE.explainMyMistake(${i})"><span class="explain-mistake-spark">✦</span> Explain my mistake</button>`}</div>`}).join("");
+    const reportMeta=t.type==="challenge"?"Mixed STEP Challenge":`Unit ${t.unitNumber} • ${esc(t.type)}`;
+    app.innerHTML=shell(`<main class="container student-app-shell">${studentTabs()}<section class="student-view"><div class="report-head"><div><div class="eyebrow">My STEP Report</div><h1>${esc(t.title)}</h1><p class="muted">${reportMeta}</p></div><div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setStudentTab('home')">Back to My Dashboard</button></div></div>
       <div class="card"><div class="score">${a.score}/${a.total} <span style="font-size:22px">(${a.percentage}%)</span></div><p>Time used: ${fmtTime(a.elapsedSeconds)}</p></div>
       <div class="grid grid-2"><div class="card"><h2>Skill Breakdown</h2>${skills}</div><div class="card"><h2>What I Need</h2>${needs}</div></div>
       <div class="card"><h2>Review</h2>${review}</div></section></main>`,"Student Report");
@@ -1458,15 +1709,22 @@
       ? "No answer"
       : `${String.fromCharCode(65+selected)}) ${cleanContextText(q.choices?.[selected],70)}`;
     const correctText=`${String.fromCharCode(65+q.answer)}) ${cleanContextText(q.choices?.[q.answer],70)}`;
-    const rawPassage=t.type==="reading" ? cleanContextText(t.passage,100) : "";
+    const sourcePassage=q._passage||(t.type==="reading"?t.passage:"");
+    const rawPassage=sourcePassage ? cleanContextText(sourcePassage,160) : "";
     const passageContext=rawPassage ? `\nPassage context: ${rawPassage}` : "";
+    const unitContext=q._sourceUnitNumber?`Unit ${q._sourceUnitNumber}: ${cleanContextText(q._sourceUnitTitle||"",40)}`:(t.unitNumber?`Unit ${t.unitNumber}: ${cleanContextText(t.unitTitle,40)}`:"Mixed STEP Challenge");
     const prompt=`Explain my mistake from StepUp Practice.
-Unit ${t.unitNumber}: ${cleanContextText(t.unitTitle,40)}
+${unitContext}
 Skill: ${cleanContextText(q.skill||t.type,40)}
-Question: ${cleanContextText(q.stem,130)}
+Question: ${cleanContextText(q.stem,160)}
 My answer: ${selectedText}
 Correct answer: ${correctText}${passageContext}
-Explain this mistake briefly and clearly. Why is my answer wrong, and why does the correct answer work? Stay on this question.`;
+Explain only this mistake in a friendly, concise way:
+1) The clue I missed.
+2) Why my choice does not fit.
+3) Why the correct answer fits.
+4) One short strategy I can use next time.
+Do not start a new lesson unless I ask.`;
 
     state.studentTab="tools";
     await renderStudent();
@@ -1792,7 +2050,7 @@ Explain this mistake briefly and clearly. Why is my answer wrong, and why does t
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage
   };
