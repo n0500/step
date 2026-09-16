@@ -518,20 +518,43 @@
     const ids=new Set((unit.trainings||[]).map(t=>t.id));
     return latestSkillStats(attempts.filter(a=>ids.has(a.trainingId))).filter(s=>s.pct<80);
   }
+  function trainingDomainForSkill(unit,skill=""){
+    const needle=String(skill||"").trim().toLowerCase();
+    if(!unit||!needle)return "";
+    for(const t of (unit.trainings||[])){
+      if(!["reading","grammar"].includes(t.type))continue;
+      if((t.questions||[]).some(q=>String(q.skill||"").trim().toLowerCase()===needle))return t.type;
+    }
+    return "";
+  }
+  function weakSkillsByDomain(attempts,unit){
+    return weakSkillsForUnit(attempts,unit)
+      .map(s=>({...s,domain:trainingDomainForSkill(unit,s.skill)}))
+      .filter(s=>s.domain==="reading"||s.domain==="grammar");
+  }
   async function buildStudentContext(){
     const attempts=(await getAttempts({studentId:state.profile.id})).sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt));
     const cls=await getClassById(state.profile.classId);
     const openUnits=openUnitsForClass(cls);
     return {attempts,cls,openUnits};
   }
+  function targetedReviewId(unitId,domain,skill=""){
+    return `${unitId}-remedial-${domain}-${slug(skill)||"skill"}`;
+  }
   function nextStudentStep(ctx){
     for(const unit of ctx.openUnits){
       for(const t of unit.trainings){
         if(!ctx.attempts.some(a=>a.trainingId===t.id))return {kind:"training",unit,training:t};
       }
-      const weak=weakSkillsForUnit(ctx.attempts,unit);
-      const remedialId=`${unit.id}-remedial`;
-      if(weak.length&&!ctx.attempts.some(a=>a.trainingId===remedialId))return {kind:"remedial",unit,weak};
+      // Recommend one weak skill at a time. A remedial review is never mixed
+      // across skills: each detected weakness gets its own focused review.
+      const weak=weakSkillsByDomain(ctx.attempts,unit).sort((a,b)=>a.pct-b.pct);
+      for(const item of weak){
+        const remedialId=targetedReviewId(unit.id,item.domain,item.skill);
+        if(!ctx.attempts.some(a=>a.trainingId===remedialId)){
+          return {kind:"remedial",unit,domain:item.domain,skill:item,weak:[item]};
+        }
+      }
     }
     if(ctx.openUnits.length)return {kind:"waiting",unit:ctx.openUnits[ctx.openUnits.length-1]};
     return {kind:"none"};
@@ -1104,12 +1127,18 @@
       desc:`${step.training.title} — ${step.training.subtitle}`,
       primary:`<button class="btn btn-primary" onclick="PROVE.startTraining('${step.training.id}')">Continue Practice</button>`
     };
-    if(step.kind==="remedial")return {
-      eyebrow:"Recommended Focus",
-      title:`Quick Review • Unit ${step.unit.number}`,
-      desc:`Focus on: ${step.weak.slice(0,3).map(x=>x.skill).join(", ")}`,
-      primary:`<button class="btn btn-primary" onclick="PROVE.startRemedial('${step.unit.id}')">Practice Weak Skills</button>`
-    };
+    if(step.kind==="remedial"){
+      const domain=step.domain==="reading"?"reading":"grammar";
+      const label=domain==="reading"?"Reading":"Grammar";
+      const skill=step.skill?.skill||step.weak?.[0]?.skill||"Focused skill";
+      const safeSkill=encodeURIComponent(skill).replace(/'/g,"%27");
+      return {
+        eyebrow:"Recommended Focus",
+        title:`${label} Focused Review • ${skill}`,
+        desc:`3 targeted questions on this skill only — no other skills are mixed in.`,
+        primary:`<button class="btn btn-primary" onclick="PROVE.startRemedial('${step.unit.id}','${domain}','${safeSkill}')">Review ${skill}</button>`
+      };
+    }
     if(step.kind==="waiting")return {
       eyebrow:"Completed",
       title:`Unit ${step.unit.number} completed ✅`,
@@ -1314,6 +1343,67 @@
     return `<div class="student-page-head"><div class="section-kicker">Learning Tools</div><h1>Learn smarter</h1><p>Choose the support you need. Every tool stays inside StepUp.</p></div>${learningToolsList(false)}`;
   }
 
+  function cloneReviewQuestion(q,t,unit){
+    return {
+      ...q,
+      _sourceType:t.type,
+      _sourceTitle:t.title,
+      _passage:t.type==="reading"?(t.passage||""):"",
+      _sourceUnitId:unit.id,
+      _sourceUnitNumber:unit.number,
+      _sourceUnitTitle:unit.title
+    };
+  }
+
+  async function buildSkillFocusedPool(unit,skill,domain,targetCount=3){
+    const normalizedSkill=String(skill||"").trim().toLowerCase();
+    const domainTrainings=(unit?.trainings||[]).filter(t=>t.type===domain);
+    const sourceTraining=domainTrainings.find(t=>(t.questions||[]).some(q=>String(q.skill||"").trim().toLowerCase()===normalizedSkill))||domainTrainings[0]||{};
+    const pool=[];
+    const add=(q,t=sourceTraining)=>{
+      if(!q || pool.length>=targetCount)return;
+      if(String(q.skill||skill).trim().toLowerCase()!==normalizedSkill)return;
+      if(pool.some(x=>String(x.stem||"").trim().toLowerCase()===String(q.stem||"").trim().toLowerCase()))return;
+      pool.push(cloneReviewQuestion({...q,skill},t,unit));
+    };
+
+    // First use only existing questions that assess the exact weak skill.
+    domainTrainings.forEach(t=>(t.questions||[]).forEach(q=>{
+      if(String(q.skill||"").trim().toLowerCase()===normalizedSkill)add(q,t);
+    }));
+
+    // If the bank has fewer than 3 exact-skill items, ask MG1 Assistant to
+    // create the missing source-grounded items. Never fill with another skill.
+    if(pool.length<targetCount && window.MG1Assistant?.generateTargetedReview){
+      try{
+        const generated=await window.MG1Assistant.generateTargetedReview({
+          unit:unit.number,
+          skill,
+          domain,
+          count:targetCount-pool.length,
+          passage:domain==="reading"?(sourceTraining.passage||pool[0]?._passage||""):"",
+          seedQuestions:pool.map(x=>x.stem)
+        });
+        for(const q of (generated||[])){
+          if(pool.length>=targetCount)break;
+          const answer=Number(q.answer ?? q.answerIndex);
+          if(!q?.stem || !Array.isArray(q.choices) || q.choices.length!==4 || !Number.isInteger(answer) || answer<0 || answer>3)continue;
+          add({
+            stem:String(q.stem).trim(),
+            choices:q.choices.map(x=>String(x).trim()),
+            answer,
+            explanation:String(q.explanation||"").trim(),
+            need:String(q.need||`Focus only on the ${skill} clue before choosing.`).trim(),
+            skill
+          },sourceTraining);
+        }
+      }catch(e){
+        console.warn("Targeted review generation failed",e);
+      }
+    }
+    return {pool:pool.slice(0,targetCount),sourceTraining,domainTrainings};
+  }
+
   function renderErrorReview(attempts){
     const rows=[];
     const sorted=[...(attempts||[])].sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
@@ -1321,10 +1411,14 @@
       for(const x of (a.answers||[])){
         if(x.correct)continue;
         const unitId=x.sourceUnitId||a.unitId||"";
-        const key=`${unitId}|${x.skill||"Other"}`;
+        const unit=unitById(unitId);
+        const rawType=x.sourceType||a.trainingType||"";
+        const sourceType=["reading","grammar"].includes(rawType)?rawType:(trainingDomainForSkill(unit,x.skill)||"");
+        if(!sourceType)continue;
+        const key=`${unitId}|${sourceType}|${x.skill||"Other"}`;
         if(rows.some(r=>r.key===key))continue;
         rows.push({
-          key,unitId,unitNumber:x.sourceUnitNumber||a.unitNumber||null,skill:x.skill||"Other",
+          key,unitId,unitNumber:x.sourceUnitNumber||a.unitNumber||null,sourceType,skill:x.skill||"Other",
           clue:x.clue||x.need||"Identify the strongest clue before choosing the answer.",
           score:a.percentage??0,date:a.submittedAt||""
         });
@@ -1334,24 +1428,42 @@
     }
     if(!rows.length)return `<div class="card error-review-card"><div class="student-section-head"><div><div class="section-kicker">Error review</div><h2>Clues to Fix</h2></div></div><div class="notice success">No recent errors to review. Keep going.</div></div>`;
     return `<div class="card error-review-card"><div class="student-section-head"><div><div class="section-kicker">Error review</div><h2>Clues to Fix</h2></div><span class="error-review-count">${rows.length} focus ${rows.length===1?"area":"areas"}</span></div>
-      <div class="error-review-list">${rows.map(r=>{const safeSkill=encodeURIComponent(r.skill).replace(/'/g,"%27");return `<div class="error-review-row"><div class="error-review-main"><div class="error-review-skill">${esc(r.skill)}</div><div class="error-review-clue"><span>Clue to notice</span>${esc(r.clue)}</div><small>${r.unitNumber?`Unit ${esc(r.unitNumber)} • `:""}Attempt score ${esc(r.score)}%</small></div><button class="btn btn-secondary" onclick="PROVE.reviewError('${esc(r.unitId)}','${safeSkill}')">Review this skill</button></div>`}).join("")}</div>
+      <div class="error-review-list">${rows.map(r=>{const safeSkill=encodeURIComponent(r.skill).replace(/'/g,"%27");const label=r.sourceType==="reading"?"Reading":"Grammar";return `<div class="error-review-row"><div class="error-review-main"><div class="error-review-skill">${esc(r.skill)}</div><div class="error-review-clue"><span>Clue to notice</span>${esc(r.clue)}</div><small>${label}${r.unitNumber?` • Unit ${esc(r.unitNumber)}`:""} • Attempt score ${esc(r.score)}%</small></div><button class="btn btn-secondary" onclick="PROVE.reviewError('${esc(r.unitId)}','${safeSkill}','${r.sourceType}')">Review this skill</button></div>`}).join("")}</div>
     </div>`;
   }
 
-  async function reviewError(unitId,encodedSkill=""){
-    const skill=decodeURIComponent(encodedSkill||"");
+  async function reviewError(unitId,encodedSkill="",requestedDomain=""){
+    const skill=decodeURIComponent(encodedSkill||"").trim();
     const unit=unitById(unitId);
     if(!unit){state.studentTab="practice";return renderStudent();}
-    let pool=[];
-    (unit.trainings||[]).forEach(t=>(t.questions||[]).forEach(q=>{
-      if(!skill || String(q.skill||"").toLowerCase()===skill.toLowerCase())pool.push({...q});
-    }));
-    if(pool.length<3)(unit.trainings||[]).forEach(t=>(t.questions||[]).forEach(q=>{if(pool.length<3&&!pool.some(x=>x.stem===q.stem))pool.push({...q})}));
-    pool=pool.slice(0,3);
-    if(!pool.length){state.studentTab="practice";return renderStudent();}
-    const t={id:`focused-${unit.id}-${Date.now()}`,type:"remedial",title:skill?`Focused Review • ${skill}`:`Unit ${unit.number} Focused Review`,subtitle:"Short practice based on your error review",durationSeconds:180,questions:pool,unitId:unit.id,unitNumber:unit.number,unitTitle:unit.title,topics:skill?[skill]:[...new Set(pool.map(x=>x.skill).filter(Boolean))]};
-    state.activeTraining=t;state.exam={current:0,answers:Array(pool.length).fill(null),flagged:Array(pool.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null};
-    renderExam();state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
+    if(!skill)return alert("Choose a skill to review first.");
+    const domain=["reading","grammar"].includes(requestedDomain)?requestedDomain:(trainingDomainForSkill(unit,skill)||"grammar");
+    const {pool,sourceTraining}=await buildSkillFocusedPool(unit,skill,domain,3);
+    if(pool.length<3){
+      alert("StepUp couldn't prepare three questions for this exact skill right now. Please try again in a moment.");
+      return;
+    }
+    const label=domain==="reading"?"Reading":"Grammar";
+    const countText="3 targeted questions";
+    const t={
+      id:targetedReviewId(unit.id,domain,skill),
+      type:"remedial",
+      reviewDomain:domain,
+      title:`${label} Focused Review • ${skill}`,
+      subtitle:`${countText} on ${skill} only`,
+      durationSeconds:Math.max(120,pool.length*60),
+      questions:pool,
+      passage:domain==="reading"?(sourceTraining.passage||pool[0]?._passage||""):"",
+      source:sourceTraining.source||"",
+      unitId:unit.id,
+      unitNumber:unit.number,
+      unitTitle:unit.title,
+      topics:[skill]
+    };
+    state.activeTraining=t;
+    state.exam={current:0,answers:Array(pool.length).fill(null),flagged:Array(pool.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null};
+    renderExam();
+    state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
   }
 
   function studentProgress(ctx){
@@ -1434,19 +1546,28 @@
     state.exam={current:0,answers:Array(t.questions.length).fill(null),flagged:Array(t.questions.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null};
     renderExam();state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
   }
-  async function startRemedial(unitId){
+  async function startRemedial(unitId,requestedDomain="",encodedSkill=""){
     const ctx=await buildStudentContext(),unit=unitById(unitId);if(!unit)return;
-    const weak=weakSkillsForUnit(ctx.attempts,unit).slice(0,3),weakSet=new Set(weak.map(x=>x.skill));let pool=[];
-    unit.trainings.forEach(t=>t.questions.forEach(q=>{if(weakSet.has(q.skill))pool.push({...q})}));
-    if(pool.length<3)unit.trainings.forEach(t=>t.questions.forEach(q=>{if(pool.length<3&&!pool.some(x=>x.stem===q.stem))pool.push({...q})}));
-    pool=pool.slice(0,3);
-    const t={id:`${unit.id}-remedial`,type:"remedial",title:`Unit ${unit.number} Quick Review`,subtitle:"Targeted practice for your current needs",durationSeconds:180,questions:pool,unitId:unit.id,unitNumber:unit.number,unitTitle:unit.title,topics:weak.map(x=>x.skill)};
-    state.activeTraining=t;state.exam={current:0,answers:Array(t.questions.length).fill(null),flagged:Array(t.questions.length).fill(false),remaining:t.durationSeconds,startedAt:Date.now(),timer:null};
-    renderExam();state.exam.timer=setInterval(()=>{state.exam.remaining--;updateExamTimer();if(state.exam.remaining<=0){clearInterval(state.exam.timer);submitExam(true)}},1000);
+    const requestedSkill=decodeURIComponent(encodedSkill||"").trim();
+    const weak=weakSkillsByDomain(ctx.attempts,unit).sort((a,b)=>a.pct-b.pct);
+    let chosen=null;
+    if(requestedSkill){
+      chosen=weak.find(x=>x.skill.toLowerCase()===requestedSkill.toLowerCase())||{
+        skill:requestedSkill,
+        domain:["reading","grammar"].includes(requestedDomain)?requestedDomain:(trainingDomainForSkill(unit,requestedSkill)||"grammar")
+      };
+    }else if(["reading","grammar"].includes(requestedDomain)){
+      chosen=weak.find(x=>x.domain===requestedDomain)||null;
+    }else{
+      chosen=weak[0]||null;
+    }
+    if(!chosen){state.studentTab="progress";return renderStudent();}
+    return reviewError(unitId,encodeURIComponent(chosen.skill),chosen.domain);
   }
 
   function practiceStrategy(t){
     const text=`${t?.title||""} ${(t?.topics||[]).join(" ")} ${t?.subtitle||""}`.toLowerCase();
+    const effectiveType=t?.reviewDomain||t?.type;
     if(t?.type==="challenge"){
       return {
         title:"STEP Strategy",
@@ -1454,7 +1575,7 @@
         steps:["Easy first","Review later","Check clue","Eliminate"]
       };
     }
-    if(t?.type==="reading"){
+    if(effectiveType==="reading"){
       return {
         title:"Reading Strategy",
         tip:"Read the question first, mark 1–2 keywords, scan for the same idea or a synonym, then eliminate unsupported, too broad, or contradictory options.",
@@ -1590,9 +1711,11 @@
     const passBanner=isChallenge?`<div class="three-pass-banner"><div><strong>${esc(challengePass.title)}</strong><span>${esc(challengePass.text)}</span></div><span class="three-pass-pill">${e.pass||1}/3</span></div>`:"";
     const readingContext=isChallenge&&q._sourceType==="reading"&&q._passage
       ?`<div class="challenge-reading-context"><div class="eyebrow">Reading context • Unit ${esc(q._sourceUnitNumber||"")}</div><div class="passage-text">${q._passage}</div></div>`:"";
-    const left=t.type==="reading"
-      ?`<section class="passage"><div class="eyebrow">Reading Passage</div><h2>${esc(t.title)}</h2><div class="muted" style="font-size:12px;margin-bottom:12px">${esc(t.source)}</div>${strategyCardHTML(t)}<div class="passage-text">${t.passage}</div></section>`
-      :`<section class="passage"><div class="eyebrow">${isChallenge?"Mini STEP Challenge":t.type==="remedial"?"Quick Review":"Grammar Focus"}</div><h2>${esc(t.title)}</h2>${t.source?`<p class="muted">${esc(t.source)}</p>`:""}${isChallenge?"":strategyCardHTML(t)}${isChallenge?`<div class="three-pass-method"><strong>Three-Pass Method</strong><ol><li>Answer easy questions immediately.</li><li>Return to questions that need a careful check.</li><li>Use elimination for the hardest questions and confirm.</li></ol></div>`:`<h3>Skills in this practice</h3><ul>${(t.topics||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="notice">Choose the best answer. No explanations are shown until you submit.</div>`}</section>`;
+    const remedialReading=t.type==="remedial"&&t.reviewDomain==="reading";
+    const reviewPassage=remedialReading?(q._passage||t.passage||""):"";
+    const left=(t.type==="reading"||remedialReading)
+      ?`<section class="passage"><div class="eyebrow">${remedialReading?"Reading Quick Review":"Reading Passage"}</div><h2>${esc(t.title)}</h2><div class="muted" style="font-size:12px;margin-bottom:12px">${esc(q._sourceTitle||t.source||"")}</div>${strategyCardHTML(t)}<div class="passage-text">${reviewPassage||t.passage||""}</div></section>`
+      :`<section class="passage"><div class="eyebrow">${isChallenge?"Mini STEP Challenge":t.type==="remedial"?"Grammar Quick Review":"Grammar Focus"}</div><h2>${esc(t.title)}</h2>${t.source?`<p class="muted">${esc(t.source)}</p>`:""}${isChallenge?"":strategyCardHTML(t)}${isChallenge?`<div class="three-pass-method"><strong>Three-Pass Method</strong><ol><li>Answer easy questions immediately.</li><li>Return to questions that need a careful check.</li><li>Use elimination for the hardest questions and confirm.</li></ol></div>`:`<h3>Skills in this practice</h3><ul>${(t.topics||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul><div class="notice">Choose the best answer. No explanations are shown until you submit.</div>`}</section>`;
     const flagText=isChallenge?(e.pass===1?"⚑ Review later":e.pass===2?"⚑ Keep for Pass 3":"⚑ Hard question"):"⚑ Flag for Review";
     const targets=isChallenge&&e.pass>1?challengeTargets(e.pass):null;
     const targetSet=new Set(targets||[]);
@@ -1686,7 +1809,14 @@
     const weak=a.answers.filter(x=>!x.correct);
     const by={};a.answers.forEach(x=>{by[x.skill]??={ok:0,total:0,need:x.need};by[x.skill].total++;if(x.correct)by[x.skill].ok++;});
     const skills=Object.entries(by).map(([k,v])=>{const p=Math.round(v.ok/v.total*100);return `<div class="skill-row"><div>${esc(k)}</div><div class="bar"><div class="fill" style="width:${p}%"></div></div><div>${p}%</div></div>`}).join("");
-    const needs=weak.length?`<ul class="action-list">${[...new Map(weak.map(x=>[x.skill,x])).values()].map(x=>`<li><strong>${esc(x.skill)}:</strong> ${esc(x.need||"Review this skill and try a short focused practice.")}</li>`).join("")}</ul>`:"<div class='notice success'>Excellent — no weak skill was detected in this attempt.</div>";
+    const uniqueWeak=[...new Map(weak.map(x=>[`${x.sourceUnitId||t.unitId}|${x.sourceType||t.type}|${x.skill}`,x])).values()];
+    const needs=uniqueWeak.length?`<div class="error-review-list">${uniqueWeak.map(x=>{
+      const unitId=x.sourceUnitId||t.unitId||"";
+      const unit=unitById(unitId);
+      const domain=["reading","grammar"].includes(x.sourceType)?x.sourceType:(trainingDomainForSkill(unit,x.skill)||"grammar");
+      const safeSkill=encodeURIComponent(x.skill||"Other").replace(/'/g,"%27");
+      return `<div class="error-review-row"><div class="error-review-main"><div class="error-review-skill">${esc(x.skill)}</div><div class="error-review-clue"><span>Focus</span>${esc(x.need||"Review this skill and try a short focused practice.")}</div><small>${domain==="reading"?"Reading":"Grammar"} • 3 questions • this skill only</small></div><button class="btn btn-secondary no-print" onclick="PROVE.reviewError('${esc(unitId)}','${safeSkill}','${domain}')">Review this skill</button></div>`;
+    }).join("")}</div>`:"<div class='notice success'>Excellent — no weak skill was detected in this attempt.</div>";
     const review=t.questions.map((q,i)=>{const ans=a.answers[i],sel=ans.selected;return `<div class="student-review-item"><strong>Q${i+1}. ${esc(q.stem)}</strong><p class="${ans.correct?"status ok":"status bad"}">${ans.correct?"Correct":"Needs review"}</p><p>Your answer: ${sel===null?"No answer":esc(q.choices[sel])}</p>${ans.correct?"":`<p>Correct answer: <strong>${esc(q.choices[q.answer])}</strong></p><div class="clue-missed"><span>Clue to notice</span><strong>${esc(ans.clue||clueForQuestion(q,t))}</strong></div>`}<p class="muted">${esc(q.explanation)}</p>${ans.correct?"":`<button class="btn btn-secondary explain-mistake-btn no-print" onclick="PROVE.explainMyMistake(${i})"><span class="explain-mistake-spark">✦</span> Explain my mistake</button>`}</div>`}).join("");
     const reportMeta=t.type==="challenge"?"Mixed STEP Challenge":`Unit ${t.unitNumber} • ${esc(t.type)}`;
     app.innerHTML=shell(`<main class="container student-app-shell">${studentTabs()}<section class="student-view"><div class="report-head"><div><div class="eyebrow">My STEP Report</div><h1>${esc(t.title)}</h1><p class="muted">${reportMeta}</p></div><div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setStudentTab('home')">Back to My Dashboard</button></div></div>

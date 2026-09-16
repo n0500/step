@@ -132,6 +132,7 @@ PRACTICE
 - Do not start practice unless asked.
 - Quick Practice must always be multiple choice with exactly 4 options (A–D).
 - Give ONE question at a time. Do not reveal the answer before the student chooses.
+- If the student asks for another exercise/question, keep the SAME unit, skill, and current rule unless they explicitly change it. Give a genuinely NEW question; never repeat or lightly reword a question already shown in the current session.
 - Prefer Workbook or teacher revision material when clearly present in the retrieved context.
 - If a question must be generated, keep it strictly aligned to retrieved MG1 material and never call it an official textbook or STEP question.
 - After the student answers, give brief friendly feedback, the correct answer if needed, and one clear reason.
@@ -523,6 +524,54 @@ function isLessonClarification(query="") {
 }
 
 
+
+function isAnotherPracticeRequest(query="") {
+  const n=normalize(query);
+  if(!n)return false;
+  const phrases=[
+    "تمرين اخر","تمرين آخر","تمرين ثاني","تمرين جديد","تمارين اخرى","تمارين أخرى","تمارين ثانية","تمارين زياده","تمارين زيادة",
+    "سؤال اخر","سؤال آخر","سؤال ثاني","سؤال جديد","اسئلة اخرى","أسئلة أخرى","اسئله اخرى","أسئله أخرى",
+    "اعطني تمرين ثاني","أعطني تمرين ثاني","ابي تمرين ثاني","أبي تمرين ثاني","اعطني سؤال ثاني","أعطني سؤال ثاني","ابي سؤال ثاني","أبي سؤال ثاني",
+    "مزيد من التمارين","مزيد من الاسئلة","مزيد من الأسئلة","غير السؤال","سؤال غيره","تمرين غيره",
+    "another exercise","another question","more exercises","more questions","more practice","one more exercise","one more question",
+    "give me another","new exercise","new question","different exercise","different question"
+  ];
+  return phrases.some(p=>{
+    const x=normalize(p);
+    return n===x || n.includes(x);
+  });
+}
+
+function recentPracticeStems(unit,topic,limit=8){
+  return assistantState.messages
+    .filter(m=>m?.role==="practice" && m.question && Number(m.question.unit)===Number(unit) && String(m.question.topic||"")===String(topic||""))
+    .map(m=>String(m.question.stem||"").trim())
+    .filter(Boolean)
+    .slice(-limit);
+}
+
+function practiceStemTokens(value=""){
+  return normalize(value)
+    .replace(/_{2,}/g," blank ")
+    .replace(/[^a-z0-9\u0600-\u06ff\s]/g," ")
+    .split(/\s+/)
+    .filter(x=>x.length>1);
+}
+
+function isTooSimilarPracticeStem(a="",b=""){
+  const na=normalize(a).replace(/\s+/g," ").trim();
+  const nb=normalize(b).replace(/\s+/g," ").trim();
+  if(!na || !nb)return false;
+  if(na===nb || na.includes(nb) || nb.includes(na))return true;
+  const A=new Set(practiceStemTokens(a)), B=new Set(practiceStemTokens(b));
+  if(!A.size || !B.size)return false;
+  let common=0; for(const x of A)if(B.has(x))common++;
+  const overlap=common/Math.min(A.size,B.size);
+  const union=new Set([...A,...B]).size;
+  const jaccard=union?common/union:0;
+  return overlap>=0.84 || jaccard>=0.72;
+}
+
 function lessonChoiceLetter(query="") {
   const raw=String(query||"").trim();
   const n=normalize(raw);
@@ -548,7 +597,7 @@ function lessonAnswerInput(query="") {
 
   // Never treat readiness, progress, help, unit switches/corrections, or explanation requests as a quiz answer.
   const n=normalize(raw);
-  if(isLessonAdvance(raw) || isLessonClarification(raw) || isLanguageOnlyFollowup(raw) || explicitUnitInQuery(raw) || isUnitMetaCorrection(raw)) return null;
+  if(isLessonAdvance(raw) || isLessonClarification(raw) || isAnotherPracticeRequest(raw) || isLanguageOnlyFollowup(raw) || explicitUnitInQuery(raw) || isUnitMetaCorrection(raw)) return null;
   const nonAnswers=[
     "help","help me","can you help","repeat","again",
     "ساعدني","مساعدة","مساعده","عيد","اعد","أعد"
@@ -1766,6 +1815,96 @@ function parsePracticeJSON(raw=""){
   if(!Number.isInteger(answerIndex) || answerIndex<0 || answerIndex>3) throw new Error("Invalid answer index.");
   return {stem:obj.stem.trim(),choices:obj.choices.map(x=>String(x).trim()),answerIndex,explanation:String(obj.explanation||"").trim()};
 }
+
+function parseTargetedReviewJSON(raw="",expectedCount=3,skill=""){
+  const cleaned=String(raw).trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");
+  const start=cleaned.indexOf("{"), end=cleaned.lastIndexOf("}");
+  if(start<0 || end<=start) throw new Error("Invalid targeted review JSON.");
+  const obj=JSON.parse(cleaned.slice(start,end+1));
+  const list=Array.isArray(obj)?obj:obj.questions;
+  if(!Array.isArray(list)) throw new Error("Targeted review questions are missing.");
+  const out=[];
+  for(const item of list){
+    if(out.length>=expectedCount)break;
+    if(typeof item?.stem!=="string" || !Array.isArray(item.choices) || item.choices.length!==4)continue;
+    const answerIndex=Number(item.answerIndex);
+    if(!Number.isInteger(answerIndex) || answerIndex<0 || answerIndex>3)continue;
+    const stem=item.stem.trim();
+    if(!stem || out.some(x=>x.stem.toLowerCase()===stem.toLowerCase()))continue;
+    out.push({
+      stem,
+      choices:item.choices.map(x=>String(x).trim()),
+      answerIndex,
+      answer:answerIndex,
+      skill:String(skill||item.skill||"").trim(),
+      explanation:String(item.explanation||"").trim(),
+      need:String(item.need||"").trim()
+    });
+  }
+  if(!out.length) throw new Error("No valid targeted review questions returned.");
+  return out;
+}
+function reviewPlainText(value="",max=6500){
+  return String(value||"")
+    .replace(/<br\s*\/?>/gi," ")
+    .replace(/<[^>]*>/g," ")
+    .replace(/&nbsp;/gi," ")
+    .replace(/&amp;/gi,"&")
+    .replace(/&quot;/gi,'"')
+    .replace(/&#039;/gi,"'")
+    .replace(/\s+/g," ")
+    .trim()
+    .slice(0,max);
+}
+async function generateTargetedReview({unit,skill,domain="grammar",count=3,passage="",seedQuestions=[]}={}){
+  const unitNumber=Number(unit);
+  const targetSkill=String(skill||"").trim();
+  const targetDomain=domain==="reading"?"reading":"grammar";
+  const targetCount=Math.max(1,Math.min(3,Number(count)||3));
+  if(!Number.isInteger(unitNumber) || unitNumber<1 || unitNumber>6)throw new Error("Invalid unit for targeted review.");
+  if(!targetSkill)throw new Error("Target skill is required.");
+  if(!assistantState.aiReady)throw new Error("AI is not ready for targeted review.");
+
+  const retrievalQuery=`Unit ${unitNumber} ${targetDomain} ${targetSkill} focused review practice`;
+  const chunks=retrieve(retrievalQuery,unitNumber,targetDomain,12);
+  const context=buildContext(chunks);
+  const passageText=reviewPlainText(passage,7000);
+  if(!context && !passageText)throw new Error("No MG1 source context for targeted review.");
+  const seeds=(seedQuestions||[]).map(x=>reviewPlainText(x,180)).filter(Boolean).slice(0,5);
+  const seedBlock=seeds.length?`\nDO NOT REPEAT THESE EXISTING QUESTION STEMS:\n${seeds.map((x,i)=>`${i+1}. ${x}`).join("\n")}`:"";
+  const readingRule=targetDomain==="reading"
+    ? (passageText
+      ? `Use ONLY the supplied READING PASSAGE for the facts needed to answer the questions. Every question must be answerable from that same passage.\n\nREADING PASSAGE\n${passageText}\nEND PASSAGE`
+      : `Use only the retrieved Unit ${unitNumber} reading material. Do not invent facts outside it.`)
+    : `Use the retrieved MG1 grammar material as the rule source. Write fresh, simple Grade 10 sentences rather than copying a textbook exercise verbatim.`;
+
+  if(assistantState.appCheck)await getToken(assistantState.appCheck,false);
+  const prompt=`RETRIEVED MG1 CONTEXT
+${context||"(No additional retrieved context; use the supplied passage only.)"}
+
+END CONTEXT
+
+Create exactly ${targetCount} DISTINCT multiple-choice remedial questions for one weak skill.
+Unit: ${unitNumber}
+Domain: ${targetDomain}
+TARGET SKILL: ${targetSkill}
+
+CRITICAL TARGETING RULES:
+- EVERY question must assess ONLY the exact target skill: "${targetSkill}".
+- Do not mix in another reading skill or another grammar skill, even if it is related.
+- The ${targetCount} questions must be genuinely different, not the same question with reordered choices.
+- Exactly 4 choices per question and exactly one correct answer.
+- Keep language clear for Saudi Grade 10 learners.
+- Do not call generated questions official textbook or STEP questions.
+- "need" must be one short clue/strategy for this exact skill.
+- "explanation" must be one short sentence explaining the correct answer.
+${readingRule}${seedBlock}
+
+Return JSON only in this exact shape:
+{"questions":[{"stem":"...","choices":["...","...","...","..."],"answerIndex":0,"need":"...","explanation":"..."}]}`;
+  const result=await generateWithResilience(prompt);
+  return parseTargetedReviewJSON(result?.response?.text?.()||"",targetCount,targetSkill);
+}
 async function startQuickPractice(isNext=false){
   if(assistantState.busy)return;
   if(!assistantState.selectedUnit){
@@ -1796,7 +1935,15 @@ async function startQuickPractice(isNext=false){
   const send=document.getElementById("mg1Send"); if(send){send.disabled=true;send.textContent="...";}
   try{
     if(assistantState.appCheck) await getToken(assistantState.appCheck,false);
-    const prompt=`RETRIEVED MG1 CONTEXT
+    const priorStems=recentPracticeStems(unit,topic,8);
+    const rejected=[];
+    let q=null;
+    for(let attempt=0;attempt<3;attempt++){
+      const blocked=[...priorStems,...rejected];
+      const avoidBlock=blocked.length
+        ? `\nDO NOT REPEAT OR LIGHTLY REWORD ANY OF THESE PREVIOUS QUESTION STEMS:\n${blocked.map((s,i)=>`${i+1}. ${s}`).join("\n")}\nUse a different sentence/situation and different distractors.`
+        : "";
+      const prompt=`RETRIEVED MG1 CONTEXT
 ${context}
 
 END CONTEXT
@@ -1804,6 +1951,7 @@ END CONTEXT
 Create exactly ONE source-aligned multiple-choice Quick Practice question for MegaGoal 1.
 Unit: ${unit}
 Skill: ${label}
+Question number in this session: ${assistantState.quickPractice.number}
 
 RULES:
 - Use ONLY the retrieved context.
@@ -1812,18 +1960,24 @@ RULES:
 - One concise Grade 10 question.
 - Do not reveal the answer in the stem.
 - Explanation: one short sentence.
+- The new question must be genuinely different from all earlier questions in this session; do not merely reorder choices or swap one name/word.
 - If a suitable Workbook or teacher revision item is clearly present, you may adapt it. Otherwise create a source-aligned practice item.
-- Never call a generated item official.
+- Never call a generated item official.${avoidBlock}
 - Return JSON only:
 {"stem":"...","choices":["...","...","...","..."],"answerIndex":0,"explanation":"..."}`;
-    const result=await generateWithResilience(prompt);
-    const q=parsePracticeJSON(result?.response?.text?.()||"");
+      const result=await generateWithResilience(prompt);
+      const candidate=parsePracticeJSON(result?.response?.text?.()||"");
+      const duplicate=blocked.some(s=>isTooSimilarPracticeStem(candidate.stem,s));
+      if(!duplicate){q=candidate;break;}
+      rejected.push(candidate.stem);
+    }
+    if(!q)throw new Error("Could not create a distinct Quick Practice question.");
     const question={...q,unit,topic,topicLabel:label,number:assistantState.quickPractice.number};
     assistantState.quickPractice.current=question;
     assistantState.messages.push({role:"practice",question,answered:false,selectedIndex:null,feedback:""});
   }catch(e){
     console.error("Quick Practice failed",e);
-    assistantState.messages.push({role:"system",text:"Quick Practice couldn't load right now. Try again."});
+    assistantState.messages.push({role:"system",text:"Quick Practice couldn't load a new question right now. Try again."});
   }finally{
     assistantState.busy=false;
     const b=document.getElementById("mg1Send"); if(b){b.disabled=false;b.textContent="Send";}
@@ -1919,7 +2073,16 @@ async function sendCurrent(){
     }
   }
 
-  const directLessonAnswer=lessonAnswerInput(query);
+  const wantsAnotherPractice=isAnotherPracticeRequest(query);
+
+  // If the student is using the standalone Quick Practice cards, a request such as
+  // "another question" / "تمارين أخرى" should create a fresh card immediately.
+  if(!assistantState.lessonFlow.active && wantsAnotherPractice && assistantState.quickPractice.active && assistantState.selectedUnit){
+    await startQuickPractice(true);
+    return;
+  }
+
+  const directLessonAnswer=wantsAnotherPractice ? null : lessonAnswerInput(query);
 
   // In guided Grammar/FMF lessons, accept either:
   // - A/B/C/D (uppercase or lowercase)
@@ -2068,6 +2231,13 @@ RESPONSE RULES:
       lessonAction="teach";
       stage="none";
     }
+  } else if(sameLessonContext && wantsAnotherPractice){
+    retrievalQuery=flow.sourceQuery;
+    unit=flow.unit;
+    intent=flow.intent;
+    lessonMode=true;
+    lessonAction="newcheck";
+    stage="none";
   } else if(sameLessonContext && isLanguageOnlyFollowup(query)){
     flow.language=hasArabic(query)?"ar":"en";
     retrievalQuery=flow.sourceQuery;
@@ -2187,7 +2357,7 @@ RESPONSE RULES:
       throw new Error("[APP_CHECK] App Check was not initialized.");
     }
 
-    const lessonHistory=lessonMode ? recentLessonConversation(10) : "";
+    const lessonHistory=lessonMode ? recentLessonConversation(16) : "";
     const lessonRoadmap=lessonMode ? lessonRoadmapForUnit(assistantState.lessonFlow.unit,assistantState.lessonFlow.intent) : [];
     const lessonRoadmapText=lessonRoadmap.length ? lessonRoadmap.map(x=>x.title).join(" → ") : "not available";
     const requiredTopic=lessonMode ? currentLessonTopic(assistantState.lessonFlow) : null;
@@ -2205,6 +2375,8 @@ RESPONSE RULES:
         lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${roadmapRule} ${topicRule} ${teachingMethod} Give exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list or preview later topics. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
         lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Begin with this context line on its own line: "${lessonContextLabel}". ${roadmapRule} ${topicRule} ${teachingMethod} Give exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list later topics. End exactly with: ${closing}`;
+      }else if(lessonAction==="newcheck"){
+        lessonInstruction=`GUIDED LESSON MODE: YES — NEW QUICK CHECK FOR CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${topicRule} Stay on the SAME rule/topic and do NOT advance. The student asked for another exercise. Give exactly ONE genuinely NEW multiple-choice quick check with four options A–D. Do NOT repeat, lightly reword, or recycle any Quick Check already shown in RECENT LESSON CONVERSATION. Use a different sentence/situation and different distractors; vary the correct option position when reasonable. Do not re-teach the whole rule; at most give one short clue before the question. Do not reveal the answer. End exactly with: ${closing}`;
       }else if(lessonAction==="restate"){
         lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Begin with this context line on its own line: "${lessonContextLabel}". ${topicRule} Keep exactly the same topic and scope. Do NOT advance. Re-explain naturally rather than translating the previous wording line by line. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
       }else if(lessonAction==="clarify"){
@@ -2229,7 +2401,7 @@ Language-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the 
 ${lessonInstruction}
 ${lessonMode?`RECENT LESSON CONVERSATION:\n${lessonHistory}\nEND RECENT CONVERSATION`:""}
 GRAMMAR / FORM, MEANING AND FUNCTION RULE: Grammar is the umbrella. A broad Grammar or Form, Meaning and Function lesson must be taught progressively in guided lesson mode, ONE distinct rule/topic at a time. Never dump the entire lesson in one response. A specific grammar question should stay focused on that point. Always display "Form, Meaning and Function" in full; never abbreviate the lesson name.
-PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds.
+PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds. If the student asks for another exercise/question, keep the current unit/skill unless explicitly changed and create a genuinely different question; never repeat or lightly reword a question already shown in RECENT LESSON CONVERSATION.
 RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Teach, do not recite. Use short lines, no markdown # headings, and no dense paragraphs. Keep each guided teaching part concise: one rule/topic, one fresh example, one quick check. Do not include the next rule until the student explicitly says they are ready.`;
 
     let result;
@@ -2265,6 +2437,6 @@ const observer=new MutationObserver(()=>addTabs());
 observer.observe(document.body,{childList:true,subtree:true});
 addTabs();
 
-window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,openDictionary:renderDictionary,startQuickPractice,choosePracticeAnswer};
+window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,openDictionary:renderDictionary,startQuickPractice,choosePracticeAnswer,generateTargetedReview};
 window.StepUpAI={evaluateWriting:evaluateWritingRubric};
 window.StepUpDictionary={render:renderDictionary,lookup:lookupDictionaryCurrent,speak:speakDictionaryWord};
