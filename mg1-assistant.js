@@ -1,4 +1,5 @@
 // StepUp MG1 reviewed lesson flow — 2026-09-16
+// Speed pass: compact context/history and response budgets for faster classroom replies.
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAI, getGenerativeModel, GoogleAIBackend, ThinkingLevel } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-ai.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app-check.js";
@@ -249,7 +250,7 @@ function initAI() {
     }
     const ai = getAI(aiApp, { backend: new GoogleAIBackend() });
     const generationConfig = {
-      maxOutputTokens: 4096,
+      maxOutputTokens: 1600,
       thinkingConfig: {
         thinkingLevel: ThinkingLevel.LOW
       }
@@ -260,7 +261,10 @@ function initAI() {
     };
     const writingModelOptions = {
       systemInstruction: WRITING_SYSTEM_INSTRUCTION,
-      generationConfig
+      generationConfig: {
+        maxOutputTokens: 2600,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+      }
     };
     const dictionaryModelOptions = {
       systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
@@ -852,7 +856,7 @@ function inferTopicIndexFromText(unit,intent,text="") {
 }
 
 function buildContext(chunks) {
-  let used=0, max=12000, parts=[];
+  let used=0, max=6500, parts=[];
   for (const c of chunks) {
     const part=`[${c.source_kind} | Unit ${c.unit} | p.${c.printed_page||"-"} | ${c.section}]\n${c.text}`;
     if (used+part.length>max) break;
@@ -888,6 +892,73 @@ function formatText(text="") {
     .replace(/\n/g,"<br>");
 }
 
+
+function lessonSectionMatch(line="") {
+  const src=String(line||"").trim();
+  const rules=[
+    {key:"idea",re:/^(Idea|Rule|الفكرة|القاعدة)\s*[:：]?\s*(.*)$/i,labelEn:"Idea",labelAr:"الفكرة"},
+    {key:"when",re:/^(When to use it\??|When do I use it\??|متى أستخدمها\??|متى تستخدم\??)\s*[:：]?\s*(.*)$/i,labelEn:"When to use it",labelAr:"متى أستخدمها؟"},
+    {key:"clue",re:/^(Clue|How do I know\??|العلامة|كيف أعرف\??)\s*[:：]?\s*(.*)$/i,labelEn:"Clue",labelAr:"العلامة"},
+    {key:"example",re:/^(Example|مثال)\s*[:：]?\s*(.*)$/i,labelEn:"Example",labelAr:"مثال"},
+    {key:"quick",re:/^(Quick Check|Quick check|Quick Practice|تمرين سريع|سؤال سريع)\s*[:：]?\s*(.*)$/i,labelEn:"Quick Check",labelAr:"تمرين سريع"}
+  ];
+  for(const r of rules){
+    const m=src.match(r.re);
+    if(m) return {key:r.key,label:hasArabic(src)?r.labelAr:r.labelEn,rest:String(m[2]||"").trim()};
+  }
+  return null;
+}
+
+function looksLikeTeachingResponse(text="") {
+  const lines=String(text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const keys=new Set(lines.map(x=>lessonSectionMatch(x)?.key).filter(Boolean));
+  return keys.has("example") && (keys.has("idea")||keys.has("when")||keys.has("clue")) && keys.has("quick");
+}
+
+function formatLessonSectionBody(lines=[],key="") {
+  const clean=lines.map(x=>String(x||"").trimEnd());
+  if(key==="quick"){
+    const parts=[];
+    for(const raw of clean){
+      const line=raw.trim();
+      if(!line) continue;
+      const option=line.match(/^([A-D])\s*[\)\.:-]\s*(.+)$/i);
+      if(option){
+        parts.push(`<div class="mg1-inline-option"><span class="mg1-inline-letter">${esc(option[1].toUpperCase())}</span><span>${formatText(option[2])}</span></div>`);
+      }else if(/^(Try the quick check|جربي التمرين السريع)/i.test(line)){
+        parts.push(`<div class="mg1-lesson-close">${formatText(line)}</div>`);
+      }else{
+        parts.push(`<div class="mg1-quick-question">${formatText(line)}</div>`);
+      }
+    }
+    return parts.join("");
+  }
+  return formatText(clean.join("\n"));
+}
+
+function formatLessonText(text="") {
+  if(!looksLikeTeachingResponse(text)) return formatText(text);
+  const lines=String(text||"").split(/\r?\n/);
+  const intro=[];
+  const sections=[];
+  let current=null;
+  const flush=()=>{ if(current){sections.push(current);current=null;} };
+  for(const raw of lines){
+    const match=lessonSectionMatch(raw);
+    if(match){
+      flush();
+      current={key:match.key,label:match.label,lines:match.rest?[match.rest]:[]};
+      continue;
+    }
+    if(current) current.lines.push(raw);
+    else if(String(raw||"").trim()) intro.push(raw);
+  }
+  flush();
+  const introHtml=intro.length?`<div class="mg1-lesson-context">${formatText(intro.join("\n"))}</div>`:"";
+  const sectionsHtml=sections.map(sec=>`<section class="mg1-lesson-section ${sec.key}"><div class="mg1-lesson-label">${esc(sec.label)}</div><div class="mg1-lesson-body">${formatLessonSectionBody(sec.lines,sec.key)}</div></section>`).join("");
+  return `<div class="mg1-lesson-layout">${introHtml}${sectionsHtml}</div>`;
+}
+
 function injectStyles(){
   if(document.getElementById("mg1AssistantStyles")) return;
   const style=document.createElement("style");
@@ -910,9 +981,30 @@ function injectStyles(){
     .mg1-shortcut.quick{background:#4938d4;color:#fff;border-color:#4938d4}
     .mg1-chat{background:#f8fafc;border:1px solid #e3e7ee;border-radius:22px;min-height:390px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 30px rgba(35,46,80,.06)}
     .mg1-messages{padding:24px;display:flex;flex-direction:column;gap:18px;min-height:300px;max-height:62vh;overflow:auto;scroll-behavior:smooth}
-    .mg1-msg{max-width:78%;padding:15px 17px;border-radius:18px;line-height:1.75;font-size:17px;letter-spacing:.005em;word-break:break-word}
+    .mg1-msg{max-width:84%;padding:17px 19px;border-radius:18px;line-height:1.75;font-size:18px;letter-spacing:.005em;word-break:break-word}
     .mg1-msg.user{align-self:flex-end;background:#4635d2;color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 12px rgba(70,53,210,.14)}
-    .mg1-msg.ai{align-self:flex-start;background:#fff;color:#172033;border:1px solid #e4e8ef;border-bottom-left-radius:6px;box-shadow:0 3px 10px rgba(35,46,80,.05)}
+    .mg1-msg.ai{align-self:flex-start;background:#fff;color:#172033;border:1px solid #e4e8ef;border-bottom-left-radius:6px;box-shadow:0 3px 10px rgba(35,46,80,.05);font-size:18.5px}
+    .mg1-msg.ai.lesson{width:min(860px,96%);max-width:96%;padding:0;overflow:hidden;border-radius:20px;border:1px solid #dfe3ee;box-shadow:0 7px 22px rgba(35,46,80,.08)}
+    .mg1-lesson-layout{display:block;background:#fff}
+    .mg1-lesson-context{padding:14px 19px;background:#17233f;color:#fff;font-size:16px;font-weight:900;line-height:1.45;letter-spacing:.01em}
+    .mg1-lesson-section{padding:16px 19px 17px;border-top:1px solid #e8ebf2}
+    .mg1-lesson-section.idea{background:#f8f7ff}
+    .mg1-lesson-section.when{background:#fff}
+    .mg1-lesson-section.clue{background:#fff9e9}
+    .mg1-lesson-section.example{background:#eefaf5}
+    .mg1-lesson-section.quick{background:#f3f7ff}
+    .mg1-lesson-label{display:inline-flex;align-items:center;min-height:30px;padding:5px 10px;border-radius:999px;background:#ebe8ff;color:#4938d4;font-size:13px;font-weight:900;letter-spacing:.035em;text-transform:uppercase;margin-bottom:10px}
+    .mg1-lesson-section.clue .mg1-lesson-label{background:#ffefbd;color:#785500}
+    .mg1-lesson-section.example .mg1-lesson-label{background:#d9f4e7;color:#08734a}
+    .mg1-lesson-section.quick .mg1-lesson-label{background:#dfe9ff;color:#234e9b}
+    .mg1-lesson-body{font-size:19px;line-height:1.72;color:#172033}
+    .mg1-lesson-body strong{font-weight:900;color:#101828}
+    .mg1-lesson-section.when ul{list-style:none;padding:0;margin:7px 0 0;display:grid;gap:9px}
+    .mg1-lesson-section.when li{margin:0;padding:11px 13px;border:1px solid #e1e5ed;border-radius:12px;background:#fbfcfe}
+    .mg1-quick-question{font-size:19px;font-weight:750;line-height:1.62;margin:3px 0 11px}
+    .mg1-inline-option{display:flex;align-items:flex-start;gap:10px;margin:8px 0;padding:10px 12px;border:1px solid #d7dfed;border-radius:12px;background:#fff;font-size:18px;line-height:1.5}
+    .mg1-inline-letter{flex:0 0 30px;height:30px;border-radius:9px;background:#e8eefb;color:#274c91;display:grid;place-items:center;font-weight:900}
+    .mg1-lesson-close{margin-top:12px;padding-top:11px;border-top:1px dashed #cdd7e7;color:#52627a;font-size:16px;font-weight:700}
     .mg1-msg.system{align-self:center;background:#fff8e8;color:#775600;border:1px solid #f0d99a;max-width:92%;font-size:15px}
     .mg1-msg ul{margin:9px 0 2px;padding-inline-start:24px}.mg1-msg li{margin:7px 0}
     .mg1-empty{margin:auto;text-align:center;color:#667085;max-width:600px;padding:42px 28px;font-size:16px;line-height:1.7}
@@ -975,7 +1067,15 @@ function injectStyles(){
       .mg1-assistant-hero h1{font-size:26px}
       .mg1-chip{padding:9px 11px;font-size:13px;min-height:39px}
       .mg1-messages{padding:14px;gap:14px;max-height:64vh}
-      .mg1-msg{max-width:94%;font-size:16.5px;line-height:1.72;padding:13px 14px}
+      .mg1-msg{max-width:96%;font-size:17.5px;line-height:1.72;padding:14px 15px}
+      .mg1-msg.ai{font-size:18px}
+      .mg1-msg.ai.lesson{width:100%;max-width:100%}
+      .mg1-lesson-context{font-size:15.5px;padding:13px 15px}
+      .mg1-lesson-section{padding:15px 15px 16px}
+      .mg1-lesson-label{font-size:12.5px;margin-bottom:8px}
+      .mg1-lesson-body{font-size:18px;line-height:1.68}
+      .mg1-quick-question{font-size:18.5px}
+      .mg1-inline-option{font-size:17.5px;padding:10px 11px}
       .mg1-compose{padding:10px;gap:8px}
       .mg1-compose textarea{font-size:16px;min-height:54px}
       .mg1-send{min-width:72px;min-height:54px}
@@ -1790,7 +1890,9 @@ function paintMessages(){
   }
   box.innerHTML=assistantState.messages.map(m=>{
     if(m.role==="practice") return renderPracticeCard(m);
-    return `<div class="mg1-msg ${m.role}" dir="auto">${formatText(m.text)}</div>`;
+    const lesson=m.role==="ai" && looksLikeTeachingResponse(m.text);
+    const body=lesson?formatLessonText(m.text):formatText(m.text);
+    return `<div class="mg1-msg ${m.role}${lesson?" lesson":""}" dir="auto">${body}</div>`;
   }).join("");
   bindPracticeCards();
   emitSavedMessages(assistantState.messages,"mg1");
@@ -1866,7 +1968,7 @@ async function generateTargetedReview({unit,skill,domain="grammar",count=3,passa
   if(!assistantState.aiReady)throw new Error("AI is not ready for targeted review.");
 
   const retrievalQuery=`Unit ${unitNumber} ${targetDomain} ${targetSkill} focused review practice`;
-  const chunks=retrieve(retrievalQuery,unitNumber,targetDomain,12);
+  const chunks=retrieve(retrievalQuery,unitNumber,targetDomain,7);
   const context=buildContext(chunks);
   const passageText=reviewPlainText(passage,7000);
   if(!context && !passageText)throw new Error("No MG1 source context for targeted review.");
@@ -1925,7 +2027,7 @@ async function startQuickPractice(isNext=false){
     paintMessages(); return;
   }
   const retrievalQuery=`Unit ${unit} ${label} multiple choice practice`;
-  const chunks=retrieve(retrievalQuery,unit,topic,10);
+  const chunks=retrieve(retrievalQuery,unit,topic,6);
   const context=buildContext(chunks);
   if(!context){
     assistantState.messages.push({role:"ai",text:"I can't find enough MG1 material for this practice."});
@@ -2332,7 +2434,7 @@ RESPONSE RULES:
 
   const contextIntent=activeTopic?.source==="form_meaning_function" ? "fmf" : intent;
   const contextQuery=activeTopic ? `Unit ${unit} ${activeTopic.search||activeTopic.title}` : retrievalQuery;
-  const retrievalDepth=activeTopic?10:((intent==="grammar"||intent==="fmf")?12:8);
+  const retrievalDepth=activeTopic?6:((intent==="grammar"||intent==="fmf")?7:5);
   const chunks=retrieve(contextQuery,unit,contextIntent,retrievalDepth);
   const context=buildContext(chunks);
   if(!context){
@@ -2357,7 +2459,7 @@ RESPONSE RULES:
       throw new Error("[APP_CHECK] App Check was not initialized.");
     }
 
-    const lessonHistory=lessonMode ? recentLessonConversation(16) : "";
+    const lessonHistory=lessonMode ? recentLessonConversation(8) : "";
     const lessonRoadmap=lessonMode ? lessonRoadmapForUnit(assistantState.lessonFlow.unit,assistantState.lessonFlow.intent) : [];
     const lessonRoadmapText=lessonRoadmap.length ? lessonRoadmap.map(x=>x.title).join(" → ") : "not available";
     const requiredTopic=lessonMode ? currentLessonTopic(assistantState.lessonFlow) : null;
@@ -2370,7 +2472,7 @@ RESPONSE RULES:
         : 'Try the quick check 🌟 When you are ready, type: Got it or Next.';
       const topicRule=requiredTopic ? `CURRENT REQUIRED TOPIC: "${requiredTopic.title}". TEXTBOOK SECTION: ${requiredTopic.source==="form_meaning_function"?"Form, Meaning and Function":"Grammar"}. Teach this exact topic only. Do not choose, merge, skip, or replace it with another topic.` : "";
       const roadmapRule=`CURRICULUM ORDER: ${lessonRoadmapText}. Follow this order exactly. The current topic is determined by the app, not by the model.`;
-      const teachingMethod=`Use the textbook context as evidence, not as wording to repeat. Re-teach the idea in simpler language. Explain: (1) the idea in plain language, (2) when to use it, (3) the clue a student should notice, (4) one short contrast only if students commonly confuse two forms, and (5) one fresh source-aligned example. Do not copy a textbook definition sentence unless the student explicitly asks for the book wording. For Arabic, use clear labels: "الفكرة:"، "متى أستخدمها؟"، "العلامة:"، "مثال:"، "تمرين سريع:". For English, use: "Idea:", "When to use it:", "Clue:", "Example:", "Quick Check:".`;
+      const teachingMethod=`Use the textbook context as evidence, not as wording to repeat. Re-teach the idea in simpler language. Explain: (1) the idea in plain language, (2) when to use it, (3) the clue a student should notice, (4) one short contrast only if students commonly confuse two forms, and (5) one fresh source-aligned example. Do not copy a textbook definition sentence unless the student explicitly asks for the book wording. VISUAL STRUCTURE IS REQUIRED: each label must be on its own line and each section must stay short. For Arabic, use EXACTLY these section labels: "الفكرة:", "متى أستخدمها؟:", "العلامة:", "مثال:", "تمرين سريع:". For English, use EXACTLY: "Idea:", "When to use it:", "Clue:", "Example:", "Quick Check:". If two forms are compared, put each form on a separate bullet under "When to use it:" and bold the form name with **...**. Keep each section to 1–2 short lines whenever possible.`;
       if(lessonAction==="teach"){
         lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${roadmapRule} ${topicRule} ${teachingMethod} Give exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list or preview later topics. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
