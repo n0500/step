@@ -1,3 +1,4 @@
+// StepUp MG1 reviewed lesson flow — 2026-09-16
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAI, getGenerativeModel, GoogleAIBackend, ThinkingLevel } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-ai.js";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app-check.js";
@@ -13,7 +14,7 @@ const AI_CFG = {
 
 const assistantState = {
   selectedUnit: null,
-  selectedMode: "ask",
+  selectedMode: "grammar",
   messages: [],
   busy: false,
   model: null,
@@ -24,7 +25,7 @@ const assistantState = {
   lastExerciseQuery: "",
   lastExerciseStage: "none",
   quickPractice: {active:false, unit:null, topic:"grammar", number:0, current:null},
-  lessonFlow: {active:false, unit:null, intent:null, sourceQuery:"", part:1, language:"en"},
+  lessonFlow: {active:false, unit:null, intent:null, sourceQuery:"", part:1, topicIndex:0, language:"en"},
   writingMessages: [],
   writingBusy: false,
   writingModel: null,
@@ -55,13 +56,27 @@ STYLE
 - Keep encouragement brief; at most one short encouraging phrase and optionally one simple emoji such as ✓, 🌟, or 👍. Do not overuse emojis.
 - Make teaching responses visually clear with simple labels such as "Rule:", "Example:", and "Quick Check:" (or "القاعدة:", "مثال:", "تمرين سريع:").
 - Do NOT use markdown heading symbols such as #, ##, or ###. Do not use tables, horizontal rules, or decorative separators.
-- When the student asks for a whole Grammar/FMF lesson or a unit Grammar overview, do NOT explain all rules in one response. Teach the lesson progressively, one rule/topic at a time.
+- When the student asks for a whole Grammar or Form, Meaning and Function lesson, or a unit Grammar overview, do NOT explain all rules in one response. Teach the lesson progressively, one rule/topic at a time.
+- Treat textbook wording as source evidence, not as a script to repeat. Re-explain the idea in simpler teaching language.
+- For each rule, help the student understand: what the idea means, when to use it, the clue to notice, and one fresh source-aligned example.
+- If Arabic is requested, explain naturally in Arabic while keeping English grammar forms/examples when useful.
+- Always display the lesson name exactly as "Form, Meaning and Function". Never abbreviate it in student-facing responses.
 - In guided lesson mode, explain only the current rule, give one brief example, then give one short multiple-choice exercise and stop. Wait for the student before moving on.
 - Arabic question -> Arabic explanation; keep English grammar terms, vocabulary, and examples in English when helpful.
 - English question -> English answer.
 - Expand only when the student explicitly asks "explain more", "more detail", "اشرح أكثر", or equivalent.
 - If the student only asks to switch language (for example "اشرح عربي", "بالعربي", "in Arabic"), keep the SAME scope as the previous question. Do not add extra rules or examples.
 - If the message is only a greeting, reply warmly but briefly: "Hi! What would you like to practice in MegaGoal 1?" or Arabic equivalent.
+
+TEACHING EXPLANATION
+- The textbook is the source of truth, but DO NOT simply repeat or paraphrase its rule sentence line by line. Teach the idea so the student understands it.
+- Explain the rule in your own simple words: what it means, when we use it, and the clue the student should notice.
+- When two forms are easily confused, briefly contrast them using one clear pair of examples or a simple decision clue.
+- Prefer a new, easy example that is faithful to the retrieved rule instead of copying the textbook example, unless the student specifically asks for the book example.
+- For Arabic responses, explain the concept naturally in Arabic while keeping the English form/example visible. Do not translate mechanically.
+- After explaining, give one short "كيف أعرف؟" / "How do I know?" clue when useful.
+- If the student says the explanation is unclear, change the explanation method: simplify it, use a contrast, timeline, mini-situation, or step-by-step reasoning. Do not repeat the same wording.
+- Never add a grammar rule that is not supported by the retrieved MG1 material.
 
 SOURCE PRIORITY
 1) Student Book rules/content.
@@ -72,22 +87,22 @@ SOURCE PRIORITY
 If sources conflict, Student Book wins. A teacher revision worksheet is practice only; never call its answer official unless an official key is in the context.
 
 GRAMMAR
-- Grammar is the umbrella category. It includes the unit's main Grammar lesson AND the related Form, Meaning & Function lesson.
-- If the student asks broadly for "Grammar" in a unit, the full lesson still includes the main Grammar lesson plus the related Form, Meaning & Function points, but teach them sequentially rather than all at once.
+- Grammar is the umbrella category. It includes the unit's main Grammar lesson AND the related Form, Meaning and Function lesson.
+- If the student asks broadly for "Grammar" in a unit, the full lesson still includes the main Grammar lesson plus the related Form, Meaning and Function points, but teach them sequentially rather than all at once.
 - Start with the first distinct rule/topic supported by the retrieved unit context. Do not preview or list all remaining rules.
 - For a specific grammar question, answer only that point.
 - Use: rule -> one short example -> one important note only if needed -> one quick multiple-choice check when in guided lesson mode.
 
 FORM, MEANING & FUNCTION
-- Form, Meaning & Function (FMF) is a grammar-related lesson in every MegaGoal 1 unit.
+- Form, Meaning and Function is a grammar-related lesson in every MegaGoal 1 unit.
 - It belongs under Grammar academically, but it also has its own selectable category in MG1 Assistant so a student can study that lesson directly.
-- Treat "Form, Meaning and Function", "Form Meaning Function", "FMF", and "form/meaning/function" as the FMF lesson.
-- If the student selects the FMF category or asks specifically about FMF, retrieve and explain only the FMF lesson from the selected unit.
-- Do not treat the word "meaning" as Vocabulary when the request is about FMF.
-- Explain only what the student asks for. For a broad FMF lesson request, teach one FMF point at a time and wait before moving to the next point.
+- Recognize common shorthand input internally, but in student-facing responses always write "Form, Meaning and Function" in full.
+- If the student selects Form, Meaning and Function or asks specifically about it, retrieve and explain only that lesson from the selected unit.
+- Do not treat the word "meaning" as Vocabulary when the request is about Form, Meaning and Function.
+- Explain only what the student asks for. For a broad Form, Meaning and Function lesson request, teach one point at a time and wait before moving to the next point.
 
 GUIDED LESSON MODE
-- Use guided lesson mode for broad Grammar or FMF lesson requests.
+- Use guided lesson mode for broad Grammar or Form, Meaning and Function lesson requests.
 - Teach ONE distinct rule/topic per turn. Never dump the whole lesson at once.
 - Each teaching part should contain: (1) a short rule title, (2) a clear concise explanation, (3) one brief example, and (4) exactly ONE multiple-choice check with four options A–D.
 - Do not reveal the exercise answer before the student responds.
@@ -311,35 +326,71 @@ function unitTokenToNumber(token="") {
   return map[t]||null;
 }
 
+const UNIT_TOKEN_PATTERN="(1|2|3|4|5|6|١|٢|٣|٤|٥|٦|one|two|three|four|five|six|first|second|third|fourth|fifth|sixth|اول|الاولي|الاول|واحد|ثاني|الثانيه|الثاني|اثنين|اثنان|ثالث|الثالثه|الثالث|ثلاثه|ثلاث|رابع|الرابعه|الرابع|اربعه|اربع|خامس|الخامسه|الخامس|خمسه|خمس|سادس|السادسه|السادس|سته|ست)";
+const UNIT_MARKER_PATTERN="(?:unit|unut|uint|unti|uinit|unt|unite|يونت|الوحده|وحده)";
+
+function unitCorrectionInQuery(query="") {
+  const n=normalize(String(query||""));
+  if(!n) return null;
+
+  // Contrast corrections: "unit 1 مو 2", "unit 1 not unit 2".
+  let m=new RegExp(`${UNIT_MARKER_PATTERN}\\s*(?:(?:number|no|رقم)\\s*)?${UNIT_TOKEN_PATTERN}\\s+(?:مو|مش|ليس|ليست|not)\\s*(?:${UNIT_MARKER_PATTERN}\\s*)?${UNIT_TOKEN_PATTERN}(?=\\s|$)`,"i").exec(n);
+  if(m) return unitTokenToNumber(m[2]);
+
+  // Explicit corrections: "قصدي unit 2", "I mean unit two", "correct unit is 2".
+  m=new RegExp(`(?:قصدي|اقصد|الصحيح|الوحده الصحيحه|وحده صحيحه|i mean|correct unit(?: is)?|actually)\\s*(?:${UNIT_MARKER_PATTERN}\\s*)?${UNIT_TOKEN_PATTERN}(?=\\s|$)`,"i").exec(n);
+  if(m) return unitTokenToNumber(m[1]);
+
+  // "not unit 1, unit 2" / "مو unit 1، unit 2".
+  m=new RegExp(`(?:مو|مش|ليس|ليست|not)\\s*${UNIT_MARKER_PATTERN}\\s*${UNIT_TOKEN_PATTERN}.*?${UNIT_MARKER_PATTERN}\\s*${UNIT_TOKEN_PATTERN}(?=\\s|$)`,"i").exec(n);
+  if(m) return unitTokenToNumber(m[2]);
+
+  return null;
+}
+
 function explicitUnitInQuery(query="") {
-  const raw=String(query||"");
-  const n=normalize(raw);
-  const tokenPattern="(1|2|3|4|5|6|١|٢|٣|٤|٥|٦|one|two|three|four|five|six|first|second|third|fourth|fifth|sixth|اول|الاولي|الاول|واحد|ثاني|الثانيه|الثاني|اثنين|اثنان|ثالث|الثالثه|الثالث|ثلاثه|ثلاث|رابع|الرابعه|الرابع|اربعه|اربع|خامس|الخامسه|الخامس|خمسه|خمس|سادس|السادسه|السادس|سته|ست)";
-  const after=new RegExp(`(?:unit|يونت|الوحده)\\s*(?:(?:number|no|رقم)\\s*)?${tokenPattern}(?=\\s|$)`,"i").exec(n);
+  const n=normalize(String(query||""));
+  const corrected=unitCorrectionInQuery(query);
+  if(corrected) return corrected;
+
+  const after=new RegExp(`${UNIT_MARKER_PATTERN}\\s*(?:(?:number|no|رقم)\\s*)?${UNIT_TOKEN_PATTERN}(?=\\s|$)`,"i").exec(n);
   if(after) return unitTokenToNumber(after[1]);
-  const before=new RegExp(`${tokenPattern}\\s+(?:unit|يونت)(?=\\s|$)`,"i").exec(n);
+  const before=new RegExp(`${UNIT_TOKEN_PATTERN}\\s+${UNIT_MARKER_PATTERN}(?=\\s|$)`,"i").exec(n);
   if(before) return unitTokenToNumber(before[1]);
   return null;
+}
+
+function isUnitMetaCorrection(query="") {
+  const n=normalize(String(query||""));
+  if(unitCorrectionInQuery(query)) return true;
+  if(!explicitUnitInQuery(query)) return false;
+  return includesAny(n,[
+    "خطا","غلط","مو","مش","ليس","ليست","قصدي","اقصد","الصحيح",
+    "wrong","not unit","i mean","actually","this is unit","that is unit","thats unit"
+  ]);
 }
 
 function detectUnit(query="") {
   return explicitUnitInQuery(query) || assistantState.selectedUnit;
 }
 function detectIntent(query="") {
-  const asksGrammar = includesAny(query,["grammar","rule","tense","قاعده","قواعد","زمن"]);
+  const asksGrammar = includesAny(query,["grammar","grammar rule","tense","قاعده","قواعد","زمن"]);
   const asksFMF = includesAny(query,[
     "form meaning and function","form meaning function","form/meaning/function","fmf",
     "form, meaning and function","form meaning & function",
     "فورم ميننق فنكشن","فورم مينينق فنكشن","المعنى والوظيفه","المعنى والوظيفة"
   ]);
+  // Only explicit skill names override the selected skill. Generic words such as
+  // "meaning", "word", or "فهم" must not silently move a student to another mode.
   if (asksGrammar && asksFMF) return "grammar";
   if (asksFMF) return "fmf";
   if (asksGrammar) return "grammar";
-  if (includesAny(query,["vocabulary","vocab","meaning","mean","word","expression","real talk","مفردات","معنى","كلمه","عباره"])) return "vocabulary";
-  if (includesAny(query,["reading","main idea","inference","reference","comprehension","قراءة","قراءه","الفكره الرئيسيه","استنتاج","مرجع","فهم"])) return "reading";
+  if (includesAny(query,["vocabulary","vocab","real talk","مفردات"])) return "vocabulary";
+  if (includesAny(query,["reading","main idea","inference","reference question","reading comprehension","قراءة","قراءه","الفكره الرئيسيه","استنتاج"])) return "reading";
   if (includesAny(query,["practice","quiz me","test me","workbook","worksheet","exercise","تمرين","تدريب","اختبرني","ورقه عمل"])) return "practice";
-  if (assistantState.selectedMode==="fmf") return "fmf";
-  return assistantState.selectedMode || "ask";
+  return ["grammar","fmf","vocabulary","reading","practice"].includes(assistantState.selectedMode)
+    ? assistantState.selectedMode
+    : "grammar";
 }
 function isFullWritingRequest(query="") {
   return includesAny(query,[
@@ -361,6 +412,12 @@ function isUnitNavigationQuery(query="") {
   ];
   return phrases.some(x=>n.includes(normalize(x)));
 }
+function isCrossUnitLookupQuery(query="") {
+  return includesAny(query,[
+    "which unit","what unit","in which unit","where is the lesson","which lesson",
+    "اي وحده","أي وحدة","في اي وحده","في أي وحدة","اي وحدة","وين درس","في اي درس","في أي درس"
+  ]);
+}
 
 function clearAssistantLessonContext(){
   resetLessonFlow();
@@ -381,7 +438,7 @@ function syncAssistantControls(){
 
 function applyAssistantContext(unit=null,intent=""){
   const nextUnit=Number.isInteger(unit)&&unit>=1&&unit<=6?unit:null;
-  const nextMode=["grammar","fmf","vocabulary","reading","practice","ask"].includes(intent)?intent:"";
+  const nextMode=["grammar","fmf","vocabulary","reading","practice"].includes(intent)?intent:"";
   const unitChanged=nextUnit!==null && assistantState.selectedUnit!==nextUnit;
   const flowUnitConflict=nextUnit!==null && assistantState.lessonFlow.active && assistantState.lessonFlow.unit!==nextUnit;
   const flowModeConflict=nextMode && assistantState.lessonFlow.active && assistantState.lessonFlow.intent!==nextMode;
@@ -391,10 +448,10 @@ function applyAssistantContext(unit=null,intent=""){
   syncAssistantControls();
 }
 
-function navigationReply(query="",unit=null,intent="ask") {
+function navigationReply(query="",unit=null,intent="grammar") {
   if(!unit)return null;
   const ar=hasArabic(query);
-  const target=intent==="fmf"?"Unit FMF":intent==="vocabulary"?"Unit vocabulary":intent==="practice"?"Quick practice":intent==="reading"?"Reading":"Unit grammar";
+  const target=intent==="fmf"?"Form, Meaning and Function":intent==="vocabulary"?"Unit vocabulary":intent==="practice"?"Quick practice":intent==="reading"?"Reading":"Unit grammar";
   if(ar){
     if(intent==="reading") return `تم تحديد Unit ${unit} ✓\nاختاري Reading من المهارات، ثم اسألي عن الجزء الذي تريدينه.`;
     return `تم تحديد Unit ${unit} ✓\nاضغطي ${target} للبدء.`;
@@ -448,6 +505,7 @@ function isLessonAdvance(query="") {
 }
 
 function isLessonClarification(query="") {
+  if(isLanguageOnlyFollowup(query)) return false;
   const n=normalize(query);
   if(!n) return false;
   const clarificationPhrases=[
@@ -488,9 +546,9 @@ function lessonAnswerInput(query="") {
   const raw=String(query||"").trim();
   if(!raw)return null;
 
-  // Never treat readiness, progress, help, or explanation requests as a quiz answer.
+  // Never treat readiness, progress, help, unit switches/corrections, or explanation requests as a quiz answer.
   const n=normalize(raw);
-  if(isLessonAdvance(raw) || isLessonClarification(raw) || isLanguageOnlyFollowup(raw)) return null;
+  if(isLessonAdvance(raw) || isLessonClarification(raw) || isLanguageOnlyFollowup(raw) || explicitUnitInQuery(raw) || isUnitMetaCorrection(raw)) return null;
   const nonAnswers=[
     "help","help me","can you help","repeat","again",
     "ساعدني","مساعدة","مساعده","عيد","اعد","أعد"
@@ -572,7 +630,7 @@ function recentLessonConversation(limit=8) {
 }
 
 function resetLessonFlow(){
-  assistantState.lessonFlow={active:false,unit:null,intent:null,sourceQuery:"",part:1,language:"en"};
+  assistantState.lessonFlow={active:false,unit:null,intent:null,sourceQuery:"",part:1,topicIndex:0,language:"en"};
 }
 
 function previousUserQuery() {
@@ -614,12 +672,15 @@ function scoreChunk(c, query, unit, intent) {
   const q = tokenSet(query);
   const t = tokenSet(`${c.title||""} ${c.section||""} ${(c.tags||[]).join(" ")} ${c.text||""}`);
   let score=0;
-  for (const w of q) if (t.has(w)) score += 1;
+  const tokenWeight=(intent==="grammar"||intent==="fmf")?4:1;
+  for (const w of q) if (t.has(w)) score += tokenWeight;
   if (unit && c.unit===unit) score += 5;
   if (intent==="grammar") {
-    if (c.source_kind==="student_book" && c.section==="grammar") score += 12;
-    if (c.source_kind==="student_book" && c.section==="form_meaning_function") score += 11;
-    if (c.section==="form_meaning_function") score += 4;
+    // Broad Grammar starts from the main Student Book Grammar section.
+    // FMF stays under Grammar but comes after the main lesson.
+    if (c.source_kind==="student_book" && c.section==="grammar") score += 16;
+    if (c.source_kind==="student_book" && c.section==="form_meaning_function") score += 10;
+    if (c.section==="form_meaning_function") score += 2;
     if (c.source_kind==="teacher_revision") score += 2;
     if (c.source_kind==="workbook") score += 2;
   }
@@ -655,6 +716,92 @@ function retrieve(query, unit, intent, topK=7) {
     .slice(0,topK);
 }
 
+const LESSON_ROADMAPS = Object.freeze({
+  1: [
+    {title:"Simple Present and Present Progressive — Revision", source:"grammar", search:"Simple Present Tense Present Progressive Revision"},
+    {title:"Simple Past and Present Perfect — Revision", source:"grammar", search:"Simple Past Present Perfect Revision"},
+    {title:"Simple Past Tense", source:"form_meaning_function", search:"Simple Past Tense Time Expressions for the Past"},
+    {title:"Past Progressive Tense", source:"form_meaning_function", search:"Past Progressive Tense"},
+    {title:"Past Progressive + When + Simple Past Tense", source:"form_meaning_function", search:"Past Progressive When Simple Past Tense"}
+  ],
+  2: [
+    {title:"Present Perfect Tenses: Progressive and Simple", source:"grammar", search:"Present Perfect Tenses Progressive Simple"},
+    {title:"Good at / Interested in + Gerund", source:"grammar", search:"Good at Interested in gerund abilities interests"},
+    {title:"Simple Present Tense", source:"form_meaning_function", search:"Simple Present Tense"},
+    {title:"Time Expressions for the Present", source:"form_meaning_function", search:"Time Expressions for the Present"},
+    {title:"Wh- Questions in the Simple Present", source:"form_meaning_function", search:"Wh Questions Simple Present"},
+    {title:"Prepositions of Time for the Present", source:"form_meaning_function", search:"Prepositions of Time for the Present"},
+    {title:"Relative Pronouns: Who, That, Which", source:"form_meaning_function", search:"Relative Pronouns Who That Which"},
+    {title:"Past Progressive with While", source:"form_meaning_function", search:"Past Progressive with While"}
+  ],
+  3: [
+    {title:"Future with Will or Be Going To", source:"grammar", search:"Future with Will or Be Going To"},
+    {title:"Will versus Be Going To", source:"grammar", search:"Will versus Be Going To plan uncertainty"},
+    {title:"Future Progressive", source:"grammar", search:"Future Progressive"},
+    {title:"Present Simple Tense versus Present Progressive Tense", source:"form_meaning_function", search:"Present Simple Tense versus Present Progressive Tense"},
+    {title:"Present Progressive for the Future", source:"form_meaning_function", search:"Present Progressive for the Future"},
+    {title:"Time Expressions for the Future", source:"form_meaning_function", search:"Time Expressions for the Future"},
+    {title:"Make and Respond to Suggestions", source:"form_meaning_function", search:"Make and Respond to Suggestions Lets How about Why dont"},
+    {title:"Information Questions", source:"form_meaning_function", search:"Information Questions future probably maybe"},
+    {title:"Tag Questions", source:"form_meaning_function", search:"Tag Questions affirmative negative tag"}
+  ],
+  4: [
+    {title:"The Passive", source:"grammar", search:"The Passive be past participle"},
+    {title:"Comparison of Adjectives: Comparatives and Superlatives", source:"grammar", search:"Comparison of Adjectives comparatives superlatives"},
+    {title:"Similarities and Differences: as + adjective + as", source:"grammar", search:"Similarities Differences as adjective as"},
+    {title:"More Similarities and Differences: look, smell, sound, taste + like", source:"grammar", search:"look smell sound taste like noun"},
+    {title:"Demonstrative Pronouns — Revision", source:"form_meaning_function", search:"Demonstrative Pronouns Revision This That These Those"},
+    {title:"Imperatives — Revision", source:"form_meaning_function", search:"Imperatives Revision commands instructions advice"},
+    {title:"Indefinite Articles: a/an", source:"form_meaning_function", search:"indefinite articles a an consonant vowel sound"},
+    {title:"Possessive Adjectives and Possessive Pronouns", source:"form_meaning_function", search:"Possessive Adjectives Possessive Pronouns"},
+    {title:"Question Word: Whose", source:"form_meaning_function", search:"Question Word Whose"},
+    {title:"Pronoun: One/Ones", source:"form_meaning_function", search:"Pronoun One Ones"},
+    {title:"Quantitative: Too, Enough", source:"form_meaning_function", search:"Too Enough quantitative"}
+  ],
+  5: [
+    {title:"Reflexive Pronouns", source:"grammar", search:"Reflexive Pronouns"},
+    {title:"Because versus So", source:"grammar", search:"Because versus So reason result"},
+    {title:"So and Neither", source:"grammar", search:"So and Neither agreement"},
+    {title:"Modal Auxiliaries: Must and Should", source:"form_meaning_function", search:"Modal Auxiliaries must should laws rules advice"},
+    {title:"Adverbs of Manner", source:"form_meaning_function", search:"Adverbs of Manner ly well fast hard"},
+    {title:"Prepositions of Place", source:"form_meaning_function", search:"Prepositions of Place across from between next to on corner near far from"},
+    {title:"Imperatives for Directions", source:"form_meaning_function", search:"Imperatives for Directions turn left right go straight"}
+  ],
+  6: [
+    {title:"Modal Auxiliaries: Should, Ought To, Might, Could", source:"grammar", search:"Modal Auxiliaries Should Ought To Might Could advice"},
+    {title:"Had Better", source:"grammar", search:"Had Better advice"},
+    {title:"Two-Word and Three-Word Verbs", source:"grammar", search:"Two Word Three Word Verbs phrasal verbs"},
+    {title:"Question Words: How many, How much", source:"form_meaning_function", search:"Question Words How many How much count noncount"},
+    {title:"Quantity Expressions: much, many, a lot of, lots of, a few, a little", source:"form_meaning_function", search:"Quantity Expressions much many a lot of lots of a few a little"},
+    {title:"Words Connected with Medicine and Clauses with When", source:"form_meaning_function", search:"Words Connected with Medicine Clauses with When"}
+  ]
+});
+
+function lessonRoadmapForUnit(unit,intent="grammar") {
+  const all=LESSON_ROADMAPS[Number(unit)]||[];
+  return intent==="fmf" ? all.filter(x=>x.source==="form_meaning_function") : all.slice();
+}
+function grammarRoadmapForUnit(unit) {
+  return lessonRoadmapForUnit(unit,"grammar").map(x=>x.title);
+}
+function currentLessonTopic(flow=assistantState.lessonFlow) {
+  if(!flow?.active || !flow?.unit) return null;
+  const roadmap=lessonRoadmapForUnit(flow.unit,flow.intent);
+  const idx=Number.isInteger(flow.topicIndex)?flow.topicIndex:0;
+  return roadmap[idx]||null;
+}
+function inferTopicIndexFromText(unit,intent,text="") {
+  const roadmap=lessonRoadmapForUnit(unit,intent);
+  const normalized=normalize(text);
+  let best=-1, bestScore=0;
+  roadmap.forEach((item,i)=>{
+    const words=normalize(item.title).split(/\s+/).filter(w=>w.length>2);
+    const score=words.reduce((n,w)=>n+(normalized.includes(w)?1:0),0);
+    if(score>bestScore){bestScore=score;best=i;}
+  });
+  return bestScore>=2?best:0;
+}
+
 function buildContext(chunks) {
   let used=0, max=12000, parts=[];
   for (const c of chunks) {
@@ -670,7 +817,7 @@ function directLocalReference(query, unit, intent) {
   const u = KB.units?.[String(unit)];
   if (!u) return null;
   const ar = hasArabic(query);
-  // Broad Grammar/FMF requests are handled by the guided AI lesson flow.
+  // Broad Grammar or Form, Meaning and Function requests are handled by the guided AI lesson flow.
   if (intent==="grammar" || intent==="fmf") return null;
   if (intent==="vocabulary" && includesAny(query,["vocabulary unit","vocab unit","مفردات الوحده","مفردات الوحدة","كلمات الوحده","كلمات الوحدة"])) {
     const v=KB.vocabulary?.[String(unit)]||{};
@@ -708,6 +855,7 @@ function injectStyles(){
     .mg1-chip{border:1px solid #d9dce3;background:#fff;border-radius:999px;padding:10px 14px;min-height:42px;cursor:pointer;font-weight:700;font-size:14px;color:#344054}
     .mg1-chip.active{background:#4938d4;color:#fff;border-color:#4938d4}
     .mg1-units .mg1-chip{min-width:54px;text-align:center}
+    .mg1-unit-hint{font-size:12px;color:#667085;margin:-2px 0 10px}
     .mg1-shortcuts{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
     .mg1-shortcut{font-size:13px;font-weight:700;border:1px solid #d9d4ff;background:#fff;color:#4938d4;border-radius:12px;padding:9px 12px;min-height:40px;cursor:pointer}
     .mg1-shortcut.quick{background:#4938d4;color:#fff;border-color:#4938d4}
@@ -730,7 +878,7 @@ function injectStyles(){
     .mg1-practice-tag{display:inline-flex;align-items:center;border-radius:999px;background:#f0edff;color:#4938d4;padding:5px 9px}
     .mg1-practice-stem{font-size:18px;font-weight:800;line-height:1.65;margin:9px 0 14px}
     .mg1-options{display:grid;gap:10px}
-    .mg1-option{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:start;border:1px solid #d8dde6;background:#fff;border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.55;color:#172033;cursor:pointer}
+    .mg1-option{display:flex;gap:11px;touch-action:manipulation;-webkit-tap-highlight-color:rgba(73,56,212,.12);align-items:flex-start;width:100%;text-align:start;border:1px solid #d8dde6;background:#fff;border-radius:14px;padding:12px 14px;font-size:16px;line-height:1.55;color:#172033;cursor:pointer}
     .mg1-option:hover{border-color:#8d83e8;background:#faf9ff}
     .mg1-option:disabled{cursor:default;opacity:1}
     .mg1-option.correct{border-color:#78c8a7;background:#effbf5}
@@ -858,20 +1006,20 @@ function renderAssistant(){
     <div class="mg1-assistant-hero">
       <div class="eyebrow">MegaGoal 1 • Units 1–6</div>
       <h1>MG1 Assistant</h1>
-      <p class="mg1-assistant-sub">Grammar (includes FMF) • Vocabulary • Reading • Practice</p>
+      <p class="mg1-assistant-sub">Grammar • Form, Meaning and Function • Vocabulary • Reading • Practice</p>
       <div class="mg1-status ${assistantState.aiReady?"ok":"wait"}">${assistantState.aiReady?`● AI ready • ${esc(AI_CFG.model)}`:"● AI setup pending • textbook reference mode is available"}</div>
       <div class="mg1-control-label">Choose a skill</div>
       <div class="mg1-control-row" id="mg1Modes">
-        ${[["grammar","Grammar"],["fmf","Form, Meaning & Function"],["vocabulary","Vocabulary"],["reading","Reading"],["practice","Practice"],["ask","Ask anything"]].map(([id,l])=>`<button class="mg1-chip ${assistantState.selectedMode===id?"active":""}" data-mode="${id}">${l}</button>`).join("")}
+        ${[["grammar","Grammar"],["fmf","Form, Meaning and Function"],["vocabulary","Vocabulary"],["reading","Reading"],["practice","Practice"]].map(([id,l])=>`<button class="mg1-chip ${assistantState.selectedMode===id?"active":""}" data-mode="${id}">${l}</button>`).join("")}
       </div>
       <div class="mg1-control-label">Choose a unit</div>
       <div class="mg1-control-row mg1-units" id="mg1Units">
-        <button class="mg1-chip ${assistantState.selectedUnit===null?"active":""}" data-unit="">All</button>
         ${[1,2,3,4,5,6].map(n=>`<button class="mg1-chip ${assistantState.selectedUnit===n?"active":""}" data-unit="${n}">Unit ${n}</button>`).join("")}
       </div>
+      <div class="mg1-unit-hint">Choose one unit first • اختاري وحدة واحدة أولًا</div>
       <div class="mg1-shortcuts">
         <button class="mg1-shortcut" data-prompt="Teach me Unit 1 grammar step by step. Explain one rule at a time and give me one quick exercise before moving on.">Unit grammar</button>
-        <button class="mg1-shortcut" data-prompt="Teach me the Form, Meaning and Function lesson in Unit 1 step by step.">Unit FMF</button>
+        <button class="mg1-shortcut" data-prompt="Teach me the Form, Meaning and Function lesson in Unit 1 step by step.">Form, Meaning and Function</button>
         <button class="mg1-shortcut" data-prompt="Vocabulary Unit 1">Unit vocabulary</button>
         <button class="mg1-shortcut quick" id="mg1QuickPractice">Quick practice</button>
       </div>
@@ -879,7 +1027,7 @@ function renderAssistant(){
     <div class="mg1-chat">
       <div class="mg1-messages" id="mg1Messages"></div>
       <div class="mg1-compose">
-        <textarea id="mg1Input" dir="auto" maxlength="700" placeholder="Ask about MegaGoal 1... / اسألي عن المنهج"></textarea>
+        <textarea id="mg1Input" dir="auto" maxlength="700" placeholder="Ask about the selected skill... / اسألي عن المهارة المحددة"></textarea>
         <button class="mg1-send" id="mg1Send">Send</button>
       </div>
     </div>`;
@@ -1526,7 +1674,12 @@ function bindAssistantUI(){
     renderAssistant();
   }));
   document.querySelectorAll(".mg1-shortcut[data-prompt]").forEach(b=>b.addEventListener("click",()=>{
-    const p=b.dataset.prompt.replace(/Unit 1/g,`Unit ${assistantState.selectedUnit||1}`);
+    if(!assistantState.selectedUnit){
+      assistantState.messages.push({role:"system",text:"Choose a unit first (Unit 1–6). / اختاري الوحدة أولًا."});
+      paintMessages();
+      return;
+    }
+    const p=b.dataset.prompt.replace(/Unit 1/g,`Unit ${assistantState.selectedUnit}`);
     const input=document.getElementById("mg1Input"); if(input){input.value=p;input.focus();}
   }));
   document.getElementById("mg1QuickPractice")?.addEventListener("click",()=>startQuickPractice());
@@ -1545,16 +1698,16 @@ function renderPracticeCard(m){
     let cls="mg1-option";
     if(answered && i===q.answerIndex) cls+=" correct";
     else if(answered && i===selected && i!==q.answerIndex) cls+=" wrong";
-    return `<button class="${cls}" data-practice-choice="${i}" ${answered?"disabled":""}>
+    return `<button type="button" class="${cls}" data-practice-choice="${i}" ${answered?"disabled":""}>
       <span class="mg1-option-letter">${letters[i]}</span><span>${esc(choice)}</span>
     </button>`;
   }).join("");
   const feedback=answered ? `<div class="mg1-practice-feedback" dir="auto">${formatText(m.feedback||"")}</div>
-    <button class="mg1-next-practice" data-next-practice="1">Next question</button>` : "";
+    <button type="button" class="mg1-next-practice" data-next-practice="1">Next question</button>` : "";
   return `<div class="mg1-practice-card" dir="auto">
     <div class="mg1-practice-meta">
       <span class="mg1-practice-tag">Quick Practice</span>
-      <span>Unit ${esc(q.unit||assistantState.selectedUnit||1)}</span>
+      <span>Unit ${esc(q.unit||assistantState.selectedUnit||"—")}</span>
       <span>•</span><span>${esc(q.topicLabel||"Grammar")}</span>
     </div>
     <div class="mg1-practice-stem">${esc(q.stem||"")}</div>
@@ -1563,11 +1716,21 @@ function renderPracticeCard(m){
   </div>`;
 }
 function bindPracticeCards(){
-  document.querySelectorAll("[data-practice-choice]").forEach(btn=>{
-    btn.addEventListener("click",()=>choosePracticeAnswer(Number(btn.dataset.practiceChoice)));
-  });
-  document.querySelectorAll("[data-next-practice]").forEach(btn=>{
-    btn.addEventListener("click",()=>startQuickPractice(true));
+  const box=document.getElementById("mg1Messages");
+  if(!box || box.dataset.practiceBound==="1") return;
+  box.dataset.practiceBound="1";
+  box.addEventListener("click",event=>{
+    const choice=event.target.closest("[data-practice-choice]");
+    if(choice && box.contains(choice)){
+      event.preventDefault();
+      choosePracticeAnswer(Number(choice.dataset.practiceChoice));
+      return;
+    }
+    const next=event.target.closest("[data-next-practice]");
+    if(next && box.contains(next)){
+      event.preventDefault();
+      startQuickPractice(true);
+    }
   });
 }
 function paintMessages(){
@@ -1591,7 +1754,7 @@ function quickPracticeTopic(){
     ? assistantState.selectedMode : "grammar";
 }
 function quickPracticeTopicLabel(topic){
-  return ({grammar:"Grammar",fmf:"Form, Meaning & Function",vocabulary:"Vocabulary",reading:"Reading"})[topic] || "Grammar";
+  return ({grammar:"Grammar",fmf:"Form, Meaning and Function",vocabulary:"Vocabulary",reading:"Reading"})[topic] || "Grammar";
 }
 function parsePracticeJSON(raw=""){
   const cleaned=String(raw).trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,"");
@@ -1605,7 +1768,12 @@ function parsePracticeJSON(raw=""){
 }
 async function startQuickPractice(isNext=false){
   if(assistantState.busy)return;
-  const unit=assistantState.selectedUnit||1;
+  if(!assistantState.selectedUnit){
+    assistantState.messages.push({role:"system",text:"Choose a unit first (Unit 1–6). / اختاري الوحدة أولًا."});
+    paintMessages();
+    return;
+  }
+  const unit=assistantState.selectedUnit;
   const topic=quickPracticeTopic();
   const label=quickPracticeTopicLabel(topic);
   assistantState.quickPractice={active:true,unit,topic,number:(assistantState.quickPractice.number||0)+1,current:null};
@@ -1663,19 +1831,26 @@ RULES:
   }
 }
 function choosePracticeAnswer(index){
-  const q=assistantState.quickPractice.current;
-  if(!q || !Number.isInteger(index))return;
+  if(!Number.isInteger(index) || index<0 || index>3) return;
+  let target=null;
   for(let i=assistantState.messages.length-1;i>=0;i--){
     const m=assistantState.messages[i];
     if(m.role==="practice" && !m.answered){
-      m.selectedIndex=index;
-      m.answered=true;
-      const correct=index===q.answerIndex;
-      const letter=["A","B","C","D"][q.answerIndex];
-      m.feedback=correct ? `Great job — that's correct! 🌟 ${q.explanation}` : `Not quite — let's fix it together. The correct answer is ${letter}. ${q.explanation}`;
+      target=m;
       break;
     }
   }
+  if(!target) return;
+  const q=target.question || assistantState.quickPractice.current;
+  if(!q || !Array.isArray(q.choices) || !Number.isInteger(q.answerIndex)) return;
+  target.selectedIndex=index;
+  target.answered=true;
+  const correct=index===q.answerIndex;
+  const letter=["A","B","C","D"][q.answerIndex] || "";
+  target.feedback=correct
+    ? `Great job — that's correct! 🌟 ${q.explanation||""}`
+    : `Not quite — let's fix it together. The correct answer is ${letter}. ${q.explanation||""}`;
+  assistantState.quickPractice.current=q;
   paintMessages();
 }
 
@@ -1726,9 +1901,15 @@ async function sendCurrent(){
   }
 
   // An explicitly named unit always overrides an older lesson context.
-  // This supports numeric and natural forms such as Unit 2, Unit two, and الوحدة الثانية.
-  const explicitUnitEarly=explicitUnitInQuery(query);
-  const explicitIntentEarly=detectIntent(query);
+  // Fuzzy forms (for example "unut 2") and correction messages are also supported.
+  const correctionUnitEarly=unitCorrectionInQuery(query);
+  const explicitUnitEarly=correctionUnitEarly || explicitUnitInQuery(query);
+  let explicitIntentEarly=detectIntent(query);
+  if(correctionUnitEarly){
+    const priorForCorrection=previousUserQuery();
+    const priorIntent=detectIntent(priorForCorrection);
+    if(priorIntent) explicitIntentEarly=priorIntent;
+  }
   if(explicitUnitEarly){
     applyAssistantContext(explicitUnitEarly,explicitIntentEarly);
     if(isUnitNavigationQuery(query)){
@@ -1762,6 +1943,7 @@ async function sendCurrent(){
         intent:inferredIntent,
         sourceQuery:`Unit ${inferredUnit} ${inferredIntent==="fmf"?"Form, Meaning and Function":"grammar"}`,
         part:1,
+        topicIndex:inferTopicIndexFromText(inferredUnit,inferredIntent,previousLessonMessage.text),
         language:hasArabic(previousLessonMessage.text)?"ar":"en"
       };
     }
@@ -1860,29 +2042,32 @@ RESPONSE RULES:
   let stage=exerciseStage(query);
   let retrievalQuery="";
   let unit=null;
-  let intent="ask";
+  let intent="grammar";
   let lessonMode=false;
   let lessonAction="none";
 
   const flow=assistantState.lessonFlow;
-  const explicitUnit=explicitUnitInQuery(query);
+  const correctionUnit=unitCorrectionInQuery(query);
+  const explicitUnit=correctionUnit || explicitUnitInQuery(query);
   const sameLessonContext=flow.active && (!explicitUnit || explicitUnit===flow.unit);
 
-  if(sameLessonContext && isLessonClarification(query)){
-    retrievalQuery=flow.sourceQuery;
-    unit=flow.unit;
-    intent=flow.intent;
-    lessonMode=true;
-    lessonAction="clarify";
-    stage="none";
-  } else if(sameLessonContext && isLessonAdvance(query)){
-    flow.part += 1;
-    retrievalQuery=flow.sourceQuery;
-    unit=flow.unit;
-    intent=flow.intent;
-    lessonMode=true;
-    lessonAction="advance";
-    stage="none";
+  if(correctionUnit){
+    const prior=previousUserQuery();
+    const priorIntent=detectIntent(prior);
+    unit=correctionUnit;
+    intent=priorIntent || detectIntent(query);
+    retrievalQuery=(intent==="grammar"||intent==="fmf")
+      ? `Unit ${unit} ${intent==="fmf"?"Form, Meaning and Function":"grammar"}`
+      : (prior || query);
+    applyAssistantContext(unit,intent);
+    if(intent==="grammar"||intent==="fmf"){
+      assistantState.lessonFlow={
+        active:true, unit, intent, sourceQuery:retrievalQuery, part:1, topicIndex:0, language:hasArabic(query)?"ar":"en"
+      };
+      lessonMode=true;
+      lessonAction="teach";
+      stage="none";
+    }
   } else if(sameLessonContext && isLanguageOnlyFollowup(query)){
     flow.language=hasArabic(query)?"ar":"en";
     retrievalQuery=flow.sourceQuery;
@@ -1890,6 +2075,31 @@ RESPONSE RULES:
     intent=flow.intent;
     lessonMode=true;
     lessonAction="restate";
+    stage="none";
+  } else if(sameLessonContext && isLessonClarification(query)){
+    retrievalQuery=flow.sourceQuery;
+    unit=flow.unit;
+    intent=flow.intent;
+    lessonMode=true;
+    lessonAction="clarify";
+    stage="none";
+  } else if(sameLessonContext && isLessonAdvance(query)){
+    const roadmap=lessonRoadmapForUnit(flow.unit,flow.intent);
+    const currentIndex=Number.isInteger(flow.topicIndex)?flow.topicIndex:0;
+    if(currentIndex>=roadmap.length-1){
+      const label=flow.intent==="fmf"?"Form, Meaning and Function":"Grammar";
+      assistantState.messages.push({role:"ai",text:flow.language==="ar"?`اكتمل درس ${label} في Unit ${flow.unit} ✓\nإذا رغبتِ، اختاري Practice للتدرب على القواعد.`:`Unit ${flow.unit} ${label} lesson complete ✓\nChoose Practice if you want to review the rules.`});
+      resetLessonFlow();
+      paintMessages();
+      return;
+    }
+    flow.topicIndex=currentIndex+1;
+    flow.part=flow.topicIndex+1;
+    retrievalQuery=flow.sourceQuery;
+    unit=flow.unit;
+    intent=flow.intent;
+    lessonMode=true;
+    lessonAction="advance";
     stage="none";
   } else if(sameLessonContext && (isLessonAnswerLike(query) || (!explicitUnit && !includesAny(query,["vocabulary","vocab","reading","writing","مفردات","قراءة","كتابة"])))){
     retrievalQuery=flow.sourceQuery;
@@ -1904,13 +2114,25 @@ RESPONSE RULES:
     unit=detectUnit(retrievalQuery);
     intent=detectIntent(retrievalQuery);
 
+    if(!unit && (intent==="grammar"||intent==="fmf") && !isCrossUnitLookupQuery(retrievalQuery)){
+      assistantState.messages.push({role:"ai",text:hasArabic(query)?"اختاري الوحدة أولًا من Unit 1 إلى Unit 6 حتى يكون الشرح من نفس درس المنهج بدون خلط.":"Choose a unit first (Unit 1–6) so the explanation stays inside the correct lesson."});
+      paintMessages();
+      return;
+    }
+
     if(isBroadLessonRequest(retrievalQuery,intent)){
+      if((intent==="grammar"||intent==="fmf") && !unit){
+        assistantState.messages.push({role:"ai",text:hasArabic(query)?"اختاري الوحدة أولًا من Unit 1 إلى Unit 6، ثم أبدأ معك القاعدة الأولى خطوة بخطوة.":"Choose a unit first (Unit 1–6), then I’ll start the first rule step by step."});
+        paintMessages();
+        return;
+      }
       assistantState.lessonFlow={
         active:true,
         unit,
         intent,
         sourceQuery:retrievalQuery,
         part:1,
+        topicIndex:0,
         language:hasArabic(query)?"ar":"en"
       };
       lessonMode=true;
@@ -1919,6 +2141,14 @@ RESPONSE RULES:
     } else if(flow.active){
       resetLessonFlow();
     }
+  }
+
+  const activeTopic=lessonMode ? currentLessonTopic(assistantState.lessonFlow) : null;
+  if(lessonMode && !activeTopic){
+    assistantState.messages.push({role:"ai",text:hasArabic(query)?"اكتمل هذا الدرس. اختاري مهارة أو وحدة أخرى للمتابعة.":"This lesson is complete. Choose another skill or unit to continue."});
+    resetLessonFlow();
+    paintMessages();
+    return;
   }
 
   const localAnswer=directLocalReference(retrievalQuery,unit,intent);
@@ -1930,8 +2160,10 @@ RESPONSE RULES:
     paintMessages(); return;
   }
 
-  const retrievalDepth=(intent==="grammar"||intent==="fmf")?12:8;
-  const chunks=retrieve(retrievalQuery,unit,intent,retrievalDepth);
+  const contextIntent=activeTopic?.source==="form_meaning_function" ? "fmf" : intent;
+  const contextQuery=activeTopic ? `Unit ${unit} ${activeTopic.search||activeTopic.title}` : retrievalQuery;
+  const retrievalDepth=activeTopic?10:((intent==="grammar"||intent==="fmf")?12:8);
+  const chunks=retrieve(contextQuery,unit,contextIntent,retrievalDepth);
   const context=buildContext(chunks);
   if(!context){
     assistantState.messages.push({role:"ai",text:hasArabic(query)?"لم أجد هذه المعلومة في مواد MG1 المتاحة.":"I can't find this in the available MG1 materials."});
@@ -1956,23 +2188,29 @@ RESPONSE RULES:
     }
 
     const lessonHistory=lessonMode ? recentLessonConversation(10) : "";
+    const lessonRoadmap=lessonMode ? lessonRoadmapForUnit(assistantState.lessonFlow.unit,assistantState.lessonFlow.intent) : [];
+    const lessonRoadmapText=lessonRoadmap.length ? lessonRoadmap.map(x=>x.title).join(" → ") : "not available";
+    const requiredTopic=lessonMode ? currentLessonTopic(assistantState.lessonFlow) : null;
     let lessonInstruction="GUIDED LESSON MODE: NO";
     if(lessonMode){
       const flowNow=assistantState.lessonFlow;
-      const lessonContextLabel=`Unit ${flowNow.unit} • ${flowNow.intent==="fmf"?"Form, Meaning & Function":"Grammar"}`;
+      const lessonContextLabel=`Unit ${flowNow.unit} • ${flowNow.intent==="fmf"?"Form, Meaning and Function":"Grammar"}`;
       const closing=flowNow.language==="ar"
         ? 'جربي التمرين السريع 🌟 وإذا كانت الفكرة واضحة، اكتبي: فهمت أو نكمل.'
         : 'Try the quick check 🌟 When you are ready, type: Got it or Next.';
+      const topicRule=requiredTopic ? `CURRENT REQUIRED TOPIC: "${requiredTopic.title}". TEXTBOOK SECTION: ${requiredTopic.source==="form_meaning_function"?"Form, Meaning and Function":"Grammar"}. Teach this exact topic only. Do not choose, merge, skip, or replace it with another topic.` : "";
+      const roadmapRule=`CURRICULUM ORDER: ${lessonRoadmapText}. Follow this order exactly. The current topic is determined by the app, not by the model.`;
+      const teachingMethod=`Use the textbook context as evidence, not as wording to repeat. Re-teach the idea in simpler language. Explain: (1) the idea in plain language, (2) when to use it, (3) the clue a student should notice, (4) one short contrast only if students commonly confuse two forms, and (5) one fresh source-aligned example. Do not copy a textbook definition sentence unless the student explicitly asks for the book wording. For Arabic, use clear labels: "الفكرة:"، "متى أستخدمها؟"، "العلامة:"، "مثال:"، "تمرين سريع:". For English, use: "Idea:", "When to use it:", "Clue:", "Example:", "Quick Check:".`;
       if(lessonAction==="teach"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". Teach ONLY the first distinct rule/topic from this lesson. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list or preview the remaining rules. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — START PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${roadmapRule} ${topicRule} ${teachingMethod} Give exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list or preview later topics. End exactly with: ${closing}`;
       }else if(lessonAction==="advance"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Begin with this context line on its own line: "${lessonContextLabel}". Use RECENT LESSON CONVERSATION to identify what has already been taught, then teach ONLY the next distinct rule/topic that has not been covered. Give a short friendly title without markdown heading symbols, a simple concise explanation, one brief example, then exactly ONE multiple-choice exercise with four options A–D. Use clear labels such as Rule / Example / Quick Check. Do not reveal the answer. Do not list later rules. If no distinct rules remain, say the lesson is complete and do not invent another rule. Otherwise end exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — ADVANCE TO PART ${flowNow.part}. The student explicitly said they are ready. Begin with this context line on its own line: "${lessonContextLabel}". ${roadmapRule} ${topicRule} ${teachingMethod} Give exactly ONE multiple-choice exercise with four options A–D. Do not reveal the answer. Do not list later topics. End exactly with: ${closing}`;
       }else if(lessonAction==="restate"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Begin with this context line on its own line: "${lessonContextLabel}". Keep the same rule/topic and scope. Do NOT advance. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — RESTATE CURRENT PART ${flowNow.part} in the student's requested language. Begin with this context line on its own line: "${lessonContextLabel}". ${topicRule} Keep exactly the same topic and scope. Do NOT advance. Re-explain naturally rather than translating the previous wording line by line. Keep or replace the quick check with one equivalent four-option question and do not reveal its answer. End exactly with: ${closing}`;
       }else if(lessonAction==="clarify"){
-        lessonInstruction=`GUIDED LESSON MODE: YES — CLARIFY CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". The student needs more explanation. Stay on the SAME rule/topic, explain it more simply with one helpful example, then give exactly ONE four-option quick check. Do NOT advance and do not reveal the answer. End exactly with: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — CLARIFY CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${topicRule} The student needs a different explanation. Do NOT repeat the previous explanation. Use a simpler mental model, a clearer clue, and one new example. Stay on the SAME topic, then give exactly ONE four-option quick check. Do NOT advance and do not reveal the answer. End exactly with: ${closing}`;
       }else{
-        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". Use RECENT LESSON CONVERSATION to understand the current rule and the last exercise. If the student answered the quick check, respond with brief friendly feedback, give the correct answer if needed, and one simple reason. Do NOT teach the next rule yet. If the response is a question about the current rule, answer it briefly and stay on this rule. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
+        lessonInstruction=`GUIDED LESSON MODE: YES — RESPOND WITHIN CURRENT PART ${flowNow.part}. Begin with this context line on its own line: "${lessonContextLabel}". ${topicRule} Use RECENT LESSON CONVERSATION to understand the current quick check. If the student answered it, give brief friendly feedback, the correct answer if needed, and one simple reason. Do NOT teach the next topic yet. If the response is a question about the current topic, answer it briefly and stay on this topic. End by reminding the student to say they understood when ready to move on; use this exact readiness wording: ${closing}`;
       }
     }
 
@@ -1983,15 +2221,16 @@ END CONTEXT
 
 Selected unit: ${unit||"not specified"}
 Intent: ${intent}
+${lessonMode&&unit?`UNIT LESSON ROADMAP (ordering authority): ${lessonRoadmapForUnit(unit,assistantState.lessonFlow.intent).map(x=>x.title).join(" → ") || "not available"}\nCURRENT TOPIC: ${currentLessonTopic(assistantState.lessonFlow)?.title||"not available"}\nFollow this exact roadmap and current topic; do not skip, merge, or substitute topics.`:""}
 EXERCISE STAGE: ${stage}
 Original exercise/question: ${retrievalQuery}
 Current student message: ${query}
 Language-only follow-up: ${isLanguageOnlyFollowup(query) ? "YES — restate the same scope only; do not expand" : "NO"}
 ${lessonInstruction}
 ${lessonMode?`RECENT LESSON CONVERSATION:\n${lessonHistory}\nEND RECENT CONVERSATION`:""}
-GRAMMAR/FMF RULE: Grammar is the umbrella. A broad Grammar/FMF lesson must be taught progressively in guided lesson mode, ONE distinct rule/topic at a time. Never dump the entire lesson in one response. A specific grammar question should stay focused on that point.
+GRAMMAR / FORM, MEANING AND FUNCTION RULE: Grammar is the umbrella. A broad Grammar or Form, Meaning and Function lesson must be taught progressively in guided lesson mode, ONE distinct rule/topic at a time. Never dump the entire lesson in one response. A specific grammar question should stay focused on that point. Always display "Form, Meaning and Function" in full; never abbreviate the lesson name.
 PRACTICE RULE: if Intent is practice and you provide a practice question, it must be multiple choice with exactly 4 options A–D, one question at a time, and do not reveal the answer before the student responds.
-RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Use short lines and simple labels (Rule / Example / Quick Check), no markdown # headings, and no dense paragraphs. Keep each guided teaching part concise: one rule/topic, one short example, one quick check. Do not include the next rule until the student explicitly says they are ready.`;
+RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Teach, do not recite. Use short lines, no markdown # headings, and no dense paragraphs. Keep each guided teaching part concise: one rule/topic, one fresh example, one quick check. Do not include the next rule until the student explicitly says they are ready.`;
 
     let result;
     try {
@@ -2005,9 +2244,6 @@ RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Use
     const text=result?.response?.text?.()||"";
     const finalText=text.trim()|| (hasArabic(query)?"لم أجد هذه المعلومة في مواد MG1 المتاحة.":"I can't find this in the available MG1 materials.");
     assistantState.messages.push({role:"ai",text:finalText});
-    if(lessonMode && /(lesson is complete|lesson complete|all .*rules.*covered|اكتمل.*الدرس|انتهينا.*القواعد|تم.*جميع.*القواعد|أنهينا.*القواعد|انهينا.*القواعد)/i.test(finalText)){
-      resetLessonFlow();
-    }
   }catch(e){
     console.error("MG1 Assistant request failed",e);
     const transient=isTransientAIError(e);
