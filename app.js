@@ -84,7 +84,7 @@
     const initial=esc((state.profile?.displayName||"S").trim().charAt(0).toUpperCase()||"S");
     return `
       <header class="appbar ${isStudent?"student-appbar":""}">
-        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>STEP Training Lab${title?` • ${esc(title)}`:""}</small></div></div>
+        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>Learn • Master • Practice • Progress${title?` • ${esc(title)}`:""}</small></div></div>
         <div class="nav-actions">
           ${state.profile?(isStudent
             ?`<button class="student-header-avatar" aria-label="Open profile" onclick="PROVE.setStudentTab('profile')">${initial}</button>`
@@ -99,10 +99,10 @@
       <div class="auth-shell">
         <div class="card hero">
           <div class="hero-badge">✨ StepUp</div>
-          <div class="eyebrow" style="margin-top:12px">Mega Goal 1 • STEP-style Training</div>
+          <div class="eyebrow" style="margin-top:12px">Mega Goal 1 • Your Learning Journey</div>
           <h1>StepUp</h1>
-          <p class="hero-subtitle">STEP Training Lab</p>
-          <p class="muted">A modern training space for STEP reading and grammar practice, progress tracking, and teacher reports.</p>
+          <p class="hero-subtitle">Learn • Master • Practice • Progress</p>
+          <p class="muted">A light learning journey that helps you master the unit, practise STEP skills, and see your progress without feeling like extra homework.</p>
           ${!state.fb?`<div class="notice">Demo mode is active. Connect Firebase before sharing with students.</div>`:""}
           <h3>Choose your role</h3>
           <div class="auth-role">
@@ -159,7 +159,7 @@
             <div class="hero-badge">StepUp</div>
             <div class="eyebrow" style="margin-top:12px">Student Access</div>
             <h1>Welcome 👋</h1>
-            <p class="hero-subtitle">STEP Training Lab</p>
+            <p class="hero-subtitle">Learn • Master • Practice • Progress</p>
             <div class="class-badge">📘 ${esc(classObj.name||"Your Class")}</div>
             ${classObj.school?`<p class="muted">${esc(classObj.school)}</p>`:""}
           </div>
@@ -361,14 +361,8 @@
   }
 
   function studentTabs(){
-    const items=[
-      ["home","Home"],
-      ["practice","Practice"],
-      ["tools","Tools"],
-      ["progress","Progress"],
-      ["profile","Profile"]
-    ];
-    return `<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" data-student-tab="${id}" onclick="PROVE.setStudentTab('${id}')"><span class="student-nav-icon">${navIcon(id)}</span><span class="student-nav-label">${label}</span></button>`).join("")}</nav>`;
+    const items=[["home","Home"],["journey","My Journey"],["progress","My Progress"],["assistant","Assistant"]];
+    return `<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" data-student-tab="${id}" onclick="PROVE.setStudentTab('${id}')"><span class="student-nav-icon">${navIcon(id==="journey"?"practice":id==="assistant"?"tools":id)}</span><span class="student-nav-label">${label}</span></button>`).join("")}</nav>`;
   }
 
   function teacherTabs(){
@@ -383,6 +377,8 @@
   }
 
   function setStudentTab(tab){
+    if(tab==="practice")tab="journey";
+    if(tab==="tools")tab="assistant";
     state.studentTab=tab;
     renderStudent();
   }
@@ -1234,8 +1230,9 @@
   async function renderStudent(){
     const ctx=await buildStudentContext();let body="";
     if(state.studentTab==="home")body=studentHome(ctx);
-    if(state.studentTab==="practice")body=studentPractice(ctx);
-    if(state.studentTab==="tools")body=studentTools(ctx);
+    if(state.studentTab==="journey"||state.studentTab==="practice")body=studentJourney(ctx);
+    if(state.studentTab==="practice-library")body=studentPractice(ctx);
+    if(state.studentTab==="assistant"||state.studentTab==="tools")body=studentAssistant(ctx);
     if(state.studentTab==="progress")body=studentProgress(ctx);
     if(state.studentTab==="profile")body=studentProfile(ctx);
     if(!body){state.studentTab="home";body=studentHome(ctx);}
@@ -1289,41 +1286,18 @@
   }
 
   function studentHome(ctx){
-    const available=ctx.openUnits.flatMap(u=>u.trainings);
-    const availableIds=new Set(available.map(t=>t.id));
-    const coreAttempts=ctx.attempts.filter(a=>availableIds.has(a.trainingId));
-    const latest=latestPerTraining(coreAttempts);
-    const reading=trainingTypeAverage(latest,"reading");
-    const grammar=trainingTypeAverage(latest,"grammar");
-    const completed=new Set(coreAttempts.map(a=>a.trainingId)).size;
-    const completion=available.length?Math.round(Math.min(completed,available.length)/available.length*100):0;
-    const step=nextStudentStep(ctx);
-    const stepCopy=studentStepCopy(step);
     const firstName=esc((state.profile.displayName||"Student").trim().split(/\s+/)[0]);
-    return `<div class="student-home-clean">
-      <div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>
+    const journey=window.STEPUP_JOURNEY?.homeHTML?window.STEPUP_JOURNEY.homeHTML(ctx.attempts,ctx.openUnits,state.profile):"";
+    return `<div class="student-home-clean"><div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>${journey||`<section class="student-continue-card"><div class="continue-copy"><div class="section-kicker">Your next step</div><h2>Continue where you left off</h2><p>Your journey will appear here.</p></div><div class="continue-action"><button class="btn btn-primary" onclick="PROVE.setStudentTab('journey')">My Journey</button></div></section>`}${weeklyJourney(ctx.attempts)}<section class="student-home-section"><div class="student-section-head"><div><div class="section-kicker">Your pace</div><h2>Small steps count</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">My Progress</button></div><p class="muted">A few focused minutes are enough. StepUp will always show you the next useful step.</p></section></div>`;
+  }
 
-      <section class="student-continue-card">
-        <div class="continue-copy"><div class="section-kicker">${stepCopy.eyebrow}</div><h2>${stepCopy.title}</h2><p>${stepCopy.desc}</p></div>
-        <div class="continue-action">${stepCopy.primary}</div>
-      </section>
+  function studentJourney(ctx){
+    if(window.STEPUP_JOURNEY?.html)return window.STEPUP_JOURNEY.html(ctx.attempts,ctx.openUnits,state.profile);
+    return studentPractice(ctx);
+  }
 
-      <section class="student-home-section tools-home-section">
-        <div class="student-section-head"><div><div class="section-kicker">Smart support</div><h2>Learning Tools</h2></div><button class="text-link" onclick="PROVE.setStudentTab('tools')">View all</button></div>
-        ${learningToolsList(true)}
-      </section>
-
-      ${weeklyJourney(ctx.attempts)}
-
-      <section class="student-home-section">
-        <div class="student-section-head"><div><div class="section-kicker">At a glance</div><h2>Your Progress</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">Details</button></div>
-        <div class="student-quick-stats">
-          <div><span>Overall</span><strong>${completion}%</strong></div>
-          <div><span>Reading</span><strong>${reading}%</strong></div>
-          <div><span>Grammar</span><strong>${grammar}%</strong></div>
-        </div>
-      </section>
-    </div>`;
+  function studentAssistant(ctx){
+    return `<div class="student-assistant-hub"><section class="assistant-main-card"><div><div class="section-kicker" style="color:#ddd8ff">Your study companion</div><h1>Need a hand?</h1><p>Ask about the unit you are studying. Get one clear explanation or a quick practice — then return to your journey.</p></div><button class="journey-main-btn" onclick="PROVE.openStudentTool('assistant')">Ask MG1 Assistant</button></section><div class="assistant-mini-tools"><button onclick="PROVE.openStudentTool('dictionary')"><span>📘</span><b>Dictionary + My Words</b><small>Look up a word, hear it, and save it for later.</small></button><button onclick="PROVE.openStudentTool('writing')"><span>✍️</span><b>Writing Coach</b><small>Optional support when you want help planning or revising writing.</small></button></div></div>`;
   }
 
   function studentPractice(ctx){
@@ -1470,12 +1444,13 @@
     const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=u.trainings.length?Math.round(done/u.trainings.length*100):0;return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
     const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
     const rows=ctx.attempts.slice(0,12).map(a=>{const l=resultLevel(a.percentage);return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.percentage}%</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`}).join("");
-    return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>Your results, skill profile, and recommended focus in one place.</p></div>
-      <div class="grid grid-2">${cards}</div>
+    const journeyProgress=window.STEPUP_JOURNEY?.progressHTML?window.STEPUP_JOURNEY.progressHTML(ctx.attempts,ctx.openUnits,state.profile):"";
+    return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>See what you have mastered and what deserves one quick review.</p></div>${journeyProgress}
+      <details class="card" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:800">Detailed STEP practice results</summary><div style="margin-top:14px"><div class="grid grid-2">${cards}</div>
       <div class="card"><h2>Current Skill Profile</h2>${renderStudentSkillBars(latest)}</div>
       ${renderErrorReview(ctx.attempts)}
       <div class="card"><h2>Recommended Focus</h2>${renderStudentNeeds(latest)}</div>
-      <div class="card"><div class="student-section-head"><div><div class="section-kicker">History</div><h2>Recent Results</h2></div></div><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='5'>No results yet.</td></tr>"}</tbody></table></div></div>`;
+      <div class="card"><div class="student-section-head"><div><div class="section-kicker">History</div><h2>Recent Results</h2></div></div><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='5'>No results yet.</td></tr>"}</tbody></table></div></div></div></details>`;
   }
 
   function studentProfile(){
@@ -1494,12 +1469,24 @@
   }
 
   async function openStudentTool(kind){
-    state.studentTab="tools";
+    state.studentTab="assistant";
     if(kind==="assistant" && window.MG1Assistant?.render)return window.MG1Assistant.render();
     if(kind==="writing" && window.MG1Assistant?.openWritingCoach)return window.MG1Assistant.openWritingCoach();
     if(kind==="dictionary" && window.MG1Assistant?.openDictionary)return window.MG1Assistant.openDictionary();
     if(kind==="growth" && window.STEPUP_ADV?.renderStudentGrowth)return window.STEPUP_ADV.renderStudentGrowth();
     alert("This tool is still loading. Please try again in a moment.");
+  }
+
+  async function recordJourneyAttempt(payload){
+    if(!state.profile?.id)throw new Error("Student profile is not ready.");
+    const attempt={
+      studentId:state.profile.id,studentName:state.profile.displayName,classId:state.profile.classId,classCode:state.profile.classCode,teacherId:state.profile.teacherId,
+      trainingId:payload.trainingId,trainingTitle:payload.trainingTitle,trainingType:payload.trainingType,unitId:payload.unitId,unitNumber:payload.unitNumber,
+      score:Number(payload.score||0),total:Number(payload.total||0),percentage:Number(payload.percentage||0),elapsedSeconds:Number(payload.elapsedSeconds||0),
+      autoSubmitted:false,answers:Array.isArray(payload.answers)?payload.answers:[],studyMethod:payload.studyMethod||"journey",submittedAt:nowISO()
+    };
+    if(state.fb)await state.fb.db.collection("attempts").add(attempt);else{attempt.id=uid();local.saveAttempt(attempt)}
+    return attempt;
   }
 
   async function editStudentName(){
@@ -2182,7 +2169,7 @@ Do not start a new lesson unless I ask.`;
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
     renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
-    downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage
+    downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt
   };
   boot();
 })();
