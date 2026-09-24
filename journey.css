@@ -94,3 +94,19 @@
 }
 .assistant-mini-tools button:nth-child(1){background:linear-gradient(145deg,#fff,#edf6ff);border-color:#d3e7fa}
 .assistant-mini-tools button:nth-child(2){background:linear-gradient(145deg,#fff,#f6efff);border-color:#e4d8f8}
+
+/* StepUp stage colors — motivation palette */
+.journey-stop.stage-master{border-left:5px solid #67b7f7;background:linear-gradient(100deg,#f2f9ff,#fff)}
+.journey-stop.stage-master .journey-stop-icon{background:#e3f3ff;color:#2f83bf}
+.journey-stop.stage-read{border-left:5px solid #54d6c4;background:linear-gradient(100deg,#effdf9,#fff)}
+.journey-stop.stage-read .journey-stop-icon{background:#ddf8f2;color:#1f8f7f}
+.journey-stop.stage-listen{border-left:5px solid #a98cf7;background:linear-gradient(100deg,#f7f2ff,#fff)}
+.journey-stop.stage-listen .journey-stop-icon{background:#eee6ff;color:#7454c3}
+.journey-stop.stage-step{border-left:5px solid #ffb15e;background:linear-gradient(100deg,#fff8ea,#fff)}
+.journey-stop.stage-step .journey-stop-icon{background:#ffefd8;color:#c97525}
+.journey-stop.stage-final{border-left:5px solid #6dcf8f;background:linear-gradient(100deg,#f1fcf5,#fff)}
+.journey-stop.stage-final .journey-stop-icon{background:#def6e7;color:#2a8e4e}
+.journey-stop.current{box-shadow:0 0 0 3px rgba(84,214,196,.14)!important}
+.journey-unit-card:nth-child(6n+1){--unit-accent:#ff718e}.journey-unit-card:nth-child(6n+2){--unit-accent:#54d6c4}.journey-unit-card:nth-child(6n+3){--unit-accent:#67b7f7}.journey-unit-card:nth-child(6n+4){--unit-accent:#a98cf7}.journey-unit-card:nth-child(6n+5){--unit-accent:#ffb15e}.journey-unit-card:nth-child(6n){--unit-accent:#6dcf8f}
+.journey-unit-card:not(.locked){border-top:4px solid var(--unit-accent)}
+.journey-unit-card .journey-unit-num{color:var(--unit-accent)!important}
