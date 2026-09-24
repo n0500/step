@@ -1,58 +1,244 @@
-/* StepUp minimal student Home — 2026-09-24 */
+/* StepUp balanced professional Home — 2026-09-24 */
 .student-home-clean .quick-win-card,
 .student-home-clean #stepupQuickWin,
 .student-home-clean .student-weekly-card,
 .student-home-clean .student-home-section,
 .student-home-clean .journey-home-tools{display:none!important}
 
-.student-home-clean{max-width:760px!important;margin:0 auto}
-.student-welcome{margin:0 0 18px!important;padding:4px 2px 0!important}
-.student-welcome .section-kicker{font-size:11px!important;letter-spacing:.14em!important;color:#7a8497!important}
-.student-welcome h1{margin:5px 0 4px!important;font-size:clamp(30px,8vw,40px)!important;line-height:1.05!important;color:#111827!important}
-.student-welcome p{margin:0!important;font-size:14px!important;color:#8a94a6!important}
-
-/* compact Level / XP / Streak */
-#stepupMotivation.motivation-panel{
-  display:grid!important;grid-template-columns:1fr auto!important;grid-template-areas:"level streak" "bar bar"!important;
-  align-items:center!important;gap:10px 14px!important;padding:13px 14px 11px!important;margin:0 0 16px!important;
-  min-height:0!important;border:1px solid #e7eaf0!important;border-radius:20px!important;background:#fff!important;
-  box-shadow:0 8px 26px rgba(17,24,39,.055)!important
+.student-home-clean{
+  max-width:720px!important;
+  margin:0 auto!important;
+  padding-bottom:18px!important;
 }
-#stepupMotivation .motivation-level{grid-area:level!important;display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
-#stepupMotivation .motivation-level-no{min-width:auto!important;padding:8px 10px!important;border-radius:10px!important;background:#111827!important;color:#fff!important;font-size:11px!important;line-height:1!important;font-weight:800!important}
-#stepupMotivation .motivation-level div{display:flex!important;align-items:baseline!important;gap:6px!important;white-space:nowrap!important}
-#stepupMotivation .motivation-level b{font-size:13px!important;color:#202938!important}
-#stepupMotivation .motivation-level small{font-size:10px!important;color:#8c95a5!important}
+
+/* Welcome: compact, calm, app-like */
+.student-welcome{
+  margin:0 0 14px!important;
+  padding:2px 2px 0!important;
+}
+.student-welcome .section-kicker{display:none!important}
+.student-welcome h1{
+  margin:0 0 4px!important;
+  font-size:clamp(30px,8vw,38px)!important;
+  line-height:1.05!important;
+  letter-spacing:-.035em!important;
+  color:#141821!important;
+}
+.student-welcome p{
+  margin:0!important;
+  font-size:13px!important;
+  color:#8b93a3!important;
+}
+
+/* Progress strip: one compact row, no dashboard block */
+#stepupMotivation.motivation-panel{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  grid-template-areas:"level streak" "bar bar"!important;
+  gap:10px 14px!important;
+  align-items:center!important;
+  margin:0 0 14px!important;
+  padding:12px 14px 11px!important;
+  min-height:0!important;
+  border:1px solid #e8eaf0!important;
+  border-radius:18px!important;
+  background:#fff!important;
+  box-shadow:0 6px 20px rgba(17,24,39,.045)!important;
+}
+#stepupMotivation .motivation-level{
+  grid-area:level!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+  min-width:0!important;
+}
+#stepupMotivation .motivation-level-no{
+  min-width:auto!important;
+  padding:7px 9px!important;
+  border-radius:9px!important;
+  background:#171a24!important;
+  color:#fff!important;
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.01em!important;
+}
+#stepupMotivation .motivation-level div{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:6px!important;
+  min-width:0!important;
+}
+#stepupMotivation .motivation-level b{
+  font-size:13px!important;
+  color:#202431!important;
+  white-space:nowrap!important;
+}
+#stepupMotivation .motivation-level small{
+  font-size:10px!important;
+  color:#959cac!important;
+  white-space:nowrap!important;
+}
 #stepupMotivation .motivation-xp{grid-area:bar!important;min-width:0!important}
 #stepupMotivation .motivation-xp-line{display:none!important}
-#stepupMotivation .motivation-xp-track{height:4px!important;margin:0!important;border-radius:999px!important;background:#eef0f4!important;overflow:hidden!important}
-#stepupMotivation .motivation-xp-track i{display:block!important;height:100%!important;border-radius:inherit!important;background:#5b4df5!important}
-#stepupMotivation .motivation-streak{grid-area:streak!important;display:flex!important;align-items:center!important;gap:7px!important;padding:0!important;border:0!important;background:transparent!important;min-width:auto!important}
-#stepupMotivation .motivation-streak>span{width:28px!important;height:28px!important;display:grid!important;place-items:center!important;border-radius:9px!important;background:#f4f2ff!important;color:#5b4df5!important;font-size:0!important}
-#stepupMotivation .motivation-streak>span::after{content:"↗";font-size:16px;font-weight:900}
-#stepupMotivation .motivation-streak b{display:block!important;font-size:13px!important;color:#202938!important;white-space:nowrap!important}
+#stepupMotivation .motivation-xp-track{
+  height:3px!important;
+  margin:0!important;
+  border-radius:999px!important;
+  background:#eff0f4!important;
+  overflow:hidden!important;
+}
+#stepupMotivation .motivation-xp-track i{
+  display:block!important;
+  height:100%!important;
+  border-radius:inherit!important;
+  background:#6557f5!important;
+}
+#stepupMotivation .motivation-streak{
+  grid-area:streak!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  min-width:auto!important;
+}
+#stepupMotivation .motivation-streak>span{
+  width:26px!important;
+  height:26px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:8px!important;
+  background:#f2f0ff!important;
+  color:#6557f5!important;
+  font-size:0!important;
+}
+#stepupMotivation .motivation-streak>span::after{
+  content:"↗";
+  font-size:14px;
+  font-weight:900;
+}
+#stepupMotivation .motivation-streak b{
+  display:block!important;
+  font-size:12px!important;
+  color:#252936!important;
+  white-space:nowrap!important;
+}
 #stepupMotivation .motivation-streak small{display:none!important}
 
-/* next move: only what the student needs to act */
+/* Next move: white product card, one accent color */
 .student-home-clean .journey-continue{
-  display:block!important;padding:20px!important;margin:0!important;border-radius:23px!important;min-height:0!important;
-  background:linear-gradient(145deg,#111827 0%,#16233a 100%)!important;box-shadow:0 18px 36px rgba(17,24,39,.16)!important
+  position:relative!important;
+  display:block!important;
+  margin:0!important;
+  padding:21px!important;
+  min-height:0!important;
+  border:1px solid #e6e8ee!important;
+  border-radius:24px!important;
+  background:#fff!important;
+  color:#171a24!important;
+  box-shadow:0 14px 34px rgba(17,24,39,.075)!important;
+  overflow:hidden!important;
 }
-.student-home-clean .journey-continue .journey-kicker{display:block!important;margin-bottom:8px!important;font-size:10px!important;letter-spacing:.14em!important;color:#aeb8c9!important}
-.student-home-clean .journey-continue h2{margin:0 0 12px!important;font-size:clamp(24px,7vw,31px)!important;line-height:1.12!important;letter-spacing:-.025em!important;color:#fff!important}
-.student-home-clean .journey-continue p{margin:0 0 11px!important;font-size:0!important;line-height:1.3!important;color:transparent!important}
-.student-home-clean .journey-continue p strong{display:block!important;font-size:16px!important;line-height:1.4!important;font-weight:650!important;color:#dbe1ea!important}
-.student-home-clean .motivation-time{display:inline-flex!important;align-items:center!important;margin:0 0 13px!important;padding:6px 9px!important;border:1px solid rgba(255,255,255,.14)!important;border-radius:999px!important;background:rgba(255,255,255,.06)!important;color:#c8d0dd!important;font-size:11px!important;font-weight:700!important}
-.student-home-clean .journey-continue .journey-mini-progress{height:4px!important;margin:0 0 17px!important;background:rgba(255,255,255,.11)!important}
-.student-home-clean .journey-continue .journey-mini-progress i{background:#7668ff!important}
+.student-home-clean .journey-continue::before{
+  content:"";
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:4px;
+  background:#6557f5;
+}
+.student-home-clean .journey-continue .journey-kicker{
+  display:block!important;
+  margin:0 0 7px!important;
+  font-size:10px!important;
+  letter-spacing:.12em!important;
+  text-transform:uppercase!important;
+  color:#7065ef!important;
+  font-weight:900!important;
+}
+.student-home-clean .journey-continue h2{
+  margin:0 0 10px!important;
+  font-size:clamp(24px,6.8vw,30px)!important;
+  line-height:1.12!important;
+  letter-spacing:-.03em!important;
+  color:#171a24!important;
+}
+.student-home-clean .journey-continue p{
+  margin:0 0 10px!important;
+  font-size:0!important;
+  line-height:1.35!important;
+  color:transparent!important;
+}
+.student-home-clean .journey-continue p strong{
+  display:block!important;
+  font-size:15px!important;
+  line-height:1.4!important;
+  font-weight:700!important;
+  color:#4f5667!important;
+}
+.student-home-clean .motivation-time{
+  display:inline-flex!important;
+  align-items:center!important;
+  margin:0 0 14px!important;
+  padding:6px 9px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:#f3f2ff!important;
+  color:#5d52d9!important;
+  font-size:10.5px!important;
+  font-weight:800!important;
+}
+.student-home-clean .journey-continue .journey-mini-progress{
+  height:4px!important;
+  margin:0 0 15px!important;
+  background:#eff0f4!important;
+  border-radius:999px!important;
+}
+.student-home-clean .journey-continue .journey-mini-progress i{
+  background:#6557f5!important;
+}
 .student-home-clean .journey-continue small{display:none!important}
-.student-home-clean .journey-continue .journey-main-btn{width:100%!important;min-height:50px!important;margin:0!important;border-radius:15px!important;background:#fff!important;color:#141b2b!important;font-size:16px!important;font-weight:800!important;box-shadow:none!important}
+.student-home-clean .journey-continue .journey-main-btn{
+  width:100%!important;
+  min-height:48px!important;
+  margin:0!important;
+  border-radius:14px!important;
+  border:0!important;
+  background:#6557f5!important;
+  color:#fff!important;
+  font-size:15px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+.student-home-clean .journey-continue .journey-main-btn:active{transform:scale(.99)}
 
 @media(max-width:700px){
-  .container.student-app-shell{padding:0 16px 98px!important}
-  .student-app-shell .student-nav{left:16px!important;right:16px!important;bottom:10px!important;min-height:68px!important;padding:7px 8px!important;border-radius:22px!important;background:rgba(255,255,255,.97)!important;border:1px solid #e7eaf0!important;box-shadow:0 14px 34px rgba(17,24,39,.12)!important}
-  .student-app-shell .student-nav .role-tab{min-height:50px!important;border-radius:14px!important;padding:5px 2px!important}
-  .student-app-shell .student-nav .role-tab.active{background:#f1f0ff!important;color:#5548e8!important}
+  body{background:#f6f7fa!important}
+  .container.student-app-shell{padding:0 16px 104px!important}
+  .student-home-clean{max-width:none!important}
+
+  .student-app-shell .student-nav{
+    left:16px!important;
+    right:16px!important;
+    bottom:10px!important;
+    min-height:66px!important;
+    padding:7px 8px!important;
+    border-radius:21px!important;
+    background:rgba(255,255,255,.98)!important;
+    border:1px solid #e7e9ef!important;
+    box-shadow:0 12px 30px rgba(17,24,39,.11)!important;
+    backdrop-filter:blur(16px)!important;
+  }
+  .student-app-shell .student-nav .role-tab{
+    min-height:50px!important;
+    border-radius:13px!important;
+    padding:5px 2px!important;
+  }
+  .student-app-shell .student-nav .role-tab.active{
+    background:#f1f0ff!important;
+    color:#5b4ee7!important;
+  }
   .student-nav-label{font-size:10px!important}
   .student-nav-icon,.student-nav-icon svg{width:19px!important;height:19px!important}
 }
