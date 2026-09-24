@@ -811,3 +811,51 @@ th,td{padding:11px 12px;border-bottom:1px solid #edf2f7;font-size:13px}
   .weekly-focus-head{align-items:flex-start}.weekly-focus-row{grid-template-columns:1fr;padding:11px 0}.weekly-focus-row .btn{width:100%}.weekly-focus-footer{align-items:flex-start;flex-direction:column}
 }
 .qdot.pass-muted{opacity:.28;filter:grayscale(.45);cursor:not-allowed}
+
+
+/* 2026-09-24 cheerful refresh overrides */
+
+:root{
+  --bg:#f7fbff;
+  --card:#ffffff;
+  --navy:#1f4d8f;
+  --blue:#4d86ff;
+  --teal:#3ec6c3;
+  --line:#dce8f6;
+  --text:#1b2b44;
+}
+body{background:linear-gradient(180deg,#f9fbff 0%,#eef7ff 52%,#fdfdff 100%);color:var(--text)}
+.topbar,.hero,.classmode-toolbar{background:linear-gradient(135deg,#1d4c88,#2767b7 55%,#4aa7e8)}
+.student-app-shell{gap:24px}
+.student-app-shell .student-nav{background:linear-gradient(180deg,#ffffff,#f6fbff);border:1px solid #dce7f7;border-radius:24px;padding:12px;box-shadow:0 16px 34px rgba(58,104,170,.12)}
+.student-app-shell .student-nav .role-tab{border-radius:16px;border:1px solid transparent;background:transparent;color:#4d6180}
+.student-app-shell .student-nav .role-tab:hover{background:#f2f8ff}
+.student-app-shell .student-nav .role-tab.active{background:linear-gradient(135deg,#e8f4ff,#dff7f6);color:#15457b;border-color:#c8e8ee;box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+.student-home-clean,.student-page-head{max-width:1000px}
+.student-welcome{padding:10px 2px 2px}
+.student-welcome .section-kicker,.student-page-head .section-kicker{color:#5d82a7}
+.student-welcome h1,.student-page-head h1{color:#12335c;letter-spacing:-.03em}
+.student-welcome p,.student-page-head p{color:#6b7d95}
+.student-weekly-card{border:1px solid #d9ebf3;background:linear-gradient(135deg,#ffffff,#f2fbf9 55%,#eef6ff);box-shadow:0 12px 28px rgba(82,144,176,.10)}
+.student-weekly-card:before{background:linear-gradient(135deg,rgba(90,187,176,.10),rgba(94,128,255,.12));}
+.weekly-level{background:#ffffff;color:#2d7f7c;border:1px solid #d3efed}
+.student-home-section{border:1px solid #dce8f5;background:linear-gradient(135deg,#ffffff,#f5fbff);border-radius:22px;box-shadow:0 12px 28px rgba(86,126,170,.08)}
+.student-home-section .muted,.muted{color:#70829c}
+.student-tools-list .student-tool-row{border:1px solid #dde9f8;background:linear-gradient(135deg,#fff,#f6fbff);box-shadow:0 10px 24px rgba(88,130,178,.08)}
+.student-tools-list .student-tool-row.featured{background:linear-gradient(135deg,#eff8ff,#ecfffb)}
+.student-tool-icon{background:linear-gradient(135deg,#eff7ff,#eafbf7);color:#2466a8;border:1px solid #d7e8f7}
+.text-link{color:#2c72c9}
+@media(max-width:700px){
+  main.container{padding-bottom:118px}
+  .container.student-app-shell{padding:0 14px 118px}
+  .student-app-shell .student-nav{
+    position:fixed;left:12px;right:12px;bottom:10px;top:auto;z-index:35;
+    display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+    border-radius:22px;padding:10px;background:rgba(255,255,255,.96);
+    backdrop-filter:blur(12px);box-shadow:0 14px 36px rgba(41,81,138,.18);border:1px solid rgba(209,225,245,.95)
+  }
+  .student-app-shell .student-nav .role-tab{min-height:56px;padding:7px 2px;gap:4px;border-radius:14px}
+  .student-app-shell .student-nav .role-tab.active{background:linear-gradient(135deg,#e8f4ff,#e7fbf5);color:#0f4d86}
+  .student-nav-label{font-size:10.5px;line-height:1.15}
+  .student-view{padding-bottom:22px}
+}

@@ -1251,9 +1251,9 @@
 
   function learningToolsList(compact=false){
     const tools=[
-      {id:"assistant",title:"MG1 Assistant",tag:"AI Tutor",desc:"Learn MegaGoal 1 step by step with guided practice."},
-      {id:"writing",title:"Writing Coach",tag:"Writing",desc:"Plan, revise, and improve your writing one step at a time."},
-      {id:"dictionary",title:"Dictionary",tag:"Quick",desc:"English meaning, Arabic support, IPA, examples, and pronunciation."},
+      {id:"assistant",title:"Assistant",tag:"AI Tutor",desc:"Ask questions, get a clear explanation, and continue your journey."},
+      {id:"writing",title:"Writing Coach",tag:"Writing",desc:"Optional help when you want support with writing."},
+      {id:"dictionary",title:"Dictionary",tag:"Quick",desc:"Search meanings, hear pronunciation, and save words for later."},
       {id:"growth",title:"My Growth",tag:"StepUp Path",desc:"See your level, goals, achievements, and learning progress."}
     ];
     const rows=tools.map((t,i)=>`<button class="student-tool-row ${i===0?"featured":""}" onclick="PROVE.openStudentTool('${t.id}')">
@@ -1288,7 +1288,7 @@
   function studentHome(ctx){
     const firstName=esc((state.profile.displayName||"Student").trim().split(/\s+/)[0]);
     const journey=window.STEPUP_JOURNEY?.homeHTML?window.STEPUP_JOURNEY.homeHTML(ctx.attempts,ctx.openUnits,state.profile):"";
-    return `<div class="student-home-clean"><div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>${journey||`<section class="student-continue-card"><div class="continue-copy"><div class="section-kicker">Your next step</div><h2>Continue where you left off</h2><p>Your journey will appear here.</p></div><div class="continue-action"><button class="btn btn-primary" onclick="PROVE.setStudentTab('journey')">My Journey</button></div></section>`}${weeklyJourney(ctx.attempts)}<section class="student-home-section"><div class="student-section-head"><div><div class="section-kicker">Your pace</div><h2>Small steps count</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">My Progress</button></div><p class="muted">A few focused minutes are enough. StepUp will always show you the next useful step.</p></section></div>`;
+    return `<div class="student-home-clean"><div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>${journey||`<section class="student-continue-card"><div class="continue-copy"><div class="section-kicker">Your next step</div><h2>Continue where you left off</h2><p>Your journey will appear here.</p></div><div class="continue-action"><button class="btn btn-primary" onclick="PROVE.setStudentTab('journey')">My Journey</button></div></section>`}${weeklyJourney(ctx.attempts)}<section class="student-home-section"><div class="student-section-head"><div><div class="section-kicker">Your pace</div><h2>Keep it light</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">My Progress</button></div><p class="muted">A short, focused session is enough. StepUp always shows the next useful step.</p></section></div>`;
   }
 
   function studentJourney(ctx){
@@ -1297,7 +1297,7 @@
   }
 
   function studentAssistant(ctx){
-    return `<div class="student-assistant-hub"><section class="assistant-main-card"><div><div class="section-kicker" style="color:#ddd8ff">Your study companion</div><h1>Need a hand?</h1><p>Ask about the unit you are studying. Get one clear explanation or a quick practice — then return to your journey.</p></div><button class="journey-main-btn" onclick="PROVE.openStudentTool('assistant')">Ask MG1 Assistant</button></section><div class="assistant-mini-tools"><button onclick="PROVE.openStudentTool('dictionary')"><span>📘</span><b>Dictionary + My Words</b><small>Look up a word, hear it, and save it for later.</small></button><button onclick="PROVE.openStudentTool('writing')"><span>✍️</span><b>Writing Coach</b><small>Optional support when you want help planning or revising writing.</small></button></div></div>`;
+    return `<div class="student-assistant-hub"><section class="assistant-main-card"><div><div class="section-kicker" style="color:#ddd8ff">Your study companion</div><h1>Need help?</h1><p>Ask about the unit you are studying. Get one clear explanation or a quick practice — then return to your journey.</p></div><button class="journey-main-btn" onclick="PROVE.openStudentTool('assistant')">Ask Assistant</button></section><div class="assistant-mini-tools"><button onclick="PROVE.openStudentTool('dictionary')"><span>📘</span><b>Dictionary + My Words</b><small>Look up a word, hear it, and save it for later.</small></button><button onclick="PROVE.openStudentTool('writing')"><span>✍️</span><b>Writing Coach</b><small>Optional support when you want help planning or revising writing.</small></button></div></div>`;
   }
 
   function studentPractice(ctx){
@@ -1346,7 +1346,7 @@
       if(String(q.skill||"").trim().toLowerCase()===normalizedSkill)add(q,t);
     }));
 
-    // If the bank has fewer than 3 exact-skill items, ask MG1 Assistant to
+    // If the bank has fewer than 3 exact-skill items, ask Assistant to
     // create the missing source-grounded items. Never fill with another skill.
     if(pool.length<targetCount && window.MG1Assistant?.generateTargetedReview){
       try{
@@ -1817,7 +1817,7 @@
     const q=t?.questions?.[questionIndex];
     const selected=state.exam?.answers?.[questionIndex];
     if(!t || !q || !window.MG1Assistant?.render){
-      alert("MG1 Assistant is still loading. Please try again in a moment.");
+      alert("Assistant is still loading. Please try again in a moment.");
       return;
     }
 
@@ -1859,7 +1859,7 @@ Do not start a new lesson unless I ask.`;
         return;
       }
       if(++tries<12)setTimeout(sendWhenReady,50);
-      else alert("MG1 Assistant is still loading. Please try again.");
+      else alert("Assistant is still loading. Please try again.");
     };
     setTimeout(sendWhenReady,0);
   }
