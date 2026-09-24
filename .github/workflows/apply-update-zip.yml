@@ -1,17 +1,27 @@
-name: StepUp • Apply Update
+name: StepUp • Update & Deploy
 
 on:
   push:
     paths:
       - "STEPUP_UPDATE.zip"
+  workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: stepup-pages
+  cancel-in-progress: true
 
 jobs:
-  apply-stepup-update:
-    if: github.actor != 'github-actions[bot]'
+  update-and-deploy:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout StepUp
@@ -19,26 +29,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify update package
+      - name: Apply update
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ ! -f "STEPUP_UPDATE.zip" ]; then
-            echo "STEPUP_UPDATE.zip was not found."
-            exit 1
-          fi
-
-          unzip -t "STEPUP_UPDATE.zip"
-
-      - name: Apply StepUp update
-        shell: bash
-        run: |
-          set -euo pipefail
+          test -f "STEPUP_UPDATE.zip"
 
           WORK_DIR="$(mktemp -d)"
-          EXTRACT_DIR="${WORK_DIR}/stepup-update"
-
+          EXTRACT_DIR="${WORK_DIR}/update"
           mkdir -p "${EXTRACT_DIR}"
 
           unzip -q "STEPUP_UPDATE.zip" -d "${EXTRACT_DIR}"
@@ -46,27 +45,21 @@ jobs:
           shopt -s dotglob nullglob
           ITEMS=("${EXTRACT_DIR}"/*)
 
-          # إذا كان داخل ZIP مجلد واحد فقط، ادخل داخله تلقائيا
           if [ "${#ITEMS[@]}" -eq 1 ] && [ -d "${ITEMS[0]}" ]; then
             SOURCE_DIR="${ITEMS[0]}"
           else
             SOURCE_DIR="${EXTRACT_DIR}"
           fi
 
-          echo "Applying StepUp files from: ${SOURCE_DIR}"
-
-          # تحديث الملفات الموجودة في الحزمة فقط
-          # بدون حذف بقية ملفات StepUp
           rsync -av \
             --exclude=".git/" \
             --exclude=".github/" \
             --exclude="STEPUP_UPDATE.zip" \
             "${SOURCE_DIR}/" "./"
 
-          # حذف ملف التحديث بعد تطبيقه
           rm -f "STEPUP_UPDATE.zip"
 
-      - name: Commit StepUp update
+      - name: Save changes
         shell: bash
         run: |
           set -euo pipefail
@@ -76,10 +69,34 @@ jobs:
 
           git add -A
 
-          if git diff --cached --quiet; then
-            echo "No StepUp changes detected."
-            exit 0
+          if ! git diff --cached --quiet; then
+            git commit -m "StepUp: apply packaged update"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
-          git commit -m "StepUp: apply packaged update"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Prepare site
+        shell: bash
+        run: |
+          rm -rf _site
+          mkdir -p _site
+
+          rsync -a \
+            --exclude=".git/" \
+            --exclude=".github/" \
+            --exclude="_site/" \
+            --exclude="STEPUP_UPDATE.zip" \
+            ./ _site/
+
+          touch _site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy StepUp
+        id: deployment
+        uses: actions/deploy-pages@v4
