@@ -859,3 +859,22 @@ body{background:linear-gradient(180deg,#f9fbff 0%,#eef7ff 52%,#fdfdff 100%);colo
   .student-nav-label{font-size:10.5px;line-height:1.15}
   .student-view{padding-bottom:22px}
 }
+
+
+/* StepUp 2026-09-24 nav cleanup + brighter top bar */
+.student-nav #mg1AssistantTab,
+.student-nav #mg1WritingTab,
+.student-nav #mg1DictionaryTab{display:none!important}
+
+.topbar{
+  background:linear-gradient(120deg,#2b73ad 0%,#43afd0 58%,#62cbbb 100%) !important;
+  box-shadow:0 8px 26px rgba(47,129,174,.15);
+}
+.topbar .brand,.topbar .brand strong,.topbar .brand span,.topbar .muted{color:#fff!important}
+.topbar .avatar,.topbar .user-avatar,.topbar button{border-color:rgba(255,255,255,.34)!important}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(circle at 12% 10%,rgba(103,214,211,.14),transparent 28%),
+    radial-gradient(circle at 90% 30%,rgba(120,161,255,.10),transparent 32%);
+}
