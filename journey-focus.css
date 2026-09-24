@@ -1,0 +1,44 @@
+/* StepUp focused journey — one current task at a time */
+.journey-focus-shell{max-width:760px;margin:0 auto;padding-bottom:150px}
+.journey-focus-head{background:#fff;border:1px solid #e6e9ef;border-radius:22px;padding:20px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.journey-focus-head-copy>span{display:block;font-size:10px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;color:#7a8496;margin-bottom:7px}
+.journey-focus-head h1{margin:0;color:#111827;font-size:clamp(27px,7vw,34px);line-height:1.08;letter-spacing:-.035em}
+.journey-focus-head p{margin:8px 0 0;color:#7b8496;font-size:14px;line-height:1.55}
+.journey-focus-progress-row{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:12px;margin-top:17px}
+.journey-focus-progress-row strong{font-size:12px;color:#596477;white-space:nowrap}
+.journey-focus-progress{height:5px;background:#edf0f4;border-radius:999px;overflow:hidden}
+.journey-focus-progress i{display:block;height:100%;border-radius:inherit;background:#5b4df5}
+
+.journey-focus-roadmap{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:17px 4px 19px;position:relative}
+.journey-focus-roadmap:before{content:"";position:absolute;left:8%;right:8%;top:15px;height:2px;background:#e5e8ee;z-index:0}
+.journey-focus-stage{position:relative;z-index:1;display:grid;justify-items:center;gap:6px;color:#9aa3b2;min-width:0}
+.journey-focus-dot{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid #e2e6ec;color:#98a2b2;font-size:11px;font-weight:850}
+.journey-focus-stage small{font-size:9px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.journey-focus-stage.done .journey-focus-dot{background:#ecfdf5;border-color:#ccebdc;color:#14835d}
+.journey-focus-stage.done{color:#59806f}
+.journey-focus-stage.current .journey-focus-dot{background:#5b4df5;border-color:#5b4df5;color:#fff;box-shadow:0 0 0 4px #efedff}
+.journey-focus-stage.current{color:#4f46e5}
+
+.journey-focus-task{background:#fff;border:1px solid #e5e9f0;border-radius:22px;padding:20px;box-shadow:0 10px 28px rgba(15,23,42,.06)}
+.journey-focus-task-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.journey-focus-eyebrow{font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#5b4df5}
+.journey-focus-time{font-size:11px;font-weight:750;color:#7c8798;background:#f5f6f8;border-radius:999px;padding:6px 9px}
+.journey-focus-task h2{margin:0;color:#111827;font-size:clamp(22px,6vw,28px);line-height:1.2;letter-spacing:-.025em}
+.journey-focus-task p{margin:8px 0 18px;color:#7a8495;font-size:14px;line-height:1.55}
+.journey-focus-start{width:100%;min-height:50px;border:0;border-radius:15px;background:#5b4df5;color:#fff;font-size:16px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 18px rgba(91,77,245,.18)}
+.journey-focus-task.complete .journey-focus-eyebrow{color:#14835d}
+.journey-focus-task.complete .journey-focus-start{background:#111827;box-shadow:none}
+
+@media(max-width:700px){
+  .student-view{padding-bottom:150px!important}
+  .journey-focus-shell{padding-bottom:155px}
+  .journey-focus-head{padding:17px;border-radius:19px}
+  .journey-focus-head p{font-size:13px}
+  .journey-focus-progress-row{grid-template-columns:1fr;gap:7px}
+  .journey-focus-roadmap{margin:15px 0 18px}
+  .journey-focus-roadmap:before{left:9%;right:9%;top:14px}
+  .journey-focus-dot{width:29px;height:29px}
+  .journey-focus-stage small{font-size:8.5px}
+  .journey-focus-task{padding:18px;border-radius:19px}
+  .student-app-shell .student-nav{bottom:max(10px,env(safe-area-inset-bottom))!important}
+}
