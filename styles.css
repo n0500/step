@@ -1045,3 +1045,204 @@ header.appbar.student-appbar{
 .student-appbar .brand,.student-appbar .brand strong,.student-appbar .brand small{color:#fff!important}
 .student-appbar .logo{background:rgba(255,255,255,.18)!important;border:1px solid rgba(255,255,255,.42)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
 .student-appbar .nav-actions button,.student-appbar .avatar,.student-appbar .user-badge{background:rgba(255,255,255,.16)!important;border-color:rgba(255,255,255,.38)!important;color:#fff!important}
+
+
+/* ==========================================================
+   StepUp Professional App UI — 2026-09-24
+   Neutral product palette, restrained accents, app-like shell
+   ========================================================== */
+:root{
+  --pro-bg:#f4f6fa;
+  --pro-surface:#ffffff;
+  --pro-surface-2:#f8fafc;
+  --pro-ink:#0f172a;
+  --pro-text:#25324a;
+  --pro-muted:#748096;
+  --pro-line:#e5e9f0;
+  --pro-accent:#4f46e5;
+  --pro-accent-2:#2563eb;
+  --pro-accent-soft:#eef2ff;
+  --pro-success:#0f9f6e;
+  --pro-success-soft:#ecfdf5;
+  --pro-warning:#c47b14;
+  --pro-warning-soft:#fff8e8;
+  --pro-shadow:0 12px 32px rgba(15,23,42,.07);
+  --pro-shadow-soft:0 5px 18px rgba(15,23,42,.055);
+}
+html,body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Arial,sans-serif!important}
+body{
+  background:var(--pro-bg)!important;
+  color:var(--pro-ink)!important;
+}
+body:before{display:none!important}
+
+/* App bar: clean, light, product-like */
+header.appbar.student-appbar,
+.topbar{
+  background:rgba(255,255,255,.96)!important;
+  color:var(--pro-ink)!important;
+  border-bottom:1px solid var(--pro-line)!important;
+  box-shadow:0 4px 18px rgba(15,23,42,.05)!important;
+  backdrop-filter:blur(18px);
+}
+.student-appbar .brand,.student-appbar .brand strong,.student-appbar .brand small,
+.topbar .brand,.topbar .brand strong,.topbar .brand span,.topbar .muted{color:var(--pro-ink)!important}
+.student-appbar .brand small,.topbar .brand small{color:var(--pro-muted)!important}
+.student-appbar .logo,.topbar .logo{
+  background:var(--pro-ink)!important;color:#fff!important;border:0!important;
+  box-shadow:none!important;border-radius:14px!important
+}
+.student-appbar .nav-actions button,.student-appbar .avatar,.student-appbar .user-badge,
+.topbar .nav-actions button,.topbar .avatar,.topbar .user-badge{
+  background:#f8fafc!important;border:1px solid var(--pro-line)!important;color:var(--pro-ink)!important;
+  box-shadow:none!important
+}
+
+/* Main content */
+.student-home-clean,.student-page-head{max-width:980px!important}
+.student-welcome{padding:16px 4px 8px!important;margin-bottom:10px!important}
+.student-welcome .section-kicker,.student-page-head .section-kicker{
+  color:#64748b!important;font-size:11px!important;letter-spacing:.12em!important;font-weight:800!important
+}
+.student-welcome h1,.student-page-head h1{
+  color:var(--pro-ink)!important;font-weight:820!important;letter-spacing:-.035em!important
+}
+.student-welcome p,.student-page-head p{color:var(--pro-muted)!important}
+
+/* Motivation summary = one restrained dashboard card */
+.motivation-panel{
+  display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;gap:18px!important;align-items:center!important;
+  margin:4px 0 16px!important;padding:17px 18px!important;border-radius:20px!important;
+  background:var(--pro-surface)!important;border:1px solid var(--pro-line)!important;
+  box-shadow:var(--pro-shadow-soft)!important
+}
+.motivation-level-no{
+  min-width:72px!important;height:40px!important;padding:0 12px!important;border-radius:12px!important;
+  background:var(--pro-ink)!important;color:#fff!important;box-shadow:none!important;
+  font-size:11px!important;letter-spacing:.02em!important;font-weight:800!important
+}
+.motivation-level b,.motivation-streak b{color:var(--pro-ink)!important;font-weight:760!important}
+.motivation-level small,.motivation-streak small{color:var(--pro-muted)!important}
+.motivation-xp-line{color:var(--pro-muted)!important}
+.motivation-xp-line strong{color:#475569!important;font-weight:700!important}
+.motivation-xp-track{height:6px!important;background:#edf0f5!important}
+.motivation-xp-track i{background:var(--pro-accent)!important}
+.motivation-streak{
+  background:var(--pro-surface-2)!important;border:1px solid var(--pro-line)!important;
+  border-radius:14px!important;padding:9px 12px!important
+}
+.motivation-streak.hot{background:var(--pro-warning-soft)!important;border-color:#f3dfb8!important}
+.motivation-streak-mark{
+  width:28px;height:28px;display:grid;place-items:center;border-radius:9px;
+  background:#fff;border:1px solid var(--pro-line);color:var(--pro-accent);font-size:14px;font-weight:800
+}
+
+/* Primary next action */
+.journey-continue{
+  background:linear-gradient(135deg,#111827 0%,#18223a 58%,#26385f 100%)!important;
+  color:#fff!important;border:1px solid rgba(255,255,255,.06)!important;
+  border-radius:24px!important;box-shadow:0 18px 42px rgba(15,23,42,.16)!important;
+  padding:26px!important
+}
+.journey-continue:before{content:none!important}
+.journey-continue .journey-kicker{color:#aeb9ca!important;font-size:11px!important;letter-spacing:.11em!important}
+.journey-continue h2{font-weight:820!important;letter-spacing:-.025em!important}
+.journey-continue p{color:#dce3ee!important}
+.journey-continue small{color:#aeb9ca!important}
+.journey-continue .journey-mini-progress{background:rgba(255,255,255,.13)!important;height:6px!important}
+.journey-continue .journey-mini-progress i{background:#7c83ff!important}
+.journey-main-btn,.journey-continue .journey-main-btn{
+  background:#fff!important;color:#111827!important;border-radius:13px!important;box-shadow:none!important;
+  min-height:48px!important;font-weight:780!important
+}
+.motivation-time{
+  background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.13)!important;
+  color:#dce3ee!important;border-radius:999px!important;font-weight:700!important;padding:5px 9px!important
+}
+
+/* Secondary focus card */
+.quick-win-card{
+  margin:0 0 14px!important;padding:14px 15px!important;border-radius:18px!important;
+  background:var(--pro-surface)!important;border:1px solid var(--pro-line)!important;
+  box-shadow:var(--pro-shadow-soft)!important
+}
+.quick-win-icon{
+  width:40px!important;height:40px!important;border-radius:12px!important;
+  background:var(--pro-accent-soft)!important;color:var(--pro-accent)!important;
+  box-shadow:none!important;font-size:11px!important;font-weight:850!important
+}
+.quick-win-copy span{color:#64748b!important;font-size:9px!important;font-weight:800!important;letter-spacing:.09em!important}
+.quick-win-copy b{color:var(--pro-ink)!important;font-weight:760!important}
+.quick-win-copy small{color:var(--pro-muted)!important}
+.quick-win-card button{
+  background:var(--pro-accent)!important;color:#fff!important;border-radius:11px!important;
+  box-shadow:none!important;font-weight:750!important
+}
+
+/* Tools and progress */
+.journey-home-tools{gap:12px!important}
+.journey-home-tools button,.journey-overall{
+  background:var(--pro-surface)!important;border:1px solid var(--pro-line)!important;
+  border-radius:18px!important;box-shadow:var(--pro-shadow-soft)!important
+}
+.journey-home-tools button:nth-child(1),.journey-home-tools button:nth-child(2),.journey-overall{background:#fff!important}
+.journey-home-tools button b{color:var(--pro-ink)!important;font-weight:760!important}
+.journey-home-tools button small,.journey-overall span{color:var(--pro-muted)!important}
+.journey-home-tools button span{filter:none!important}
+.journey-overall strong{color:var(--pro-accent)!important}
+.student-weekly-card,.student-home-section{
+  background:var(--pro-surface)!important;border:1px solid var(--pro-line)!important;
+  box-shadow:var(--pro-shadow-soft)!important;border-radius:20px!important
+}
+.student-weekly-card:before{display:none!important}
+.weekly-level{background:var(--pro-accent-soft)!important;color:var(--pro-accent)!important;border-color:#dfe2ff!important}
+
+/* Bottom navigation like a professional mobile app */
+.student-app-shell .student-nav{
+  background:rgba(255,255,255,.96)!important;border:1px solid rgba(226,230,238,.96)!important;
+  box-shadow:0 12px 34px rgba(15,23,42,.12)!important;border-radius:22px!important;
+  backdrop-filter:blur(18px)!important
+}
+.student-app-shell .student-nav .role-tab{
+  color:#7a8699!important;background:transparent!important;border:0!important;box-shadow:none!important;
+  border-radius:13px!important
+}
+.student-app-shell .student-nav .role-tab.active,
+.student-app-shell .student-nav .role-tab:nth-child(1).active,
+.student-app-shell .student-nav .role-tab:nth-child(2).active,
+.student-app-shell .student-nav .role-tab:nth-child(3).active,
+.student-app-shell .student-nav .role-tab:nth-child(4).active{
+  background:var(--pro-accent-soft)!important;color:var(--pro-accent)!important;border:0!important;
+  box-shadow:none!important
+}
+.student-nav-label{font-weight:720!important}
+
+/* Assistant */
+.assistant-main-card{
+  background:linear-gradient(135deg,#111827,#1e293b)!important;border-radius:22px!important;
+  box-shadow:0 16px 36px rgba(15,23,42,.13)!important
+}
+.assistant-main-card p{color:#cfd7e4!important}
+.assistant-main-card .journey-main-btn{background:#fff!important;color:#111827!important}
+.assistant-mini-tools button{
+  background:#fff!important;border:1px solid var(--pro-line)!important;border-radius:18px!important;
+  box-shadow:var(--pro-shadow-soft)!important
+}
+
+/* Toast */
+.motivation-toast{
+  background:#111827!important;border:1px solid rgba(255,255,255,.08)!important;
+  border-radius:14px!important;box-shadow:0 16px 40px rgba(15,23,42,.22)!important
+}
+.motivation-toast>span{font-size:15px!important;width:28px;height:28px;border-radius:9px;background:#1f9d72;display:grid;place-items:center}
+
+@media(max-width:700px){
+  body{background:#f4f6fa!important}
+  .student-welcome{padding-top:12px!important}
+  .motivation-panel{grid-template-columns:1fr auto!important;padding:13px 14px!important;border-radius:18px!important;gap:11px!important}
+  .motivation-xp{grid-column:1/-1!important;grid-row:2!important}
+  .motivation-level-no{min-width:68px!important;height:38px!important;border-radius:11px!important}
+  .journey-continue{padding:22px!important;border-radius:22px!important}
+  .quick-win-card{border-radius:17px!important}
+  .student-app-shell .student-nav{left:12px!important;right:12px!important;bottom:10px!important;padding:9px!important}
+}

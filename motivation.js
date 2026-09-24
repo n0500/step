@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "20260924-motivation-1";
+  const VERSION = "20260924-pro-ui-1";
   const SEEN_KEY = "stepup_motivation_seen_attempt_v1";
   let lastSignature = "";
   let pending = false;
@@ -80,13 +80,13 @@
     const kicker=card.querySelector('.journey-kicker');
     if(kicker) kicker.textContent='Your next move';
     const btn=card.querySelector('.journey-main-btn');
-    if(btn) btn.innerHTML='Let\'s go <span aria-hidden="true">→</span>';
+    if(btn) btn.innerHTML='Start session <span aria-hidden="true">→</span>';
     if(!card.querySelector('.motivation-time')){
       const copy=card.querySelector('.journey-continue-copy')||card.firstElementChild;
       if(copy){
         const tag=document.createElement('span');
         tag.className='motivation-time';
-        tag.textContent='2–4 min';
+        tag.textContent='2–4 min session';
         copy.insertBefore(tag, copy.querySelector('.journey-mini-progress')||null);
       }
     }
@@ -108,7 +108,7 @@
     panel.className='motivation-panel';
     panel.innerHTML=`
       <div class="motivation-level">
-        <span class="motivation-level-no">LV ${stats.levelNum}</span>
+        <span class="motivation-level-no">Level ${stats.levelNum}</span>
         <div><b>${esc(stats.name)}</b><small>${stats.xp} XP</small></div>
       </div>
       <div class="motivation-xp">
@@ -116,7 +116,7 @@
         <div class="motivation-xp-track"><i style="width:${stats.progress}%"></i></div>
       </div>
       <div class="motivation-streak ${stats.streak?'hot':''}">
-        <span>${stats.streak?'🔥':'☀️'}</span><div><b>${stats.streak} day${stats.streak===1?'':'s'}</b><small>${stats.todayDone?'Today counts ✓':'A quick win keeps it going'}</small></div>
+        <span class="motivation-streak-mark">↗</span><div><b>${stats.streak} day${stats.streak===1?'':'s'}</b><small>${stats.todayDone?'Today counts ✓':'A quick win keeps it going'}</small></div>
       </div>`;
     if(welcome) welcome.insertAdjacentElement('afterend',panel); else home.prepend(panel);
 
@@ -124,9 +124,9 @@
     quick.id='stepupQuickWin';
     quick.className='quick-win-card';
     quick.innerHTML=`
-      <div class="quick-win-icon">⚡</div>
-      <div class="quick-win-copy"><span>Quick Win</span><b>${esc(nextTask)}</b><small>${esc(nextTitle)} • one small step</small></div>
-      <button type="button">Go</button>`;
+      <div class="quick-win-icon">01</div>
+      <div class="quick-win-copy"><span>Today's focus</span><b>${esc(nextTask)}</b><small>${esc(nextTitle)} • one small step</small></div>
+      <button type="button">Open</button>`;
     quick.querySelector('button').addEventListener('click',()=>{
       const continueBtn=document.querySelector('.journey-continue .journey-main-btn');
       if(continueBtn) continueBtn.click(); else window.PROVE?.setStudentTab?.('journey');
@@ -149,7 +149,7 @@
     localStorage.setItem(SEEN_KEY,key);
     const toast=document.createElement('div');
     toast.className='motivation-toast';
-    toast.innerHTML=`<span>✨</span><div><b>Nice move!</b><small>+${pointsForAttempt(latest)} XP • keep going</small></div>`;
+    toast.innerHTML=`<span>✓</span><div><b>Progress saved</b><small>+${pointsForAttempt(latest)} XP • keep going</small></div>`;
     document.body.appendChild(toast);
     requestAnimationFrame(()=>toast.classList.add('show'));
     setTimeout(()=>{toast.classList.remove('show');setTimeout(()=>toast.remove(),350)},3500);
