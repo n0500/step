@@ -1,0 +1,93 @@
+name: Apply ZIP Update
+
+on:
+  push:
+    paths:
+      - "updates/*.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find update ZIP
+        id: zip
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ZIP_FILE="$(find updates -maxdepth 1 -type f -name '*.zip' -printf '%T@ %p\n' 2>/dev/null \
+            | sort -nr \
+            | head -n 1 \
+            | cut -d' ' -f2- || true)"
+
+          if [ -z "${ZIP_FILE}" ]; then
+            echo "No ZIP file found in updates/"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Found: ${ZIP_FILE}"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=${ZIP_FILE}" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "${ZIP_FILE}")" >> "$GITHUB_OUTPUT"
+
+      - name: Extract and apply update
+        if: steps.zip.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ZIP_FILE="${{ steps.zip.outputs.path }}"
+          WORK_DIR="$(mktemp -d)"
+          EXTRACT_DIR="${WORK_DIR}/extracted"
+          mkdir -p "${EXTRACT_DIR}"
+
+          unzip -q "${ZIP_FILE}" -d "${EXTRACT_DIR}"
+
+          shopt -s dotglob nullglob
+          ITEMS=("${EXTRACT_DIR}"/*)
+
+          if [ "${#ITEMS[@]}" -eq 1 ] && [ -d "${ITEMS[0]}" ]; then
+            SOURCE_DIR="${ITEMS[0]}"
+          else
+            SOURCE_DIR="${EXTRACT_DIR}"
+          fi
+
+          echo "Applying files from: ${SOURCE_DIR}"
+
+          rsync -av \
+            --exclude=".git/" \
+            --exclude="updates/" \
+            "${SOURCE_DIR}/" "./"
+
+          rm -f "${ZIP_FILE}"
+
+      - name: Commit applied update
+        if: steps.zip.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No repository changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Apply ZIP update: ${{ steps.zip.outputs.name }}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
