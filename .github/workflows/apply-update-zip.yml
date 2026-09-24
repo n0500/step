@@ -1,80 +1,72 @@
-name: Apply ZIP Update
+name: StepUp • Apply Update
 
 on:
   push:
     paths:
-      - "updates/*.zip"
-  workflow_dispatch:
+      - "STEPUP_UPDATE.zip"
 
 permissions:
   contents: write
 
 jobs:
-  apply-update:
+  apply-stepup-update:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout StepUp
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Find update ZIP
-        id: zip
+      - name: Verify update package
         shell: bash
         run: |
           set -euo pipefail
 
-          ZIP_FILE="$(find updates -maxdepth 1 -type f -name '*.zip' -printf '%T@ %p\n' 2>/dev/null \
-            | sort -nr \
-            | head -n 1 \
-            | cut -d' ' -f2- || true)"
-
-          if [ -z "${ZIP_FILE}" ]; then
-            echo "No ZIP file found in updates/"
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ ! -f "STEPUP_UPDATE.zip" ]; then
+            echo "STEPUP_UPDATE.zip was not found."
+            exit 1
           fi
 
-          echo "Found: ${ZIP_FILE}"
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "path=${ZIP_FILE}" >> "$GITHUB_OUTPUT"
-          echo "name=$(basename "${ZIP_FILE}")" >> "$GITHUB_OUTPUT"
+          unzip -t "STEPUP_UPDATE.zip"
 
-      - name: Extract and apply update
-        if: steps.zip.outputs.found == 'true'
+      - name: Apply StepUp update
         shell: bash
         run: |
           set -euo pipefail
 
-          ZIP_FILE="${{ steps.zip.outputs.path }}"
           WORK_DIR="$(mktemp -d)"
-          EXTRACT_DIR="${WORK_DIR}/extracted"
+          EXTRACT_DIR="${WORK_DIR}/stepup-update"
+
           mkdir -p "${EXTRACT_DIR}"
 
-          unzip -q "${ZIP_FILE}" -d "${EXTRACT_DIR}"
+          unzip -q "STEPUP_UPDATE.zip" -d "${EXTRACT_DIR}"
 
           shopt -s dotglob nullglob
           ITEMS=("${EXTRACT_DIR}"/*)
 
+          # إذا كان داخل ZIP مجلد واحد فقط، ادخل داخله تلقائيا
           if [ "${#ITEMS[@]}" -eq 1 ] && [ -d "${ITEMS[0]}" ]; then
             SOURCE_DIR="${ITEMS[0]}"
           else
             SOURCE_DIR="${EXTRACT_DIR}"
           fi
 
-          echo "Applying files from: ${SOURCE_DIR}"
+          echo "Applying StepUp files from: ${SOURCE_DIR}"
 
+          # تحديث الملفات الموجودة في الحزمة فقط
+          # بدون حذف بقية ملفات StepUp
           rsync -av \
             --exclude=".git/" \
-            --exclude="updates/" \
+            --exclude=".github/" \
+            --exclude="STEPUP_UPDATE.zip" \
             "${SOURCE_DIR}/" "./"
 
-          rm -f "${ZIP_FILE}"
+          # حذف ملف التحديث بعد تطبيقه
+          rm -f "STEPUP_UPDATE.zip"
 
-      - name: Commit applied update
-        if: steps.zip.outputs.found == 'true'
+      - name: Commit StepUp update
         shell: bash
         run: |
           set -euo pipefail
@@ -85,9 +77,9 @@ jobs:
           git add -A
 
           if git diff --cached --quiet; then
-            echo "No repository changes to commit."
+            echo "No StepUp changes detected."
             exit 0
           fi
 
-          git commit -m "Apply ZIP update: ${{ steps.zip.outputs.name }}"
+          git commit -m "StepUp: apply packaged update"
           git push origin "HEAD:${GITHUB_REF_NAME}"
