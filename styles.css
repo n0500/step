@@ -878,3 +878,65 @@ body:before{
     radial-gradient(circle at 12% 10%,rgba(103,214,211,.14),transparent 28%),
     radial-gradient(circle at 90% 30%,rgba(120,161,255,.10),transparent 32%);
 }
+
+/* StepUp colorful student UI — 2026-09-24 */
+:root{
+  --step-blue:#3388e8;
+  --step-sky:#55c7ec;
+  --step-mint:#55d3bd;
+  --step-violet:#8b7cf6;
+  --step-lilac:#aa8cf6;
+  --step-amber:#f5bd58;
+  --step-green:#55c98a;
+  --step-ink:#17365c;
+}
+body{
+  background:
+    radial-gradient(circle at 8% 14%,rgba(85,211,189,.14),transparent 25%),
+    radial-gradient(circle at 92% 28%,rgba(139,124,246,.11),transparent 28%),
+    linear-gradient(180deg,#f8fcff 0%,#eef8ff 52%,#fbf9ff 100%);
+}
+.topbar{
+  background:linear-gradient(118deg,#2f83d7 0%,#42b8dd 48%,#5ad1bd 100%)!important;
+  box-shadow:0 10px 28px rgba(47,131,215,.18);
+}
+.student-welcome .section-kicker,.student-page-head .section-kicker{color:#5683aa}
+.student-welcome h1,.student-page-head h1{color:var(--step-ink)}
+
+/* Home quick tools: distinct, cheerful identities */
+.journey-home-tools button:nth-child(1){
+  background:linear-gradient(145deg,#ffffff 0%,#eaf5ff 100%);
+  border-color:#cfe5fb;
+}
+.journey-home-tools button:nth-child(1) span{filter:saturate(1.15)}
+.journey-home-tools button:nth-child(1) b{color:#246fbe}
+.journey-home-tools button:nth-child(2){
+  background:linear-gradient(145deg,#ffffff 0%,#f3efff 100%);
+  border-color:#ded5fb;
+}
+.journey-home-tools button:nth-child(2) b{color:#7157d6}
+.journey-overall{
+  background:linear-gradient(135deg,#fff8e8,#f5fff9)!important;
+  border-color:#f1e2ae!important;
+}
+.journey-overall strong{color:#e49b2e!important}
+
+/* Student nav: every section gets a subtle accent */
+.student-app-shell .student-nav .role-tab:nth-child(1).active{background:linear-gradient(135deg,#e6f4ff,#e8fbff);color:#216cae;border-color:#c7e7f8}
+.student-app-shell .student-nav .role-tab:nth-child(2).active{background:linear-gradient(135deg,#e9fbf7,#e6f8ff);color:#208b82;border-color:#c9ece5}
+.student-app-shell .student-nav .role-tab:nth-child(3).active{background:linear-gradient(135deg,#f2eeff,#edf1ff);color:#6d58d4;border-color:#ddd5fb}
+.student-app-shell .student-nav .role-tab:nth-child(4).active{background:linear-gradient(135deg,#f8efff,#f1efff);color:#7a55cb;border-color:#e6d7fb}
+
+/* Weekly / small-progress surfaces */
+.student-weekly-card{
+  background:linear-gradient(135deg,#ffffff 0%,#ebfbf8 47%,#edf6ff 100%);
+  border-color:#d2ece7;
+}
+.weekly-level{background:#fff8e8;color:#a86c16;border-color:#f4deb0}
+.student-home-section{
+  background:linear-gradient(145deg,#ffffff 0%,#f7fbff 70%,#f8f4ff 100%);
+}
+
+@media(max-width:700px){
+  .student-app-shell .student-nav{background:rgba(255,255,255,.97);border-color:#d8e7f5}
+}

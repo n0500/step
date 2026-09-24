@@ -34,3 +34,63 @@
   .journey-continue{padding:22px;border-radius:26px}
   .journey-main-btn{min-height:52px;font-size:18px}
 }
+
+/* StepUp journey station palette — 2026-09-24 */
+.journey-continue{
+  background:linear-gradient(132deg,#2f8bd8 0%,#45c2d8 50%,#748cf1 100%);
+  box-shadow:0 18px 42px rgba(58,147,206,.22);
+}
+.journey-continue .journey-mini-progress{background:rgba(255,255,255,.27)}
+.journey-continue .journey-main-btn{color:#286da9}
+
+/* Master = blue */
+.journey-master-card{
+  border-color:#cfe5fb;
+  background:linear-gradient(145deg,#ffffff 0%,#eef7ff 100%);
+}
+.journey-master-card .journey-stage-title>span{background:#dff0ff;color:#2477bd}
+.journey-master-card .journey-stage-title>b{color:#2477bd}
+.journey-master-card .journey-subtask>span{background:#e4f2ff;color:#2677bb}
+
+/* Read = mint */
+.journey-stops .journey-stop:nth-child(1){background:linear-gradient(145deg,#ffffff,#eafbf7);border-color:#ccece4}
+.journey-stops .journey-stop:nth-child(1) .journey-stop-icon{background:#dcf7ef;color:#258d7b}
+.journey-stops .journey-stop:nth-child(1) .journey-stop-arrow{color:#2c9a87}
+
+/* Listen = lilac */
+.journey-stops .journey-stop:nth-child(2){background:linear-gradient(145deg,#ffffff,#f2efff);border-color:#ddd5fb}
+.journey-stops .journey-stop:nth-child(2) .journey-stop-icon{background:#ebe6ff;color:#765fd8}
+.journey-stops .journey-stop:nth-child(2) .journey-stop-arrow{color:#8067df}
+
+/* STEP Practice = warm amber */
+.journey-stops .journey-stop:nth-child(3){background:linear-gradient(145deg,#ffffff,#fff7e7);border-color:#f2dfb5}
+.journey-stops .journey-stop:nth-child(3) .journey-stop-icon{background:#fff0c9;color:#ba791e}
+.journey-stops .journey-stop:nth-child(3) .journey-stop-arrow{color:#c48426}
+
+/* Final Challenge = green */
+.journey-stops .journey-stop:nth-child(4){background:linear-gradient(145deg,#ffffff,#edfbf3);border-color:#cdebd9}
+.journey-stops .journey-stop:nth-child(4) .journey-stop-icon{background:#daf5e5;color:#238354}
+.journey-stops .journey-stop:nth-child(4) .journey-stop-arrow{color:#2d9563}
+
+/* Preserve state emphasis while keeping station identity */
+.journey-stop.current{box-shadow:0 0 0 3px rgba(83,190,190,.16),0 10px 24px rgba(77,126,175,.08)}
+.journey-stop.done{filter:saturate(.92)}
+.journey-unit-card:nth-child(6n+1){border-top:4px solid #55bfea}
+.journey-unit-card:nth-child(6n+2){border-top:4px solid #58cfb8}
+.journey-unit-card:nth-child(6n+3){border-top:4px solid #8c7cf4}
+.journey-unit-card:nth-child(6n+4){border-top:4px solid #f2bc59}
+.journey-unit-card:nth-child(6n+5){border-top:4px solid #61c88f}
+.journey-unit-card:nth-child(6n+6){border-top:4px solid #ef8fc2}
+
+.journey-progress-units>div:nth-child(3n+1){background:#edf7ff}
+.journey-progress-units>div:nth-child(3n+2){background:#eefbf7}
+.journey-progress-units>div:nth-child(3n+3){background:#f4f0ff}
+.journey-progress-units>div:nth-child(3n+1) em{background:#45a7e8}
+.journey-progress-units>div:nth-child(3n+2) em{background:#50c9aa}
+.journey-progress-units>div:nth-child(3n+3) em{background:#8b78ef}
+
+.assistant-main-card{
+  background:linear-gradient(132deg,#438fdc 0%,#62c7d2 52%,#9a86ee 100%);
+}
+.assistant-mini-tools button:nth-child(1){background:linear-gradient(145deg,#fff,#edf6ff);border-color:#d3e7fa}
+.assistant-mini-tools button:nth-child(2){background:linear-gradient(145deg,#fff,#f6efff);border-color:#e4d8f8}
