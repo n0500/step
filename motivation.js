@@ -78,9 +78,9 @@
     const card=document.querySelector('.journey-continue');
     if(!card) return;
     const kicker=card.querySelector('.journey-kicker');
-    if(kicker) kicker.textContent='Your next move';
+    if(kicker && kicker.textContent!=='Your next move') kicker.textContent='Your next move';
     const btn=card.querySelector('.journey-main-btn');
-    if(btn) btn.innerHTML='Start session <span aria-hidden="true">→</span>';
+    if(btn && !btn.dataset.stepupLabel){ btn.innerHTML='Start session <span aria-hidden="true">→</span>'; btn.dataset.stepupLabel='1'; }
     if(!card.querySelector('.motivation-time')){
       const copy=card.querySelector('.journey-continue-copy')||card.firstElementChild;
       if(copy){

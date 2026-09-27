@@ -1,0 +1,855 @@
+/* =====================================================================
+   StepUp × Athari — design layer (loaded last).
+   Brings Athari's visual language to StepUp: soft blue canvas, teal hero
+   with wave + progress ring, pastel illustrated tiles, stat strip,
+   floating bottom nav and calm staggered motion.
+   Scoped under html.sx / body.sx (set by stepup-athari.js).
+   ===================================================================== */
+
+:root{
+  --sx-bg:#eef4fb;
+  --sx-surface:#ffffff;
+  --sx-ink:#0f213d;
+  --sx-ink-2:#33425a;
+  --sx-muted:#6a778c;
+  --sx-line:#e3eaf3;
+  --sx-blue:#1d5fd6;
+  --sx-blue-2:#2a6ff0;
+  --sx-green:#178a55;
+  --sx-green-pill:#dff1e6;
+  --sx-red:#d8475c;
+  --sx-amber:#9b6a12;
+  --sx-teal-1:#1b6f71;
+  --sx-teal-2:#0f4e59;
+  --sx-teal-3:#0a3f4a;
+  --sx-aqua:#5fe0d0;
+  --sx-lav:#eff0fc;
+  --sx-cream:#fdf5e4;
+  --sx-pink:#fcedf0;
+  --sx-sky:#e8f2fd;
+  --sx-mint:#e9f6ef;
+  --sx-shadow:0 4px 16px -10px rgba(20,50,90,.25);
+  --sx-shadow-lg:0 18px 40px -22px rgba(20,50,90,.35);
+  --sx-ease:cubic-bezier(.22,.78,.24,1);
+  --sx-font:"Tajawal",-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+}
+
+/* ---------- canvas & type ---------- */
+html.sx, html.sx body.sx{
+  background:
+    radial-gradient(120% 38% at 30% 0%, #dcebfb 0%, rgba(220,235,251,0) 70%),
+    var(--sx-bg) !important;
+  background-attachment:fixed !important;
+  color:var(--sx-ink) !important;
+}
+html.sx body.sx, html.sx body.sx button, html.sx body.sx input, html.sx body.sx select, html.sx body.sx textarea{
+  font-family:var(--sx-font) !important;
+}
+html.sx body.sx{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+html.sx body.sx :focus-visible{ outline:3px solid #3d7cf0 !important; outline-offset:2px; }
+html.sx body.sx h1, html.sx body.sx h2, html.sx body.sx h3{ color:var(--sx-ink); letter-spacing:-.01em; }
+
+/* ---------- top bar ---------- */
+html.sx body.sx header.appbar{
+  background:rgba(238,244,251,.82) !important;
+  backdrop-filter:blur(18px) saturate(150%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(150%) !important;
+  color:var(--sx-ink) !important;
+  box-shadow:none !important;
+  border-bottom:1px solid rgba(214,226,240,.7) !important;
+  min-height:66px !important;
+  padding:max(10px, env(safe-area-inset-top)) 16px 10px !important;
+}
+html.sx body.sx header.appbar .logo{
+  width:42px !important;height:42px !important;border-radius:14px !important;border:0 !important;
+  background:linear-gradient(145deg,var(--sx-teal-1),var(--sx-teal-3)) !important;
+  color:#fff !important;font-weight:800 !important;font-size:16px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px -6px rgba(10,63,74,.55) !important;
+}
+html.sx body.sx header.appbar .brand strong{ font-size:22px !important; font-weight:800 !important; letter-spacing:-.4px !important; color:var(--sx-ink) !important; line-height:1.1 }
+html.sx body.sx header.appbar .brand small{ color:var(--sx-muted) !important; opacity:1 !important; font-size:11.5px !important; font-weight:500 !important }
+html.sx body.sx header.appbar .nav-actions > span{ color:var(--sx-ink-2) !important; font-weight:700 }
+html.sx body.sx header.appbar .btn-outline{
+  background:#fff !important;color:var(--sx-blue) !important;border:1.5px solid #bcd0f2 !important;border-radius:999px !important;
+}
+html.sx body.sx .student-header-avatar{
+  width:46px !important;height:46px !important;border-radius:50% !important;
+  background:#dde9f8 !important;color:var(--sx-ink) !important;border:2px solid #fff !important;
+  font-weight:800 !important;font-size:18px !important;box-shadow:var(--sx-shadow) !important;
+}
+
+/* ---------- buttons ---------- */
+html.sx body.sx .btn{ border-radius:14px !important; font-weight:700 !important; min-height:44px; }
+html.sx body.sx .btn-primary, html.sx body.sx .journey-main-btn, html.sx body.sx .journey-focus-start{
+  background:linear-gradient(180deg,#2a6ff0,#1b58cf) !important;color:#fff !important;border:0 !important;
+  box-shadow:0 8px 18px -8px rgba(29,95,214,.75) !important;
+}
+html.sx body.sx .btn-secondary{ background:#fff !important;color:var(--sx-ink) !important;border:1.5px solid var(--sx-line) !important; }
+html.sx body.sx .btn-success{ background:linear-gradient(180deg,#1f9d63,#157c4c) !important;color:#fff !important; }
+html.sx body.sx .btn:active, html.sx body.sx .journey-main-btn:active, html.sx body.sx .journey-focus-start:active,
+html.sx body.sx .sx-tile:active, html.sx body.sx .journey-unit-card:not(.locked):active, html.sx body.sx .journey-options button:active{ transform:scale(.975) !important; }
+html.sx body.sx .journey-main-btn, html.sx body.sx .journey-focus-start{
+  border-radius:15px !important;min-height:50px !important;padding:12px 18px !important;font-weight:800 !important;font-size:15.5px !important;
+  display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:8px !important;
+  transition:transform .18s var(--sx-ease), box-shadow .2s ease !important;
+}
+html.sx body.sx .journey-link-btn{
+  border:1.5px solid #b9cdf1 !important;color:var(--sx-blue) !important;background:#fff !important;border-radius:999px !important;
+  font-weight:700 !important;box-shadow:none !important;
+}
+
+/* ---------- inputs ---------- */
+html.sx body.sx .field label{ color:var(--sx-ink-2) !important; font-weight:700 !important; font-size:13.5px !important }
+html.sx body.sx .field input, html.sx body.sx .field select, html.sx body.sx input[type="text"], html.sx body.sx input[type="password"], html.sx body.sx input[type="email"]{
+  border:1.5px solid #d6e1ef !important;border-radius:14px !important;background:#fff !important;min-height:48px;
+  padding:12px 14px !important;color:var(--sx-ink) !important;box-shadow:none !important;
+  transition:border-color .2s ease, box-shadow .2s ease !important;
+}
+html.sx body.sx .field input:focus, html.sx body.sx .field select:focus{ border-color:#3d7cf0 !important; box-shadow:0 0 0 4px rgba(61,124,240,.14) !important; outline:none !important }
+
+/* =====================================================================
+   STUDENT SHELL — one centered phone-width column, floating bottom nav
+   ===================================================================== */
+html.sx body.sx .student-app-shell{
+  display:block !important;max-width:600px !important;margin:0 auto !important;
+  padding:14px 14px calc(118px + env(safe-area-inset-bottom)) !important;
+}
+html.sx body.sx .student-app-shell .student-view{ display:flex !important;flex-direction:column !important;gap:14px !important; min-width:0 }
+html.sx body.sx .student-app-shell .student-view{ align-items:stretch !important }
+html.sx body.sx .student-app-shell .student-view > *{ margin:0 !important; max-width:none !important; width:auto !important; align-self:stretch !important }
+
+html.sx body.sx .student-app-shell .student-nav{
+  position:fixed !important;z-index:60 !important;
+  left:50% !important;right:auto !important;top:auto !important;
+  bottom:max(12px, env(safe-area-inset-bottom)) !important;
+  transform:translateX(-50%) !important;
+  width:min(calc(100% - 24px), 520px) !important;margin:0 !important;
+  display:grid !important;grid-template-columns:repeat(4,1fr) !important;gap:4px !important;
+  padding:7px !important;border-radius:24px !important;
+  background:rgba(255,255,255,.95) !important;border:1px solid rgba(220,230,243,.95) !important;
+  backdrop-filter:blur(22px) saturate(160%) !important;-webkit-backdrop-filter:blur(22px) saturate(160%) !important;
+  box-shadow:0 18px 40px -18px rgba(20,50,90,.45) !important;
+  flex-direction:initial !important;height:auto !important;
+}
+html.sx body.sx .student-app-shell .student-nav .role-tab{
+  display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;
+  gap:3px !important;min-height:56px !important;padding:6px 2px !important;border-radius:17px !important;
+  background:transparent !important;border:0 !important;box-shadow:none !important;color:#6a778c !important;
+  transition:background .25s var(--sx-ease), color .2s ease !important;
+}
+html.sx body.sx .student-app-shell .student-nav .role-tab.active{
+  background:#e6effd !important;color:var(--sx-blue) !important;
+}
+html.sx body.sx .student-app-shell .student-nav .role-tab.active .student-nav-icon svg{ stroke-width:2.2 !important }
+html.sx body.sx .student-nav-label{ font-size:11.5px !important;font-weight:700 !important;letter-spacing:0 !important;white-space:nowrap }
+html.sx body.sx .student-nav-icon, html.sx body.sx .student-nav-icon svg{ width:22px !important;height:22px !important }
+
+/* shared panel look */
+html.sx body.sx .student-view .card,
+html.sx body.sx .journey-progress-card,
+html.sx body.sx .journey-question-card,
+html.sx body.sx .journey-content-card,
+html.sx body.sx .journey-feedback,
+html.sx body.sx .journey-result,
+html.sx body.sx .journey-focus-task,
+html.sx body.sx .journey-focus-roadmap,
+html.sx body.sx .journey-master-card{
+  background:var(--sx-surface) !important;border:0 !important;border-radius:22px !important;
+  box-shadow:var(--sx-shadow) !important;
+}
+
+/* kickers → Athari outline pill on dark, soft label on light */
+html.sx body.sx .journey-kicker, html.sx body.sx .section-kicker, html.sx body.sx .eyebrow{
+  color:var(--sx-blue) !important;letter-spacing:.02em !important;text-transform:none !important;font-weight:700 !important;font-size:13px !important;
+}
+
+/* ---------- section head ---------- */
+html.sx body.sx .sx-sec-head{ display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px -2px }
+html.sx body.sx .sx-sec-head h2{ margin:0;font-size:20px;font-weight:800 }
+
+/* =====================================================================
+   TEAL HERO (home next-step, unit head)
+   ===================================================================== */
+html.sx body.sx .journey-continue,
+html.sx body.sx .journey-focus-head,
+html.sx body.sx .journey-unit-hero,
+html.sx body.sx .teacher-hero.sx-teal{
+  position:relative !important;overflow:hidden !important;isolation:isolate;
+  display:block !important;
+  background:linear-gradient(115deg,var(--sx-teal-1) 0%,var(--sx-teal-2) 55%,var(--sx-teal-3) 100%) !important;
+  color:#fff !important;border:0 !important;border-radius:26px !important;
+  padding:18px 18px 20px !important;
+  box-shadow:0 14px 32px -14px rgba(10,63,74,.6) !important;
+}
+html.sx body.sx .journey-continue::before,
+html.sx body.sx .journey-focus-head::before,
+html.sx body.sx .journey-unit-hero::before,
+html.sx body.sx .teacher-hero.sx-teal::before{
+  content:"";position:absolute;z-index:-1;width:260px;height:260px;border-radius:50%;
+  right:-90px;top:-120px;background:radial-gradient(circle, rgba(95,224,208,.22), rgba(95,224,208,0) 65%);
+}
+html.sx body.sx .sx-wave{ position:absolute;left:0;right:0;bottom:0;width:100%;height:60px;pointer-events:none;z-index:-1 }
+html.sx body.sx .sx-hero-top{ display:flex;align-items:center;gap:12px;position:relative }
+html.sx body.sx .sx-hero-top > :first-child{ flex:1;min-width:0 }
+
+html.sx body.sx .journey-continue *,
+html.sx body.sx .journey-focus-head *,
+html.sx body.sx .journey-unit-hero *{ color:inherit }
+html.sx body.sx .journey-continue .journey-kicker,
+html.sx body.sx .journey-focus-head-copy > span,
+html.sx body.sx .journey-unit-hero .journey-kicker{
+  display:inline-flex !important;align-items:center;gap:6px;
+  border:1px solid rgba(255,255,255,.38) !important;background:rgba(255,255,255,.09) !important;
+  color:#fff !important;border-radius:999px !important;padding:5px 12px !important;
+  font-size:12.5px !important;font-weight:700 !important;letter-spacing:.01em !important;text-transform:none !important;
+}
+html.sx body.sx .journey-continue h2,
+html.sx body.sx .journey-focus-head h1,
+html.sx body.sx .journey-unit-hero h1{
+  color:#fff !important;margin:10px 0 4px !important;font-size:25px !important;line-height:1.3 !important;font-weight:800 !important;text-wrap:balance;
+}
+html.sx body.sx .journey-continue p,
+html.sx body.sx .journey-focus-head p,
+html.sx body.sx .journey-unit-hero p{ color:rgba(255,255,255,.88) !important;font-size:14px !important;line-height:1.6 !important;margin:0 !important }
+html.sx body.sx .journey-continue p strong{ color:#fff !important;display:block;font-size:15px;margin-bottom:2px }
+html.sx body.sx .journey-continue .motivation-time{
+  display:inline-flex !important;margin-top:10px !important;background:rgba(95,224,208,.18) !important;color:#bdf5ec !important;
+  border:0 !important;border-radius:999px !important;padding:4px 11px !important;font-size:12px !important;font-weight:700 !important;
+}
+/* the ring replaces the thin bar */
+html.sx body.sx .journey-continue .journey-mini-progress,
+html.sx body.sx .journey-continue-copy > small,
+html.sx body.sx .journey-focus-head .journey-focus-progress,
+html.sx body.sx .journey-unit-hero .journey-mini-progress{ display:none !important }
+html.sx body.sx .journey-focus-progress-row{ margin-top:10px !important;position:relative;z-index:1 }
+html.sx body.sx .journey-focus-progress-row strong,
+html.sx body.sx .journey-unit-hero small{ color:rgba(255,255,255,.9) !important;font-size:13px !important;font-weight:600 !important }
+
+html.sx body.sx .journey-continue .journey-main-btn{
+  width:100% !important;margin-top:16px !important;position:relative;z-index:1;
+  background:#fff !important;color:var(--sx-teal-2) !important;box-shadow:0 10px 22px -12px rgba(0,0,0,.45) !important;
+}
+html.sx body.sx .journey-continue.celebration .journey-main-btn{ margin-top:14px !important }
+
+/* ring */
+html.sx body.sx .sx-ring{ position:relative;width:104px;height:104px;flex:none }
+html.sx body.sx .sx-ring svg{ width:100%;height:100%;transform:rotate(-90deg) }
+html.sx body.sx .sx-ring-v{ position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#fff }
+html.sx body.sx .sx-ring-v b{ font-size:27px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums }
+html.sx body.sx .sx-ring-v > span{ font-size:11px;opacity:.9;margin-top:4px }
+html.sx body.sx .sx-hero-art{ width:40%;max-width:170px;height:auto;flex:none }
+
+/* =====================================================================
+   HOME
+   ===================================================================== */
+html.sx body.sx .student-home-clean{ max-width:none !important;display:flex !important;flex-direction:column !important;gap:14px !important;padding:0 !important }
+html.sx body.sx .student-home-clean > *{ margin:0 !important }
+html.sx body.sx .student-welcome{
+  display:flex !important;align-items:center !important;gap:10px !important;padding:2px 2px 0 !important;
+}
+html.sx body.sx .student-welcome > div:first-child{ flex:1;min-width:0 }
+html.sx body.sx .student-welcome h1{
+  font-size:clamp(28px,7.6vw,34px) !important;font-weight:800 !important;color:var(--sx-ink) !important;letter-spacing:-.6px !important;margin:0 0 2px !important;
+}
+html.sx body.sx .student-welcome p{
+  display:inline-flex !important;align-items:center;gap:6px;margin-top:6px !important;
+  background:var(--sx-green-pill) !important;color:#123a2a !important;font-weight:700 !important;font-size:12.5px !important;
+  padding:6px 12px !important;border-radius:999px !important;
+}
+html.sx body.sx .sx-welcome-art{ width:112px;flex:none }
+html.sx body.sx .sx-welcome-art svg{ width:100%;height:auto;display:block }
+html.sx body.sx .sx-welcome-art .sx-lf{ display:none }
+
+/* motivation strip → Athari stat strip */
+html.sx body.sx #stepupMotivation.motivation-panel{
+  display:grid !important;grid-template-columns:1fr 1.2fr 1fr !important;grid-template-areas:none !important;
+  gap:8px !important;padding:8px !important;border:0 !important;border-radius:20px !important;
+  background:#fff !important;box-shadow:var(--sx-shadow) !important;min-height:0 !important;
+}
+html.sx body.sx #stepupMotivation > *{
+  grid-area:auto !important;border-radius:14px !important;padding:10px 9px !important;min-width:0 !important;
+  display:flex !important;flex-direction:column !important;align-items:flex-start !important;justify-content:center !important;gap:4px !important;
+  margin:0 !important;border:0 !important;box-shadow:none !important;
+}
+html.sx body.sx #stepupMotivation .motivation-level{ background:#eaf2fd !important }
+html.sx body.sx #stepupMotivation .motivation-xp{ background:#efeefc !important }
+html.sx body.sx #stepupMotivation .motivation-streak{ background:#e9f6ef !important;flex-direction:row !important;align-items:center !important }
+html.sx body.sx #stepupMotivation .motivation-level-no{
+  background:var(--sx-blue) !important;color:#fff !important;border-radius:999px !important;padding:3px 9px !important;
+  font-size:11px !important;font-weight:800 !important;min-width:0 !important;
+}
+html.sx body.sx #stepupMotivation .motivation-level div{ display:flex !important;flex-direction:column !important;align-items:flex-start !important;gap:0 !important }
+html.sx body.sx #stepupMotivation b{ font-size:15px !important;font-weight:800 !important;color:var(--sx-ink) !important;white-space:nowrap }
+html.sx body.sx #stepupMotivation small{ font-size:11px !important;color:var(--sx-muted) !important;white-space:normal !important;line-height:1.3 !important;display:block !important }
+html.sx body.sx #stepupMotivation .motivation-xp-line{ display:flex !important;flex-direction:column !important;gap:1px !important;width:100% }
+html.sx body.sx #stepupMotivation .motivation-xp-line span{ font-size:11px !important;color:#6a5fd0 !important;font-weight:700 !important }
+html.sx body.sx #stepupMotivation .motivation-xp-line strong{ font-size:12.5px !important;color:var(--sx-ink) !important;font-weight:800 !important;line-height:1.3 }
+html.sx body.sx #stepupMotivation .motivation-xp-track{ width:100% !important;height:7px !important;background:#dcdaf7 !important;border-radius:999px !important;overflow:hidden !important;margin-top:4px !important;display:block !important }
+html.sx body.sx #stepupMotivation .motivation-xp-track i{ display:block !important;height:100% !important;background:linear-gradient(90deg,#8f7ee8,#6a5fd0) !important;border-radius:999px !important }
+html.sx body.sx #stepupMotivation .motivation-streak-mark{
+  width:34px !important;height:34px !important;border-radius:50% !important;display:grid !important;place-items:center !important;flex:none !important;
+  background:#cfeedd !important;color:var(--sx-green) !important;font-weight:800 !important;border:0 !important;
+}
+html.sx body.sx #stepupMotivation .motivation-streak > div{ min-width:0 }
+@media (max-width:380px){
+  html.sx body.sx #stepupMotivation.motivation-panel{ grid-template-columns:1fr 1fr !important }
+  html.sx body.sx #stepupMotivation .motivation-xp{ grid-column:1 / -1 !important; order:3 }
+}
+
+/* shortcut tiles */
+html.sx body.sx .sx-tiles-wrap{ display:flex;flex-direction:column;gap:10px }
+html.sx body.sx .sx-tiles{ display:grid;grid-template-columns:1fr 1fr;gap:10px }
+html.sx body.sx .sx-tile{
+  position:relative;display:flex;align-items:center;gap:8px;min-height:92px;width:100%;text-align:start;
+  border:0;border-radius:18px;padding:12px 10px 12px 14px;cursor:pointer;color:var(--sx-ink);
+  transition:transform .2s var(--sx-ease), box-shadow .25s ease;
+}
+html.sx body.sx .sx-tile:hover{ transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(20,50,90,.45) }
+html.sx body.sx .sx-tile-txt{ flex:1;min-width:0;display:flex;flex-direction:column;gap:4px }
+html.sx body.sx .sx-tile-txt b{ font-size:15px;font-weight:800;line-height:1.3 }
+html.sx body.sx .sx-tile-txt small{ font-size:12px;color:var(--sx-muted);line-height:1.35 }
+html.sx body.sx .sx-tile-art{ width:54px;height:54px;flex:none;transition:transform .35s var(--sx-ease) }
+html.sx body.sx .sx-tile:hover .sx-tile-art{ transform:translateY(-3px) rotate(-3deg) }
+html.sx body.sx .tone-lav{ background:var(--sx-lav) !important }
+html.sx body.sx .tone-cream{ background:var(--sx-cream) !important }
+html.sx body.sx .tone-pink{ background:var(--sx-pink) !important }
+html.sx body.sx .tone-sky{ background:var(--sx-sky) !important }
+html.sx body.sx .tone-mint{ background:var(--sx-mint) !important }
+html.sx body.sx .tone-mute{ background:#f1f4f8 !important }
+
+/* =====================================================================
+   PAGE BANNERS (My Journey / My Progress)
+   ===================================================================== */
+html.sx body.sx .sx-banner{
+  position:relative !important;display:flex !important;flex-direction:column !important;justify-content:center !important;
+  min-height:118px;padding:18px 118px 18px 18px !important;border-radius:24px !important;margin:0 !important;
+  background:linear-gradient(135deg,#ffffff 0%,#f3f8ff 100%) !important;box-shadow:var(--sx-shadow) !important;overflow:hidden;
+}
+html.sx body.sx .sx-banner h1{ font-size:24px !important;font-weight:800 !important;margin:6px 0 4px !important;line-height:1.25 !important;color:var(--sx-ink) !important }
+html.sx body.sx .sx-banner p{ color:var(--sx-muted) !important;font-size:13.5px !important;margin:0 !important;line-height:1.55 !important }
+html.sx body.sx .sx-banner .journey-kicker, html.sx body.sx .sx-banner .section-kicker{
+  align-self:flex-start;background:var(--sx-green-pill) !important;color:#123a2a !important;border-radius:999px !important;padding:4px 11px !important;font-size:12px !important;
+}
+html.sx body.sx .sx-banner-art{ position:absolute;right:14px;top:50%;transform:translateY(-50%);width:92px;height:92px;
+  border-radius:24px;background:var(--sx-sky);display:grid;place-items:center }
+html.sx body.sx .sx-banner-art svg{ width:70px;height:70px }
+
+/* =====================================================================
+   MY JOURNEY — unit tiles
+   ===================================================================== */
+html.sx body.sx .journey-unit-grid{ display:grid !important;grid-template-columns:1fr !important;gap:10px !important;margin:0 !important }
+html.sx body.sx .journey-unit-card{
+  position:relative !important;display:block !important;width:100% !important;text-align:start !important;
+  border:0 !important;border-radius:20px !important;padding:14px 92px 14px 16px !important;min-height:0 !important;
+  box-shadow:none !important;color:var(--sx-ink) !important;cursor:pointer;
+  transition:transform .22s var(--sx-ease), box-shadow .25s ease !important;
+}
+html.sx body.sx .journey-unit-card:not(.locked):hover{ transform:translateY(-2px) !important;box-shadow:0 14px 26px -18px rgba(20,50,90,.5) !important }
+html.sx body.sx .journey-unit-card.locked{ opacity:1 !important;cursor:default }
+html.sx body.sx .journey-unit-card.locked h3, html.sx body.sx .journey-unit-card.locked p{ color:#8a95a8 !important }
+html.sx body.sx .journey-unit-top{ display:flex !important;align-items:center !important;gap:8px !important;margin:0 0 6px !important }
+html.sx body.sx .journey-unit-num{
+  background:rgba(255,255,255,.85) !important;color:var(--sx-ink) !important;border-radius:10px !important;
+  padding:3px 8px !important;font-size:12px !important;font-weight:800 !important;border:0 !important;
+}
+html.sx body.sx .journey-status{
+  border-radius:999px !important;padding:3px 10px !important;font-size:11.5px !important;font-weight:700 !important;border:0 !important;
+  background:#e2f4e9 !important;color:var(--sx-green) !important;
+}
+html.sx body.sx .journey-unit-card.locked .journey-status{ background:#e6ebf2 !important;color:#6a778c !important }
+html.sx body.sx .journey-unit-card.complete .journey-status{ background:var(--sx-green) !important;color:#fff !important }
+html.sx body.sx .journey-unit-card h3{ font-size:17px !important;font-weight:800 !important;margin:0 0 3px !important;line-height:1.35 !important }
+html.sx body.sx .journey-unit-card p{ font-size:12.5px !important;color:var(--sx-muted) !important;margin:0 !important;line-height:1.5 !important }
+html.sx body.sx .journey-unit-card .journey-mini-progress{
+  height:7px !important;margin:12px 0 6px !important;border-radius:999px !important;background:rgba(255,255,255,.9) !important;overflow:hidden !important;
+}
+html.sx body.sx .journey-unit-card .journey-mini-progress i{ display:block;height:100%;background:linear-gradient(90deg,#2a6ff0,#17a36f) !important;border-radius:999px !important }
+html.sx body.sx .journey-unit-card.locked .journey-mini-progress{ display:none !important }
+html.sx body.sx .journey-unit-foot{ display:flex !important;justify-content:space-between !important;font-size:12px !important;color:var(--sx-muted) !important;margin-top:4px }
+html.sx body.sx .journey-unit-foot strong{ color:var(--sx-blue) !important;font-weight:800 !important }
+html.sx body.sx .sx-unit-art{ position:absolute;right:14px;top:50%;transform:translateY(-50%);width:66px;height:66px }
+html.sx body.sx .sx-unit-art svg{ width:100%;height:100% }
+html.sx body.sx .journey-unit-card.locked .sx-unit-art{ width:48px;height:48px;right:20px;opacity:.9 }
+html.sx body.sx .journey-extra{ margin:0 !important }
+html.sx body.sx .journey-extra .journey-link-btn{
+  width:100% !important;display:flex !important;justify-content:space-between !important;align-items:center !important;gap:8px;
+  border-radius:18px !important;padding:14px 16px !important;background:#fff !important;border:1.5px dashed #b9cdf1 !important;
+  color:var(--sx-ink) !important;font-weight:700 !important;text-align:start;
+}
+html.sx body.sx .journey-extra .journey-link-btn span{ color:var(--sx-blue) !important;font-weight:800 }
+
+/* =====================================================================
+   UNIT PAGE
+   ===================================================================== */
+html.sx body.sx .journey-focus-shell{ display:flex !important;flex-direction:column !important;gap:14px !important;margin:0 !important }
+html.sx body.sx .journey-focus-shell > *{ margin:0 !important }
+html.sx body.sx .journey-focus-head{ padding-bottom:18px !important }
+html.sx body.sx .journey-focus-roadmap{
+  display:flex !important;justify-content:space-between !important;align-items:flex-start !important;padding:14px 12px !important;position:relative !important;
+}
+html.sx body.sx .journey-focus-roadmap::before{
+  content:"" !important;position:absolute !important;left:38px !important;right:38px !important;top:31px !important;height:3px !important;
+  background:#e3eaf3 !important;border-radius:3px !important;display:block !important;
+}
+html.sx body.sx .journey-focus-stage{ position:relative;z-index:1;display:flex !important;flex-direction:column !important;align-items:center !important;gap:6px !important;flex:1 !important;min-width:0 }
+html.sx body.sx .journey-focus-stage::before, html.sx body.sx .journey-focus-stage::after{ display:none !important }
+html.sx body.sx .journey-focus-dot{
+  width:36px !important;height:36px !important;border-radius:50% !important;display:grid !important;place-items:center !important;
+  background:#fff !important;border:2px solid #d6e1ef !important;color:#7a879b !important;font-weight:800 !important;font-size:14px !important;box-shadow:none !important;
+}
+html.sx body.sx .journey-focus-stage.current .journey-focus-dot{
+  background:var(--sx-blue) !important;border-color:var(--sx-blue) !important;color:#fff !important;
+  box-shadow:0 0 0 6px rgba(29,95,214,.14) !important;
+}
+html.sx body.sx .journey-focus-stage.done .journey-focus-dot{ background:var(--sx-green) !important;border-color:var(--sx-green) !important;color:#fff !important }
+html.sx body.sx .journey-focus-stage small{ font-size:11.5px !important;font-weight:700 !important;color:var(--sx-muted) !important }
+html.sx body.sx .journey-focus-stage.current small{ color:var(--sx-blue) !important }
+html.sx body.sx .journey-focus-stage.done small{ color:var(--sx-green) !important }
+
+html.sx body.sx .journey-focus-task{ position:relative !important;padding:18px 18px 18px !important;overflow:hidden }
+html.sx body.sx .journey-focus-task-top{ display:flex !important;align-items:center !important;gap:8px !important;padding-right:74px }
+html.sx body.sx .journey-focus-eyebrow{
+  background:#e6effd !important;color:var(--sx-blue) !important;border-radius:999px !important;padding:4px 11px !important;
+  font-size:12px !important;font-weight:800 !important;letter-spacing:.02em !important;text-transform:none !important;
+}
+html.sx body.sx .journey-focus-time{ background:#f1f4f8 !important;color:var(--sx-muted) !important;border-radius:999px !important;padding:4px 10px !important;font-size:12px !important;font-weight:700 !important;border:0 !important }
+html.sx body.sx .journey-focus-task h2{ font-size:21px !important;font-weight:800 !important;line-height:1.35 !important;margin:12px 74px 4px 0 !important;color:var(--sx-ink) !important }
+html.sx body.sx .journey-focus-task p{ color:var(--sx-muted) !important;margin:0 0 16px !important;font-size:14px !important }
+html.sx body.sx .journey-focus-start{ width:100% !important }
+html.sx body.sx .sx-task-art{ position:absolute;right:14px;top:14px;width:64px;height:64px;border-radius:18px;background:var(--sx-cream);display:grid;place-items:center }
+html.sx body.sx .sx-task-art svg{ width:48px;height:48px }
+html.sx body.sx .journey-focus-task.complete .sx-task-art{ background:var(--sx-mint) }
+
+/* original (non-focus) unit layout fallbacks */
+html.sx body.sx .journey-subtask, html.sx body.sx .journey-stop{
+  border:0 !important;border-radius:16px !important;background:#fff !important;box-shadow:var(--sx-shadow) !important;
+}
+html.sx body.sx .journey-stop.done, html.sx body.sx .journey-subtask.done{ background:var(--sx-mint) !important }
+html.sx body.sx .journey-stop.current{ box-shadow:0 0 0 2px var(--sx-blue) inset, var(--sx-shadow) !important }
+
+/* breadcrumb */
+html.sx body.sx .journey-breadcrumb{ display:flex !important;align-items:center !important;gap:8px !important;font-size:13.5px !important;margin:0 !important;color:var(--sx-muted) }
+html.sx body.sx .journey-breadcrumb button{
+  display:inline-flex;align-items:center;gap:6px;background:#fff !important;border:0 !important;border-radius:999px !important;
+  padding:7px 13px !important;color:var(--sx-blue) !important;font-weight:700 !important;box-shadow:var(--sx-shadow) !important;cursor:pointer;
+}
+html.sx body.sx .journey-breadcrumb button::before{ content:"‹";font-size:18px;line-height:0;margin-top:-2px }
+html.sx body.sx .journey-breadcrumb b{ color:var(--sx-ink) !important;font-weight:800 }
+
+/* =====================================================================
+   QUESTION / CONTENT / FEEDBACK / RESULT
+   ===================================================================== */
+html.sx body.sx .journey-question-card, html.sx body.sx .journey-content-card{ padding:18px !important }
+html.sx body.sx .journey-question-meta{ display:flex !important;justify-content:space-between !important;align-items:center !important;margin-bottom:6px }
+html.sx body.sx .journey-question-meta span{
+  background:var(--sx-lav) !important;color:#5a4fc4 !important;border-radius:999px !important;padding:4px 12px !important;font-size:12px !important;font-weight:800 !important;
+  letter-spacing:.01em !important;text-transform:none !important;
+}
+html.sx body.sx .journey-question-meta b{ background:#f1f4f8;border-radius:999px;padding:4px 10px;font-size:12px;color:var(--sx-muted) }
+html.sx body.sx .journey-question-card h2{ font-size:21px !important;font-weight:800 !important;line-height:1.5 !important;margin:10px 0 16px !important;color:var(--sx-ink) !important }
+html.sx body.sx .journey-options{ display:flex !important;flex-direction:column !important;gap:10px !important }
+html.sx body.sx .journey-options button{
+  display:flex !important;align-items:center !important;gap:12px !important;width:100% !important;text-align:start !important;
+  min-height:58px !important;padding:10px 14px !important;border-radius:16px !important;
+  background:#f6f9fd !important;border:1.5px solid #e3eaf3 !important;color:var(--sx-ink) !important;box-shadow:none !important;cursor:pointer;
+  transition:transform .15s var(--sx-ease), border-color .2s ease, background .2s ease !important;
+}
+html.sx body.sx .journey-options button:hover{ border-color:#9fbdf0 !important;background:#eef4fd !important }
+html.sx body.sx .journey-options button > span{
+  width:34px !important;height:34px !important;border-radius:11px !important;display:grid !important;place-items:center !important;flex:none !important;
+  background:#fff !important;color:var(--sx-blue) !important;font-weight:800 !important;border:1.5px solid #d6e1ef !important;
+}
+html.sx body.sx .journey-options button > b{ font-size:16.5px !important;font-weight:700 !important }
+
+html.sx body.sx .journey-content-card h2{ font-size:22px !important;font-weight:800 !important;margin:10px 0 10px !important }
+html.sx body.sx .journey-content-card .journey-kicker{ background:var(--sx-mint) !important;color:#11452e !important;border-radius:999px !important;padding:4px 12px !important;display:inline-block }
+html.sx body.sx .journey-passage{
+  background:linear-gradient(170deg,#f7fbff 0%,#e9f3fb 100%) !important;border:0 !important;border-radius:16px !important;
+  padding:16px !important;font-size:16px !important;line-height:1.85 !important;color:#2e3b50 !important;margin:0 0 16px !important;
+}
+html.sx body.sx .journey-content-card .journey-main-btn, html.sx body.sx .journey-content-card .journey-audio-btn{ width:100% !important }
+html.sx body.sx .journey-audio-btn{
+  border-radius:15px !important;min-height:50px;background:var(--sx-lav) !important;color:#5a4fc4 !important;border:0 !important;font-weight:800 !important;margin-bottom:10px !important;
+}
+html.sx body.sx .journey-strategy{ background:var(--sx-cream) !important;border:0 !important;border-radius:14px !important;color:#6b4a10 !important }
+
+html.sx body.sx .journey-feedback{ text-align:center !important;padding:22px 18px !important }
+html.sx body.sx .journey-feedback > span{
+  width:96px !important;height:96px !important;margin:0 auto 8px !important;border-radius:28px !important;display:grid !important;place-items:center !important;
+  background:var(--sx-mint) !important;font-size:0 !important;color:transparent !important;border:0 !important;box-shadow:none !important;
+}
+html.sx body.sx .journey-feedback.support > span{ background:var(--sx-cream) !important }
+html.sx body.sx .journey-feedback > span svg{ width:66px;height:66px }
+html.sx body.sx .journey-feedback h2{ font-size:22px !important;font-weight:800 !important;margin:6px 0 !important }
+html.sx body.sx .journey-feedback p{ color:var(--sx-muted) !important;line-height:1.7 !important;margin:0 0 16px !important;unicode-bidi:plaintext }
+html.sx body.sx .journey-feedback .journey-main-btn{ width:100% !important }
+
+html.sx body.sx .journey-result{ text-align:center !important;padding:14px 18px 20px !important }
+html.sx body.sx .sx-scene{ width:190px;height:auto;display:block;margin:0 auto -6px }
+html.sx body.sx .journey-result-score{
+  font-size:44px !important;font-weight:800 !important;color:var(--sx-ink) !important;line-height:1 !important;margin:6px 0 4px !important;background:none !important;
+  width:auto !important;height:auto !important;border:0 !important;box-shadow:none !important;
+}
+html.sx body.sx .journey-result-score span{ font-size:22px !important;color:var(--sx-muted) !important }
+html.sx body.sx .journey-result h2{ font-size:22px !important;font-weight:800 !important;margin:4px 0 !important }
+html.sx body.sx .journey-result p{ color:var(--sx-muted) !important;line-height:1.7 !important }
+html.sx body.sx .journey-result-actions{ display:flex !important;flex-direction:column !important;gap:10px !important;margin-top:14px !important }
+html.sx body.sx .journey-result-actions > *{ width:100% !important;min-height:48px }
+
+/* =====================================================================
+   PROGRESS
+   ===================================================================== */
+html.sx body.sx .student-page-head:not(.sx-banner){ margin:0 !important }
+html.sx body.sx .journey-progress-card{ padding:16px !important }
+html.sx body.sx .journey-progress-head{ display:flex !important;align-items:center !important;justify-content:space-between !important;gap:10px !important }
+html.sx body.sx .journey-progress-head h2{ font-size:20px !important;font-weight:800 !important;margin:4px 0 0 !important }
+html.sx body.sx .journey-progress-units{ display:grid !important;grid-template-columns:repeat(auto-fill,minmax(130px,1fr)) !important;gap:8px !important;margin-top:12px !important }
+html.sx body.sx .journey-progress-units > div{
+  border:0 !important;border-radius:16px !important;padding:12px !important;background:var(--sx-sky) !important;box-shadow:none !important;
+  display:flex;flex-direction:column;gap:4px;
+}
+html.sx body.sx .journey-progress-units > div:nth-child(5n+2){ background:var(--sx-lav) !important }
+html.sx body.sx .journey-progress-units > div:nth-child(5n+3){ background:var(--sx-cream) !important }
+html.sx body.sx .journey-progress-units > div:nth-child(5n+4){ background:var(--sx-pink) !important }
+html.sx body.sx .journey-progress-units > div:nth-child(5n+5){ background:var(--sx-mint) !important }
+html.sx body.sx .journey-progress-units span{ font-size:12.5px !important;color:var(--sx-muted) !important;font-weight:700 }
+html.sx body.sx .journey-progress-units b{ font-size:24px !important;font-weight:800 !important;color:var(--sx-ink) !important }
+html.sx body.sx .journey-progress-units i{ display:block !important;height:7px !important;border-radius:999px !important;background:rgba(255,255,255,.9) !important;overflow:hidden !important }
+html.sx body.sx .journey-progress-units em{ display:block !important;height:100% !important;background:linear-gradient(90deg,#2a6ff0,#17a36f) !important;border-radius:999px !important }
+html.sx body.sx .student-view details.card{ padding:16px !important }
+html.sx body.sx .student-view details.card > summary{ list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:16px }
+html.sx body.sx .student-view details.card > summary::-webkit-details-marker{ display:none }
+html.sx body.sx .student-view details.card > summary::after{ content:"›";font-size:22px;color:var(--sx-blue);transition:transform .25s var(--sx-ease) }
+html.sx body.sx .student-view details.card[open] > summary::after{ transform:rotate(90deg) }
+html.sx body.sx .student-view details .card{ box-shadow:none !important;background:#f6f9fd !important }
+html.sx body.sx .student-view .grid-2, html.sx body.sx .student-view .grid-3, html.sx body.sx .student-view .grid-4{ grid-template-columns:1fr !important }
+html.sx body.sx .bar, html.sx body.sx .progress-track{ height:8px !important;background:#e6edf5 !important;border-radius:999px !important }
+html.sx body.sx .fill, html.sx body.sx .progress-value{ background:linear-gradient(90deg,#2a6ff0,#17a36f) !important;border-radius:999px !important }
+html.sx body.sx .result-badge{ border-radius:999px !important;font-weight:800 !important }
+html.sx body.sx .result-badge.mastered{ background:#e2f4e9 !important;color:var(--sx-green) !important }
+html.sx body.sx .result-badge.developing{ background:#fdf1d8 !important;color:var(--sx-amber) !important }
+html.sx body.sx .result-badge.needs{ background:#fdecef !important;color:#c13850 !important }
+html.sx body.sx .notice{ border-radius:14px !important;border-left:0 !important;background:#eaf2fd !important;color:#23406b !important }
+html.sx body.sx .notice.success{ background:#e2f4e9 !important;color:#11452e !important }
+html.sx body.sx .notice.error{ background:#fdecef !important;color:#8c2335 !important }
+
+/* =====================================================================
+   ASSISTANT
+   ===================================================================== */
+html.sx body.sx .student-assistant-hub{ display:flex !important;flex-direction:column !important;gap:12px !important }
+html.sx body.sx .assistant-main-card{
+  position:relative !important;overflow:hidden !important;isolation:isolate;display:flex !important;flex-direction:column !important;gap:14px !important;
+  background:linear-gradient(120deg,#5b4fc9 0%,#3f3aa8 55%,#2b2f86 100%) !important;color:#fff !important;border:0 !important;
+  border-radius:26px !important;padding:18px 18px 20px !important;box-shadow:0 14px 32px -14px rgba(43,47,134,.6) !important;
+}
+html.sx body.sx .assistant-main-card > div:first-child{ padding-right:40% }
+html.sx body.sx .assistant-main-card .section-kicker{
+  display:inline-flex;border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.1);color:#fff !important;border-radius:999px;padding:5px 12px;font-size:12.5px !important;
+}
+html.sx body.sx .assistant-main-card h1{ color:#fff !important;font-size:27px !important;font-weight:800 !important;margin:10px 0 6px !important }
+html.sx body.sx .assistant-main-card p{ color:rgba(255,255,255,.88) !important;font-size:14px !important;line-height:1.65 !important;margin:0 !important }
+html.sx body.sx .assistant-main-card .journey-main-btn{ width:100% !important;background:#fff !important;color:#3f3aa8 !important;position:relative;z-index:1 }
+html.sx body.sx .sx-hero-art-wrap{ position:absolute;right:10px;top:22px;width:38%;max-width:170px;z-index:0 }
+html.sx body.sx .sx-hero-art-wrap svg{ width:100%;height:auto;display:block }
+html.sx body.sx .assistant-main-card .sx-wave path:last-child{ fill:rgba(180,170,255,.16) }
+html.sx body.sx .assistant-mini-tools{ display:grid !important;grid-template-columns:1fr 1fr !important;gap:10px !important }
+html.sx body.sx .assistant-mini-tools > button{
+  display:flex !important;flex-direction:column !important;align-items:flex-start !important;gap:6px !important;text-align:start !important;
+  border:0 !important;border-radius:18px !important;padding:14px !important;box-shadow:none !important;color:var(--sx-ink) !important;cursor:pointer;
+  transition:transform .2s var(--sx-ease), box-shadow .25s ease !important;min-height:0 !important;
+}
+html.sx body.sx .assistant-mini-tools > button:hover{ transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(20,50,90,.45) !important }
+html.sx body.sx .assistant-mini-tools > button > span{ width:54px !important;height:54px !important;font-size:0 !important;display:block !important;background:none !important;border:0 !important;margin:0 !important;padding:0 !important }
+html.sx body.sx .assistant-mini-tools > button > span svg{ width:54px;height:54px }
+html.sx body.sx .assistant-mini-tools b{ font-size:15px !important;font-weight:800 !important }
+html.sx body.sx .assistant-mini-tools small{ font-size:12px !important;color:var(--sx-muted) !important;line-height:1.45 !important }
+
+/* =====================================================================
+   PROFILE, LIBRARY & generic student pages
+   ===================================================================== */
+html.sx body.sx .student-profile-clean{ display:grid !important;grid-template-columns:60px minmax(0,1fr) auto !important;gap:14px !important;align-items:center !important;padding:16px !important }
+html.sx body.sx .student-profile-avatar{
+  width:60px !important;height:60px !important;border-radius:20px !important;font-size:26px !important;font-weight:800 !important;
+  background:linear-gradient(145deg,var(--sx-teal-1),var(--sx-teal-3)) !important;color:#fff !important;
+}
+html.sx body.sx .student-profile-main strong{ color:var(--sx-ink) !important;font-size:19px !important;font-weight:800 !important }
+html.sx body.sx .student-profile-main span{ color:var(--sx-muted) !important;font-size:13px !important }
+html.sx body.sx .student-profile-clean .btn{ grid-column:auto !important;width:auto !important }
+html.sx body.sx .student-profile-details{ display:grid !important;grid-template-columns:repeat(3,1fr) !important;gap:8px !important;padding:8px !important }
+html.sx body.sx .student-profile-details > div{ border:0 !important;border-radius:14px !important;padding:12px !important;background:var(--sx-sky) !important;min-width:0 }
+html.sx body.sx .student-profile-details > div:nth-child(2){ background:var(--sx-lav) !important }
+html.sx body.sx .student-profile-details > div:nth-child(3){ background:var(--sx-mint) !important }
+html.sx body.sx .student-profile-details span{ color:var(--sx-muted) !important;font-size:12px !important }
+html.sx body.sx .student-profile-details strong{ color:var(--sx-ink) !important;font-size:15px !important;font-weight:800 !important;overflow-wrap:anywhere }
+html.sx body.sx .student-logout-btn{
+  width:100% !important;background:#fff !important;color:#c13850 !important;border:1.5px solid #f2c1ca !important;border-radius:15px !important;min-height:48px !important;
+}
+@media (max-width:420px){
+  html.sx body.sx .student-profile-clean{ grid-template-columns:54px minmax(0,1fr) !important }
+  html.sx body.sx .student-profile-clean .btn{ grid-column:1 / -1 !important;width:100% !important }
+}
+
+html.sx body.sx .mini-challenge-card{
+  position:relative !important;overflow:hidden !important;isolation:isolate;display:flex !important;flex-direction:column !important;gap:12px !important;
+  background:linear-gradient(115deg,var(--sx-teal-1) 0%,var(--sx-teal-2) 55%,var(--sx-teal-3) 100%) !important;color:#fff !important;
+  border:0 !important;border-radius:24px !important;padding:18px 18px 20px !important;box-shadow:0 14px 32px -14px rgba(10,63,74,.6) !important;
+}
+html.sx body.sx .mini-challenge-card::before, html.sx body.sx .mini-challenge-card::after{ display:none !important }
+html.sx body.sx .mini-challenge-card *{ color:#fff }
+html.sx body.sx .mini-challenge-card .section-kicker{
+  display:inline-flex !important;border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.1);border-radius:999px;padding:4px 12px;color:#fff !important;font-size:12.5px !important;
+}
+html.sx body.sx .mini-challenge-card h2{ color:#fff !important;font-size:23px !important;font-weight:800 !important;margin:10px 0 4px !important }
+html.sx body.sx .mini-challenge-card p{ color:rgba(255,255,255,.88) !important;margin:0 !important;font-size:13.5px !important }
+html.sx body.sx .mini-challenge-latest{ display:inline-flex;margin-top:8px;background:rgba(95,224,208,.2) !important;color:#bdf5ec !important;border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px }
+html.sx body.sx .mini-challenge-actions{ display:flex !important;flex-direction:column !important;align-items:stretch !important;gap:10px !important;position:relative;z-index:1;width:100% }
+html.sx body.sx .mini-challenge-copy{ text-align:start !important }
+html.sx body.sx .three-pass-mini{ display:flex !important;gap:6px !important;flex-wrap:wrap;justify-content:flex-start !important }
+html.sx body.sx .three-pass-mini span{ background:rgba(255,255,255,.12) !important;border:1px solid rgba(255,255,255,.25) !important;color:#fff !important;border-radius:999px !important;padding:4px 10px !important;font-size:12px !important;font-weight:700 !important }
+html.sx body.sx .mini-challenge-card .btn-primary{ width:100% !important;background:#fff !important;color:var(--sx-teal-2) !important;min-height:50px !important }
+html.sx body.sx .student-view .unit-card{ border-radius:22px !important;padding:16px !important }
+html.sx body.sx .student-view .unit-card.locked{ background:#f4f7fb !important;box-shadow:none !important;opacity:1 !important }
+html.sx body.sx .student-view .unit-card.locked h3, html.sx body.sx .student-view .unit-card.locked p{ color:#8a95a8 !important }
+html.sx body.sx .student-view .unit-card h3{ font-size:18px !important;font-weight:800 !important;margin:10px 0 8px !important }
+html.sx body.sx .student-view .training-card{ border:0 !important;background:#f6f9fd !important;border-radius:16px !important;padding:14px !important;flex-direction:column !important;align-items:stretch !important;gap:10px !important }
+html.sx body.sx .student-view .training-card h4{ font-size:15px !important;font-weight:800 !important }
+html.sx body.sx .student-view .training-card .btn{ width:100% }
+html.sx body.sx .pill{ border-radius:999px !important;font-weight:700 !important;font-size:12px !important;padding:4px 10px !important }
+html.sx body.sx .pill.ok{ background:#e2f4e9 !important;color:var(--sx-green) !important }
+html.sx body.sx .pill.warn{ background:#fdf1d8 !important;color:var(--sx-amber) !important }
+html.sx body.sx .student-page-head h1{ font-size:26px !important;font-weight:800 !important }
+
+/* =====================================================================
+   ENTRY — landing & class join
+   ===================================================================== */
+html.sx body.sx .auth-shell{ max-width:560px !important;margin:0 auto !important;padding:18px 14px 40px !important }
+html.sx body.sx .auth-shell > .card.sx-auth-card{
+  background:#fff !important;border:0 !important;border-radius:28px !important;padding:12px 20px 22px !important;
+  box-shadow:var(--sx-shadow-lg) !important;margin:0 !important;max-width:none !important;
+}
+html.sx body.sx .auth-shell > .card.sx-auth-card::before, html.sx body.sx .auth-shell > .card.sx-auth-card::after{ display:none !important }
+html.sx body.sx .sx-auth-banner{
+  position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:8px;
+  background:linear-gradient(115deg,var(--sx-teal-1) 0%,var(--sx-teal-2) 55%,var(--sx-teal-3) 100%);
+  color:#fff;border-radius:22px;padding:18px 16px 22px;margin:0 -8px 18px;
+}
+html.sx body.sx .sx-auth-banner::before{ content:"";position:absolute;z-index:-1;width:240px;height:240px;border-radius:50%;right:-80px;top:-110px;
+  background:radial-gradient(circle, rgba(95,224,208,.24), rgba(95,224,208,0) 65%) }
+html.sx body.sx .sx-auth-banner-copy{ flex:1;min-width:0;position:relative;z-index:1 }
+html.sx body.sx .sx-auth-banner .sx-hero-art{ width:38%;max-width:160px;position:relative;z-index:1 }
+html.sx body.sx .sx-auth-banner .hero-badge{
+  display:inline-flex !important;border:1px solid rgba(255,255,255,.38) !important;background:rgba(255,255,255,.1) !important;color:#fff !important;
+  border-radius:999px !important;padding:5px 12px !important;font-size:12.5px !important;font-weight:700 !important;
+}
+html.sx body.sx .sx-auth-banner .eyebrow{ color:#bdf5ec !important;margin:10px 0 0 !important;font-size:12.5px !important }
+html.sx body.sx .sx-auth-banner h1{ color:#fff !important;font-size:30px !important;font-weight:800 !important;margin:2px 0 2px !important;line-height:1.15 !important;letter-spacing:-.5px }
+html.sx body.sx .sx-auth-banner .hero-subtitle{ color:rgba(255,255,255,.9) !important;font-size:13.5px !important;margin:0 0 6px !important;font-weight:600 }
+html.sx body.sx .sx-auth-banner p.muted{ color:rgba(255,255,255,.82) !important;font-size:13px !important;line-height:1.6 !important;margin:6px 0 0 !important }
+html.sx body.sx .sx-auth-banner .class-badge{
+  display:inline-flex !important;margin-top:10px;background:#fff !important;color:var(--sx-teal-2) !important;border:0 !important;border-radius:999px !important;
+  padding:6px 12px !important;font-weight:800 !important;font-size:13px !important;
+}
+html.sx body.sx .sx-auth-card > h3{ font-size:18px !important;font-weight:800 !important;margin:4px 0 10px !important }
+html.sx body.sx .sx-auth-card .auth-role{ display:grid !important;grid-template-columns:1fr 1fr !important;gap:10px !important }
+html.sx body.sx .sx-auth-card .role-card{
+  position:relative !important;display:flex !important;flex-direction:column !important;align-items:flex-start !important;gap:2px !important;text-align:start !important;
+  border:2px solid transparent !important;border-radius:18px !important;padding:12px 12px 12px !important;min-height:0 !important;
+  box-shadow:none !important;color:var(--sx-ink) !important;cursor:pointer;opacity:1 !important;
+  transition:transform .2s var(--sx-ease), border-color .2s ease, box-shadow .2s ease !important;
+}
+html.sx body.sx .sx-auth-card .role-card *{ color:inherit !important;opacity:1 !important;visibility:visible !important }
+html.sx body.sx .sx-auth-card .role-card:hover{ transform:translateY(-2px) }
+html.sx body.sx .sx-auth-card .role-card.active{ border-color:var(--sx-blue) !important;box-shadow:0 10px 22px -16px rgba(29,95,214,.8) !important }
+html.sx body.sx .sx-auth-card .role-card.active::after{
+  content:"✓";position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--sx-blue);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:800;
+}
+html.sx body.sx .sx-role-art{ width:44px;height:44px;margin-bottom:4px }
+html.sx body.sx .sx-auth-card .role-card strong{ font-size:15.5px !important;font-weight:800 !important;display:block }
+html.sx body.sx .sx-auth-card .role-card small{ font-size:12.5px !important;color:var(--sx-muted) !important }
+html.sx body.sx .sx-auth-card .form-grid{ grid-template-columns:1fr !important;gap:12px !important }
+html.sx body.sx .sx-auth-card .btn-primary{ width:100%;min-height:50px !important;font-size:16px !important;margin-top:14px !important }
+html.sx body.sx .sx-auth-card #authBox > div[style*="display:flex"]{ flex-direction:column }
+html.sx body.sx .sx-auth-card #authBox .btn{ width:100% }
+html.sx body.sx .sx-auth-card .quick-entry-note, html.sx body.sx .sx-auth-card .stepup-pin-note{ color:var(--sx-muted) !important;font-size:12.5px !important;line-height:1.6 }
+html.sx body.sx .sx-auth-card .notice{ margin:0 0 14px !important }
+html.sx body.sx .sx-auth-card > .btn-primary{ width:100% !important }
+
+/* =====================================================================
+   TEACHER / OWNER — same tokens, wide layout kept
+   ===================================================================== */
+html.sx body.sx main.container:not(.student-app-shell){ max-width:1180px !important }
+html.sx body.sx .role-tabs:not(.student-nav){
+  background:rgba(255,255,255,.9) !important;border-radius:18px !important;padding:6px !important;gap:4px !important;
+  box-shadow:var(--sx-shadow) !important;border:0 !important;top:72px !important;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+@media (max-width:700px){
+  html.sx body.sx .role-tabs:not(.student-nav){
+    position:fixed !important;top:auto !important;left:50% !important;right:auto !important;
+    bottom:max(12px, env(safe-area-inset-bottom)) !important;transform:translateX(-50%) !important;
+    width:min(calc(100% - 24px), 560px) !important;margin:0 !important;z-index:60 !important;
+    display:flex !important;flex-wrap:nowrap !important;justify-content:space-between !important;overflow-x:auto !important;
+    padding:6px !important;border-radius:22px !important;height:auto !important;
+    background:rgba(255,255,255,.96) !important;box-shadow:0 18px 40px -18px rgba(20,50,90,.45) !important;
+  }
+  html.sx body.sx .role-tabs:not(.student-nav) .role-tab{ flex:1 0 auto !important;min-height:48px !important;padding:6px 8px !important;font-size:12px !important;white-space:nowrap !important;height:auto !important }
+  html.sx body.sx main.container:not(.student-app-shell){ padding-bottom:110px !important }
+  html.sx body.sx header.appbar .nav-actions > span{ display:none !important }
+}
+html.sx body.sx .role-tabs:not(.student-nav) .role-tab{ border:0 !important;background:transparent !important;border-radius:13px !important;color:var(--sx-ink-2) !important;font-weight:700 !important }
+html.sx body.sx .role-tabs:not(.student-nav) .role-tab.active{ background:#e6effd !important;color:var(--sx-blue) !important }
+html.sx body.sx main.container:not(.student-app-shell) .card{ border:0 !important;border-radius:22px !important;box-shadow:var(--sx-shadow) !important;background:#fff !important }
+html.sx body.sx .teacher-hero.sx-teal .eyebrow{ color:#bdf5ec !important }
+html.sx body.sx .teacher-hero.sx-teal h1{ color:#fff !important }
+html.sx body.sx .teacher-hero.sx-teal p, html.sx body.sx .teacher-hero.sx-teal label{ color:rgba(255,255,255,.88) !important }
+html.sx body.sx .teacher-hero.sx-teal .teacher-hero-meta span{ background:rgba(255,255,255,.12) !important;color:#fff !important;border:1px solid rgba(255,255,255,.25) !important;border-radius:999px !important }
+html.sx body.sx .teacher-hero.sx-teal{ display:grid !important;padding:22px !important }
+html.sx body.sx .teacher-hero.sx-teal .btn-primary{ background:#fff !important;color:var(--sx-teal-2) !important }
+html.sx body.sx .teacher-metric-card{ border:0 !important;border-radius:18px !important;box-shadow:none !important }
+html.sx body.sx .teacher-metric-card strong{ color:var(--sx-ink) !important;font-weight:800 !important }
+html.sx body.sx .teacher-code-pill{ background:var(--sx-green-pill) !important;color:#123a2a !important;border:0 !important;border-radius:999px !important;font-weight:800 !important }
+html.sx body.sx table th{ color:var(--sx-muted) !important }
+html.sx body.sx .kpi .num{ color:var(--sx-ink) !important;font-weight:800 !important }
+
+/* =====================================================================
+   MOTION
+   ===================================================================== */
+html.sx body.sx .sx-in{ animation:sx-rise .52s var(--sx-ease) var(--sx-d,0ms) both }
+@keyframes sx-rise{ from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+html.sx body.sx .sx-ring-fill{ animation:sx-ring 1s var(--sx-ease) .25s both }
+@keyframes sx-ring{ from{stroke-dasharray:0 264} }
+html.sx body.sx .sx-ring{ animation:sx-pop .65s var(--sx-ease) .2s both }
+@keyframes sx-pop{ 0%{opacity:0;transform:scale(.88)} 70%{opacity:1;transform:scale(1.03)} 100%{transform:scale(1)} }
+
+html.sx body.sx .sx-tw{ transform-box:fill-box;transform-origin:center;animation:sx-twinkle 2.8s ease-in-out infinite }
+html.sx body.sx .sx-tw.d2{ animation-delay:1.3s }
+@keyframes sx-twinkle{ 0%,100%{opacity:.35;transform:scale(.7)} 50%{opacity:1;transform:scale(1)} }
+html.sx body.sx .sx-lf{ transform-box:fill-box;transform-origin:50% 100%;animation:sx-sway 5s ease-in-out infinite }
+@keyframes sx-sway{ 0%,100%{transform:rotate(-3deg)} 50%{transform:rotate(3deg)} }
+html.sx body.sx .sx-flag{ transform-box:fill-box;transform-origin:0 100%;animation:sx-flag 3s ease-in-out infinite }
+@keyframes sx-flag{ 0%,100%{transform:skewY(0)} 50%{transform:skewY(-4deg)} }
+html.sx body.sx .sx-step{ transform-box:fill-box;transform-origin:50% 100%;animation:sx-grow .7s var(--sx-ease) both }
+html.sx body.sx .sx-step.s2{ animation-delay:.08s } html.sx body.sx .sx-step.s3{ animation-delay:.16s } html.sx body.sx .sx-step.s4{ animation-delay:.24s }
+@keyframes sx-grow{ from{transform:scaleY(.2);opacity:0} to{transform:none;opacity:1} }
+html.sx body.sx .sx-hop{ animation:sx-hop 3.2s var(--sx-ease) 1s infinite }
+@keyframes sx-hop{ 0%,70%,100%{transform:none} 80%{transform:translateY(-6px)} 90%{transform:none} }
+html.sx body.sx .sx-bob{ animation:sx-bob 3.4s ease-in-out infinite }
+@keyframes sx-bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+html.sx body.sx .sx-bar{ transform-box:fill-box;transform-origin:50% 100%;animation:sx-grow .6s var(--sx-ease) .2s both }
+
+html.sx body.sx .sx-sring{ stroke-dashoffset:227;animation:sx-draw .9s var(--sx-ease) .15s forwards }
+html.sx body.sx .sx-scheck{ stroke-dashoffset:60;animation:sx-draw .45s var(--sx-ease) .9s forwards }
+@keyframes sx-draw{ to{stroke-dashoffset:0} }
+html.sx body.sx .sx-bits .b{ opacity:0;animation:sx-burst .9s var(--sx-ease) .95s forwards }
+html.sx body.sx .sx-bits .b1{ --x:-52px;--y:-40px } html.sx body.sx .sx-bits .b2{ --x:50px;--y:-44px } html.sx body.sx .sx-bits .b3{ --x:-60px;--y:18px }
+html.sx body.sx .sx-bits .b4{ --x:58px;--y:22px } html.sx body.sx .sx-bits .b5{ --x:-20px;--y:-58px } html.sx body.sx .sx-bits .b6{ --x:24px;--y:54px }
+@keyframes sx-burst{ 0%{opacity:0;transform:translate(0,0)} 30%{opacity:1} 100%{opacity:1;transform:translate(var(--x),var(--y))} }
+
+@media (prefers-reduced-motion: reduce){
+  html.sx body.sx *, html.sx body.sx *::before, html.sx body.sx *::after{ animation:none !important;transition:none !important }
+  html.sx body.sx .sx-sring, html.sx body.sx .sx-scheck{ stroke-dashoffset:0 }
+  html.sx body.sx .sx-bits .b{ opacity:1;transform:translate(var(--x),var(--y)) }
+}
+
+/* ---------- small phones ---------- */
+@media (max-width:370px){
+  html.sx body.sx .sx-tile{ min-height:84px;padding:10px }
+  html.sx body.sx .sx-tile-art{ width:44px;height:44px }
+  html.sx body.sx .sx-ring{ width:90px;height:90px }
+  html.sx body.sx .sx-welcome-art{ width:88px }
+  html.sx body.sx .assistant-mini-tools{ grid-template-columns:1fr !important }
+}
+
+@media print{
+  html.sx body.sx .student-nav, html.sx body.sx .sx-wave, html.sx body.sx .sx-tiles-wrap{ display:none !important }
+  html.sx body.sx .sx-in{ animation:none !important }
+}
+
+/* teacher hero control panel on teal */
+html.sx body.sx .teacher-hero.sx-teal .teacher-hero-control{
+  background:rgba(255,255,255,.1) !important;border:1px solid rgba(255,255,255,.22) !important;border-radius:18px !important;
+  box-shadow:none !important;backdrop-filter:none !important;position:relative;z-index:1;
+}
+html.sx body.sx .teacher-hero.sx-teal .teacher-hero-control label{ color:#fff !important }
+html.sx body.sx .teacher-hero.sx-teal .teacher-hero-copy{ position:relative;z-index:1 }
+
+/* =====================================================================
+   ROUND 2 — closer to Athari
+   ===================================================================== */
+html.sx body.sx .sx-hidden{ display:none !important }
+html.sx body.sx .sx-g{ width:18px;height:18px;flex:none }
+
+/* top bar: brand only on phones, like Athari */
+@media (max-width:700px){
+  html.sx body.sx header.student-appbar .brand small{ display:none !important }
+  html.sx body.sx header.student-appbar .brand strong{ font-size:26px !important }
+}
+
+/* hero content */
+html.sx body.sx .sx-h{ position:relative;z-index:1 }
+html.sx body.sx .sx-h-pill{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.38);background:rgba(255,255,255,.09);
+  border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;color:#fff;
+}
+html.sx body.sx .sx-h-pill .sx-g{ width:15px;height:15px;color:var(--sx-aqua) }
+html.sx body.sx .sx-dot{ width:8px;height:8px;border-radius:50%;background:var(--sx-aqua);box-shadow:0 0 0 0 rgba(95,224,208,.7);animation:sx-pulse 2s ease-out infinite }
+@keyframes sx-pulse{ 0%{box-shadow:0 0 0 0 rgba(95,224,208,.6)} 80%,100%{box-shadow:0 0 0 9px rgba(95,224,208,0)} }
+html.sx body.sx .sx-h .sx-hero-top{ margin-top:10px }
+html.sx body.sx .sx-h-title{ color:#fff !important;font-size:28px !important;line-height:1.2 !important;font-weight:800 !important;margin:0 0 8px !important;letter-spacing:-.4px;text-wrap:balance }
+html.sx body.sx .sx-h-stop{ display:inline-flex !important;align-items:center;gap:6px;margin:0 0 4px !important;color:#bdf5ec !important;font-size:15px !important }
+html.sx body.sx .sx-h-stop b{ color:#fff;font-weight:800 }
+html.sx body.sx .sx-h-stop .sx-g{ color:var(--sx-aqua) }
+html.sx body.sx .sx-h-desc{ color:rgba(255,255,255,.85) !important;font-size:13.5px !important;line-height:1.6 !important;margin:0 !important }
+html.sx body.sx .sx-h-chips{ display:flex;gap:8px;margin-top:14px }
+html.sx body.sx .sx-chip{
+  flex:1;min-width:0;display:flex;align-items:center;gap:9px;background:#fff;color:var(--sx-ink);border-radius:15px;padding:9px 11px;
+  box-shadow:0 8px 18px -12px rgba(0,0,0,.5);
+}
+html.sx body.sx .sx-chip > .sx-g{ width:34px;height:34px;padding:8px;border-radius:11px;background:#e3edfc;color:var(--sx-blue);flex:none }
+html.sx body.sx .sx-chip + .sx-chip > .sx-g{ background:#dff3ea;color:var(--sx-green) }
+html.sx body.sx .sx-chip > span{ display:flex;flex-direction:column;min-width:0;line-height:1.15 }
+html.sx body.sx .sx-chip b{ font-size:16px;font-weight:800;white-space:nowrap }
+html.sx body.sx .sx-chip small{ font-size:11.5px;color:var(--sx-muted);margin-top:2px }
+html.sx body.sx .journey-continue .journey-main-btn{
+  background:linear-gradient(180deg,#2a6ff0,#1b58cf) !important;color:#fff !important;box-shadow:0 12px 24px -12px rgba(0,0,0,.6) !important;margin-top:12px !important;
+}
+html.sx body.sx .journey-continue{ padding:18px 16px 20px !important }
+
+/* welcome row */
+html.sx body.sx .sx-welcome-art{ width:128px }
+
+/* section head with icon + count chip */
+html.sx body.sx .sx-sec-head h2{ display:flex;align-items:center;gap:8px }
+html.sx body.sx .sx-sec-head h2 .sx-g{ width:24px;height:24px;color:var(--sx-green) }
+html.sx body.sx .sx-count-chip{ background:var(--sx-mint);color:#11452e;font-weight:800;font-size:13px;border-radius:999px;padding:6px 12px;white-space:nowrap }
+
+/* journey: open units featured full width, locked units as a 2-col tile grid */
+html.sx body.sx .journey-unit-grid{ grid-template-columns:1fr 1fr !important }
+html.sx body.sx .journey-unit-card.sx-open{ grid-column:1 / -1 !important;padding:16px 108px 16px 16px !important;box-shadow:0 10px 24px -18px rgba(20,50,90,.5) !important }
+html.sx body.sx .journey-unit-card.sx-open .sx-unit-art{ width:84px;height:84px;right:14px }
+html.sx body.sx .journey-unit-card.sx-open h3{ font-size:19px !important }
+html.sx body.sx .journey-unit-card.locked{ padding:12px !important;min-height:150px !important;display:flex !important;flex-direction:column !important }
+html.sx body.sx .journey-unit-card.locked .journey-unit-top{ margin-bottom:auto !important }
+html.sx body.sx .journey-unit-card.locked .journey-status{ display:none !important }
+html.sx body.sx .journey-unit-card.locked .sx-unit-art{ position:absolute;top:10px;right:10px;transform:none;width:50px;height:50px;opacity:.5;filter:grayscale(.85) }
+html.sx body.sx .journey-unit-card.locked h3{ font-size:14.5px !important;line-height:1.35 !important;margin:40px 0 4px !important;color:#56627a !important }
+html.sx body.sx .journey-unit-card.locked p{ display:none !important }
+html.sx body.sx .journey-unit-card.locked .journey-unit-foot{ font-size:11.5px !important;color:#8a95a8 !important }
+html.sx body.sx .journey-unit-card.locked .journey-unit-foot strong{ display:none }
+html.sx body.sx .sx-lock-badge{
+  position:absolute;right:8px;top:44px;width:24px;height:24px;border-radius:50%;background:#fff;color:#8a95a8;display:grid;place-items:center;
+  box-shadow:0 2px 6px rgba(20,50,90,.15)
+}
+html.sx body.sx .sx-lock-badge .sx-g{ width:14px;height:14px }
+
+/* progress hero */
+html.sx body.sx .sx-progress-hero{
+  position:relative;overflow:hidden;isolation:isolate;color:#fff;border-radius:26px;padding:18px 16px 20px;
+  background:linear-gradient(115deg,var(--sx-teal-1) 0%,var(--sx-teal-2) 55%,var(--sx-teal-3) 100%);
+  box-shadow:0 14px 32px -14px rgba(10,63,74,.6);
+}
+html.sx body.sx .sx-progress-hero .sx-hero-top{ margin-top:10px }
+html.sx body.sx .journey-continue .sx-chip small{ display:block !important;color:var(--sx-muted) !important;font-size:11.5px !important }
+html.sx body.sx .journey-continue .sx-chip b{ color:var(--sx-ink) !important }
