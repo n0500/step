@@ -50,3 +50,11 @@ Final Challenge — verified Unit 2 content:
 - All questions are confirmed as Unit 2 content.
 - Removed the non-Unit-2 Fatima item and removed “let someone down”.
 - Vocabulary kept: scientist and bored to death.
+
+
+Class Mode:
+- Unit 2 Class Mode is now STEP Grammar Practice.
+- 8 questions total, one for each Unit 2 grammar target.
+- All Class Mode questions come from STEP compilations.
+- All questions have 4 answer choices.
+- This does not change the lighter Student Journey content rules.

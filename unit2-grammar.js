@@ -1,6 +1,6 @@
-// StepUp — Unit 2 Grammar source policy — 2026-09-28
-// Priority: uploaded revision questions first, then Mega Goal 1 Unit 2 textbook.
-// STEP compilations are reserved for the dedicated STEP Practice stop only.
+// StepUp — Unit 2 Class Mode = STEP grammar practice — 2026-09-28
+// Class Mode uses STEP compilation questions only.
+// Student Journey remains controlled separately in unit2-source-override.js.
 (() => {
   const data = window.PROVEIT_DATA;
   if (!data || !Array.isArray(data.units)) return;
@@ -13,110 +13,99 @@
     {
       id: "u2-grammar",
       type: "grammar",
-      title: "Unit 2 Grammar",
-      subtitle: "Revision + Textbook Practice",
-      durationSeconds: 540,
+      title: "Unit 2 • STEP Grammar Practice",
+      subtitle: "STEP Compilation Questions",
+      durationSeconds: 480,
       topics: [
-        "Present Perfect Simple & Progressive",
-        "Adjective + Preposition + Gerund",
-        "Simple Present & Wh-Questions",
-        "Prepositions of Time",
+        "Simple Present",
+        "Present Perfect Progressive",
+        "Past Progressive with While",
         "Relative Pronouns",
-        "Past Progressive with While"
+        "Adjective + Preposition + Gerund",
+        "Present Perfect Simple",
+        "Wh-Questions",
+        "Prepositions of Time"
       ],
       questions: [
         {
-          skill: "Adjective + Preposition + Gerund",
-          stem: "I'm interested in ___ English.",
-          choices: ["studied", "studies", "studying"],
+          skill: "Simple Present",
+          stem: "Our boss ______ important people every Tuesday.",
+          choices: ["Meeting", "Was met", "Meets", "Is meet"],
           answer: 2,
-          explanation: "After interested in, use the gerund: studying.",
-          need: "interested in + verb-ing",
-          sourceClass: "uploaded_revision",
-          sourceLabel: "MG -1 - General revision (grammar), Q9"
-        },
-        {
-          skill: "Prepositions of Time",
-          stem: "He works ___ night.",
-          choices: ["in", "on", "at"],
-          answer: 2,
-          explanation: "Use at with night: at night.",
-          need: "at night",
-          sourceClass: "uploaded_revision",
-          sourceLabel: "MG -1 - General revision (grammar), Q36"
-        },
-        {
-          skill: "Relative Pronouns",
-          stem: "The new driver ___ started work yesterday is very quiet.",
-          choices: ["who", "which", "where"],
-          answer: 0,
-          explanation: "Use who for a person.",
-          need: "who = people",
-          sourceClass: "uploaded_revision",
-          sourceLabel: "MG -1 - General revision (grammar), Q37"
+          explanation: "Every Tuesday signals the simple present.",
+          need: "Look for a repeated routine or habit.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
         },
         {
           skill: "Present Perfect Progressive",
-          stem: "How long has he been ___ football?",
-          choices: ["play", "playing", "plays"],
-          answer: 1,
-          explanation: "Present perfect progressive uses has been + verb-ing.",
-          need: "has been + verb-ing",
-          sourceClass: "uploaded_revision",
-          sourceLabel: "MG -1 - General revision (grammar), Q38"
-        },
-        {
-          skill: "Simple Present",
-          stem: "He ___ his car every day.",
-          choices: ["drive", "drives", "driving"],
-          answer: 1,
-          explanation: "With he in the simple present, use drives.",
-          need: "he/she/it + verb-s",
-          sourceClass: "uploaded_revision",
-          sourceLabel: "MG -1 - General revision (grammar), Q39"
-        },
-        {
-          skill: "Present Perfect Simple & Progressive",
-          stem: "I ___ a job for three months, and I still ___ one.",
-          choices: [
-            "have been looking for / haven't found",
-            "have looked for / haven't been finding"
-          ],
-          answer: 0,
-          explanation: "The ongoing search takes the progressive; the result uses the simple form.",
-          need: "duration/activity vs. completed result",
-          sourceClass: "textbook",
-          sourceLabel: "Mega Goal 1 Unit 2, Grammar B1"
-        },
-        {
-          skill: "Present Perfect Simple",
-          stem: "How many pages of that book ___?",
-          choices: ["have you read", "have you been reading"],
-          answer: 0,
-          explanation: "How many asks about a completed amount, so use the present perfect simple.",
-          need: "How many? → result/amount",
-          sourceClass: "textbook",
-          sourceLabel: "Mega Goal 1 Unit 2, Grammar B4"
-        },
-        {
-          skill: "Wh-Questions / Simple Present",
-          stem: "What ___ your uncle ___? He's a writer.",
-          choices: ["does / do", "do / does", "is / do"],
-          answer: 0,
-          explanation: "Use does + subject + base verb: What does your uncle do?",
-          need: "does + base verb",
-          sourceClass: "textbook",
-          sourceLabel: "Mega Goal 1 Unit 2, Form Meaning and Function A1"
+          stem: "The students ______ a new way to process water for six months now.",
+          choices: ["develop", "are developing", "have developed", "have been developing"],
+          answer: 3,
+          explanation: "For six months now emphasizes an ongoing activity.",
+          need: "Duration + activity continuing until now → have/has been + verb-ing.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
         },
         {
           skill: "Past Progressive with While",
-          stem: "It was raining ___ Yahya was washing the car.",
-          choices: ["while", "since", "for"],
+          stem: "I drank several cups of tea while I ______ this essay.",
+          choices: ["have written", "wrote", "write", "was writing"],
+          answer: 3,
+          explanation: "The writing was the ongoing background action.",
+          need: "While often introduces the continuing past action.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
+        },
+        {
+          skill: "Relative Pronouns",
+          stem: "The man ______ is standing next to the door is our teacher.",
+          choices: ["which", "who", "whose", "whom"],
+          answer: 1,
+          explanation: "Who refers to a person as the subject of the relative clause.",
+          need: "Person + subject of the relative clause → who.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
+        },
+        {
+          skill: "Adjective + Preposition + Gerund",
+          stem: "He is interested ______ learning English.",
+          choices: ["in", "on", "at", "for"],
           answer: 0,
-          explanation: "While connects two actions happening at the same time in the past.",
-          need: "while + past progressive",
-          sourceClass: "textbook",
-          sourceLabel: "Mega Goal 1 Unit 2, Form Meaning and Function C example"
+          explanation: "The fixed expression is interested in.",
+          need: "Learn the chunk: interested in + noun/verb-ing.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
+        },
+        {
+          skill: "Present Perfect Simple",
+          stem: "I will not go on holiday until I ______ all my work.",
+          choices: ["have completed", "will complete", "completed", "did complete"],
+          answer: 0,
+          explanation: "The present perfect shows completion before the future action.",
+          need: "After until in this context, use a present form—not will.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
+        },
+        {
+          skill: "Wh-Questions",
+          stem: "I do not understand this sentence. What ______?",
+          choices: ["does mean this word", "means this word", "does this word mean", "this word does mean"],
+          answer: 2,
+          explanation: "Use does + subject + base verb.",
+          need: "Wh-word + does + subject + base verb.",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
+        },
+        {
+          skill: "Prepositions of Time",
+          stem: "I usually study ______ night.",
+          choices: ["in", "on", "at", "for"],
+          answer: 2,
+          explanation: "Use at with night: at night.",
+          need: "at night",
+          sourceClass: "step_compilation",
+          sourceLabel: "STEP compilation"
         }
       ]
     }
