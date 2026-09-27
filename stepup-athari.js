@@ -331,6 +331,35 @@
     });
   }
 
+  /* ---------- class mode: tap an answer to choose it ---------- */
+  var cmPick=null; // {key, index}
+  function cmKey(){
+    var meta=txt(document.querySelector('.classmode-toolbar > div:first-child'));
+    return meta+'|'+txt(document.querySelector('.classmode-stem'));
+  }
+  function decorateClassMode(root){
+    var choices=root.querySelectorAll('.classmode-choice');
+    if(!choices.length) return;
+    choices.forEach(function(c,i){
+      if(!c.hasAttribute('role')){ c.setAttribute('role','button'); c.setAttribute('tabindex','0'); c.setAttribute('data-sx-i', String(i)); }
+      var picked=!!(cmPick && cmPick.key===cmKey() && cmPick.index===i);
+      if(c.classList.contains('sx-picked')!==picked) c.classList.toggle('sx-picked', picked);
+      var wrong=picked && !c.classList.contains('correct');
+      if(c.classList.contains('sx-wrong')!==wrong) c.classList.toggle('sx-wrong', wrong);
+    });
+  }
+  function onChoose(e){
+    var c=e.target.closest && e.target.closest('.classmode-choice'); if(!c) return;
+    if(e.type==='keydown' && e.key!=='Enter' && e.key!==' ') return;
+    if(e.type==='keydown') e.preventDefault();
+    cmPick={key:cmKey(), index:Number(c.getAttribute('data-sx-i'))||0};
+    var revealed=!!document.querySelector('.classmode-choice.correct');
+    if(!revealed && window.PROVE && window.PROVE.revealClassAnswer) window.PROVE.revealClassAnswer();
+    else decorateClassMode(app);
+  }
+  document.addEventListener('click', onChoose);
+  document.addEventListener('keydown', onChoose);
+
   /* ---------- motion ---------- */
   function animate(scope){
     if(reduceMotion) return;
@@ -394,6 +423,7 @@
       decorateLanding(app);
       decorateRoles(app);
       decorateTeacher(app);
+      decorateClassMode(app);
       animate(app);
     }catch(e){ console.warn('StepUp design layer:', e); }
     finally{ busy=false; }

@@ -853,3 +853,94 @@ html.sx body.sx .sx-progress-hero{
 html.sx body.sx .sx-progress-hero .sx-hero-top{ margin-top:10px }
 html.sx body.sx .journey-continue .sx-chip small{ display:block !important;color:var(--sx-muted) !important;font-size:11.5px !important }
 html.sx body.sx .journey-continue .sx-chip b{ color:var(--sx-ink) !important }
+
+/* =====================================================================
+   CLASS MODE (teacher presenting to the class)
+   ===================================================================== */
+html.sx body.sx .classmode-shell{ background:transparent !important;min-height:100vh }
+html.sx body.sx .classmode-toolbar{
+  position:sticky !important;top:0 !important;z-index:50 !important;overflow:hidden;isolation:isolate;
+  display:grid !important;grid-template-columns:minmax(0,1fr) auto !important;align-items:center !important;gap:10px 12px !important;
+  background:linear-gradient(115deg,var(--sx-teal-1) 0%,var(--sx-teal-2) 55%,var(--sx-teal-3) 100%) !important;
+  color:#fff !important;padding:max(12px, env(safe-area-inset-top)) 16px 14px !important;
+  border-radius:0 0 24px 24px !important;box-shadow:0 14px 30px -18px rgba(10,63,74,.7) !important;
+}
+html.sx body.sx .classmode-toolbar::before{ content:"";position:absolute;z-index:-1;width:240px;height:240px;border-radius:50%;right:-80px;top:-130px;
+  background:radial-gradient(circle, rgba(95,224,208,.24), rgba(95,224,208,0) 65%) }
+html.sx body.sx .classmode-toolbar > div:first-child strong{ font-size:17px !important;font-weight:800 !important;line-height:1.35 }
+html.sx body.sx .classmode-toolbar > div:first-child > div{ color:#bdf5ec !important;opacity:1 !important;font-size:12.5px !important;font-weight:600;margin-top:2px }
+html.sx body.sx .classmode-toolbar > div:last-child{ display:flex !important;align-items:center !important;gap:8px !important }
+html.sx body.sx #cmTimer{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:7px 12px;
+  font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap
+}
+html.sx body.sx .classmode-toolbar .btn-outline{
+  min-height:40px !important;padding:8px 14px !important;border-radius:999px !important;font-size:13.5px !important;white-space:nowrap;
+  background:rgba(255,255,255,.1) !important;border:1px solid rgba(255,255,255,.4) !important;color:#fff !important;
+}
+html.sx body.sx .classmode-toolbar .btn-outline:first-of-type{ background:#fff !important;color:var(--sx-teal-2) !important;border-color:#fff !important }
+@media (max-width:640px){
+  html.sx body.sx .classmode-toolbar{ grid-template-columns:1fr !important }
+  html.sx body.sx .classmode-toolbar > div:last-child{ justify-content:space-between }
+  html.sx body.sx .classmode-toolbar > div:last-child .btn-outline:first-of-type{ flex:1 }
+}
+
+html.sx body.sx .classmode-content{ max-width:1100px !important;padding:16px 14px 40px !important }
+html.sx body.sx .classmode-content .grid-2{ gap:14px !important }
+@media (max-width:900px){ html.sx body.sx .classmode-content .grid-2{ grid-template-columns:1fr !important } }
+html.sx body.sx .classmode-card{
+  background:#fff !important;border:0 !important;border-radius:24px !important;padding:20px 18px !important;
+  box-shadow:var(--sx-shadow) !important;animation:sx-rise .45s var(--sx-ease) both;
+}
+html.sx body.sx .classmode-card > h2{ font-size:20px !important;font-weight:800 !important;margin:0 0 10px !important }
+html.sx body.sx .classmode-card .passage-text{
+  background:linear-gradient(170deg,#f7fbff 0%,#e9f3fb 100%);border-radius:16px;padding:16px;font-size:17px !important;line-height:1.85 !important;color:#2e3b50;
+}
+html.sx body.sx .classmode-card > .eyebrow{
+  display:inline-flex !important;background:var(--sx-lav) !important;color:#5a4fc4 !important;border-radius:999px;padding:5px 13px;
+  font-size:13px !important;font-weight:800 !important;
+}
+html.sx body.sx .classmode-stem{ font-size:clamp(22px,5.4vw,32px) !important;font-weight:800 !important;line-height:1.45 !important;color:var(--sx-ink) !important;margin:14px 0 18px !important }
+html.sx body.sx .classmode-choice{
+  display:flex !important;align-items:center !important;gap:14px !important;min-height:62px;
+  font-size:clamp(18px,4.6vw,24px) !important;font-weight:600;color:var(--sx-ink);
+  background:#f6f9fd !important;border:1.5px solid #e3eaf3 !important;border-radius:18px !important;padding:10px 16px !important;margin:0 0 10px !important;
+  transition:background .3s ease, border-color .3s ease, transform .3s var(--sx-ease);
+}
+html.sx body.sx .classmode-choice > strong{
+  width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:13px;background:#fff;border:1.5px solid #d6e1ef;
+  color:var(--sx-blue);font-size:17px;font-weight:800;letter-spacing:-.5px;
+}
+html.sx body.sx .classmode-choice.correct{
+  background:#e2f4e9 !important;border-color:#8fd4ad !important;transform:scale(1.01);
+}
+html.sx body.sx .classmode-choice.correct > strong{ background:var(--sx-green);border-color:var(--sx-green);color:#fff }
+html.sx body.sx .classmode-explain{
+  background:var(--sx-mint) !important;border:0 !important;border-radius:16px !important;padding:14px 16px !important;margin-top:6px !important;
+  font-size:17px !important;line-height:1.7 !important;color:#11452e !important;animation:sx-rise .4s var(--sx-ease) both;
+}
+html.sx body.sx .classmode-card .exam-actions{
+  display:grid !important;grid-template-columns:1fr 1fr !important;gap:10px !important;margin-top:18px !important;
+}
+html.sx body.sx .classmode-card .exam-actions > div{ display:contents !important }
+html.sx body.sx .classmode-card .exam-actions .btn{ width:100% !important;min-height:52px !important;margin:0 !important;font-size:15.5px !important;border-radius:15px !important }
+html.sx body.sx .classmode-card .exam-actions .btn-primary{ grid-column:1 / -1;order:3 }
+html.sx body.sx .classmode-card .exam-actions .btn:disabled{ opacity:.45 }
+@media (min-width:700px){
+  html.sx body.sx .classmode-card .exam-actions{ grid-template-columns:1fr 1fr 1.4fr !important }
+  html.sx body.sx .classmode-card .exam-actions .btn-primary{ grid-column:auto;order:0 }
+}
+
+/* tap-to-choose in Class Mode */
+html.sx body.sx .classmode-choice{ cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none }
+html.sx body.sx .classmode-choice:hover{ border-color:#9fbdf0 !important }
+html.sx body.sx .classmode-choice:active{ transform:scale(.985) }
+html.sx body.sx .classmode-choice.sx-picked{ position:relative }
+html.sx body.sx .classmode-choice.sx-picked::after{
+  margin-inline-start:auto;flex:none;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:800;animation:sx-pop .4s var(--sx-ease) both;
+}
+html.sx body.sx .classmode-choice.sx-picked.correct::after{ content:"✓ Correct";background:var(--sx-green);color:#fff }
+html.sx body.sx .classmode-choice.sx-wrong{ background:#fdecef !important;border-color:#f2a6b4 !important;animation:sx-shake .4s ease both }
+html.sx body.sx .classmode-choice.sx-wrong > strong{ background:var(--sx-red);border-color:var(--sx-red);color:#fff }
+html.sx body.sx .classmode-choice.sx-wrong::after{ content:"✕ Not quite";background:var(--sx-red);color:#fff }
+@keyframes sx-shake{ 0%,100%{transform:none} 25%{transform:translateX(-5px)} 50%{transform:translateX(5px)} 75%{transform:translateX(-3px)} }
