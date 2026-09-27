@@ -8,7 +8,7 @@ service cloud.firestore {
       return signedIn() && request.auth.token.email == "t.nuha0500@gmail.com";
     }
     function isTeacher() {
-      return signedIn() && me().data.role == "teacher";
+      return signedIn() && me().data.role == "teacher" && me().data.get("status", "active") == "active";
     }
     function isStudent() {
       return signedIn() && me().data.role == "student";
@@ -40,19 +40,42 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && (
+        (
+          request.auth.uid == uid &&
+          request.resource.data.role == "student" &&
+          get(/databases/$(database)/documents/joinCodes/$(request.resource.data.classCode)).data.classId == request.resource.data.classId &&
+          get(/databases/$(database)/documents/joinCodes/$(request.resource.data.classCode)).data.teacherId == request.resource.data.teacherId
+        ) ||
+        (isOwner() && request.resource.data.role in ["owner", "teacher"])
+      );
       allow read: if signedIn() && (
         request.auth.uid == uid ||
         isOwner() ||
         (isTeacher() && resource.data.teacherId == request.auth.uid)
       );
       allow update: if signedIn() && (
-        request.auth.uid == uid ||
+        isOwner() ||
+        (
+          request.auth.uid == uid &&
+          resource.data.role == "student" &&
+          request.resource.data.role == "student" &&
+          request.resource.data.teacherId == resource.data.teacherId &&
+          request.resource.data.classId == resource.data.classId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["displayName"])
+        ) ||
+        (
+          request.auth.uid == uid &&
+          resource.data.role == "teacher" &&
+          request.resource.data.role == "teacher" &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["displayName", "school"])
+        ) ||
         (
           isTeacher() &&
           resource.data.role == "student" &&
           resource.data.teacherId == request.auth.uid &&
           request.resource.data.teacherId == request.auth.uid &&
+          request.resource.data.role == "student" &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(["classId"])
         )
       );
@@ -119,7 +142,6 @@ service cloud.firestore {
       allow delete: if isOwner() || (isTeacher() && resource.data.teacherId == request.auth.uid);
     }
 
-    // Saved MG1 Assistant + Writing Coach conversations.
     match /assistantMessages/{messageId} {
       allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
@@ -129,7 +151,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
     }
 
-    // Student writing drafts and rubric history.
     match /writingHistory/{historyId} {
       allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
@@ -143,7 +164,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
     }
 
-    // Teacher-created class assignments.
     match /assignments/{assignmentId} {
       allow create: if createsOwnTeacherData();
       allow read: if signedIn() && (
@@ -159,7 +179,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsTeacherData();
     }
 
-    // Student completion records for assignments.
     match /assignmentSubmissions/{submissionId} {
       allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
@@ -173,7 +192,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsStudentData() || ownsTeacherData();
     }
 
-    // Student learning goals; teachers may view but not edit them.
     match /studentGoals/{goalId} {
       allow create: if createsOwnStudentData();
       allow read: if signedIn() && (
@@ -187,7 +205,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsStudentData();
     }
 
-    // Private teacher notes. Students never receive read access.
     match /teacherNotes/{noteId} {
       allow create: if createsOwnTeacherData();
       allow read: if isOwner() || ownsTeacherData();
@@ -199,8 +216,6 @@ service cloud.firestore {
       allow delete: if isOwner() || ownsTeacherData();
     }
 
-    // Read-only parent progress snapshots. Exact document get is public so
-    // the secret link works without exposing student conversations or notes.
     match /parentViews/{accessCode} {
       allow get: if true;
       allow list: if isOwner() || ownsTeacherData();
