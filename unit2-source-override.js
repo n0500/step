@@ -477,6 +477,7 @@
     m4.title = "Language Functions";
     m4.sub = "Simple Present • Wh-Questions • Time • Relative Pronouns • While";
   }
+  if (m7) m7.sub = "Final Challenge • 8 questions";
 
   // Move Good at / Interested in questions into the Grammar mission.
   (data.questions || []).forEach(q => {
