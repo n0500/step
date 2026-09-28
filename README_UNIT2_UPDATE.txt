@@ -66,3 +66,47 @@ Edcafe per-class update:
 - The student AI Tutor button opens only that student's class link.
 - "Explain my mistake" now opens the class Edcafe tutor.
 - Existing StepUp journeys, Class Mode, Unit 2 updates, results, and Firebase data remain unchanged.
+
+
+Unit 1 cleanup:
+- Removed factual Historical events questions from the Unit 1 Vocabulary stop.
+- Removed Historical comprehension questions from the Unit 1 Final Challenge.
+- Replaced the three removed Final Challenge questions with existing Unit 1 language questions.
+- Vocabulary mastery still has 3 questions.
+- Grammar items that merely use past-time contexts remain because they assess grammar, not history recall.
+
+
+Unit 2 Class Mode:
+- Reading Review is now a separate Class Mode choice.
+- STEP Grammar Practice remains separate.
+- Teacher can choose which skill to review in Class Mode.
+- Reading uses the Unit 2 JobPool textbook reading with 3 questions: Main Idea, Specific Detail, Inference.
+
+
+Teacher-only Teach Reading:
+- Added only to Teacher > Class Mode when Unit 2 is open.
+- Unit 2 Class Mode now shows: Teach Reading / Reading Review / STEP Grammar Practice.
+- Teach Reading is an 8-screen projector-friendly lesson: Warm-up, Vocabulary, two reading chunks, Main Idea strategy, and 3 guided questions.
+- Student pages are unchanged; Teach Reading is not shown in the student navigation or journey.
+
+
+Teach Reading enhancement:
+- Teacher-only Read Aloud for Part 1, Part 2, and Full Reading.
+- Pause/Resume, Stop, Listen Again, and 0.8x/0.9x/1x/1.1x speed controls.
+- Sentence-by-sentence highlighting while reading.
+- Vocabulary pronunciation buttons.
+- Vocabulary meanings can be shown/hidden.
+- Highlighted words inside the reading can be clicked to show/hide meaning.
+- Added Quick Checks after both reading chunks.
+- Added separate Main Idea, Scanning, and Inference strategy screens.
+- Added Guided Practice for all three reading skills.
+- Added Full Reading playback and a 3-question Exit Check.
+- No Edcafe/AI usage is consumed by Read Aloud; it uses the device/browser speech engine.
+
+
+Unit 2 original Reading text verification:
+- Replaced the earlier condensed/paraphrased JobPool passage with the original Mega Goal 1 Student Book text (Reading pp. 26–27).
+- Teach Reading now uses the full original About Us, Media Intern, Archaeological Interns, and Environmental Engineering text.
+- Added Carl Barthes's original résumé as its own Teach Reading screen.
+- Exit Check now uses statements from the textbook After Reading exercise.
+- Reading Review also displays the original textbook passage rather than the condensed version.
