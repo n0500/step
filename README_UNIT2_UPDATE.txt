@@ -58,3 +58,11 @@ Class Mode:
 - All Class Mode questions come from STEP compilations.
 - All questions have 4 answer choices.
 - This does not change the lighter Student Journey content rules.
+
+
+Edcafe per-class update:
+- Student-facing MG1 Assistant is replaced by an Edcafe AI Tutor entry.
+- Each class gets its own editable Edcafe URL in Teacher > Classes.
+- The student AI Tutor button opens only that student's class link.
+- "Explain my mistake" now opens the class Edcafe tutor.
+- Existing StepUp journeys, Class Mode, Unit 2 updates, results, and Firebase data remain unchanged.
