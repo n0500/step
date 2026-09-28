@@ -12,6 +12,7 @@
   unit.reading = "JobPool Has the Job for You\n\nJobPool is a privately-owned career network with branches all over the world. Since its foundation in 2000, the company has constantly improved its users’ experience and has been growing globally.\n\nMedia Intern: Applicants need to find information quickly, summarize it clearly, be fluent in English, be good at using computers, and be friendly and outgoing. This is a paid summer internship.\n\nArchaeological Interns: Interns work on an archaeological dig. The work is hard and painstaking. This is an unpaid three-month internship, but lodging and meals are provided.\n\nEnvironmental Engineering: Applicants need to be able to read blueprints, have some knowledge of Arabic, and cope with high temperatures.\n\nCarl’s résumé lists computer expertise in word-processing and graphic programs.";
   unit.listening = "Yousef: So, Khaled, are you happy with your job at the TV station?\nKhaled: Yes, very happy. I enjoy being out there and talking to people.\nYousef: How long have you been working on TV?\nKhaled: I’ve been a reporter at this station for five years—since my internship.\nYousef: I’ve been working at the bank since I left high school. I was hoping to be a watch repairer, but my parents talked me out of it.\nKhaled: Well, I was going to be a dentist, but luckily I changed my mind.\nYousef: It’s time to move on and find something more challenging. I’m good at solving problems.";
   const m4 = (unit.missions || []).find(m => m.id === "m4");
+  const m7 = (unit.missions || []).find(m => m.id === "m7");
   if (m4) {
     m4.title = "Careers & Functions";
     m4.sub = "Simple Present • Wh-Questions • Time • Relative Pronouns • While";
@@ -43,7 +44,7 @@
       <section class="journey-content-card step">
         <span class="journey-kicker">Quick practice • about 7 min</span>
         <h2>Ready for STEP Practice?</h2>
-        <p>Eight questions from STEP compilations, selected to match Unit 2 grammar.</p>
+        <p>Five questions from STEP compilations, selected to match Unit 2 grammar.</p>
         <div class="journey-strategy"><span>1</span> Read <i>→</i><span>2</span> Find the clue <i>→</i><span>3</span> Eliminate</div>
         <button class="journey-main-btn" onclick="STEPUP_JOURNEY.beginUnit2Step()">Let’s go</button>
       </section>`;
@@ -133,7 +134,7 @@
   if (m2) { m2.title = "Grammar • Result or Duration?"; }
   if (m3) { m3.title = "Grammar • Good at What?"; }
   if (m4) { m4.title = "Language Functions"; m4.sub = "Simple Present • Wh-Questions • Time • Relative Pronouns • While"; }
-  if (m5) { m5.title = "Reading • STEP Style"; m5.sub = "Main idea • detail • vocabulary • inference"; }
+  if (m5) { m5.title = "Reading • STEP Style"; m5.sub = "Main idea • detail • inference"; }
   if (m6) { m6.title = "Listening • STEP Style"; m6.sub = "Main idea • detail • inference"; }
 
   // STEP-style reading questions derived only from the Unit 2 textbook reading.
@@ -295,7 +296,7 @@
     if (!h) return;
     skillSession = {
       kind:"reading", label:"Reading • STEP Style", queue:sourceQuestions("5. Reading Career Paths"),
-      pos:0, correct:0, answers:[], started:Date.now(), total:4
+      pos:0, correct:0, answers:[], started:Date.now(), total:3
     };
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="STEPUP_JOURNEY.openUnit('u2')">Unit 2</button><span>›</span><b>Reading • STEP Style</b></div>
       <section class="journey-content-card">
@@ -304,7 +305,7 @@
         <p>Use the Unit 2 textbook reading, but answer it with STEP reading strategies.</p>
         <div class="journey-strategy"><span>1</span> Read the question first <i>→</i><span>2</span> Find the keyword <i>→</i><span>3</span> Return to the evidence <i>→</i><span>4</span> Eliminate</div>
         <div class="journey-passage" dir="ltr">${esc(unit.reading)}</div>
-        <p><strong>4 questions:</strong> main idea • detail • vocabulary in context • inference</p>
+        <p><strong>3 questions:</strong> main idea • detail • inference</p>
         <button class="journey-main-btn" onclick="STEPUP_JOURNEY.beginUnit2Skill()">Start Reading Practice</button>
       </section>`;
   }
@@ -315,7 +316,7 @@
     if (!h) return;
     skillSession = {
       kind:"listening", label:"Listening • STEP Style", queue:sourceQuestions("6. Listening at Work"),
-      pos:0, correct:0, answers:[], started:Date.now(), total:4
+      pos:0, correct:0, answers:[], started:Date.now(), total:3
     };
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="STEPUP_JOURNEY.openUnit('u2')">Unit 2</button><span>›</span><b>Listening • STEP Style</b></div>
       <section class="journey-content-card listen">
@@ -324,7 +325,7 @@
         <p>Listen for the main idea and key details. You do not need to translate every word.</p>
         <div class="journey-strategy"><span>1</span> Read the task <i>→</i><span>2</span> Listen for keywords <i>→</i><span>3</span> Choose from evidence</div>
         <button class="journey-audio-btn" onclick="STEPUP_JOURNEY.speak('u2')">▶ Play listening</button>
-        <p><strong>4 questions:</strong> main idea • details • inference</p>
+        <p><strong>3 questions:</strong> main idea • detail • inference</p>
         <button class="journey-main-btn" onclick="STEPUP_JOURNEY.beginUnit2Skill()">Start Listening Practice</button>
       </section>`;
   }
@@ -368,7 +369,7 @@
     const total = s.queue.length;
     const score = s.correct;
     const pct = Math.round(score / total * 100);
-    const passed = score >= 3;
+    const passed = score >= 2;
     const key = s.kind === "reading" ? "reading" : "listening";
 
     try {
@@ -391,7 +392,7 @@
       h.innerHTML = `<section class="journey-result ${passed ? "good" : "review"}">
         <div class="journey-result-score">${score}<span>/${total}</span></div>
         <h2>${passed ? "Skill stop complete ✨" : "One more quick try"}</h2>
-        <p>${passed ? `You completed ${esc(s.label)}.` : `You need 3/4 to complete this stop. Review the evidence and try again.`}</p>
+        <p>${passed ? `You completed ${esc(s.label)}.` : `You need 2/3 to complete this stop. Review the evidence and try again.`}</p>
         <div class="journey-result-actions">
           <button class="journey-main-btn" onclick="PROVE.setStudentTab('journey')">Continue Journey</button>
           ${!passed ? `<button class="journey-link-btn" onclick="STEPUP_JOURNEY.${key === "reading" ? "startReading" : "startListening"}('u2')">Try again</button>` : ""}
@@ -426,8 +427,9 @@
           if (el.textContent.trim() === "Listen") el.textContent = "Listening • STEP Style";
         });
         h.querySelectorAll(".journey-stop-copy small").forEach(el => {
-          if (el.textContent.includes("Find evidence")) el.textContent = "Main idea • detail • vocabulary • inference.";
-          if (el.textContent.includes("Listen for the idea")) el.textContent = "Main idea • details • inference.";
+          if (el.textContent.includes("Find evidence")) el.textContent = "Main idea • detail • inference.";
+          if (el.textContent.includes("Listen for the idea")) el.textContent = "Main idea • detail • inference.";
+          if (el.textContent.includes("6 quick questions")) el.textContent = "5 quick questions • strategy first.";
         });
       }
     }
@@ -461,6 +463,7 @@
   const m2 = (unit.missions || []).find(m => m.id === "m2");
   const m3 = (unit.missions || []).find(m => m.id === "m3");
   const m4 = (unit.missions || []).find(m => m.id === "m4");
+  const m7 = (unit.missions || []).find(m => m.id === "m7");
 
   if (m1) {
     m1.title = "Vocabulary";
