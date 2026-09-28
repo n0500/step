@@ -110,3 +110,26 @@ Unit 2 original Reading text verification:
 - Added Carl Barthes's original résumé as its own Teach Reading screen.
 - Exit Check now uses statements from the textbook After Reading exercise.
 - Reading Review also displays the original textbook passage rather than the condensed version.
+
+
+Teach Reading paragraph sync fix:
+- Reading text is now divided by textbook paragraph: About Us, Media Intern, Archaeological Interns, Environmental Engineering.
+- Each paragraph has its own screen and its own Read Aloud control.
+- Full Reading now reads paragraph-by-paragraph with unique paragraph/sentence identifiers.
+- Sentence highlighting is synchronized with the exact paragraph being spoken.
+- Résumé audio is also synchronized to the exact visible item being read.
+
+
+Teach Reading clickable answer fix:
+- Quick Check and Guided Practice answers can now be clicked.
+- Selected answers are visibly highlighted.
+- Check Answer is enabled after selecting an option.
+- Correct and incorrect feedback appears after checking.
+- Exit Check True/False choices are clickable and checked together.
+
+
+Unit 2 textbook questions added:
+- Before Reading task from Student Book p. 26 is shown with its exercise/page label.
+- All six original After Reading True/False statements from Student Book p. 27 are included and clickable.
+- All three original Discussion questions from Student Book p. 27 are included for oral class discussion.
+- Reading paragraph, résumé, and full-reading screens now show the textbook exercise/page source.
