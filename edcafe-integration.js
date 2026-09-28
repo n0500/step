@@ -3,7 +3,7 @@
 (() => {
   "use strict";
 
-  const state = { classCache: new Map(), patched:false, observer:null };
+  const state = { classCache: new Map(), patched:false, observer:null, userRole:null, roleUid:"" };
 
   const esc = (s="") => String(s).replace(/[&<>"']/g, m => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
@@ -22,6 +22,30 @@
       return u.protocol === "https:" &&
         (u.hostname === "edcafe.ai" || u.hostname.endsWith(".edcafe.ai"));
     }catch(e){ return false; }
+  }
+
+  async function getCurrentUserRole(){
+    const F = fb();
+    const uid = F?.auth?.currentUser?.uid || "";
+    if(!uid){
+      state.userRole=null;
+      state.roleUid="";
+      return null;
+    }
+
+    if(state.roleUid===uid && state.userRole) return state.userRole;
+
+    try{
+      const snap=await F.db.collection("users").doc(uid).get();
+      if(!snap.exists) return null;
+      const role=String(snap.data()?.role || "").trim().toLowerCase();
+      state.userRole=role || null;
+      state.roleUid=uid;
+      return state.userRole;
+    }catch(e){
+      console.warn("Could not load current user role",e);
+      return null;
+    }
   }
 
   async function getCurrentStudentClass(){
@@ -209,6 +233,31 @@
     }
   }
 
+  async function syncStudentFloatingTutor(){
+    const role=await getCurrentUserRole();
+    const existing=document.getElementById("studentFloatingAiTutor");
+
+    // Student only. Remove immediately for teachers, logged-out users, or any other role.
+    if(role!=="student"){
+      existing?.remove();
+      return;
+    }
+
+    if(existing) return;
+
+    const btn=document.createElement("button");
+    btn.id="studentFloatingAiTutor";
+    btn.type="button";
+    btn.className="student-floating-ai-tutor";
+    btn.setAttribute("aria-label","Open AI Tutor");
+    btn.innerHTML=`
+      <span class="student-floating-ai-icon" aria-hidden="true">🤖</span>
+      <span class="student-floating-ai-label">AI Tutor</span>
+    `;
+    btn.addEventListener("click",openCurrentTutor);
+    document.body.appendChild(btn);
+  }
+
   function patchVisibleLabels(){
     document.querySelectorAll('.student-nav [data-student-tab="assistant"] .student-nav-label')
       .forEach(el=>{ if(el.textContent.trim()!=="AI Tutor") el.textContent="AI Tutor"; });
@@ -242,6 +291,7 @@
     patchVisibleLabels();
     syncTeacherCards();
     renderStudentEdcafeHub();
+    syncStudentFloatingTutor();
   }
 
   function injectStyles(){
@@ -252,6 +302,45 @@
       .edcafe-class-panel{margin-top:16px;border-top:1px solid #e5edf4;padding-top:16px}
       .edcafe-class-panel input{width:100%;box-sizing:border-box}
       .edcafe-main-card .journey-main-btn{display:inline-flex;align-items:center;justify-content:center}
+
+      .student-floating-ai-tutor{
+        position:fixed;
+        right:max(18px,env(safe-area-inset-right));
+        bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));
+        z-index:9999;
+        display:flex;
+        align-items:center;
+        gap:9px;
+        min-height:52px;
+        padding:9px 14px 9px 10px;
+        border:1px solid rgba(255,255,255,.7);
+        border-radius:999px;
+        background:linear-gradient(135deg,#5f56e8,#8c52d9);
+        color:#fff;
+        font:800 14px/1 Arial,Tahoma,"Segoe UI",sans-serif;
+        box-shadow:0 10px 28px rgba(62,55,150,.28);
+        cursor:pointer;
+        -webkit-tap-highlight-color:transparent;
+        transition:transform .16s ease,box-shadow .16s ease;
+      }
+      .student-floating-ai-tutor:hover{transform:translateY(-2px);box-shadow:0 13px 32px rgba(62,55,150,.34)}
+      .student-floating-ai-tutor:active{transform:translateY(0) scale(.97)}
+      .student-floating-ai-icon{
+        width:34px;height:34px;border-radius:50%;
+        display:grid;place-items:center;
+        background:rgba(255,255,255,.18);
+        font-size:20px;
+      }
+      .student-floating-ai-label{white-space:nowrap;letter-spacing:.01em}
+      @media(max-width:520px){
+        .student-floating-ai-tutor{
+          right:max(12px,env(safe-area-inset-right));
+          bottom:max(12px,calc(env(safe-area-inset-bottom) + 10px));
+          min-height:50px;
+          padding:8px 12px 8px 8px;
+        }
+        .student-floating-ai-icon{width:34px;height:34px}
+      }
     `;
     document.head.appendChild(s);
   }
@@ -267,5 +356,5 @@
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
   else start();
 
-  window.STEPUP_EDCAFE={saveClassEdcafeLink,openCurrentTutor,getCurrentStudentClass};
+  window.STEPUP_EDCAFE={saveClassEdcafeLink,openCurrentTutor,getCurrentStudentClass,syncStudentFloatingTutor};
 })();

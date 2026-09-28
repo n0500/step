@@ -288,11 +288,63 @@
       },
 
       {
+        label:"Preview", kicker:"Before you read",
+        title:"Preview the title and headings",
+        body:`
+          ${textbookBadge("Reading • JobPool Has the Job for You", "26")}
+          <div class="tr-preview-card" dir="ltr">
+            <span class="tr-preview-label">Title</span>
+            <h2>JobPool Has the Job for You</h2>
+            <span class="tr-preview-label">Headings</span>
+            <div class="tr-preview-headings">
+              <span>About Us</span>
+              <span>Media Intern</span>
+              <span>Archaeological Interns</span>
+              <span>Environmental Engineering</span>
+            </div>
+          </div>
+          <div class="tr-teacher-prompt"><b>Prediction:</b> Before reading, ask: “What do you expect this text to be mainly about?”</div>`
+      },
+      {
+        label:"Strategy • Main Idea", kicker:"Use it now",
+        title:"Main Idea — Predict first",
+        body:`
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Start with the title</b><small>It gives you the broad topic.</small></div>
+            <div><span>2</span><b>Scan the headings</b><small>Look for what the sections have in common.</small></div>
+            <div><span>3</span><b>Make a prediction</b><small>Do not lock the answer yet. Confirm it as you read.</small></div>
+          </div>
+          <div class="tr-demo-box">
+            <b>Main Idea routine</b>
+            <p><strong>Predict → Read → Confirm</strong></p>
+            <p>Teacher cue: “The headings are different, but what connects all of them?”</p>
+          </div>`
+      },
+
+      {
         label:"Paragraph 1", kicker:"Original textbook text",
         title:"About Us",
         audioMode:"about", audioText:s.about || "",
         body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("About Us:", s.about || "", "about", "Read Paragraph 1")}`
       },
+      {
+        label:"Main Idea Check", kicker:"Pause and think",
+        title:"Is our prediction still working?",
+        questionHTML:simpleQuestion({
+          skill:"Main Idea",
+          stem:"After reading “About Us,” which idea best fits the text so far?",
+          choices:[
+            "JobPool connects professionals and companies and presents career opportunities.",
+            "The text is only about archaeology.",
+            "The text explains how to build roads.",
+            "The text is mainly about writing computer programs."
+          ],
+          answer:0,
+          explanation:"The About Us paragraph introduces JobPool as a career network that helps professionals and companies meet. Keep this as a working main idea and confirm it as you continue reading.",
+          need:"Use the title, headings, and the first paragraph together. This is a prediction check, not the final Main Idea answer."
+        }, "Main Idea • Predict → Read → Confirm")
+      },
+
       {
         label:"Paragraph 2", kicker:"Original textbook text",
         title:"Media Intern",
@@ -300,7 +352,18 @@
         body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Media Intern: TV and Radio Media International", s.media || "", "media", "Read Paragraph 2")}`
       },
       {
-        label:"Quick Check", kicker:"Check understanding",
+        label:"Strategy • Scanning", kicker:"Use it now",
+        title:"Scanning for Details",
+        body:`
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Pick the key word</b><small>Job title, number, skill, or requirement.</small></div>
+            <div><span>2</span><b>Move your eyes quickly</b><small>Do not reread every line.</small></div>
+            <div><span>3</span><b>Stop at the matching clue</b><small>Then read that sentence carefully.</small></div>
+          </div>
+          <div class="tr-demo-box"><b>Use it on Paragraph 2</b><p>“If I ask whether the internship is paid or unpaid, what exact word should your eyes search for?”</p></div>`
+      },
+      {
+        label:"Quick Check", kicker:"Apply Scanning",
         title:"Find the exact clue",
         questionHTML:quickCheck(
           "The Media Intern position is ___.",
@@ -309,6 +372,7 @@
           "The original text says: “This is a paid internship for the summer.”"
         )
       },
+
       {
         label:"Paragraph 3", kicker:"Original textbook text",
         title:"Archaeological Interns",
@@ -316,8 +380,8 @@
         body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Archaeological Interns: Students Learning Overseas", s.archaeology || "", "archaeology", "Read Paragraph 3")}`
       },
       {
-        label:"Quick Check", kicker:"Check understanding",
-        title:"Scan for one detail",
+        label:"Detail Check", kicker:"Keep Scanning",
+        title:"Find one specific detail",
         questionHTML:quickCheck(
           "Which internship is unpaid but provides lodging and meals?",
           ["Media Intern","Archaeological Interns","Environmental Engineering","All of them"],
@@ -325,6 +389,7 @@
           "The original text states that the archaeological internship is unpaid, but lodging and meals are provided."
         )
       },
+
       {
         label:"Paragraph 4", kicker:"Original textbook text",
         title:"Environmental Engineering",
@@ -332,8 +397,8 @@
         body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Environmental Engineering: Saudi Construction, Riyadh", s.engineering || "", "engineering", "Read Paragraph 4")}`
       },
       {
-        label:"Quick Check", kicker:"Check understanding",
-        title:"Scan the final paragraph",
+        label:"Detail Check", kicker:"Scan the paragraph",
+        title:"Find the required skill",
         questionHTML:quickCheck(
           "The engineering applicant needs to be able to read ___.",
           ["résumés","blueprints","newspapers","maps only"],
@@ -341,48 +406,49 @@
           "The original text says the applicant needs to be able to read blueprints."
         )
       },
+
       {
-        label:"Résumé", kicker:"Original textbook text",
-        title:"Carl Barthes",
-        audioQueue:resumeQueue(s.resume),
-        body:`${textbookBadge("Résumé", "27")}${resumeHTML(s.resume)}`
-      },
-      {
-        label:"Strategy", kicker:"Reading skill",
-        title:"Main Idea",
-        body:`
-          <div class="tr-strategy-grid">
-            <div><span>1</span><b>Read the title and headings</b><small>They tell you the topic.</small></div>
-            <div><span>2</span><b>Look across all sections</b><small>Find what they have in common.</small></div>
-            <div><span>3</span><b>Avoid tiny details</b><small>The main idea must cover the whole text.</small></div>
-          </div>
-          <div class="tr-demo-box"><b>Teacher cue</b><p>“Is the text mainly about one job, or about several opportunities and their requirements?”</p></div>`
-      },
-      {
-        label:"Strategy", kicker:"Reading skill",
-        title:"Scanning for Details",
-        body:`
-          <div class="tr-strategy-grid">
-            <div><span>1</span><b>Underline the key word</b><small>Job title, number, skill, or requirement.</small></div>
-            <div><span>2</span><b>Move your eyes quickly</b><small>Do not reread every line.</small></div>
-            <div><span>3</span><b>Stop at the matching clue</b><small>Then read that sentence carefully.</small></div>
-          </div>
-          <div class="tr-demo-box"><b>Teacher cue</b><p>“If I ask which internship is unpaid, what exact word should your eyes search for?”</p></div>`
-      },
-      {
-        label:"Strategy", kicker:"Reading skill",
+        label:"Strategy • Inference", kicker:"Use clues together",
         title:"Inference",
         body:`
           <div class="tr-strategy-grid">
             <div><span>1</span><b>Collect two or more clues</b><small>The answer may not be copied exactly.</small></div>
-            <div><span>2</span><b>Match clues to the question</b><small>Use only what the text supports.</small></div>
+            <div><span>2</span><b>Match the clues</b><small>Connect the details to what the question asks.</small></div>
             <div><span>3</span><b>Choose the best fit</b><small>Reject options that add unsupported ideas.</small></div>
           </div>
-          <div class="tr-demo-box"><b>Teacher cue</b><p>“If someone is fluent in English, friendly, and good with computers, which opening fits best?”</p></div>`
+          <div class="tr-demo-box"><b>Use it on the job openings</b><p>“If someone is fluent in English, friendly, and good with computers, which opening fits best?”</p></div>`
       },
-      {label:"Guided Practice", kicker:"Main Idea", title:q[0]?.stem || "Main Idea", questionHTML:simpleQuestion(q[0], "Main Idea strategy")},
-      {label:"Guided Practice", kicker:"Specific Detail", title:q[1]?.stem || "Specific Detail", questionHTML:simpleQuestion(q[1], "Scanning strategy")},
-      {label:"Guided Practice", kicker:"Inference", title:q[2]?.stem || "Inference", questionHTML:simpleQuestion(q[2], "Inference strategy")},
+
+      {
+        label:"Résumé", kicker:"Original textbook text",
+        title:"Carl Barthes",
+        audioQueue:resumeQueue(s.resume),
+        body:`${textbookBadge("Résumé", "27")}${resumeHTML(s.resume)}
+          <div class="tr-teacher-prompt"><b>Apply Scanning + Inference:</b> Scan Carl’s résumé for qualifications, then infer which JobPool opening best matches his experience.</div>`
+      },
+
+      {
+        label:"Guided Practice", kicker:"Confirm Main Idea",
+        title:q[0]?.stem || "Main Idea",
+        questionHTML:simpleQuestion(q[0], "Main Idea • Confirm your prediction")
+      },
+      {
+        label:"Guided Practice", kicker:"Scanning",
+        title:q[1]?.stem || "Specific Detail",
+        questionHTML:simpleQuestion(q[1], "Scanning strategy")
+      },
+      {
+        label:"Guided Practice", kicker:"Inference",
+        title:q[2]?.stem || "Inference",
+        questionHTML:simpleQuestion(q[2], "Inference strategy")
+      },
+
+      {
+        label:"After Reading", kicker:"Textbook Exercise",
+        title:"Answer true or false",
+        questionHTML:exitCheckHTML()
+      },
+
       {
         label:"Full Reading", kicker:"Listen and follow",
         title:"JobPool Has the Job for You",
@@ -410,11 +476,7 @@
             <p><strong>Send applications to:</strong> internships@jpool.com Attach a cover letter and a résumé.</p>
           </div>`
       },
-      {
-        label:"After Reading", kicker:"Textbook Exercise",
-        title:"Answer true or false",
-        questionHTML:exitCheckHTML()
-      },
+
       {
         label:"Discussion", kicker:"Textbook Exercise",
         title:"Discuss the reading",
@@ -711,6 +773,7 @@
       .tr-skill-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.tr-skill-card{border:1px solid #dfe5ef;border-radius:18px;padding:18px;text-align:left;background:#fff;cursor:pointer;min-height:155px;transition:.18s ease;box-shadow:0 6px 18px rgba(35,46,80,.04)}.tr-skill-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(35,46,80,.08)}.tr-skill-card.teach{background:linear-gradient(145deg,#eef7ff,#fff);border-color:#bedcff}.tr-skill-card.reading{background:linear-gradient(145deg,#fff1fb,#fff);border-color:#efc7eb}.tr-skill-card.grammar{background:linear-gradient(145deg,#effcf8,#fff);border-color:#bfeadd}.tr-skill-card b{display:block;font-size:18px;color:#172033;margin:9px 0 6px}.tr-skill-card small{display:block;color:#667085;line-height:1.5}.tr-skill-icon{font-size:28px}
       .tr-shell{min-height:100vh;background:linear-gradient(180deg,#f7faff,#fff);color:#172033;font-family:Arial,Tahoma,"Segoe UI",sans-serif}.tr-toolbar{height:76px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #dfe7f0;background:#fff;position:sticky;top:0;z-index:10}.tr-brand{display:flex;align-items:center;gap:12px}.tr-logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#6250e8,#b43ed6);color:#fff;font-weight:900}.tr-brand strong{display:block;font-size:18px}.tr-brand small{display:block;margin-top:3px;color:#667085}.tr-toolbar-actions{display:flex;gap:10px;align-items:center}.tr-toolbar-actions button{border:1px solid #d8e1eb;background:#fff;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer}.tr-counter{font-weight:900;color:#6250e8}
       .tr-progress{height:5px;background:#eaf0f6}.tr-progress>div{height:100%;background:linear-gradient(90deg,#1769e0,#8f4ee8);transition:.25s}.tr-stage{max-width:1280px;margin:0 auto;padding:30px 28px 34px}.tr-step-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}.tr-kicker{display:block;color:#6750d8;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.tr-step-head h1{margin:6px 0 0;font-size:36px;line-height:1.18}.tr-step-label{background:#eef2ff;color:#5845cd;border-radius:999px;padding:9px 13px;font-weight:900;font-size:13px}.tr-content{min-height:520px;background:#fff;border:1px solid #dfe7f0;border-radius:26px;padding:30px;box-shadow:0 12px 32px rgba(23,50,77,.06)}
+      .tr-preview-card{border:1px solid #dde6f1;border-radius:22px;padding:26px;background:linear-gradient(145deg,#fbfdff,#f8f4ff);margin-bottom:18px}.tr-preview-card h2{font-size:30px;margin:8px 0 22px;color:#2c347d}.tr-preview-label{display:block;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:#667085}.tr-preview-headings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.tr-preview-headings span{padding:13px 15px;border-radius:14px;background:#fff;border:1px solid #dce4ee;font-weight:800;color:#344054}
       .tr-warm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:24px 0}.tr-career-card{min-height:190px;padding:26px;border:1px solid #dfe7f0;border-radius:22px;background:#fbfdff;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.tr-career-card span{font-size:52px}.tr-career-card strong{font-size:22px;margin:14px 0 7px}.tr-career-card small{font-size:15px;color:#667085}.tr-teacher-prompt{margin-top:22px;padding:17px 20px;border-radius:16px;background:#eef7ff;border-left:5px solid #1769e0;font-size:18px;line-height:1.6}
       .tr-vocab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.tr-vocab-card{border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#fff}.tr-vocab-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.tr-vocab-top b{font-size:21px;color:#6c48d7}.tr-vocab-top button{border:0;background:#eef5ff;border-radius:10px;padding:8px 10px;cursor:pointer}.tr-meaning-toggle{margin-top:10px;border:1px solid #d8e2ef;background:#fff;border-radius:999px;padding:7px 10px;font-weight:800;cursor:pointer;color:#344054}.tr-vocab-meaning{display:none;margin-top:9px;font-size:16px;color:#475467;line-height:1.5}.tr-vocab-card.show-meaning .tr-vocab-meaning{display:block}
       .tr-audio-bar{display:grid;grid-template-columns:auto auto 1fr;gap:14px;align-items:center;padding:14px 16px;border-radius:18px;background:#f4f8ff;border:1px solid #d8e7fb;margin-bottom:22px}.tr-audio-main{display:flex;gap:8px;flex-wrap:wrap}.tr-audio-main button,.tr-speed button{border:1px solid #cfdcec;background:#fff;border-radius:11px;padding:9px 11px;font-weight:800;cursor:pointer}.tr-audio-main .tr-audio-primary{background:#1769e0;color:#fff;border-color:#1769e0}.tr-speed{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.tr-speed span{font-size:12px;font-weight:900;color:#667085}.tr-speed button.active{background:#6250e8;color:#fff;border-color:#6250e8}.tr-audio-status{text-align:right;color:#667085;font-size:13px;font-weight:800}
@@ -724,7 +787,7 @@
 
       .tr-exit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.tr-exit-card{border:1px solid #e0e7ef;border-radius:18px;padding:18px;background:#fbfdff}.tr-exit-num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#6250e8;color:#fff;font-weight:900}.tr-exit-card h3{font-size:18px;line-height:1.35}.tr-exit-options{display:grid;gap:7px}.tr-exit-option{width:100%;display:flex;gap:8px;border:1px solid #e0e6ee;background:#fff;border-radius:11px;padding:10px 11px;cursor:pointer;text-align:left;color:#172033}.tr-exit-options span{font-weight:900}.tr-exit-option.selected{border-color:#6250e8;background:#f5f2ff}.tr-exit-option.correct{border-color:#32a36c;background:#edfff6}.tr-exit-option.wrong{border-color:#d94d55;background:#fff1f2}.tr-exit-actions{max-width:360px;margin:18px auto 0}
       .tr-nav{display:grid;grid-template-columns:160px 1fr 160px;gap:16px;align-items:center;margin-top:20px}.tr-nav button{border-radius:14px;padding:13px 16px;font-weight:900;cursor:pointer;font-size:15px}.tr-nav .secondary{background:#fff;border:1px solid #d7e0ea;color:#344054}.tr-nav .primary{background:#1769e0;border:1px solid #1769e0;color:#fff}.tr-nav button:disabled{opacity:.35;cursor:not-allowed}.tr-dots{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.tr-dots span{width:8px;height:8px;border-radius:50%;background:#d8e0e9}.tr-dots span.active{width:22px;border-radius:999px;background:#6250e8}.tr-dots span.done{background:#8cb7ef}
-      @media(max-width:850px){.tr-skill-grid,.tr-warm-grid,.tr-strategy-grid,.tr-vocab-grid,.tr-question-grid,.tr-exit-grid,.tr-exit-six{grid-template-columns:1fr}.tr-stage{padding:20px 16px}.tr-content{padding:20px;min-height:auto}.tr-step-head h1{font-size:28px}.tr-reading-card{font-size:18px}.tr-toolbar{padding:0 14px}.tr-brand small{display:none}.tr-nav{grid-template-columns:110px 1fr 110px}.tr-nav button{padding:11px 8px}.tr-audio-bar{grid-template-columns:1fr}.tr-audio-status{text-align:left}}
+      @media(max-width:850px){.tr-skill-grid,.tr-warm-grid,.tr-strategy-grid,.tr-vocab-grid,.tr-question-grid,.tr-exit-grid,.tr-exit-six,.tr-preview-headings{grid-template-columns:1fr}.tr-stage{padding:20px 16px}.tr-content{padding:20px;min-height:auto}.tr-step-head h1{font-size:28px}.tr-reading-card{font-size:18px}.tr-toolbar{padding:0 14px}.tr-brand small{display:none}.tr-nav{grid-template-columns:110px 1fr 110px}.tr-nav button{padding:11px 8px}.tr-audio-bar{grid-template-columns:1fr}.tr-audio-status{text-align:left}}
     `;document.head.appendChild(s)
   }
 

@@ -133,3 +133,23 @@ Unit 2 textbook questions added:
 - All six original After Reading True/False statements from Student Book p. 27 are included and clickable.
 - All three original Discussion questions from Student Book p. 27 are included for oral class discussion.
 - Reading paragraph, résumé, and full-reading screens now show the textbook exercise/page source.
+
+
+Teach Reading strategy-flow improvement:
+- Main Idea is now taught before the reading using Preview -> Predict.
+- After Paragraph 1, students do a Main Idea prediction check.
+- Scanning is taught immediately after the Media Intern paragraph, then applied in the next Quick Check.
+- Scanning continues through the Archaeological and Engineering detail checks.
+- Inference is taught after the job-opening paragraphs, before the résumé.
+- Carl's résumé explicitly applies Scanning + Inference.
+- Guided Practice later confirms Main Idea and reviews Scanning and Inference.
+- Textbook After Reading remains before Full Reading, followed by textbook Discussion.
+
+
+Student floating AI Tutor:
+- Added a fixed floating AI Tutor button across the student experience.
+- It appears only when the signed-in user role is student.
+- It is removed/hidden for teachers, owners, and logged-out users.
+- Tapping it opens the Edcafe tutor assigned to the student's own class.
+- If the class has no Edcafe link, the existing clear message is shown.
+- The existing AI Tutor tab remains unchanged.
