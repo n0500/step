@@ -153,3 +153,12 @@ Student floating AI Tutor:
 - Tapping it opens the Edcafe tutor assigned to the student's own class.
 - If the class has no Edcafe link, the existing clear message is shown.
 - The existing AI Tutor tab remains unchanged.
+
+
+Responsive iPad / laptop entry screen:
+- The landing/login screen now expands automatically on tablets and laptops instead of staying at the narrow phone width.
+- iPad/tablet width uses up to 940px; large laptops use up to 1080px.
+- Role cards automatically fit 3 or 4 roles across the available width.
+- Login fields use responsive columns on wider screens.
+- Direct student class-link entry is wider on tablets/laptops too.
+- Phone layout remains compact and unchanged.
