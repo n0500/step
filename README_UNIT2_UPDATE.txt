@@ -174,3 +174,29 @@ Critical student progress save fix:
 - Students now see a visible “Progress saved ✓” confirmation.
 - Journey result screens show whether the attempt was saved.
 - Existing progress logic/mastery thresholds are not changed.
+
+
+Critical progress save fix v2:
+- Root cause found: v1 read a brand-new attempt document before creating it.
+- Firestore rules reject reading a non-existent attempt document, so the save failed before CREATE.
+- v2 removes that pre-read and creates the attempt directly.
+- Student UID, classId, and teacherId are still refreshed from Firebase before saving.
+- The obsolete v1 local queue is cleared; the existing student-flow-guard keeps the real pending result and Retry Save button.
+
+
+Automatic student progress save:
+- Students no longer need to press Retry Save.
+- A failed Journey result is retried automatically after sign-in, when the page becomes active, and when the internet reconnects.
+- Retries use a short backoff and continue automatically while a result is pending.
+- The existing pending result is preserved on the device until Firebase confirms the save.
+- On success, the pending warning disappears and the student sees Progress saved ✓.
+- Manual Retry Save remains only as an underlying fallback from the existing flow guard.
+
+
+Simplified direct progress saving:
+- Removed progress-save-fix.js entirely.
+- Removed student-auto-save.js entirely.
+- Removed all pending-result / Retry Save wrappers from student-flow-guard.
+- Student results now use the original direct save path in app.js again.
+- Old temporary pending-save localStorage keys and warning UI are cleared automatically.
+- Student login/profile recovery remains available.

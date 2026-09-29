@@ -1,10 +1,10 @@
-/* StepUp student flow guard — 2026-09-27 */
+/* StepUp student account guard — simplified
+   Keeps student sign-in/profile recovery only.
+   Progress saving is handled directly by app.js with no extra wrapper. */
 (() => {
   'use strict';
 
-  const VERSION = '20260927-flow-guard-1';
-  const PENDING_KEY = 'stepup_pending_journey_attempt_v1';
-  let originalRecordJourneyAttempt = null;
+  const VERSION = '20260929-account-guard-lite';
   let refreshTimer = null;
 
   const fbReady = () => !!(window.firebase?.auth && window.firebase?.firestore);
@@ -24,157 +24,18 @@
     };
   }
 
-  function savePending(payload){
-    const uid = firebase.auth().currentUser?.uid || null;
-    const item = {uid,payload,failedAt:Date.now(),version:VERSION};
-    try{ localStorage.setItem(PENDING_KEY,JSON.stringify(item)); }catch(_){}
-    return item;
-  }
-
-  function readPending(){
-    try{
-      const item = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
-      if(!item?.payload) return null;
-      const uid = firebase.auth().currentUser?.uid || null;
-      if(item.uid && uid && item.uid !== uid) return null;
-      return item;
-    }catch(_){ return null; }
-  }
-
-  function clearPending(){
-    try{ localStorage.removeItem(PENDING_KEY); }catch(_){}
-  }
-
-  async function alreadySaved(pending){
-    if(!fbReady() || !pending?.payload) return false;
-    const uid = firebase.auth().currentUser?.uid;
-    if(!uid) return false;
-    try{
-      const snap = await firebase.firestore()
-        .collection('attempts')
-        .where('studentId','==',uid)
-        .get();
-
-      const floor = Number(pending.failedAt || 0) - 120000;
-      return snap.docs.some(doc => {
-        const a = doc.data() || {};
-        const when = Date.parse(a.submittedAt || '') || 0;
-        return a.trainingId === pending.payload.trainingId &&
-          Number(a.score || 0) === Number(pending.payload.score || 0) &&
-          Number(a.total || 0) === Number(pending.payload.total || 0) &&
-          Number(a.percentage || 0) === Number(pending.payload.percentage || 0) &&
-          (!when || when >= floor);
-      });
-    }catch(_){ return false; }
-  }
-
-  function installStyles(){
-    if(document.getElementById('stepupFlowGuardStyle')) return;
-    const style = document.createElement('style');
-    style.id = 'stepupFlowGuardStyle';
-    style.textContent = `
-      .stepup-save-guard{
-        background:#fff!important;border:1.5px solid #f0c36d!important;
-        border-radius:20px!important;padding:20px!important;
-        box-shadow:0 10px 30px -20px rgba(45,55,75,.35)!important;
-      }
-      .stepup-save-guard h2{margin:0 0 8px!important}
-      .stepup-save-guard p{margin:0 0 14px!important;line-height:1.65!important}
-      .stepup-pending-banner{
-        margin:0 0 14px;padding:12px 14px;display:flex;align-items:center;
-        justify-content:space-between;gap:12px;border:1.5px solid #f0c36d;
-        border-radius:16px;background:#fffaf0;color:#4b3a17;
-      }
-      .stepup-pending-banner b{display:block;margin-bottom:2px}
-      .stepup-pending-banner small{display:block;line-height:1.45}
-      @media(max-width:520px){
-        .stepup-pending-banner{align-items:stretch;flex-direction:column}
-        .stepup-pending-banner .btn{width:100%}
-      }`;
-    document.head.appendChild(style);
-  }
-
-  function showPendingState(){
-    const pending = readPending();
-    if(!pending) return;
-
-    const result = document.querySelector('.journey-result');
-    if(result && !result.classList.contains('stepup-save-guard')){
-      result.className = 'journey-result review stepup-save-guard';
-      result.innerHTML = `
-        <h2>Result not saved yet</h2>
-        <p>Your answers are still available on this device. Check your internet connection, then save the result before continuing.</p>
-        <div class="journey-result-actions">
-          <button class="journey-main-btn" onclick="STEPUP_FLOW_GUARD.retrySave()">Retry Save</button>
-        </div>`;
-    }
-
-    const view = document.querySelector('.student-view');
-    if(view && !document.getElementById('stepupPendingAttemptBanner')){
-      const banner = document.createElement('div');
-      banner.id = 'stepupPendingAttemptBanner';
-      banner.className = 'stepup-pending-banner';
-      banner.innerHTML = `
-        <div><b>One result is waiting to be saved.</b><small>Save it before starting another activity.</small></div>
-        <button class="btn btn-primary" onclick="STEPUP_FLOW_GUARD.retrySave()">Retry Save</button>`;
-      view.prepend(banner);
-    }
-  }
-
-  async function retrySave(){
-    const pending = readPending();
-    if(!pending?.payload) return;
-
-    document.querySelectorAll('[onclick="STEPUP_FLOW_GUARD.retrySave()"]').forEach(b => {
-      b.disabled = true;
-      b.textContent = 'Saving…';
-    });
-
-    try{
-      if(await alreadySaved(pending)){
-        clearPending();
-      }else{
-        if(typeof originalRecordJourneyAttempt !== 'function') throw new Error('Save function unavailable');
-        await originalRecordJourneyAttempt(pending.payload);
-        clearPending();
-      }
-      alert('Result saved successfully.');
-      if(window.PROVE?.setStudentTab) window.PROVE.setStudentTab('progress');
-      else window.location.reload();
-    }catch(e){
-      console.error('StepUp retry save failed',e);
-      alert('The result still could not be saved. Check your connection and try again.');
-      document.querySelectorAll('[onclick="STEPUP_FLOW_GUARD.retrySave()"]').forEach(b => {
-        b.disabled = false;
-        b.textContent = 'Retry Save';
-      });
-    }
-  }
-
-  function patchAttemptSaving(){
-    if(!window.PROVE?.recordJourneyAttempt) return;
-    if(window.PROVE.recordJourneyAttempt.__flowGuardPatched) return;
-
-    originalRecordJourneyAttempt = window.PROVE.recordJourneyAttempt.bind(window.PROVE);
-
-    const wrapped = async function(payload){
-      try{
-        const result = await originalRecordJourneyAttempt(payload);
-        clearPending();
-        return result;
-      }catch(e){
-        savePending(payload);
-        throw e;
-      }
-    };
-
-    wrapped.__flowGuardPatched = VERSION;
-    window.PROVE.recordJourneyAttempt = wrapped;
+  function clearOldSaveGuards(){
+    // Remove stale local keys/UI created by the temporary save-protection experiments.
+    try{ localStorage.removeItem('stepup_pending_journey_attempt_v1'); }catch(_){}
+    try{ localStorage.removeItem('stepup_pending_attempts_v1'); }catch(_){}
+    document.getElementById('stepupPendingAttemptBanner')?.remove();
+    document.getElementById('stepupProgressSaveToast')?.remove();
+    document.getElementById('stepupAutoSaveToast')?.remove();
   }
 
   function patchStudentLogin(){
     if(!window.PROVE?.studentContinue || !fbReady()) return;
-    if(window.PROVE.studentContinue.__flowGuardPatched) return;
+    if(window.PROVE.studentContinue.__accountGuardPatched) return;
 
     const wrapped = async function(forcedClassCode=''){
       const name = (document.getElementById('stName')?.value || '').trim().replace(/\s+/g,' ');
@@ -212,7 +73,7 @@
             window.location.reload();
           }catch(profileError){
             console.error('StepUp profile recovery failed',profileError);
-            alert('Signed in, but the student profile could not be restored. Check the connection and try again.');
+            alert('Signed in, but the student profile could not be restored. Please try again.');
           }
         }
         return;
@@ -235,25 +96,21 @@
         if(createError?.code === 'auth/email-already-in-use'){
           return alert('The name is already registered. Check your PIN and try again.');
         }
-
         if(createdUser){
           try{ await createdUser.delete(); }catch(_){}
         }
-
         console.error('StepUp student account creation failed',createError);
-        alert('Could not create the student profile. Check the connection and try again.');
+        alert('Could not create the student profile. Please try again.');
       }
     };
 
-    wrapped.__flowGuardPatched = VERSION;
+    wrapped.__accountGuardPatched = VERSION;
     window.PROVE.studentContinue = wrapped;
   }
 
   function refresh(){
-    installStyles();
-    patchAttemptSaving();
+    clearOldSaveGuards();
     patchStudentLogin();
-    showPendingState();
   }
 
   const observer = new MutationObserver(() => {
@@ -271,5 +128,5 @@
   setTimeout(refresh,220);
   setTimeout(refresh,850);
 
-  window.STEPUP_FLOW_GUARD = {version:VERSION,retrySave,refresh};
+  window.STEPUP_ACCOUNT_GUARD = {version:VERSION,refresh};
 })();
