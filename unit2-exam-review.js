@@ -13,7 +13,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-step-clean-ui-20260929-1";
+  const VERSION = "u2-bilingual-help-20260929-1";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -38,6 +38,77 @@
   const q = (id, skill, prompt, choices, answer, explanation, source, review=false) => ({
     id, skill, prompt, choices, answer, explanation, source, review
   });
+
+
+  function englishHint(item){
+    const skill=String(item?.skill||"");
+    if(/Present Perfect Progressive/.test(skill)) return "Look for duration or an action that started in the past and is still continuing.";
+    if(/Present Perfect Simple/.test(skill)) return "Think about a completed result, number, or experience up to now.";
+    if(/Adjective \+ Preposition \+ Gerund|Good at \+ Gerund|Interested in \+ Gerund/.test(skill)) return "Check the fixed expression first, then the verb form that follows it.";
+    if(/Simple Present/.test(skill) && /Wh-Questions/.test(skill)) return "With he/she, use does + subject + base verb.";
+    if(/Simple Present/.test(skill)) return "Look for a routine or repeated action, then check the subject.";
+    if(/Prepositions of Time/.test(skill)) return "Think about the preposition normally used with this time expression.";
+    if(/Relative Pronouns/.test(skill)) return "First decide whether the noun is a person or a thing.";
+    if(/Past Progressive with While/.test(skill)) return "Use while for actions happening at the same time in the past.";
+    if(/Wh-Questions/.test(skill)) return "Check the order: question word + auxiliary + subject + base verb.";
+    if(/Real Talk/.test(skill)) return "Use the meaning of the whole expression in the Unit 2 conversation.";
+    if(/Vocabulary/.test(skill)) return "Use the sentence meaning and career context to eliminate weak choices.";
+    if(/Reading/.test(skill)) return "Return to the passage and find the evidence before choosing.";
+    if(/Listening/.test(skill)) return "Listen for the main idea or the exact detail asked for.";
+    if(/Writing/.test(skill)) return "Use the structure and meaning of a formal cover letter.";
+    return "Find the clue in the sentence, eliminate weak options, then choose.";
+  }
+
+  function arabicHint(item){
+    const skill=String(item?.skill||"");
+    if(/Present Perfect Progressive/.test(skill)) return "ابحثي عن مدة أو فعل بدأ في الماضي وما زال مستمرا.";
+    if(/Present Perfect Simple/.test(skill)) return "ركزي على النتيجة أو العدد أو الخبرة المكتملة حتى الآن.";
+    if(/Adjective \+ Preposition \+ Gerund|Good at \+ Gerund|Interested in \+ Gerund/.test(skill)) return "حددي التعبير الثابت أولا، ثم انتبهي لصيغة الفعل التي تأتي بعده.";
+    if(/Simple Present/.test(skill) && /Wh-Questions/.test(skill)) return "مع he / she نستخدم does ثم الفعل بصيغته الأساسية.";
+    if(/Simple Present/.test(skill)) return "ابحثي عن عادة أو فعل متكرر، ثم انتبهي للفاعل.";
+    if(/Prepositions of Time/.test(skill)) return "فكري في حرف الجر المستخدم عادة مع هذا التعبير الزمني.";
+    if(/Relative Pronouns/.test(skill)) return "حددي أولا: هل الاسم شخص أم شيء؟";
+    if(/Past Progressive with While/.test(skill)) return "استخدمي while لربط حدثين كانا يحدثان في الوقت نفسه في الماضي.";
+    if(/Wh-Questions/.test(skill)) return "راجعي ترتيب السؤال: أداة السؤال ثم الفعل المساعد ثم الفاعل ثم الفعل الأساسي.";
+    if(/Real Talk/.test(skill)) return "ركزي على معنى التعبير كاملا كما ورد في محادثة الوحدة الثانية.";
+    if(/Vocabulary/.test(skill)) return "استخدمي معنى الجملة وسياق الوظائف لاستبعاد الخيارات غير المناسبة.";
+    if(/Reading/.test(skill)) return "ارجعي للنص وابحثي عن الدليل قبل اختيار الإجابة.";
+    if(/Listening/.test(skill)) return "استمعي للفكرة الرئيسة أو للتفصيل المطلوب في السؤال.";
+    if(/Writing/.test(skill)) return "استخدمي ترتيب ومعنى عناصر خطاب التقديم الرسمي.";
+    return "ابحثي عن الكلمة المفتاحية في الجملة واستبعدي الخيارات غير المناسبة.";
+  }
+
+  function arabicExplanation(item){
+    const skill=String(item?.skill||"");
+    const p=String(item?.prompt||"");
+    if(p.includes("bored to death")) return "التعبير bored to death يعني مللا شديدا.";
+    if(p.includes("day after day")) return "التعبير day after day يعني تكرار الشيء بالنمط نفسه يوما بعد يوم.";
+    if(p.includes("scientist")) return "الكلمة المناسبة هي scientist لأنها تعني عالما، وهو الشخص الذي يكتشف ويدرس أشياء جديدة.";
+    if(p.includes("stuck in")) return "في سياق المحادثة، stuck in تعني عالقا أو غير قادر على الخروج أو الحركة بحرية.";
+    if(p.toLowerCase().includes("talk someone out of it")) return "التعبير يعني إقناع شخص بألا يفعل شيئا أو أن يختار شيئا مختلفا.";
+    if(p.includes("luckily")) return "كلمة luckily تستخدم عندما نرى أن ما حدث كان إيجابيا أو محظوظا.";
+    if(/Present Perfect Progressive/.test(skill)) return "نستخدم has/have been + verb-ing عندما بدأ الفعل في الماضي وما زال مستمرا، وغالبا تظهر مدة مثل for أو since.";
+    if(/Present Perfect Simple & Progressive/.test(skill)) return "نستخدم المضارع التام المستمر للنشاط المستمر، والمضارع التام البسيط للنتيجة أو العدد أو الخبرة المكتملة حتى الآن.";
+    if(/Present Perfect Simple/.test(skill)) return "نستخدم المضارع التام البسيط للنتيجة أو العدد أو الخبرة المكتملة حتى الآن: have/has + past participle.";
+    if(/Adjective \+ Preposition \+ Gerund|Good at \+ Gerund|Interested in \+ Gerund/.test(skill)) return "بعد good at و interested in نستخدم الفعل بصيغة -ing.";
+    if(/Simple Present/.test(skill) && /Wh-Questions/.test(skill)) return "في أسئلة المضارع البسيط مع he/she نستخدم does، وبعد does يأتي الفعل بصيغته الأساسية.";
+    if(/Simple Present/.test(skill)) return "نستخدم المضارع البسيط للعادات والأفعال المتكررة، ومع he/she نضيف غالبا -s للفعل.";
+    if(/Prepositions of Time/.test(skill)) return "نستخدم at مع night: at night.";
+    if(/Relative Pronouns/.test(skill)) return "نستخدم who للأشخاص، وwhich للأشياء، ويمكن استخدام that مع الأشخاص أو الأشياء حسب السياق.";
+    if(/Past Progressive with While/.test(skill)) return "نستخدم while مع حدثين كانا مستمرين في الوقت نفسه في الماضي، وصيغة الحدث المستمر هي was/were + verb-ing.";
+    if(/Wh-Questions/.test(skill)) return "ترتيب السؤال الصحيح: أداة السؤال + الفعل المساعد + الفاعل + الفعل بصيغته الأساسية.";
+    if(/Reading/.test(skill)) return "الإجابة الصحيحة تعتمد على الدليل المباشر أو الاستنتاج من نص القراءة في الوحدة الثانية.";
+    if(/Listening/.test(skill)) return "الإجابة الصحيحة تأتي من الفكرة أو التفصيل المذكور في محادثة الوحدة الثانية.";
+    if(/Writing/.test(skill)) return "الإجابة الصحيحة تتبع معنى وترتيب عناصر خطاب التقديم الرسمي.";
+    return "راجعي القاعدة والكلمة المفتاحية في السؤال، ثم قارنيها بصيغة الإجابة الصحيحة.";
+  }
+
+  let helpMode=null;
+  function toggleHelp(mode){
+    if(!session)return;
+    helpMode = helpMode===mode ? null : mode;
+    renderQuestion();
+  }
 
   // -------------------- REQUIRED EXAM REVIEW --------------------
   // Review items are placed first and are never skipped.
@@ -551,6 +622,7 @@
       started:Date.now(),
       runAnswers:[]
     };
+    helpMode=null;
     renderQuestion();
   }
 
@@ -571,6 +643,12 @@
         <div class="journey-options">
           ${item.choices.map((x,i)=>`<button ${saving?'disabled':''} onclick="STEPUP_U2_EXAM.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join("")}
         </div>
+        <div class="u2-help-actions">
+          <button type="button" class="${helpMode==='en'?'active':''}" onclick="STEPUP_U2_EXAM.help('en')">English Hint</button>
+          <button type="button" class="${helpMode==='ar'?'active':''}" onclick="STEPUP_U2_EXAM.help('ar')">مساعدة بالعربي</button>
+        </div>
+        ${helpMode==='en'?`<div class="u2-help-panel en" dir="ltr">${esc(englishHint(item))}</div>`:""}
+        ${helpMode==='ar'?`<div class="u2-help-panel ar" dir="rtl">${esc(arabicHint(item))}</div>`:""}
         ${session.sectionKey==="step"?"":`<small class="u2-source-note">${esc(item.source)}</small>`}
       </section>`;
   }
@@ -583,8 +661,13 @@
       <section class="journey-feedback ${ok?'good':'support'}">
         <span>${ok?'✓':'✕'}</span>
         <h2>${ok?'Correct!':'Not quite'}</h2>
-        ${!ok?`<div class="u2-correct-answer" dir="ltr"><b>Correct answer:</b> ${esc(item.choices[item.answer])}</div>`:""}
-        <p>${esc(item.explanation)}</p>
+        ${!ok?`
+          <div class="u2-correct-answer" dir="ltr"><b>Correct answer:</b> ${esc(item.choices[item.answer])}</div>
+          <div class="u2-explain-grid">
+            <div class="u2-explain-box en" dir="ltr"><b>English Explanation</b><p>${esc(item.explanation)}</p></div>
+            <div class="u2-explain-box ar" dir="rtl"><b>الشرح بالعربي</b><p>${esc(arabicExplanation(item))}</p></div>
+          </div>
+        `:`<p>${esc(item.explanation)}</p>`}
         <div class="u2-saved-pill">Saved ✓</div>
         <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.next()">Continue</button>
       </section>`;
@@ -611,6 +694,7 @@
     if(!session)return;
     if(session.pos<session.queue.length-1){
       session.pos++;
+      helpMode=null;
       return renderQuestion();
     }
 
@@ -670,6 +754,16 @@
         display:inline-block;margin:8px 0 2px;padding:7px 11px;border-radius:999px;
         background:#e7f7ee;color:#176b4a;font-weight:900
       }
+      .u2-help-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+      .u2-help-actions button{border:1px solid #d7dfeb;background:#fff;color:#33445c;border-radius:999px;padding:9px 13px;font-weight:800}
+      .u2-help-actions button.active{background:#eef3ff;border-color:#aebfea}
+      .u2-help-panel{margin-top:10px;padding:12px 14px;border-radius:14px;background:#f7f9fc;color:#33445c;line-height:1.7}
+      .u2-help-panel.ar{font-size:15px}
+      .u2-explain-grid{display:grid;gap:10px;margin-top:12px}
+      .u2-explain-box{padding:13px 14px;border-radius:14px;background:#f7f9fc;text-align:left}
+      .u2-explain-box.ar{text-align:right}
+      .u2-explain-box b{display:block;margin-bottom:5px}
+      .u2-explain-box p{margin:0;line-height:1.7}
       .u2-step-separate-card{
         border-style:dashed;
       }
@@ -740,6 +834,7 @@
     start:startSection,
     answer,
     next,
+    help:toggleHelp,
     getProgress:()=>({
       answered:requiredAnswered(),
       total:TOTAL_REQUIRED,

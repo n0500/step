@@ -231,3 +231,9 @@ Unit 2 STEP student-facing cleanup:
 - STEP remains separate from Unit 2 review progress internally.
 - Student-facing labels no longer mention compilations or source provenance.
 - Students simply see STEP Practice with a short neutral description.
+
+Unit 2 bilingual support:
+- Before answering, students can open either English Hint or مساعدة بالعربي; both are collapsed by default.
+- Only one hint panel is open at a time.
+- If the student answers incorrectly, feedback shows the correct answer, an English explanation, and an Arabic explanation.
+- Correct answers keep concise feedback.
