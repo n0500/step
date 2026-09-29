@@ -162,3 +162,15 @@ Responsive iPad / laptop entry screen:
 - Login fields use responsive columns on wider screens.
 - Direct student class-link entry is wider on tablets/laptops too.
 - Phone layout remains compact and unchanged.
+
+
+Critical student progress save fix:
+- Every student attempt is now normalized against the signed-in Firebase user profile before saving.
+- studentId is forced to the real Firebase Auth UID.
+- classId and teacherId are refreshed from the student's current Firestore profile before each save.
+- This prevents Firestore rule rejection caused by stale/mismatched student class data.
+- Attempt writes use a stable clientAttemptId to avoid duplicates during retries.
+- Failed writes stay in a small local retry queue and retry after reconnect/sign-in.
+- Students now see a visible “Progress saved ✓” confirmation.
+- Journey result screens show whether the attempt was saved.
+- Existing progress logic/mastery thresholds are not changed.
