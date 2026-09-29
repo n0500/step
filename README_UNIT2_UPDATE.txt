@@ -200,3 +200,34 @@ Simplified direct progress saving:
 - Student results now use the original direct save path in app.js again.
 - Old temporary pending-save localStorage keys and warning UI are cleared automatically.
 - Student login/profile recovery remains available.
+
+
+
+
+Unit 2 exam-review logic — simplified:
+- Unit 2 is directly accessible even if Unit 1 is unfinished.
+- Required path is Vocabulary & Real Talk, Grammar, Form/Meaning/Function, then STEP Practice.
+- There is no Final Review.
+- No random sampling in Unit 2 exam review: every required question is shown to every student.
+- Exact teacher review questions are included in their relevant sections for every student.
+- Every answer is saved to Firestore before the screen can continue.
+- Every saved answer shows Correct / Not quite, the correct answer when wrong, and a short explanation.
+- STEP Practice shows all 8 matched compilation questions to every student.
+- Writing, Reading, and Listening remain optional/extra and never block the required exam path.
+- Unit 2 review progress counts 30 required questions.
+
+
+Unit 2 STEP separation:
+- Unit 2 exam-review progress now contains only Unit 2/review-source content:
+  Vocabulary & Real Talk, Grammar, and Form/Meaning/Function.
+- Required Unit 2 review total is 22 questions.
+- STEP Practice is displayed in its own separate card and is not counted in Unit 2 exam-review progress.
+- STEP Practice still shows all 8 compilation questions to every student.
+- The student UI explicitly states that STEP questions come from compilations matched to Unit 2 grammar and are not Unit 2 textbook/review questions.
+- Writing, Reading, and Listening remain optional/extra.
+
+
+Unit 2 STEP student-facing cleanup:
+- STEP remains separate from Unit 2 review progress internally.
+- Student-facing labels no longer mention compilations or source provenance.
+- Students simply see STEP Practice with a short neutral description.
