@@ -1,19 +1,19 @@
-// StepUp • Unit 2 Exam Review — deterministic full coverage
+// StepUp • Unit 2 Review — deterministic full coverage
 // 2026-09-29
 // Goals:
 // - Unit 2 can be entered directly even if Unit 1 is unfinished.
 // - Every required review question is shown to every student; no random sampling.
 // - Every answer is saved to Firestore before moving on.
 // - Correct / Not quite feedback appears after every saved answer.
-// - Required exam path: Vocabulary & Real Talk → Grammar → Language Functions.
-// - Reading, Listening, and Writing remain available as extra/optional review and never block the exam path.
+// - Required exam path: Vocabulary & Real Talk → Grammar → Language Functions → Reading → Listening.
+// - Reading and Listening are required parts of the Unit 2 review path.
 (() => {
   "use strict";
 
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-bilingual-help-20260929-1";
+  const VERSION = "u2-needs-practice-20260930-1";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -55,7 +55,6 @@
     if(/Vocabulary/.test(skill)) return "Use the sentence meaning and career context to eliminate weak choices.";
     if(/Reading/.test(skill)) return "Return to the passage and find the evidence before choosing.";
     if(/Listening/.test(skill)) return "Listen for the main idea or the exact detail asked for.";
-    if(/Writing/.test(skill)) return "Use the structure and meaning of a formal cover letter.";
     return "Find the clue in the sentence, eliminate weak options, then choose.";
   }
 
@@ -74,7 +73,6 @@
     if(/Vocabulary/.test(skill)) return "استخدمي معنى الجملة وسياق الوظائف لاستبعاد الخيارات غير المناسبة.";
     if(/Reading/.test(skill)) return "ارجعي للنص وابحثي عن الدليل قبل اختيار الإجابة.";
     if(/Listening/.test(skill)) return "استمعي للفكرة الرئيسة أو للتفصيل المطلوب في السؤال.";
-    if(/Writing/.test(skill)) return "استخدمي ترتيب ومعنى عناصر خطاب التقديم الرسمي.";
     return "ابحثي عن الكلمة المفتاحية في الجملة واستبعدي الخيارات غير المناسبة.";
   }
 
@@ -99,7 +97,6 @@
     if(/Wh-Questions/.test(skill)) return "ترتيب السؤال الصحيح: أداة السؤال + الفعل المساعد + الفاعل + الفعل بصيغته الأساسية.";
     if(/Reading/.test(skill)) return "الإجابة الصحيحة تعتمد على الدليل المباشر أو الاستنتاج من نص القراءة في الوحدة الثانية.";
     if(/Listening/.test(skill)) return "الإجابة الصحيحة تأتي من الفكرة أو التفصيل المذكور في محادثة الوحدة الثانية.";
-    if(/Writing/.test(skill)) return "الإجابة الصحيحة تتبع معنى وترتيب عناصر خطاب التقديم الرسمي.";
     return "راجعي القاعدة والكلمة المفتاحية في السؤال، ثم قارنيها بصيغة الإجابة الصحيحة.";
   }
 
@@ -277,38 +274,49 @@
 
 
   // -------------------- OPTIONAL / EXTRA REVIEW --------------------
-  const writing = [
-    q("U2-WR-01","Writing • Cover Letter",
-      "Ahmad Al Nasser / Public Relation Manager / Media International / 90 Riyadh Road / (1) ___",
-      ["Jeddah","English","resume"],0,
-      "The blank completes the address with the city: Jeddah.",
-      "Unit 2 Writing review"),
-    q("U2-WR-02","Writing • Cover Letter",
-      "I am writing to apply for the summer (2) ___.",
-      ["skills","Sincerely","internship"],2,
-      "The correct phrase is summer internship.",
-      "Unit 2 Writing review"),
-    q("U2-WR-03","Writing • Cover Letter",
-      "I’m enclosing a completed job application, my (3) ___ and references.",
-      ["English","resume","Jeddah"],1,
-      "A job application commonly includes a résumé and references.",
-      "Unit 2 Writing review"),
-    q("U2-WR-04","Writing • Cover Letter",
-      "I speak (4) ___ fluently.",
-      ["English","intern","skills"],0,
-      "English is the language in this sentence.",
-      "Unit 2 Writing review"),
-    q("U2-WR-05","Writing • Cover Letter",
-      "My computer (5) ___ are excellent.",
-      ["Jeddah","resume","skills"],2,
-      "Computer skills completes the sentence.",
-      "Unit 2 Writing review"),
-    q("U2-WR-06","Writing • Cover Letter",
-      "(6) ___, Youssef Fahad",
-      ["intern","Sincerely","English"],1,
-      "Sincerely is the closing used in the letter.",
-      "Unit 2 Writing review")
+  const READING_PASSAGE = [
+    {
+      title:"About Us",
+      paragraphs:[
+        "JobPool is a privately-owned career network with branches all over the world. Since its foundation in 2000, the company has constantly improved its users’ experience with new features and services. JobPool has been growing globally through strategic international expansion. We have helped professionals and companies all over the world to meet each other."
+      ]
+    },
+    {
+      title:"Media Intern: TV and Radio Media International",
+      paragraphs:[
+        "Do you want to be part of the fast-paced world of television and meet famous people at the same time? Here’s your chance. Our interns research information about hot topics. They need to find information quickly and be able to summarize it in clear language. Our hosts use the information on their programs. Our interns also greet our guests when they arrive in our studios. You need to be fluent in English and be good at using computers. And you must be friendly and outgoing. This is a paid internship for the summer."
+      ]
+    },
+    {
+      title:"Archaeological Interns: Students Learning Overseas",
+      paragraphs:[
+        "Here’s an opportunity to study history firsthand and to work with noted archaeologists on an exciting dig. We’ve been uncovering ruins at the famous ancient city of Pompeii for several years. Interns’ job is to dig slowly and carefully. They also work to uncover buildings that have been buried for centuries. It is very hard and painstaking work. The reward is a chance to discover something that the volcano Vesuvius buried with its lava two thousand years ago. This is an unpaid three-month internship, but lodging and meals are provided near the site."
+      ]
+    },
+    {
+      title:"Environmental Engineering: Saudi Construction, Riyadh",
+      paragraphs:[
+        "Great opportunity for a civil engineering graduate student in the environment field! This project involves the construction of a road and a number of other local projects, such as research centers and new pipelines. The interns work alongside experienced civil engineers and receive training in the different work sectors. You need to be able to read blueprints, have some knowledge of Arabic, and be able to cope with temperatures that average 104°F (40°C). Food and accommodation will be provided."
+      ]
+    }
   ];
+
+  function readingPassageHTML(){
+    return `<section id="u2ReadingPassage" class="u2-reading-passage" dir="ltr">
+      <div class="u2-reading-passage-head">
+        <div>
+          <span>Reading Passage</span>
+          <b>JobPool Has the Job for You</b>
+        </div>
+        <button type="button" onclick="document.getElementById('u2ReadingQuestion')?.scrollIntoView({behavior:'smooth',block:'start'})">↓ Go to Question</button>
+      </div>
+      ${READING_PASSAGE.map(part=>`
+        <div class="u2-reading-part">
+          <h3>${esc(part.title)}</h3>
+          ${part.paragraphs.map(p=>`<p>${esc(p)}</p>`).join("")}
+        </div>`).join("")}
+    </section>`;
+  }
 
   const reading = [
     q("U2-READ-STEP-01","Reading • Main Idea",
@@ -332,6 +340,71 @@
       "Those qualities match the requirements listed for the media internship.",
       "Mega Goal 1 Unit 2 • Media Intern")
   ];
+
+  const LISTENING_DIALOGUE = [
+    {speaker:"Yousef", text:"So, Khaled, are you happy with your job at the TV station?"},
+    {speaker:"Khaled", text:"Yes, very happy. I enjoy being out there and talking to people. I get a lot of satisfaction out of my job."},
+    {speaker:"Yousef", text:"How long have you been working on TV?"},
+    {speaker:"Khaled", text:"I’ve been a reporter at this station for five years, since my internship. What about you?"},
+    {speaker:"Yousef", text:"I’ve been working at the bank since I left high school. It’s the same thing day after day, day in and day out. I’m bored to death. I was hoping to be a watch repairer, you know, but my parents talked me out of it. They said it wasn’t a serious profession."},
+    {speaker:"Khaled", text:"Well, I was going to be a dentist, but luckily I changed my mind. Can you imagine me in a small room, stuck between four walls?"},
+    {speaker:"Yousef", text:"That’s where I am right now. It’s time to move on and find something more challenging. I have a lot of different skills. I’m good at solving problems. I’m organized, reliable, hardworking. What do you think I should do?"}
+  ];
+
+  function listeningPlayerHTML(){
+    return `<section class="u2-listening-player" aria-label="Listening audio">
+      <div class="u2-listening-player-copy">
+        <span>🎧</span>
+        <div>
+          <b>Listen to the conversation</b>
+          <small id="u2ListeningStatus">Play the audio, then answer the question. Replay anytime.</small>
+        </div>
+      </div>
+      <div class="u2-listening-controls">
+        <button type="button" onclick="STEPUP_U2_EXAM.listen()">▶ Listen</button>
+        <button type="button" onclick="STEPUP_U2_EXAM.stopAudio()">■ Stop</button>
+      </div>
+    </section>`;
+  }
+
+  function setListeningStatus(message){
+    const el=document.getElementById("u2ListeningStatus");
+    if(el)el.textContent=message;
+  }
+
+  function stopListening(){
+    try{
+      if("speechSynthesis" in window) window.speechSynthesis.cancel();
+    }catch(_){}
+    setListeningStatus("Stopped. Tap Listen to play again.");
+  }
+
+  function playListening(){
+    if(!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance==="undefined"){
+      setListeningStatus("Audio playback is not supported on this device.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    const voices=(window.speechSynthesis.getVoices?.()||[]).filter(v=>String(v.lang||"").toLowerCase().startsWith("en"));
+    const voiceA=voices[0]||null;
+    const voiceB=voices.find(v=>!voiceA || v.name!==voiceA.name)||voiceA||null;
+
+    setListeningStatus("Playing…");
+    LISTENING_DIALOGUE.forEach((line,index)=>{
+      const u=new SpeechSynthesisUtterance(line.text);
+      u.lang="en-US";
+      u.rate=.90;
+      u.pitch=line.speaker==="Khaled" ? .96 : 1.02;
+      if(line.speaker==="Khaled" && voiceA)u.voice=voiceA;
+      if(line.speaker==="Yousef" && voiceB)u.voice=voiceB;
+      if(index===LISTENING_DIALOGUE.length-1){
+        u.onend=()=>setListeningStatus("Finished. Replay anytime.");
+        u.onerror=()=>setListeningStatus("Audio stopped. Tap Listen to try again.");
+      }
+      window.speechSynthesis.speak(u);
+    });
+  }
 
   const listening = [
     q("U2-LST-STEP-01","Listening • Main Idea",
@@ -370,26 +443,22 @@
       trainingId:"journey-u2-core-3", trainingType:"grammar", required:true
     },
     step: {
-      title:"STEP Practice", icon:"⚡", questions:step,
+      title:"STEP Practice", icon:"STEP", questions:step,
       trainingId:"journey-u2-step", trainingType:"step", required:true
     },
-    writing: {
-      title:"Writing Review", icon:"✍️", questions:writing,
-      trainingId:"journey-u2-writing", trainingType:"writing", required:false
-    },
     reading: {
-      title:"Reading • Extra Practice", icon:"📖", questions:reading,
-      trainingId:"journey-u2-reading-extra", trainingType:"reading", required:false
+      title:"Reading", icon:"📖", questions:reading,
+      trainingId:"journey-u2-reading", trainingType:"reading", required:true
     },
     listening: {
-      title:"Listening • Extra Practice", icon:"🎧", questions:listening,
-      trainingId:"journey-u2-listening-extra", trainingType:"listening", required:false
+      title:"Listening", icon:"🎧", questions:listening,
+      trainingId:"journey-u2-listening", trainingType:"listening", required:true
     }
   };
 
-  const requiredKeys = ["vocab","grammar","functions"];
+  const requiredKeys = ["vocab","grammar","functions","reading","listening"];
   const allRequiredQuestionIds = requiredKeys.flatMap(k=>sections[k].questions.map(x=>x.id));
-  const TOTAL_REQUIRED = allRequiredQuestionIds.length; // 22
+  const TOTAL_REQUIRED = allRequiredQuestionIds.length; // 30
 
   function openSet(list){
     return new Set((list||[]).map(x=>typeof x==="string"?x:x?.id).filter(Boolean));
@@ -401,24 +470,52 @@
     profile = p || null;
   }
 
-  function latestStage(trainingId){
+  function stageAttempts(trainingId){
     return attempts
       .filter(a=>a.trainingId===trainingId && a.recordKind!=="question")
-      .sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")))[0] || null;
+      .sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
   }
 
-  function latestQuestion(sectionKey, questionId){
+  function latestStage(trainingId){
+    return stageAttempts(trainingId)[0] || null;
+  }
+
+  function bestStage(trainingId){
+    return stageAttempts(trainingId)
+      .sort((a,b)=>(Number(b.bestPercentage ?? b.percentage ?? 0)-Number(a.bestPercentage ?? a.percentage ?? 0)) ||
+        String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")))[0] || null;
+  }
+
+  function stageAttemptCount(trainingId){
+    return stageAttempts(trainingId).length;
+  }
+
+  function questionAttempts(sectionKey,questionId){
     return attempts
       .filter(a=>a.recordKind==="question" &&
         a.examUnit==="u2" &&
         a.examSection===sectionKey &&
         a.questionId===questionId)
-      .sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")))[0] || null;
+      .sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
+  }
+
+  function latestQuestion(sectionKey, questionId){
+    return questionAttempts(sectionKey,questionId)[0] || null;
+  }
+
+  function bestQuestion(sectionKey,questionId){
+    const list=questionAttempts(sectionKey,questionId);
+    return list.find(a=>a.correct===true || a.bestCorrect===true) || list[0] || null;
   }
 
   function answeredCount(sectionKey){
     const sec=sections[sectionKey];
     return sec.questions.filter(x=>!!latestQuestion(sectionKey,x.id)).length;
+  }
+
+  function correctCount(sectionKey){
+    const sec=sections[sectionKey];
+    return sec.questions.filter(x=>!!bestQuestion(sectionKey,x.id)?.correct || !!bestQuestion(sectionKey,x.id)?.bestCorrect).length;
   }
 
   function sectionDone(sectionKey){
@@ -430,8 +527,159 @@
     return requiredKeys.reduce((n,k)=>n+answeredCount(k),0);
   }
 
+  function requiredCorrect(){
+    return requiredKeys.reduce((n,k)=>n+correctCount(k),0);
+  }
+
   function reviewPct(){
     return Math.round(requiredAnswered()/TOTAL_REQUIRED*100);
+  }
+
+  function accuracyPct(){
+    const answered=requiredAnswered();
+    return answered?Math.round(requiredCorrect()/answered*100):0;
+  }
+
+  function progressStatsHTML(){
+    const answered=requiredAnswered();
+    const correct=requiredCorrect();
+    return `<div class="u2-progress-stats">
+      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Progress • ${reviewPct()}%</small></span>
+      <span><b>${answered?`${correct}/${answered}`:"—"}</b><small>Accuracy${answered?` • ${accuracyPct()}%`:""}</small></span>
+    </div>`;
+  }
+
+
+  function weaknessAreas(){
+    const grouped=new Map();
+
+    requiredKeys.forEach(sectionKey=>{
+      const sec=sections[sectionKey];
+      sec.questions.forEach(item=>{
+        const list=questionAttempts(sectionKey,item.id);
+        if(!list.length)return;
+
+        const mastered=list.some(a=>a.correct===true || a.bestCorrect===true);
+        if(mastered)return;
+
+        const mapKey=`${sectionKey}::${item.skill}`;
+        const misses=list.filter(a=>a.correct===false).length;
+        const last=list.reduce((m,a)=>String(a.submittedAt||"")>m?String(a.submittedAt||""):m,"");
+
+        if(!grouped.has(mapKey)){
+          grouped.set(mapKey,{
+            sectionKey,
+            sectionTitle:sec.title,
+            skill:item.skill,
+            questionCount:0,
+            misses:0,
+            last:""
+          });
+        }
+        const g=grouped.get(mapKey);
+        g.questionCount+=1;
+        g.misses+=Math.max(1,misses);
+        if(last>g.last)g.last=last;
+      });
+    });
+
+    return [...grouped.values()]
+      .sort((a,b)=>
+        (b.questionCount-a.questionCount) ||
+        (b.misses-a.misses) ||
+        String(b.last).localeCompare(String(a.last))
+      )
+      .slice(0,3);
+  }
+
+  function improvedAreas(){
+    const grouped=new Map();
+
+    requiredKeys.forEach(sectionKey=>{
+      const sec=sections[sectionKey];
+      sec.questions.forEach(item=>{
+        const list=questionAttempts(sectionKey,item.id);
+        if(list.length<2)return;
+
+        const hasWrong=list.some(a=>a.correct===false);
+        const correctAttempts=list.filter(a=>a.correct===true || a.bestCorrect===true);
+        if(!hasWrong || !correctAttempts.length)return;
+
+        const latestCorrect=correctAttempts
+          .map(a=>String(a.submittedAt||""))
+          .sort()
+          .pop() || "";
+
+        const mapKey=`${sectionKey}::${item.skill}`;
+        if(!grouped.has(mapKey)){
+          grouped.set(mapKey,{
+            sectionKey,
+            sectionTitle:sec.title,
+            skill:item.skill,
+            improvedQuestions:0,
+            lastCorrect:""
+          });
+        }
+        const g=grouped.get(mapKey);
+        g.improvedQuestions+=1;
+        if(latestCorrect>g.lastCorrect)g.lastCorrect=latestCorrect;
+      });
+    });
+
+    return [...grouped.values()]
+      .sort((a,b)=>String(b.lastCorrect).localeCompare(String(a.lastCorrect)))
+      .slice(0,2);
+  }
+
+  function needsPracticeHTML(){
+    const weak=weaknessAreas();
+    const improved=improvedAreas();
+    const answered=requiredAnswered();
+
+    let main="";
+    if(!answered){
+      main=`<div class="u2-needs-empty">
+        Complete a few questions first. Your practice recommendations will appear here.
+      </div>`;
+    }else if(!weak.length){
+      main=`<div class="u2-needs-strong">
+        <span>✓</span>
+        <div><b>No current weak areas</b><small>Keep practicing to maintain your progress.</small></div>
+      </div>`;
+    }else{
+      main=`<div class="u2-needs-list">
+        ${weak.map(w=>`
+          <button type="button" class="u2-need-row"
+            onclick="STEPUP_U2_EXAM.practiceWeakness('${encodeURIComponent(w.sectionKey)}','${encodeURIComponent(w.skill)}')">
+            <span class="u2-need-mark">!</span>
+            <span class="u2-need-copy">
+              <b>${esc(w.skill)}</b>
+              <small>${esc(w.sectionTitle)} • ${w.questionCount} ${w.questionCount===1?"question":"questions"} to strengthen</small>
+            </span>
+            <span class="u2-need-action">Practice</span>
+          </button>`).join("")}
+      </div>`;
+    }
+
+    const improvedHTML=improved.length?`
+      <div class="u2-improved">
+        <span class="u2-improved-label">Improved ✓</span>
+        <div class="u2-improved-chips">
+          ${improved.map(x=>`<span>${esc(x.skill)}</span>`).join("")}
+        </div>
+      </div>`:"";
+
+    return `<section class="journey-master-card u2-needs-card">
+      <div class="journey-stage-title">
+        <span>◎</span>
+        <div>
+          <h2>Needs Practice</h2>
+          <p>Based on your answers. Areas disappear when you master them.</p>
+        </div>
+      </div>
+      ${main}
+      ${improvedHTML}
+    </section>`;
   }
 
   function studentView(){
@@ -456,6 +704,8 @@
   async function saveQuestion(sectionKey,item,selected){
     const {user,p}=await currentStudent();
     const correct=selected===item.answer;
+    const previous=questionAttempts(sectionKey,item.id);
+    const priorBestCorrect=previous.some(a=>a.correct===true || a.bestCorrect===true);
     const now=new Date().toISOString();
     const record={
       recordKind:"question",
@@ -481,6 +731,10 @@
       score:correct?1:0,
       total:1,
       percentage:correct?100:0,
+      attemptNumber:previous.length+1,
+      bestCorrect:priorBestCorrect || correct,
+      bestScore:(priorBestCorrect || correct)?1:0,
+      bestPercentage:(priorBestCorrect || correct)?100:0,
       source:item.source,
       studyMethod:"u2-exam-review-question",
       submittedAt:now
@@ -493,7 +747,7 @@
   async function saveSection(sectionKey){
     const sec=sections[sectionKey];
     const answers=sec.questions.map(item=>{
-      const a=latestQuestion(sectionKey,item.id);
+      const a=bestQuestion(sectionKey,item.id);
       return {
         question_id:item.id,
         stem:item.prompt,
@@ -510,6 +764,9 @@
     const score=answers.filter(a=>a.correct).length;
     const total=sec.questions.length;
     const percentage=Math.round(score/total*100);
+    const priorStages=stageAttempts(sec.trainingId);
+    const priorBest=priorStages.reduce((m,a)=>Math.max(m,Number(a.bestPercentage ?? a.percentage ?? 0)),0);
+    const currentRunScore=(session?.runAnswers||[]).filter(a=>a.correct).length;
     const payload={
       trainingId:sec.trainingId,
       trainingTitle:sec.title,
@@ -517,6 +774,12 @@
       unitId:"u2",
       unitNumber:2,
       score,total,percentage,
+      attemptNumber:priorStages.length+1,
+      attemptScore:currentRunScore,
+      attemptPercentage:Math.round(currentRunScore/Math.max(1,(session?.runAnswers||[]).length)*100),
+      bestScore:Math.max(score,Math.round(priorBest*total/100)),
+      bestTotal:total,
+      bestPercentage:Math.max(percentage,priorBest),
       elapsedSeconds:Math.max(1,Math.round((Date.now()-(session?.started||Date.now()))/1000)),
       answers,
       studyMethod:"u2-exam-review"
@@ -531,14 +794,16 @@
     const sec=sections[key];
     const answered=answeredCount(key);
     const done=answered===sec.questions.length;
-    const stage=latestStage(sec.trainingId);
-    const score=stage?`${stage.score}/${stage.total}`:"";
+    const stage=bestStage(sec.trainingId);
+    const score=stage?`${stage.bestScore ?? stage.score}/${stage.bestTotal ?? stage.total}`:"";
+    const attemptsCount=stageAttemptCount(sec.trainingId);
+    const practiceCount=Math.max(0,attemptsCount-1);
     const reviewCount=sec.questions.filter(q=>q.review).length;
-    return `<button class="journey-stop ${done?'done':''}" onclick="STEPUP_U2_EXAM.start('${key}')">
-      <span class="journey-stop-icon">${done?'✓':sec.icon}</span>
+    return `<button class="journey-stop ${done?'done':''} ${key==='step'?'u2-step-card':''}" onclick="STEPUP_U2_EXAM.start('${key}')">
+      <span class="journey-stop-icon ${key==='step'&&!done?'u2-step-icon':''}">${done?'✓':sec.icon}</span>
       <span class="journey-stop-copy">
         <b>${esc(sec.title)}</b>
-        <small>${done?`Completed ${score?`• ${score}`:''}`:`${answered}/${sec.questions.length} answered${reviewCount?` • ${reviewCount} review questions`:''}`}</small>
+        <small>${done?`Completed ${score?`• ${score}`:''} • Practice again${practiceCount?` • ${practiceCount}× practiced`:''}`:`${answered}/${sec.questions.length} answered${reviewCount?` • ${reviewCount} review questions`:''}`}</small>
       </span>
       <span class="journey-stop-arrow">›</span>
     </button>`;
@@ -555,18 +820,20 @@
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit 2</b></div>
 
       <section class="journey-unit-hero">
-        <span class="journey-kicker">Unit 2 • Exam Review</span>
+        <span class="journey-kicker">Unit 2 • Review</span>
         <h1>Careers</h1>
         <p>Every required review question is included for every student. Nothing is randomly skipped.</p>
         <div class="journey-mini-progress"><i style="width:${pct}%"></i></div>
-        <small>${answered}/${TOTAL_REQUIRED} required questions answered • ${pct}%</small>
+        ${progressStatsHTML()}
       </section>
+
+      ${needsPracticeHTML()}
 
       <section class="journey-master-card">
         <div class="journey-stage-title">
           <span>✓</span>
           <div>
-            <h2>Tomorrow’s Review Path</h2>
+            <h2>Review Path</h2>
             <p>Answer in any order. Every answer is saved before you continue.</p>
           </div>
           <b>${pct}%</b>
@@ -578,7 +845,7 @@
 
       <section class="journey-master-card u2-step-separate-card">
         <div class="journey-stage-title">
-          <span>⚡</span>
+          <span class="u2-step-heading-icon">STEP</span>
           <div>
             <h2>STEP Practice</h2>
             <p>Quick grammar practice.</p>
@@ -590,18 +857,44 @@
         </div>
       </section>
 
+      <button class="u2-practice-entry" onclick="STEPUP_U2_EXAM.practice()">
+        <span class="u2-practice-icon">↻</span>
+        <span class="u2-practice-copy">
+          <b>Practice</b>
+          <small>Repeat completed skills as many times as you want. Your progress will not reset.</small>
+        </span>
+        <span class="journey-stop-arrow">›</span>
+      </button>
+
+</section>`;
+  }
+
+  function openPractice(){
+    const h=studentView();
+    if(!h)return;
+    const completed=requiredKeys.filter(sectionDone);
+    const pct=reviewPct();
+
+    h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>Practice</b></div>
+
+      <section class="journey-unit-hero u2-practice-hero">
+        <span class="journey-kicker">Practice Mode</span>
+        <h1>Practice again</h1>
+        <p>Repeat completed skills anytime. Practice attempts are saved, but your Unit 2 completion progress stays intact.</p>
+        <div class="journey-mini-progress"><i style="width:${pct}%"></i></div>
+        <small>Unit 2 progress • ${requiredAnswered()}/${TOTAL_REQUIRED} • ${pct}%</small>
+      </section>
+
       <section class="journey-master-card">
         <div class="journey-stage-title">
-          <span>+</span>
+          <span>↻</span>
           <div>
-            <h2>Extra / Optional Practice</h2>
-            <p>These do not block your Unit 2 exam review progress.</p>
+            <h2>Choose a skill</h2>
+            <p>${completed.length?`You can repeat any completed skill.`:`Complete a skill first, then it will appear here for practice.`}</p>
           </div>
         </div>
         <div class="journey-stops">
-          ${sectionCard("writing")}
-          ${sectionCard("reading")}
-          ${sectionCard("listening")}
+          ${completed.length?completed.map(sectionCard).join(""):`<div class="u2-practice-empty">No completed skills yet.</div>`}
         </div>
       </section>`;
   }
@@ -614,6 +907,7 @@
   }
 
   function startSection(sectionKey){
+    stopListening();
     const sec=sections[sectionKey];
     if(!sec)return;
     const queue=pendingQuestions(sectionKey);
@@ -626,30 +920,64 @@
     renderQuestion();
   }
 
+
+  function startWeakness(sectionKeyEncoded,skillEncoded){
+    stopListening();
+    const sectionKey=decodeURIComponent(sectionKeyEncoded||"");
+    const skill=decodeURIComponent(skillEncoded||"");
+    const sec=sections[sectionKey];
+    if(!sec)return;
+
+    let queue=sec.questions.filter(item=>item.skill===skill);
+    if(!queue.length)queue=[...sec.questions];
+
+    session={
+      sectionKey,
+      sec,
+      queue,
+      pos:0,
+      started:Date.now(),
+      runAnswers:[],
+      focusOnly:true,
+      focusSkill:skill
+    };
+    helpMode=null;
+    renderQuestion();
+  }
+
   function renderQuestion(){
     if(!session)return;
     const h=studentView();
     if(!h)return;
     const item=session.queue[session.pos];
+    const isReading=session.sectionKey==="reading";
+    const isListening=session.sectionKey==="listening";
     const reviewBadge=item.review?`<span class="u2-review-badge">Review Question</span>`:"";
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>${esc(session.sec.title)}</b></div>
-      <section class="journey-question-card">
+      <section class="journey-question-card ${isReading?'u2-reading-question-card':''}">
         <div class="journey-question-meta">
           <span>${esc(item.skill)}</span>
           <b>${session.pos+1}/${session.queue.length}</b>
         </div>
         ${reviewBadge}
-        <h2 dir="ltr">${esc(item.prompt)}</h2>
-        <div class="journey-options">
-          ${item.choices.map((x,i)=>`<button ${saving?'disabled':''} onclick="STEPUP_U2_EXAM.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join("")}
+        <div class="${isReading?'u2-reading-layout':''}">
+          ${isReading?readingPassageHTML():""}
+          <div class="${isReading?'u2-reading-question-pane':''}" ${isReading?'id="u2ReadingQuestion"':""}>
+            ${isListening?listeningPlayerHTML():""}
+            <h2 dir="ltr">${esc(item.prompt)}</h2>
+            <div class="journey-options">
+              ${item.choices.map((x,i)=>`<button ${saving?'disabled':''} onclick="STEPUP_U2_EXAM.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join("")}
+            </div>
+            <div class="u2-help-actions">
+              <button type="button" class="${helpMode==='en'?'active':''}" onclick="STEPUP_U2_EXAM.help('en')">English Hint</button>
+              <button type="button" class="${helpMode==='ar'?'active':''}" onclick="STEPUP_U2_EXAM.help('ar')">مساعدة بالعربي</button>
+            </div>
+            ${helpMode==='en'?`<div class="u2-help-panel en" dir="ltr">${esc(englishHint(item))}</div>`:""}
+            ${helpMode==='ar'?`<div class="u2-help-panel ar" dir="rtl">${esc(arabicHint(item))}</div>`:""}
+            ${session.sectionKey==="step"?"":`<small class="u2-source-note">${esc(item.source)}</small>`}
+            ${isReading?`<button type="button" class="u2-back-to-passage" onclick="document.getElementById('u2ReadingPassage')?.scrollIntoView({behavior:'smooth',block:'start'})">↑ Back to Passage</button>`:""}
+          </div>
         </div>
-        <div class="u2-help-actions">
-          <button type="button" class="${helpMode==='en'?'active':''}" onclick="STEPUP_U2_EXAM.help('en')">English Hint</button>
-          <button type="button" class="${helpMode==='ar'?'active':''}" onclick="STEPUP_U2_EXAM.help('ar')">مساعدة بالعربي</button>
-        </div>
-        ${helpMode==='en'?`<div class="u2-help-panel en" dir="ltr">${esc(englishHint(item))}</div>`:""}
-        ${helpMode==='ar'?`<div class="u2-help-panel ar" dir="rtl">${esc(arabicHint(item))}</div>`:""}
-        ${session.sectionKey==="step"?"":`<small class="u2-source-note">${esc(item.source)}</small>`}
       </section>`;
   }
 
@@ -691,11 +1019,33 @@
   }
 
   async function next(){
+    stopListening();
     if(!session)return;
     if(session.pos<session.queue.length-1){
       session.pos++;
       helpMode=null;
       return renderQuestion();
+    }
+
+    // Focused weakness practice can finish without forcing the rest of an unfinished section.
+    if(session.focusOnly && !sectionDone(session.sectionKey)){
+      const focusSkill=session.focusSkill||session.sec.title;
+      const focusScore=session.runAnswers.filter(a=>a.correct).length;
+      const focusTotal=session.runAnswers.length;
+      const h=studentView();
+      session=null;
+
+      if(h){
+        h.innerHTML=`<section class="journey-result good">
+          <div class="journey-result-score">${focusScore}<span>/${focusTotal}</span></div>
+          <h2>Focused practice complete ✨</h2>
+          <p>You practiced ${esc(focusSkill)}. Your new answers are saved and your best result is kept.</p>
+          <div class="journey-result-actions">
+            <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
+          </div>
+        </section>`;
+      }
+      return;
     }
 
     // If this was a resumed section, make sure all required questions now exist.
@@ -717,6 +1067,8 @@
 
     const sec=session.sec;
     const sectionKey=session.sectionKey;
+    const focused=!!session.focusOnly;
+    const focusSkill=session.focusSkill||"";
     const passNeeded=sec.pass||Math.ceil(sec.questions.length*0.67);
     const passed=result.score>=passNeeded;
     const h=studentView();
@@ -725,8 +1077,8 @@
     if(h){
       h.innerHTML=`<section class="journey-result ${passed?'good':'review'}">
         <div class="journey-result-score">${result.score}<span>/${result.total}</span></div>
-        <h2>${passed?'Review stop complete ✨':'Review complete — check the missed answers'}</h2>
-        <p>All ${result.total} questions in ${esc(sec.title)} were shown and saved.</p>
+        <h2>${focused?'Focused practice complete ✨':(passed?'Review stop complete ✨':'Review complete — check the missed answers')}</h2>
+        <p>${focused?`You practiced ${esc(focusSkill)}. Your best result has been updated.`:`All ${result.total} questions in ${esc(sec.title)} were shown and saved.`}</p>
         <div class="journey-result-actions">
           <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
           <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.start('${sectionKey}')">Practice again</button>
@@ -754,6 +1106,110 @@
         display:inline-block;margin:8px 0 2px;padding:7px 11px;border-radius:999px;
         background:#e7f7ee;color:#176b4a;font-weight:900
       }
+      .u2-reading-passage{
+        margin:14px 0 20px;
+        padding:16px;
+        border:1px solid #dfe6ef;
+        border-radius:18px;
+        background:#fbfcfe;
+        color:#172033;
+        text-align:left;
+      }
+      .u2-reading-passage-head{
+        display:flex;
+        flex-direction:column;
+        gap:9px;
+        margin-bottom:14px;
+        padding-bottom:11px;
+        border-bottom:1px solid #e6ebf2;
+      }
+      .u2-reading-passage-head>div{display:flex;flex-direction:column;gap:3px}
+      .u2-reading-passage-head button,
+      .u2-back-to-passage{
+        min-height:40px;padding:8px 12px;border:1px solid #d8e1ec;border-radius:12px;
+        background:#fff;color:#35506f;font-weight:800;cursor:pointer;
+      }
+      .u2-back-to-passage{margin-top:14px;width:100%}
+      .u2-reading-passage-head span{
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.08em;
+        text-transform:uppercase;
+        color:#6a778c;
+      }
+      .u2-reading-passage-head b{
+        font-size:18px;
+        line-height:1.3;
+        color:#0f213d;
+      }
+      .u2-reading-part + .u2-reading-part{
+        margin-top:16px;
+        padding-top:14px;
+        border-top:1px solid #edf1f5;
+      }
+      .u2-reading-part h3{
+        margin:0 0 7px;
+        font-size:15px;
+        line-height:1.4;
+        color:#173b63;
+      }
+      .u2-reading-part p{
+        margin:0;
+        font-size:14px;
+        line-height:1.75;
+        color:#33425a;
+      }
+      @media (max-width:520px){
+        .u2-reading-passage{padding:14px;margin:12px 0 18px}
+        .u2-reading-passage-head b{font-size:17px}
+        .u2-reading-part h3{font-size:14px}
+        .u2-reading-part p{font-size:13.5px;line-height:1.72}
+      }
+
+      .u2-progress-stats{
+        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+        margin-top:12px;
+      }
+      .u2-progress-stats>span{
+        display:flex;flex-direction:column;gap:2px;padding:10px 12px;
+        border:1px solid #e1e8f0;border-radius:14px;background:#fff;
+      }
+      .u2-progress-stats b{font-size:16px;color:#172033}
+      .u2-progress-stats small{font-size:11px;color:#6a778c}
+      .u2-listening-player{
+        margin:0 0 16px;padding:14px;border:1px solid #d9e4ef;
+        border-radius:18px;background:#f8fbff;
+      }
+      .u2-listening-player-copy{display:flex;align-items:center;gap:11px}
+      .u2-listening-player-copy>span{
+        width:42px;height:42px;display:grid;place-items:center;flex:0 0 auto;
+        border-radius:13px;background:#eaf2ff;font-size:21px;
+      }
+      .u2-listening-player-copy b{display:block;color:#172033}
+      .u2-listening-player-copy small{display:block;margin-top:3px;color:#6a778c;line-height:1.45}
+      .u2-listening-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+      .u2-listening-controls button{
+        min-height:42px;padding:9px 14px;border:1px solid #cad7e7;border-radius:12px;
+        background:#fff;color:#173b63;font-weight:900;cursor:pointer;
+      }
+      .u2-listening-controls button:first-child{background:#173b63;color:#fff;border-color:#173b63}
+      @media (min-width:900px){
+        .u2-reading-layout{
+          display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+          gap:20px;align-items:start;
+        }
+        .u2-reading-layout .u2-reading-passage{margin:0}
+        .u2-reading-question-pane{
+          position:sticky;top:92px;padding:16px;border:1px solid #e2e8f0;
+          border-radius:18px;background:#fff;
+        }
+        .u2-reading-passage-head button,
+        .u2-back-to-passage{display:none}
+      }
+      @media (max-width:520px){
+        .u2-progress-stats{grid-template-columns:1fr 1fr}
+      }
+
       .u2-help-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
       .u2-help-actions button{border:1px solid #d7dfeb;background:#fff;color:#33445c;border-radius:999px;padding:9px 13px;font-weight:800}
       .u2-help-actions button.active{background:#eef3ff;border-color:#aebfea}
@@ -764,8 +1220,104 @@
       .u2-explain-box.ar{text-align:right}
       .u2-explain-box b{display:block;margin-bottom:5px}
       .u2-explain-box p{margin:0;line-height:1.7}
+      .u2-step-icon,
+      .u2-step-heading-icon{
+        display:inline-grid;place-items:center;
+        min-width:46px;height:46px;padding:0 7px;
+        border-radius:14px;
+        font-size:11px;font-weight:900;letter-spacing:.5px;
+        line-height:1;
+        background:#eef3ff;color:#2f56b3;
+        border:2px solid #b9c8ef;
+      }
+      .u2-step-card .journey-stop-copy b{
+        font-weight:900;
+      }
+      .u2-step-home-card{
+        border:2px solid var(--line,#dce3ee);
+      }
+      .u2-step-home-row{
+        display:flex;align-items:center;gap:14px;width:100%;
+      }
+      .u2-step-home-row .journey-continue-copy{
+        flex:1;min-width:0;
+      }
+      .u2-step-home-row .journey-main-btn{
+        flex:0 0 auto;
+      }
+      @media (max-width:699px){
+        .u2-step-home-row{align-items:flex-start;flex-wrap:wrap}
+        .u2-step-home-row .journey-continue-copy{flex:1 1 calc(100% - 66px)}
+        .u2-step-home-row .journey-main-btn{width:100%}
+      }
       .u2-step-separate-card{
         border-style:dashed;
+      }
+      .u2-practice-entry{
+        width:100%;margin-top:14px;padding:15px 16px;
+        display:flex;align-items:center;gap:12px;text-align:left;
+        border:1px solid #dfe6ef;border-radius:18px;background:#fff;
+        color:#172033;cursor:pointer;
+      }
+      .u2-practice-entry:hover{border-color:#bcc9da}
+      .u2-practice-icon{
+        width:44px;height:44px;display:grid;place-items:center;
+        border-radius:14px;background:#eef4fb;color:#1d5fd6;
+        font-size:24px;font-weight:900;flex:0 0 auto;
+      }
+      .u2-practice-copy{display:block;flex:1;min-width:0}
+      .u2-practice-copy b{display:block;font-size:16px}
+      .u2-practice-copy small{display:block;margin-top:3px;color:#6a778c;line-height:1.45}
+      .u2-practice-empty{
+        padding:16px;border:1px dashed #dfe6ef;border-radius:16px;
+        text-align:center;color:#6a778c;background:#fafbfd;
+      }
+      .u2-needs-card{margin-top:14px}
+      .u2-needs-list{display:grid;gap:9px}
+      .u2-need-row{
+        width:100%;display:flex;align-items:center;gap:11px;
+        padding:12px 13px;border:1px solid #e1e7ef;border-radius:15px;
+        background:#fff;color:#172033;text-align:left;cursor:pointer;
+      }
+      .u2-need-row:hover{border-color:#c7d3e2}
+      .u2-need-mark{
+        width:34px;height:34px;display:grid;place-items:center;flex:0 0 auto;
+        border-radius:11px;background:#fff4e6;color:#9b5d08;font-weight:900;
+      }
+      .u2-need-copy{display:block;flex:1;min-width:0}
+      .u2-need-copy b{display:block;font-size:14px;line-height:1.35}
+      .u2-need-copy small{display:block;margin-top:3px;color:#6a778c;font-size:11px;line-height:1.4}
+      .u2-need-action{
+        flex:0 0 auto;padding:7px 10px;border-radius:999px;
+        background:#eef4fb;color:#1d5fd6;font-size:11px;font-weight:900;
+      }
+      .u2-needs-empty,
+      .u2-needs-strong{
+        padding:13px 14px;border:1px dashed #dce4ee;border-radius:14px;
+        background:#fafbfd;color:#6a778c;font-size:13px;line-height:1.5;
+      }
+      .u2-needs-strong{display:flex;align-items:center;gap:10px}
+      .u2-needs-strong>span{
+        width:32px;height:32px;display:grid;place-items:center;flex:0 0 auto;
+        border-radius:50%;background:#e8f6ee;color:#178a55;font-weight:900;
+      }
+      .u2-needs-strong b{display:block;color:#244331}
+      .u2-needs-strong small{display:block;margin-top:2px;color:#6a778c}
+      .u2-improved{
+        margin-top:12px;padding-top:11px;border-top:1px solid #edf1f5;
+      }
+      .u2-improved-label{
+        display:block;margin-bottom:7px;color:#178a55;font-size:11px;font-weight:900;
+        text-transform:uppercase;letter-spacing:.04em;
+      }
+      .u2-improved-chips{display:flex;gap:7px;flex-wrap:wrap}
+      .u2-improved-chips span{
+        padding:7px 10px;border-radius:999px;background:#eaf7ef;color:#24623f;
+        font-size:11px;font-weight:800;
+      }
+      @media (max-width:520px){
+        .u2-need-row{align-items:flex-start}
+        .u2-need-action{margin-top:2px}
       }
       .u2-step-separate-card .journey-stage-title p{
         max-width:760px;
@@ -774,15 +1326,35 @@
     document.head.appendChild(s);
   }
 
+  function stepHomeCard(){
+    if(!unit2IsOpen())return "";
+    const answered=answeredCount("step");
+    const total=sections.step.questions.length;
+    const done=answered===total;
+    return `<section class="journey-continue u2-step-home-card">
+      <div class="u2-step-home-row">
+        <span class="u2-step-heading-icon">${done?'✓':'STEP'}</span>
+        <div class="journey-continue-copy">
+          <span class="journey-kicker">STEP Practice</span>
+          <h2>STEP</h2>
+          <p>Quick grammar practice.</p>
+          <div class="journey-mini-progress"><i style="width:${Math.round(answered/total*100)}%"></i></div>
+          <small>${answered}/${total} questions</small>
+        </div>
+        <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.start('step')">${done?'Practice again':'Start STEP'}</button>
+      </div>
+    </section>`;
+  }
+
   function examBanner(){
     if(!unit2IsOpen())return "";
     return `<section class="journey-continue u2-exam-priority">
       <div class="journey-continue-copy">
-        <span class="journey-kicker">Tomorrow • Unit 2 Exam Review</span>
+        <span class="journey-kicker">Unit 2 Review</span>
         <h2>Unit 2 • Careers</h2>
         <p><strong>Full coverage:</strong> all Unit 2 review questions appear for every student.</p>
         <div class="journey-mini-progress"><i style="width:${reviewPct()}%"></i></div>
-        <small>${requiredAnswered()}/${TOTAL_REQUIRED} Unit 2 questions answered • ${reviewPct()}%</small>
+        ${progressStatsHTML()}
       </div>
       <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Open Unit 2 Review</button>
     </section>`;
@@ -790,7 +1362,7 @@
 
   J.homeHTML=function(a,o,p){
     hydrate(a,o,p);
-    return examBanner()+old.homeHTML(a,o,p);
+    return examBanner()+stepHomeCard()+old.homeHTML(a,o,p);
   };
 
   J.html=function(a,o,p){
@@ -804,9 +1376,11 @@
     const base=old.progressHTML(a,o,p);
     if(!unit2IsOpen())return base;
     return base+`<section class="journey-progress-card">
-      <div class="journey-progress-head"><div><span class="journey-kicker">Unit 2 Exam Review</span><h2>${reviewPct()}% complete</h2></div></div>
-      <p>${requiredAnswered()} of ${TOTAL_REQUIRED} Unit 2 review questions have been answered and saved.</p>
-    </section>`;
+      <div class="journey-progress-head"><div><span class="journey-kicker">Unit 2 Review</span><h2>${reviewPct()}% complete</h2></div></div>
+      ${progressStatsHTML()}
+      <p>Your accuracy keeps your best result when you practice again and improve.</p>
+    </section>
+    ${needsPracticeHTML()}`;
   };
 
   J.openUnit=function(uid){
@@ -831,14 +1405,20 @@
   window.STEPUP_U2_EXAM={
     version:VERSION,
     open:openUnit2,
+    practice:openPractice,
+    practiceWeakness:startWeakness,
     start:startSection,
     answer,
     next,
     help:toggleHelp,
+    listen:playListening,
+    stopAudio:stopListening,
     getProgress:()=>({
       answered:requiredAnswered(),
       total:TOTAL_REQUIRED,
-      percentage:reviewPct()
+      percentage:reviewPct(),
+      correct:requiredCorrect(),
+      accuracy:accuracyPct()
     })
   };
 })();

@@ -125,3 +125,32 @@
     max-width:560px !important;
   }
 }
+
+
+/* StepUp ownership footer */
+.stepup-rights{
+  width:min(100% - 28px,760px);
+  margin:26px auto 92px;
+  padding:12px 14px;
+  display:block;
+  justify-content:center;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+  text-align:center;
+  direction:rtl;
+  color:#6a778c;
+  font-family:"Tajawal",-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+  font-size:12px;
+  line-height:1.6;
+}
+.stepup-rights-sep{opacity:.45}
+@media (max-width:520px){
+  .stepup-rights{width:calc(100% - 24px);margin-bottom:96px;font-size:11px}
+}
+
+.stepup-rights-line{
+  display:block;
+  width:100%;
+  text-align:center;
+}

@@ -237,3 +237,73 @@ Unit 2 bilingual support:
 - Only one hint panel is open at a time.
 - If the student answers incorrectly, feedback shows the correct answer, an English explanation, and an Arabic explanation.
 - Correct answers keep concise feedback.
+
+
+Unit 2 writing removal:
+- Writing Review has been removed from the student Unit 2 review page.
+- Unit 2 now shows only the required review sections, separate STEP Practice, and optional Reading/Listening.
+
+
+Unit 2 Reading/Listening requirement:
+- Reading and Listening are now part of the required Unit 2 review path, not Extra/Optional.
+- Required Unit 2 progress includes Vocabulary & Real Talk, Grammar, Form/Meaning/Function, Reading, and Listening.
+- STEP remains separate from Unit 2 progress.
+- Required Unit 2 total is now 30 questions.
+
+
+STEP visual icon update:
+- STEP Practice now uses a dedicated STEP badge icon instead of a generic emoji.
+- The same STEP badge appears on the separate STEP section heading and its card.
+
+
+STEP home-page shortcut:
+- A clear STEP badge now also appears on the student home page.
+- The home card shows STEP progress and opens STEP Practice directly.
+- STEP remains separate from Unit 2 review progress.
+
+StepUp ownership/rights:
+- Added global footer credit.
+- Concept & Design: Nuha Almutairi
+- All rights reserved.
+
+Rights footer layout:
+- Line 1: © StepUp • Created by Nuha Almutairi
+- Line 2: All rights reserved
+
+Final rights footer:
+- Line 1: © 2026 StepUp • All rights reserved
+- Line 2: Created by Nuha Almutairi
+
+
+Practice + progress:
+- Added a clear Practice entry inside Unit 2.
+- Students can repeat any completed skill as many times as they want.
+- Repeat attempts are saved and counted; completion progress does not reset.
+- Existing Unit 2 progress remains visible as answered/total and percentage on Home, Unit 2, and Progress.
+
+
+Reading full-passage display:
+- Every Reading question displays the complete JobPool passage above the question.
+- The full passage stays visible and is repeated with each Reading question.
+- Students do not need to return to a previous screen to reread the text.
+
+
+Listening + mastery + reading navigation:
+- Listening questions now include playable/replayable English conversation audio using the device's speech engine.
+- Unit 2 now shows both completion progress and accuracy.
+- Accuracy/mastery keeps the student's best result across repeated practice attempts.
+- All attempts are still saved; practicing again can improve the best result and never lowers it.
+- Reading keeps the full passage with every question.
+- Mobile Reading adds Go to Question / Back to Passage controls.
+- Tablet/laptop Reading uses a two-column passage + question layout.
+- Removed temporary Tomorrow wording from Unit 2 review labels.
+
+
+Needs Practice:
+- Added a student-facing Needs Practice card based on actual saved answers.
+- Shows up to 3 current weak skill areas from the required Unit 2 path.
+- A weak area disappears automatically after the student answers correctly in later practice.
+- Added direct focused Practice buttons for each weak area.
+- Added Improved ✓ chips for recently improved skill areas.
+- Needs Practice appears in Unit 2 and on the Progress page.
+- Best-result behavior remains: later improvement raises mastery and a weaker later attempt does not lower the saved best result.
