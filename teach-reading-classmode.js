@@ -8,7 +8,14 @@
     speechToken: 0, speechMode: "", speechSentences: [],
     speechIndex: 0, speechQueue: [], queueIndex: 0,
     selectedAnswers: {},
-    paused: false, observer: null
+    context: "teacher",
+    paused: false, observer: null,
+    classTimerStep: -1,
+    classTimerTotal: 45,
+    classTimerRemaining: 45,
+    classTimerRunning: false,
+    classTimerHandle: null,
+    classTimerFinished: false
   };
 
   const VOCAB = {
@@ -73,6 +80,150 @@
         </div>
         <div class="tr-audio-status" id="trAudioStatus">Ready</div>
       </div>`;
+  }
+
+  function timerFormat(seconds){
+    const value=Math.max(0,Math.floor(Number(seconds)||0));
+    const m=Math.floor(value/60);
+    const s=value%60;
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function clearClassTimerHandle(){
+    if(state.classTimerHandle){
+      clearInterval(state.classTimerHandle);
+      state.classTimerHandle=null;
+    }
+  }
+
+  function syncClassTimerForStep(stepData){
+    if(state.context!=="teacher" || !stepData?.timed)return;
+    if(state.classTimerStep!==state.step){
+      clearClassTimerHandle();
+      state.classTimerStep=state.step;
+      state.classTimerTotal=Number(stepData.timerSeconds||45);
+      state.classTimerRemaining=state.classTimerTotal;
+      state.classTimerRunning=false;
+      state.classTimerFinished=false;
+    }
+  }
+
+  function updateClassTimerUI(){
+    const el=document.getElementById("trClassTimerValue");
+    const shell=document.getElementById("trClassTimer");
+    const status=document.getElementById("trClassTimerStatus");
+    if(el)el.textContent=timerFormat(state.classTimerRemaining);
+    if(shell)shell.classList.toggle("time-up",!!state.classTimerFinished);
+    if(status)status.textContent=state.classTimerFinished
+      ? "Time!"
+      : (state.classTimerRunning ? "Running" : "Ready");
+  }
+
+  function setClassTimer(seconds){
+    clearClassTimerHandle();
+    state.classTimerTotal=Math.max(5,Number(seconds)||45);
+    state.classTimerRemaining=state.classTimerTotal;
+    state.classTimerRunning=false;
+    state.classTimerFinished=false;
+    updateClassTimerUI();
+  }
+
+  function startClassTimer(){
+    if(state.classTimerRemaining<=0){
+      state.classTimerRemaining=state.classTimerTotal||45;
+      state.classTimerFinished=false;
+    }
+    if(state.classTimerRunning)return;
+    state.classTimerRunning=true;
+    updateClassTimerUI();
+    clearClassTimerHandle();
+    state.classTimerHandle=setInterval(()=>{
+      state.classTimerRemaining=Math.max(0,state.classTimerRemaining-1);
+      if(state.classTimerRemaining<=0){
+        clearClassTimerHandle();
+        state.classTimerRunning=false;
+        state.classTimerFinished=true;
+      }
+      updateClassTimerUI();
+    },1000);
+  }
+
+  function pauseClassTimer(){
+    clearClassTimerHandle();
+    state.classTimerRunning=false;
+    updateClassTimerUI();
+  }
+
+  function resetClassTimer(){
+    clearClassTimerHandle();
+    state.classTimerRemaining=state.classTimerTotal||45;
+    state.classTimerRunning=false;
+    state.classTimerFinished=false;
+    updateClassTimerUI();
+  }
+
+  function classTimerHTML(defaultSeconds=45){
+    return `<div id="trClassTimer" class="tr-class-timer">
+      <div class="tr-class-timer-main">
+        <span>⏱</span>
+        <b id="trClassTimerValue">${timerFormat(state.classTimerRemaining)}</b>
+        <small id="trClassTimerStatus">${state.classTimerFinished?"Time!":(state.classTimerRunning?"Running":"Ready")}</small>
+      </div>
+      <div class="tr-class-timer-actions">
+        <button onclick="STEPUP_TEACH_READING.setTimer(30)">30s</button>
+        <button onclick="STEPUP_TEACH_READING.setTimer(45)">45s</button>
+        <button onclick="STEPUP_TEACH_READING.setTimer(60)">60s</button>
+        <button class="primary" onclick="STEPUP_TEACH_READING.startTimer()">Start</button>
+        <button onclick="STEPUP_TEACH_READING.pauseTimer()">Pause</button>
+        <button onclick="STEPUP_TEACH_READING.resetTimer()">Reset</button>
+      </div>
+    </div>`;
+  }
+
+  function routineStrip(active=""){
+    const items=[
+      ["preview","Preview"],
+      ["main","Main Idea"],
+      ["scan","Scanning"],
+      ["context","Context"],
+      ["infer","Inference"],
+      ["check","Check"]
+    ];
+    return `<div class="tr-routine-strip">
+      ${items.map(([key,label],i)=>`
+        <span class="${key===active?"active":""}">
+          <b>${i+1}</b>${esc(label)}
+        </span>`).join("")}
+    </div>`;
+  }
+
+  function compactPassageHTML(s, parts=["about","media","archaeology","engineering"]){
+    const map={
+      about:["About Us",s.about||"","about"],
+      media:["Media Intern",s.media||"","media"],
+      archaeology:["Archaeological Interns",s.archaeology||"","archaeology"],
+      engineering:["Environmental Engineering",s.engineering||"","engineering"]
+    };
+    return `<div class="tr-compact-passage" dir="ltr">
+      ${parts.map(key=>{
+        const item=map[key];
+        if(!item || !item[1])return "";
+        return `<section>
+          <h3>${esc(item[0])}</h3>
+          <p>${sentenceMarkup(item[1],item[2])}</p>
+        </section>`;
+      }).join("")}
+    </div>`;
+  }
+
+  function afterReadingEvidenceDrawer(s){
+    return `<details class="tr-evidence-drawer">
+      <summary>Open the text & résumé to find evidence</summary>
+      <div class="tr-evidence-content">
+        ${compactPassageHTML(s)}
+        <div class="tr-evidence-resume">${resumeHTML(s.resume)}</div>
+      </div>
+    </details>`;
   }
 
   function textbookBadge(exercise, page) {
@@ -176,12 +327,30 @@
   function exitCheckHTML() {
     // Original Mega Goal 1 Student Book — Unit 2 — After Reading, p. 27.
     const exit = [
-      {stem:"JobPool has been growing since the year 2000.", answer:0},
-      {stem:"The archaeological interns get a good salary.", answer:1},
-      {stem:"The media intern needs to speak several languages.", answer:1},
-      {stem:"The candidate for the engineering job must be good at reading blueprints.", answer:0},
-      {stem:"Carl has experience with word-processing programs.", answer:0},
-      {stem:"One of Carl’s articles has appeared in newspapers all over the country.", answer:1}
+      {
+        stem:"JobPool has been growing since the year 2000.", answer:0,
+        evidence:"Since its foundation in 2000, the company has constantly improved ... JobPool has been growing globally."
+      },
+      {
+        stem:"The archaeological interns get a good salary.", answer:1,
+        evidence:"This is an unpaid three-month internship, but lodging and meals are provided near the site."
+      },
+      {
+        stem:"The media intern needs to speak several languages.", answer:1,
+        evidence:"The opening says the intern needs to be fluent in English; it does not require several languages."
+      },
+      {
+        stem:"The candidate for the engineering job must be good at reading blueprints.", answer:0,
+        evidence:"You need to be able to read blueprints."
+      },
+      {
+        stem:"Carl has experience with word-processing programs.", answer:0,
+        evidence:"Skills: Computer expertise in word-processing and graphic programs."
+      },
+      {
+        stem:"One of Carl’s articles has appeared in newspapers all over the country.", answer:1,
+        evidence:"The résumé says an article appeared in the local press, not newspapers all over the country."
+      }
     ];
 
     const allSelected = exit.every((_,qi)=>Number.isInteger(state.selectedAnswers[`exit-${qi}`]));
@@ -214,6 +383,7 @@
                     </button>`;
                 }).join("")}
               </div>
+              ${state.revealed?`<div class="tr-exit-evidence"><b>Evidence:</b> ${esc(q.evidence)}</div>`:""}
             </div>`;
         }).join("")}
       </div>
@@ -259,39 +429,38 @@
       {mode:"full-engineering", text:s.engineering || ""}
     ].filter(x => x.text);
 
+    const quickWords=["interns","fluent","painstaking","lodging","blueprints"];
+
+    const contextQuestion={
+      skill:"Vocabulary in Context",
+      stem:"In the passage, the word “painstaking” is closest in meaning to ___.",
+      choices:[
+        "requiring a lot of care and effort",
+        "quick and effortless",
+        "highly paid",
+        "done only by machines"
+      ],
+      answer:0,
+      explanation:"The surrounding sentences describe the archaeological work as hard, slow, and careful.",
+      need:"Find the word, then read the sentence around it for clues."
+    };
+
     return [
       {
-        label:"Warm-up", kicker:"Before Reading",
-        title:"Look at the three job opportunities",
+        label:"1 • Start",
+        kicker:"Our Reading Routine",
+        title:"Read smarter, not harder",
         body:`
+          ${routineStrip("preview")}
+          <div class="tr-routine-hero">
+            <div>
+              <span class="tr-routine-pill">Today’s goal</span>
+              <h2>Learn the routine we will use in every Reading lesson.</h2>
+              <p>Do not start by translating every word. First decide what the question needs.</p>
+            </div>
+            <div class="tr-routine-rule">I don’t need to understand every word to understand the text.</div>
+          </div>
           ${textbookBadge("Before Reading", "26")}
-          <div class="tr-warm-grid">
-            <div class="tr-career-card"><span>📰</span><strong>Media Intern</strong><small>TV and Radio Media International</small></div>
-            <div class="tr-career-card"><span>🏺</span><strong>Archaeological Interns</strong><small>Students Learning Overseas</small></div>
-            <div class="tr-career-card"><span>🌱</span><strong>Environmental Engineering</strong><small>Saudi Construction, Riyadh</small></div>
-          </div>
-          <div class="tr-teacher-prompt"><b>Original textbook task:</b> Read the three job opportunities and find the sentences that say what a person should be able to do in each job.</div>`
-      },
-      {
-        label:"Vocabulary", kicker:"Key words",
-        title:"Meet the words before the text",
-        body:`
-          <div class="tr-vocab-grid">
-            ${Object.entries(VOCAB).map(([word,meaning])=>`
-              <div class="tr-vocab-card">
-                <div class="tr-vocab-top"><b>${esc(word)}</b><button onclick="STEPUP_TEACH_READING.readWord('${word.replace(/'/g,"\\'")}')">🔊</button></div>
-                <button class="tr-meaning-toggle" onclick="STEPUP_TEACH_READING.toggleMeaning(this)">Show meaning</button>
-                <span class="tr-vocab-meaning">${esc(meaning)}</span>
-              </div>`).join("")}
-          </div>
-          <div class="tr-teacher-prompt"><b>Quick check:</b> Which word means “a place to stay”?</div>`
-      },
-
-      {
-        label:"Preview", kicker:"Before you read",
-        title:"Preview the title and headings",
-        body:`
-          ${textbookBadge("Reading • JobPool Has the Job for You", "26")}
           <div class="tr-preview-card" dir="ltr">
             <span class="tr-preview-label">Title</span>
             <h2>JobPool Has the Job for You</h2>
@@ -303,207 +472,332 @@
               <span>Environmental Engineering</span>
             </div>
           </div>
-          <div class="tr-teacher-prompt"><b>Prediction:</b> Before reading, ask: “What do you expect this text to be mainly about?”</div>`
-      },
-      {
-        label:"Strategy • Main Idea", kicker:"Use it now",
-        title:"Main Idea — Predict first",
-        body:`
-          <div class="tr-strategy-grid">
-            <div><span>1</span><b>Start with the title</b><small>It gives you the broad topic.</small></div>
-            <div><span>2</span><b>Scan the headings</b><small>Look for what the sections have in common.</small></div>
-            <div><span>3</span><b>Make a prediction</b><small>Do not lock the answer yet. Confirm it as you read.</small></div>
-          </div>
-          <div class="tr-demo-box">
-            <b>Main Idea routine</b>
-            <p><strong>Predict → Read → Confirm</strong></p>
-            <p>Teacher cue: “The headings are different, but what connects all of them?”</p>
+          <div class="tr-teacher-prompt">
+            <b>Ask the class:</b> “What do you expect this text to be mainly about?”
+            <br><small>Then connect to the textbook Before Reading task: find what a person should be able to do in each job.</small>
           </div>`
       },
 
       {
-        label:"Paragraph 1", kicker:"Original textbook text",
-        title:"About Us",
-        audioMode:"about", audioText:s.about || "",
-        body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("About Us:", s.about || "", "about", "Read Paragraph 1")}`
-      },
-      {
-        label:"Main Idea Check", kicker:"Pause and think",
-        title:"Is our prediction still working?",
-        questionHTML:simpleQuestion({
-          skill:"Main Idea",
-          stem:"After reading “About Us,” which idea best fits the text so far?",
-          choices:[
-            "JobPool connects professionals and companies and presents career opportunities.",
-            "The text is only about archaeology.",
-            "The text explains how to build roads.",
-            "The text is mainly about writing computer programs."
-          ],
-          answer:0,
-          explanation:"The About Us paragraph introduces JobPool as a career network that helps professionals and companies meet. Keep this as a working main idea and confirm it as you continue reading.",
-          need:"Use the title, headings, and the first paragraph together. This is a prediction check, not the final Main Idea answer."
-        }, "Main Idea • Predict → Read → Confirm")
-      },
-
-      {
-        label:"Paragraph 2", kicker:"Original textbook text",
-        title:"Media Intern",
-        audioMode:"media", audioText:s.media || "",
-        body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Media Intern: TV and Radio Media International", s.media || "", "media", "Read Paragraph 2")}`
-      },
-      {
-        label:"Strategy • Scanning", kicker:"Use it now",
-        title:"Scanning for Details",
+        label:"2 • Vocabulary",
+        kicker:"Quick Vocabulary",
+        title:"Only the words that may block understanding",
         body:`
-          <div class="tr-strategy-grid">
-            <div><span>1</span><b>Pick the key word</b><small>Job title, number, skill, or requirement.</small></div>
-            <div><span>2</span><b>Move your eyes quickly</b><small>Do not reread every line.</small></div>
-            <div><span>3</span><b>Stop at the matching clue</b><small>Then read that sentence carefully.</small></div>
+          ${routineStrip("preview")}
+          <div class="tr-vocab-grid tr-vocab-compact">
+            ${quickWords.map(word=>`
+              <div class="tr-vocab-card">
+                <div class="tr-vocab-top">
+                  <b>${esc(word)}</b>
+                  <button onclick="STEPUP_TEACH_READING.readWord('${word.replace(/'/g,"\\'")}')">🔊</button>
+                </div>
+                <button class="tr-meaning-toggle" onclick="STEPUP_TEACH_READING.toggleMeaning(this)">Show meaning</button>
+                <span class="tr-vocab-meaning">${esc(VOCAB[word]||"")}</span>
+              </div>`).join("")}
           </div>
-          <div class="tr-demo-box"><b>Use it on Paragraph 2</b><p>“If I ask whether the internship is paid or unpaid, what exact word should your eyes search for?”</p></div>`
-      },
-      {
-        label:"Quick Check", kicker:"Apply Scanning",
-        title:"Find the exact clue",
-        questionHTML:quickCheck(
-          "The Media Intern position is ___.",
-          ["paid for the summer","unpaid for three months","only for engineers","only for Arabic speakers"],
-          0,
-          "The original text says: “This is a paid internship for the summer.”"
-        )
-      },
-
-      {
-        label:"Paragraph 3", kicker:"Original textbook text",
-        title:"Archaeological Interns",
-        audioMode:"archaeology", audioText:s.archaeology || "",
-        body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Archaeological Interns: Students Learning Overseas", s.archaeology || "", "archaeology", "Read Paragraph 3")}`
-      },
-      {
-        label:"Detail Check", kicker:"Keep Scanning",
-        title:"Find one specific detail",
-        questionHTML:quickCheck(
-          "Which internship is unpaid but provides lodging and meals?",
-          ["Media Intern","Archaeological Interns","Environmental Engineering","All of them"],
-          1,
-          "The original text states that the archaeological internship is unpaid, but lodging and meals are provided."
-        )
-      },
-
-      {
-        label:"Paragraph 4", kicker:"Original textbook text",
-        title:"Environmental Engineering",
-        audioMode:"engineering", audioText:s.engineering || "",
-        body:`${textbookBadge("Reading • JobPool Has the Job for You", "26")}${readingCard("Environmental Engineering: Saudi Construction, Riyadh", s.engineering || "", "engineering", "Read Paragraph 4")}`
-      },
-      {
-        label:"Detail Check", kicker:"Scan the paragraph",
-        title:"Find the required skill",
-        questionHTML:quickCheck(
-          "The engineering applicant needs to be able to read ___.",
-          ["résumés","blueprints","newspapers","maps only"],
-          1,
-          "The original text says the applicant needs to be able to read blueprints."
-        )
-      },
-
-      {
-        label:"Strategy • Inference", kicker:"Use clues together",
-        title:"Inference",
-        body:`
-          <div class="tr-strategy-grid">
-            <div><span>1</span><b>Collect two or more clues</b><small>The answer may not be copied exactly.</small></div>
-            <div><span>2</span><b>Match the clues</b><small>Connect the details to what the question asks.</small></div>
-            <div><span>3</span><b>Choose the best fit</b><small>Reject options that add unsupported ideas.</small></div>
+          <div class="tr-routine-rule small">
+            If a word does not stop your understanding or the answer, keep reading.
           </div>
-          <div class="tr-demo-box"><b>Use it on the job openings</b><p>“If someone is fluent in English, friendly, and good with computers, which opening fits best?”</p></div>`
+          <div class="tr-teacher-prompt"><b>Quick check:</b> Which word means “a place to stay”?</div>`
       },
 
       {
-        label:"Résumé", kicker:"Original textbook text",
-        title:"Carl Barthes",
-        audioQueue:resumeQueue(s.resume),
-        body:`${textbookBadge("Résumé", "27")}${resumeHTML(s.resume)}
-          <div class="tr-teacher-prompt"><b>Apply Scanning + Inference:</b> Scan Carl’s résumé for qualifications, then infer which JobPool opening best matches his experience.</div>`
-      },
-
-      {
-        label:"Guided Practice", kicker:"Confirm Main Idea",
-        title:q[0]?.stem || "Main Idea",
-        questionHTML:simpleQuestion(q[0], "Main Idea • Confirm your prediction")
-      },
-      {
-        label:"Guided Practice", kicker:"Scanning",
-        title:q[1]?.stem || "Specific Detail",
-        questionHTML:simpleQuestion(q[1], "Scanning strategy")
-      },
-      {
-        label:"Guided Practice", kicker:"Inference",
-        title:q[2]?.stem || "Inference",
-        questionHTML:simpleQuestion(q[2], "Inference strategy")
-      },
-
-      {
-        label:"After Reading", kicker:"Textbook Exercise",
-        title:"Answer true or false",
-        questionHTML:exitCheckHTML()
-      },
-
-      {
-        label:"Full Reading", kicker:"Listen and follow",
-        title:"JobPool Has the Job for You",
+        label:"3 • Main Idea",
+        kicker:"Learn → Try",
+        title:"Main Idea — Predict → Read → Confirm",
+        timed:true,
+        timerSeconds:60,
         audioQueue:fullQueue,
         body:`
-          ${textbookBadge("Reading • JobPool Has the Job for You", "26")}
-          ${audioControls("Read Full Text")}
-          <div class="tr-reading-card tr-full-reading" dir="ltr">
-            <section class="tr-paragraph-block">
-              <h3>About Us:</h3>
-              <p>${sentenceMarkup(s.about || "", "full-about")}</p>
-            </section>
-            <section class="tr-paragraph-block">
-              <h3>Media Intern: TV and Radio Media International</h3>
-              <p>${sentenceMarkup(s.media || "", "full-media")}</p>
-            </section>
-            <section class="tr-paragraph-block">
-              <h3>Archaeological Interns: Students Learning Overseas</h3>
-              <p>${sentenceMarkup(s.archaeology || "", "full-archaeology")}</p>
-            </section>
-            <section class="tr-paragraph-block">
-              <h3>Environmental Engineering: Saudi Construction, Riyadh</h3>
-              <p>${sentenceMarkup(s.engineering || "", "full-engineering")}</p>
-            </section>
-            <p><strong>Send applications to:</strong> internships@jpool.com Attach a cover letter and a résumé.</p>
+          ${routineStrip("main")}
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Start with the title</b><small>It gives you the broad topic.</small></div>
+            <div><span>2</span><b>Scan the headings</b><small>Look for what all sections have in common.</small></div>
+            <div><span>3</span><b>Predict, then confirm</b><small>Choose the idea that covers the whole text.</small></div>
+          </div>
+          <div class="tr-class-reading-block">
+            ${audioControls("Listen to Full Text")}
+            ${compactPassageHTML(s)}
+          </div>
+          <div class="tr-class-try-label">Try it now</div>
+          ${simpleQuestion(q[0], "Main Idea • Does your answer cover the whole text?")}`
+      },
+
+      {
+        label:"4 • Scanning",
+        kicker:"Learn → Try",
+        title:"Scanning — Find the clue fast",
+        timed:true,
+        timerSeconds:45,
+        audioQueue:[
+          {mode:"scan-media",text:s.media||""},
+          {mode:"scan-archaeology",text:s.archaeology||""},
+          {mode:"scan-engineering",text:s.engineering||""}
+        ].filter(x=>x.text),
+        body:`
+          ${routineStrip("scan")}
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Read the question first</b><small>Know exactly what you are looking for.</small></div>
+            <div><span>2</span><b>Pick a keyword</b><small>Job title, number, skill, paid/unpaid, or requirement.</small></div>
+            <div><span>3</span><b>Scan → Stop → Read</b><small>Move your eyes quickly, then read the matching sentence carefully.</small></div>
+          </div>
+          <div class="tr-class-reading-block">
+            ${audioControls("Listen to the Openings")}
+            ${compactPassageHTML(s,["media","archaeology","engineering"])}
+          </div>
+          <div class="tr-class-try-label">Try it now • What keyword should your eyes search for?</div>
+          ${simpleQuestion(q[1], "Scanning • Find the exact clue before choosing.")}`
+      },
+
+      {
+        label:"5 • Context",
+        kicker:"Learn → Try",
+        title:"Vocabulary in Context — Use the words around it",
+        timed:true,
+        timerSeconds:45,
+        audioMode:"context-archaeology",
+        audioText:s.archaeology||"",
+        body:`
+          ${routineStrip("context")}
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Find the target word</b><small>Scan until your eyes reach it.</small></div>
+            <div><span>2</span><b>Read around it</b><small>Use nearby words and sentences as clues.</small></div>
+            <div><span>3</span><b>Choose the closest meaning</b><small>Reject meanings that do not fit the context.</small></div>
+          </div>
+          <div class="tr-class-reading-block">
+            ${readingCard("Archaeological Interns",s.archaeology||"","context-archaeology","Listen to the Paragraph")}
+          </div>
+          <div class="tr-class-try-label">Try it now • Do not translate first</div>
+          ${simpleQuestion(contextQuestion, "Context • Find → Read around → Use clues")}`
+      },
+
+      {
+        label:"6 • Inference",
+        kicker:"Learn → Try",
+        title:"Inference — The answer is supported, not copied",
+        timed:true,
+        timerSeconds:45,
+        audioMode:"infer-media",
+        audioText:s.media||"",
+        body:`
+          ${routineStrip("infer")}
+          <div class="tr-strategy-grid">
+            <div><span>1</span><b>Collect clues</b><small>Find two or more useful details.</small></div>
+            <div><span>2</span><b>Connect the clues</b><small>Match them to what the question asks.</small></div>
+            <div><span>3</span><b>Choose the best fit</b><small>Reject answers that add unsupported ideas.</small></div>
+          </div>
+          <div class="tr-class-reading-block">
+            ${readingCard("Media Intern",s.media||"","infer-media","Listen to the Paragraph")}
+          </div>
+          <div class="tr-class-try-label">Try it now • What clues support your answer?</div>
+          ${simpleQuestion(q[2], "Inference • Find clues → Connect → Choose")}`
+      },
+
+      {
+        label:"7 • Résumé",
+        kicker:"Same strategy • New text shape",
+        title:"Scan Carl’s résumé",
+        timed:true,
+        timerSeconds:45,
+        audioQueue:resumeQueue(s.resume),
+        body:`
+          ${routineStrip("scan")}
+          ${textbookBadge("Résumé", "27")}
+          <div class="tr-resume-task">
+            <b>Do not read every line.</b>
+            <span>Find <strong>Experience</strong> → Find <strong>Skills</strong> → Find the clue.</span>
+          </div>
+          ${resumeHTML(s.resume)}
+          <div class="tr-teacher-prompt">
+            <b>Ask:</b> “If the question asks about word-processing, where should your eyes go first?”
+            <br><small>Goal: show that Scanning still works when the text format changes.</small>
           </div>`
       },
 
       {
-        label:"Discussion", kicker:"Textbook Exercise",
-        title:"Discuss the reading",
-        questionHTML:discussionHTML()
+        label:"8 • After Reading",
+        kicker:"Final Check • Student Book",
+        title:"Find the keyword → Find the evidence → Decide",
+        timed:true,
+        timerSeconds:60,
+        body:`
+          ${routineStrip("check")}
+          <div class="tr-after-reading-guide">
+            <span><b>1</b> Read the statement</span>
+            <span><b>2</b> Pick the keyword</span>
+            <span><b>3</b> Find the evidence</span>
+            <span><b>4</b> Decide True / False</span>
+          </div>
+          ${exitCheckHTML()}
+          ${afterReadingEvidenceDrawer(s)}`
+      },
+
+      {
+        label:"9 • Wrap-up",
+        kicker:"Use this every time",
+        title:"Our Reading Routine",
+        body:`
+          ${routineStrip("")}
+          <div class="tr-wrap-grid">
+            <div><b>Main Idea</b><span>Whole text → title + headings + repeated idea</span></div>
+            <div><b>Scanning</b><span>Question first → keyword → clue</span></div>
+            <div><b>Context</b><span>Find word → read around → use clues</span></div>
+            <div><b>Inference</b><span>Find clues → connect → best supported answer</span></div>
+          </div>
+          <div class="tr-routine-hero tr-wrap-final">
+            <div>
+              <span class="tr-routine-pill">From the next Reading lesson</span>
+              <h2>You already know the routine.</h2>
+              <p>At home in StepUp: learn the strategy, apply it immediately, and improve speed + accuracy.</p>
+            </div>
+            <div class="tr-routine-rule">What strategy do you need more practice with?</div>
+          </div>
+          <div class="tr-teacher-prompt"><b>Exit question:</b> “What will you do first when you see a long Reading text?”</div>`
       }
     ];
   }
 
+  function studentLessonSteps() {
+    const all = lessonSteps();
+    const find = (test) => all.find(test) || {};
+
+    const warm = find(x => x.label === "Warm-up");
+    const preview = find(x => x.label === "Preview");
+    const vocab = find(x => x.label === "Vocabulary");
+    const mainIdea = find(x => x.label === "Strategy • Main Idea");
+    const mainCheck = find(x => x.label === "Main Idea Check");
+    const fullReading = find(x => x.label === "Full Reading");
+    const scanning = find(x => x.label === "Strategy • Scanning");
+    const scanCheck = find(x => x.label === "Quick Check");
+    const detailCheck = find(x => x.label === "Detail Check");
+    const inference = find(x => x.label === "Strategy • Inference");
+    const guidedInference = find(x => x.label === "Guided Practice" && x.kicker === "Inference");
+    const afterReading = find(x => x.label === "After Reading");
+
+    return [
+      {
+        label:"1 • Before Reading",
+        kicker:"Before Reading",
+        title:"Preview before you read",
+        body:`
+          ${warm.body || ""}
+          <div class="tr-student-divider"></div>
+          ${preview.body || ""}
+        `
+      },
+      {
+        label:"2 • Vocabulary",
+        kicker:"Key Vocabulary",
+        title:"Words that help you understand the text",
+        body:vocab.body || ""
+      },
+      {
+        label:"3 • Main Idea",
+        kicker:"Reading Strategy",
+        title:"Main Idea — Predict → Read → Confirm",
+        body:`
+          ${mainIdea.body || ""}
+          <div class="tr-student-divider"></div>
+          ${mainCheck.questionHTML || ""}
+        `
+      },
+      {
+        label:"4 • Read & Listen",
+        kicker:"Original Text",
+        title:"JobPool Has the Job for You",
+        audioQueue:fullReading.audioQueue || [],
+        body:fullReading.body || ""
+      },
+      {
+        label:"5 • Scanning",
+        kicker:"Reading Strategy",
+        title:"Scanning for Details",
+        body:`
+          ${scanning.body || ""}
+          <div class="tr-student-divider"></div>
+          ${scanCheck.questionHTML || ""}
+          <div class="tr-student-mini-gap"></div>
+          ${detailCheck.questionHTML || ""}
+        `
+      },
+      {
+        label:"6 • Inference",
+        kicker:"Reading Strategy",
+        title:"Use clues to infer",
+        body:`
+          ${inference.body || ""}
+          <div class="tr-student-divider"></div>
+          ${guidedInference.questionHTML || ""}
+        `
+      },
+      {
+        label:"7 • After Reading",
+        kicker:"Textbook Check",
+        title:"Check your understanding",
+        body:afterReading.questionHTML || afterReading.body || ""
+      },
+      {
+        label:"8 • Apply",
+        kicker:"Ready to Apply",
+        title:"Use the three strategies",
+        body:`
+          <div class="tr-student-apply">
+            <span class="tr-apply-icon">✓</span>
+            <h2>Now apply what you learned</h2>
+            <p>Use <b>Main Idea</b>, <b>Scanning</b>, and <b>Inference</b> in the 4 Reading questions.</p>
+            <div class="tr-apply-strategies">
+              <span>Main Idea</span>
+              <span>Scanning</span>
+              <span>Inference</span>
+            </div>
+            <small>Your answers will be saved in your Unit 2 progress.</small>
+          </div>
+        `
+      }
+    ];
+  }
+
+  function activeLessonSteps() {
+    return state.context === "student" ? studentLessonSteps() : lessonSteps();
+  }
+
   function currentStep() {
-    const steps = lessonSteps();
+    const steps = activeLessonSteps();
     return steps[state.step] || steps[0];
   }
 
   function render() {
     stopSpeech();
-    const app = document.getElementById("app");
+    const isStudent = state.context === "student";
+    const app = isStudent
+      ? (document.querySelector(".student-view") || document.getElementById("app"))
+      : document.getElementById("app");
     if (!app) return;
-    const steps = lessonSteps();
+
+    const steps = activeLessonSteps();
     const s = steps[state.step] || steps[0];
     const progress = Math.round(((state.step + 1) / steps.length) * 100);
 
+    syncClassTimerForStep(s);
+    let content = s.questionHTML || s.body || "";
+    if(!isStudent && s.timed){
+      content = classTimerHTML(s.timerSeconds||45) + content;
+    }
+    if (isStudent) {
+      content = content
+        .replaceAll("Teacher cue:", "Think:")
+        .replaceAll("Original textbook task:", "Textbook task:");
+    }
+
     app.innerHTML = `
-      <div class="tr-shell">
+      <div class="tr-shell ${isStudent ? "tr-student-shell" : ""}">
         <header class="tr-toolbar">
           <div class="tr-brand">
             <div class="tr-logo">SU</div>
-            <div><strong>StepUp • Teach Reading</strong><small>Unit 2 • Careers • Teacher Class Mode</small></div>
+            <div>
+              <strong>StepUp • ${isStudent ? "Reading Lesson" : "Teach Reading"}</strong>
+              <small>Unit 2 • Careers • ${isStudent ? "Reading journey" : "Reading Routine • 9 stops"}</small>
+            </div>
           </div>
           <div class="tr-toolbar-actions">
             <span class="tr-counter">${state.step + 1}/${steps.length}</span>
@@ -516,13 +810,13 @@
             <div><span class="tr-kicker">${esc(s.kicker)}</span><h1>${esc(s.title)}</h1></div>
             <span class="tr-step-label">${esc(s.label)}</span>
           </div>
-          <section class="tr-content">${s.questionHTML || s.body || ""}</section>
+          <section class="tr-content">${content}</section>
           <footer class="tr-nav">
             <button class="secondary" onclick="STEPUP_TEACH_READING.prev()" ${state.step === 0 ? "disabled" : ""}>← Back</button>
             <div class="tr-dots">${steps.map((_,i)=>`<span class="${i===state.step?"active":i<state.step?"done":""}"></span>`).join("")}</div>
             ${state.step < steps.length - 1
               ? `<button class="primary" onclick="STEPUP_TEACH_READING.next()">Next →</button>`
-              : `<button class="primary" onclick="STEPUP_TEACH_READING.exit()">Finish Lesson ✓</button>`}
+              : `<button class="primary" onclick="STEPUP_TEACH_READING.finish()">${isStudent?"Finish & Practice ✓":"Finish Lesson ✓"}</button>`}
           </footer>
         </main>
       </div>`;
@@ -736,11 +1030,95 @@
     render();
   }
 
-  function start(){if(!document.querySelector(".teacher-classmode-v2")){alert("Teach Reading is available from Teacher > Class Mode.");return}state.step=0;state.revealed=false;state.selectedAnswers={};render()}
-  function next(){const steps=lessonSteps();if(state.step<steps.length-1){state.step++;state.revealed=false;render()}}
-  function prev(){if(state.step>0){state.step--;state.revealed=false;render()}}
+  function resetTeacherTimerState(){
+    clearClassTimerHandle();
+    state.classTimerStep=-1;
+    state.classTimerTotal=45;
+    state.classTimerRemaining=45;
+    state.classTimerRunning=false;
+    state.classTimerFinished=false;
+  }
+
+  function start(){
+    if(!document.querySelector(".teacher-classmode-v2")){
+      alert("Teach Reading is available from Teacher > Class Mode.");
+      return;
+    }
+    stopSpeech();
+    resetTeacherTimerState();
+    state.context="teacher";
+    state.step=0;
+    state.revealed=false;
+    state.selectedAnswers={};
+    render();
+  }
+
+  function startStudent(){
+    if(window.STEPUP_U2_EXAM?.readingLesson){
+      window.STEPUP_U2_EXAM.readingLesson();
+      return;
+    }
+    stopSpeech();
+    resetTeacherTimerState();
+    state.context="student";
+    state.step=0;
+    state.revealed=false;
+    state.selectedAnswers={};
+    render();
+  }
+
+  function next(){
+    const steps=activeLessonSteps();
+    if(state.step<steps.length-1){
+      stopSpeech();
+      clearClassTimerHandle();
+      state.step++;
+      state.revealed=false;
+      render();
+    }
+  }
+
+  function prev(){
+    if(state.step>0){
+      stopSpeech();
+      clearClassTimerHandle();
+      state.step--;
+      state.revealed=false;
+      render();
+    }
+  }
+
   function reveal(){stopSpeech();state.revealed=true;render()}
-  function exitLesson(){stopSpeech();state.step=0;state.revealed=false;if(window.PROVE?.setTeacherTab)window.PROVE.setTeacherTab("classmode")}
+
+  function exitLesson(){
+    stopSpeech();
+    resetTeacherTimerState();
+    const wasStudent=state.context==="student";
+    state.step=0;
+    state.revealed=false;
+    state.selectedAnswers={};
+    if(wasStudent){
+      state.context="teacher";
+      if(window.STEPUP_U2_EXAM?.open)window.STEPUP_U2_EXAM.open();
+      return;
+    }
+    if(window.PROVE?.setTeacherTab)window.PROVE.setTeacherTab("classmode");
+  }
+
+  function finishLesson(){
+    stopSpeech();
+    resetTeacherTimerState();
+    const wasStudent=state.context==="student";
+    state.step=0;
+    state.revealed=false;
+    state.selectedAnswers={};
+    if(wasStudent){
+      state.context="teacher";
+      if(window.STEPUP_U2_EXAM?.start)window.STEPUP_U2_EXAM.start("reading");
+      return;
+    }
+    if(window.PROVE?.setTeacherTab)window.PROVE.setTeacherTab("classmode");
+  }
 
   function injectSkillPanel(){
     const page=document.querySelector(".teacher-classmode-v2");
@@ -787,6 +1165,138 @@
 
       .tr-exit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.tr-exit-card{border:1px solid #e0e7ef;border-radius:18px;padding:18px;background:#fbfdff}.tr-exit-num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#6250e8;color:#fff;font-weight:900}.tr-exit-card h3{font-size:18px;line-height:1.35}.tr-exit-options{display:grid;gap:7px}.tr-exit-option{width:100%;display:flex;gap:8px;border:1px solid #e0e6ee;background:#fff;border-radius:11px;padding:10px 11px;cursor:pointer;text-align:left;color:#172033}.tr-exit-options span{font-weight:900}.tr-exit-option.selected{border-color:#6250e8;background:#f5f2ff}.tr-exit-option.correct{border-color:#32a36c;background:#edfff6}.tr-exit-option.wrong{border-color:#d94d55;background:#fff1f2}.tr-exit-actions{max-width:360px;margin:18px auto 0}
       .tr-nav{display:grid;grid-template-columns:160px 1fr 160px;gap:16px;align-items:center;margin-top:20px}.tr-nav button{border-radius:14px;padding:13px 16px;font-weight:900;cursor:pointer;font-size:15px}.tr-nav .secondary{background:#fff;border:1px solid #d7e0ea;color:#344054}.tr-nav .primary{background:#1769e0;border:1px solid #1769e0;color:#fff}.tr-nav button:disabled{opacity:.35;cursor:not-allowed}.tr-dots{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.tr-dots span{width:8px;height:8px;border-radius:50%;background:#d8e0e9}.tr-dots span.active{width:22px;border-radius:999px;background:#6250e8}.tr-dots span.done{background:#8cb7ef}
+
+      .tr-routine-strip{
+        display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-bottom:16px;
+      }
+      .tr-routine-strip span{
+        display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;
+        padding:7px 8px;border:1px solid #e1e7ef;border-radius:12px;background:#fff;
+        color:#637187;font-size:11px;font-weight:800;text-align:center;
+      }
+      .tr-routine-strip span b{
+        width:21px;height:21px;display:grid;place-items:center;border-radius:50%;
+        background:#edf2f8;color:#50627a;font-size:10px;
+      }
+      .tr-routine-strip span.active{
+        border-color:#bcd3ea;background:#eef6ff;color:#234f78;
+      }
+      .tr-routine-strip span.active b{background:#234f78;color:#fff}
+      .tr-routine-hero{
+        display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.5fr);
+        gap:14px;align-items:stretch;margin-bottom:16px;
+      }
+      .tr-routine-hero>div:first-child{
+        padding:18px;border:1px solid #e1e8f0;border-radius:18px;background:#fff;
+      }
+      .tr-routine-hero h2{margin:6px 0 7px;font-size:24px;color:#172033}
+      .tr-routine-hero p{margin:0;color:#5c6d82;line-height:1.6}
+      .tr-routine-pill{
+        display:inline-flex;padding:6px 9px;border-radius:999px;background:#eef4fb;
+        color:#315b86;font-size:11px;font-weight:900;
+      }
+      .tr-routine-rule{
+        display:grid;place-items:center;padding:17px;border-radius:18px;
+        background:#173b63;color:#fff;font-weight:900;line-height:1.55;text-align:center;
+      }
+      .tr-routine-rule.small{margin-top:13px;padding:11px 13px;border-radius:13px;font-size:12px}
+      .tr-vocab-compact{grid-template-columns:repeat(5,minmax(0,1fr))}
+      .tr-class-timer{
+        display:flex;align-items:center;justify-content:space-between;gap:12px;
+        margin-bottom:14px;padding:10px 12px;border:1px solid #dbe5ef;border-radius:15px;
+        background:#f8fbff;
+      }
+      .tr-class-timer.time-up{border-color:#e1c6c6;background:#fff7f7}
+      .tr-class-timer-main{display:flex;align-items:center;gap:8px}
+      .tr-class-timer-main>b{
+        min-width:58px;font-size:21px;color:#173b63;font-variant-numeric:tabular-nums;
+      }
+      .tr-class-timer-main>small{color:#6d7d90;font-size:11px}
+      .tr-class-timer.time-up .tr-class-timer-main>b{color:#9d3131}
+      .tr-class-timer-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+      .tr-class-timer-actions button{
+        min-height:36px;padding:7px 10px;border:1px solid #cfdae7;border-radius:10px;
+        background:#fff;color:#35506f;font-weight:800;cursor:pointer;
+      }
+      .tr-class-timer-actions button.primary{background:#173b63;color:#fff;border-color:#173b63}
+      .tr-class-reading-block{margin:14px 0}
+      .tr-compact-passage{
+        max-height:360px;overflow:auto;padding:15px;border:1px solid #e0e6ed;
+        border-radius:17px;background:#fff;
+      }
+      .tr-compact-passage section+section{margin-top:15px;padding-top:14px;border-top:1px solid #edf1f5}
+      .tr-compact-passage h3{margin:0 0 6px;color:#22384f;font-size:16px}
+      .tr-compact-passage p{margin:0;color:#394b60;line-height:1.8}
+      .tr-class-try-label{
+        margin:16px 0 9px;padding:8px 11px;border-radius:11px;
+        background:#173b63;color:#fff;font-size:12px;font-weight:900;
+      }
+      .tr-resume-task{
+        display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0 13px;
+        padding:11px 13px;border-radius:13px;background:#eef6ff;color:#315274;
+      }
+      .tr-resume-task>b{color:#173b63}
+      .tr-after-reading-guide{
+        display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 16px;
+      }
+      .tr-after-reading-guide span{
+        display:flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid #e1e7ef;
+        border-radius:12px;background:#fff;color:#4d6077;font-size:11px;font-weight:800;
+      }
+      .tr-after-reading-guide b{
+        width:22px;height:22px;display:grid;place-items:center;border-radius:50%;
+        background:#eef4fb;color:#234f78;
+      }
+      .tr-exit-evidence{
+        margin-top:9px;padding:8px 9px;border-radius:10px;background:#eef6ff;
+        color:#315274;font-size:11px;line-height:1.5;
+      }
+      .tr-evidence-drawer{
+        margin-top:14px;border:1px solid #dfe6ee;border-radius:14px;background:#fafbfd;overflow:hidden;
+      }
+      .tr-evidence-drawer summary{
+        padding:11px 13px;cursor:pointer;color:#315274;font-size:12px;font-weight:900;
+      }
+      .tr-evidence-content{padding:0 12px 12px}
+      .tr-evidence-content .tr-compact-passage{max-height:320px}
+      .tr-evidence-resume{margin-top:12px}
+      .tr-wrap-grid{
+        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 16px;
+      }
+      .tr-wrap-grid>div{
+        padding:13px;border:1px solid #e1e8f0;border-radius:15px;background:#fff;
+      }
+      .tr-wrap-grid b{display:block;color:#173b63;margin-bottom:4px}
+      .tr-wrap-grid span{color:#647388;font-size:12px;line-height:1.5}
+      .tr-wrap-final{margin-top:14px}
+      @media(max-width:850px){
+        .tr-routine-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+        .tr-routine-hero{grid-template-columns:1fr}
+        .tr-vocab-compact{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .tr-after-reading-guide{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .tr-class-timer{align-items:flex-start;flex-direction:column}
+        .tr-class-timer-actions{justify-content:flex-start}
+      }
+      .tr-student-divider{height:1px;background:#e8edf3;margin:18px 0}
+      .tr-student-mini-gap{height:12px}
+      .tr-student-apply{
+        max-width:680px;margin:0 auto;text-align:center;padding:28px 22px;
+        border:1px solid #e1e8f0;border-radius:22px;background:#fbfcfe;
+      }
+      .tr-apply-icon{
+        width:48px;height:48px;margin:0 auto 12px;display:grid;place-items:center;
+        border-radius:50%;background:#e9f6ee;color:#178a55;font-size:22px;font-weight:900;
+      }
+      .tr-student-apply h2{margin:0 0 8px;font-size:24px}
+      .tr-student-apply p{margin:0 auto 14px;max-width:560px;line-height:1.6;color:#4f5f73}
+      .tr-apply-strategies{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+      .tr-apply-strategies span{
+        padding:7px 10px;border-radius:999px;background:#eef4fb;color:#234d78;
+        font-size:12px;font-weight:800;
+      }
+      .tr-student-apply small{display:block;margin-top:8px;color:#6a778c}
+      .tr-student-shell{min-height:auto;border-radius:22px;overflow:hidden}
+      .tr-student-shell .tr-stage{max-width:1120px}
       @media(max-width:850px){.tr-skill-grid,.tr-warm-grid,.tr-strategy-grid,.tr-vocab-grid,.tr-question-grid,.tr-exit-grid,.tr-exit-six,.tr-preview-headings{grid-template-columns:1fr}.tr-stage{padding:20px 16px}.tr-content{padding:20px;min-height:auto}.tr-step-head h1{font-size:28px}.tr-reading-card{font-size:18px}.tr-toolbar{padding:0 14px}.tr-brand small{display:none}.tr-nav{grid-template-columns:110px 1fr 110px}.tr-nav button{padding:11px 8px}.tr-audio-bar{grid-template-columns:1fr}.tr-audio-status{text-align:left}}
     `;document.head.appendChild(s)
   }
@@ -796,5 +1306,28 @@
   window.addEventListener("pagehide",stopSpeech);window.addEventListener("beforeunload",stopSpeech);
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
 
-  window.STEPUP_TEACH_READING={start,next,prev,reveal,exit:exitLesson,playCurrent,pauseResume,stopSpeech,setRate,readWord,toggleMeaning,toggleWord,selectAnswer,checkAnswer,selectExitAnswer,checkExitAnswers};
+  window.STEPUP_TEACH_READING={
+    start,
+    startStudent,
+    next,
+    prev,
+    reveal,
+    exit:exitLesson,
+    finish:finishLesson,
+    playCurrent,
+    pauseResume,
+    stopSpeech,
+    setRate,
+    readWord,
+    toggleMeaning,
+    toggleWord,
+    selectAnswer,
+    checkAnswer,
+    selectExitAnswer,
+    checkExitAnswers,
+    setTimer:setClassTimer,
+    startTimer:startClassTimer,
+    pauseTimer:pauseClassTimer,
+    resetTimer:resetClassTimer
+  };
 })();

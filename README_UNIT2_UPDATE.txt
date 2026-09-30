@@ -307,3 +307,76 @@ Needs Practice:
 - Added Improved ✓ chips for recently improved skill areas.
 - Needs Practice appears in Unit 2 and on the Progress page.
 - Best-result behavior remains: later improvement raises mastery and a weaker later attempt does not lower the saved best result.
+
+
+Unit sequence restored:
+- Restored the original Unit 1 → Unit 6 sequence as the primary Journey/Home view.
+- Removed the Unit 2 priority banner from the unit-sequence screens.
+- STEP stays available on Home after the unit sequence, so the sequence is not displaced.
+- All Unit 2 enhancements, Needs Practice, Listening, Reading, Practice, progress/accuracy, and rights remain intact.
+
+
+Student Reading + Unit STEP:
+- Reading inside Unit 2 now opens the same strategy-based lesson used in Teacher Class Mode.
+- Student Reading includes the original textbook text, vocabulary, audio, Main Idea, Scanning, Inference, guided checks, and After Reading.
+- Finishing the Reading lesson moves the student directly into the 4 saved Reading application questions.
+- STEP is now kept inside Unit 2 instead of appearing as a separate Home card.
+- Unit 2 STEP displays all linked skills before the practice starts.
+- A live elapsed timer stays visible during STEP questions and feedback; it does not auto-submit or stop the attempt.
+- STEP result shows total practice time.
+
+
+Final Reading simplification + compact STEP:
+- Teacher Reading lesson remains unchanged in Teacher Class Mode.
+- Student Reading is compressed to 8 stations:
+  1 Before Reading
+  2 Vocabulary
+  3 Main Idea
+  4 Read & Listen
+  5 Scanning
+  6 Inference
+  7 After Reading
+  8 Apply
+- Finishing station 8 opens the 4 saved Reading application questions.
+- STEP skills are shown in two compact rows instead of many large chips.
+- STEP intro now shows a simple "8 Questions • Timer" summary.
+
+
+Unified Reading Strategy + Speed flow:
+- Reading is now one Unit 2 stage; the separate student Reading lesson/apply sequence is removed from the visible flow.
+- Teacher Class Mode Reading remains unchanged.
+- Student sequence is:
+  Main Idea method -> timed Main Idea question
+  Scanning method -> timed detail question
+  Scanning + Context reminder -> timed vocabulary-in-context question
+  Inference method -> timed inference question
+- Each strategy teaches HOW to use it, using the same method already used in Teacher Reading:
+  Main Idea: title -> headings -> prediction -> confirm.
+  Scanning: keyword -> move eyes quickly -> stop at matching clue.
+  Inference: collect clues -> connect clues -> choose the supported best fit.
+- The full textbook passage is revealed during each timed application and remains available beside the question.
+- Optional passage audio remains available during timed application.
+- The Reading timer runs only during application questions; it pauses during strategy teaching and feedback.
+- Final Reading result shows score, accuracy, Reading Time, and Best Time.
+- A new Best Time is saved only when the current attempt scores at least 3/4.
+- Per-question Reading strategy and question time are saved with each question attempt.
+
+
+Teacher Class Mode — Reading Routine:
+- Rebuilt Unit 2 Teacher Reading Class Mode from the long 21-step flow into 9 focused stops.
+- Purpose: tomorrow's class teaches a reusable Reading routine for future Reading lessons, not only the JobPool text.
+- 9 stops:
+  1 Start + Preview
+  2 Quick Vocabulary
+  3 Main Idea — Learn -> Try
+  4 Scanning — Learn -> Try
+  5 Vocabulary in Context — Learn -> Try
+  6 Inference — Learn -> Try
+  7 Resume — Scan It
+  8 After Reading — six original Student Book True/False items
+  9 Wrap-up — Our Reading Routine
+- Each strategy is taught and then applied immediately on the original Unit 2 text.
+- Added a teacher-controlled 30/45/60-second countdown timer for application screens. It never auto-submits.
+- After Reading now reveals the supporting evidence after answers are checked.
+- Full text and the resume remain available inside the same flow instead of as extra standalone lesson stages.
+- Teacher Class Mode and Student Mode stay connected but serve different roles: teacher models the routine; the student later practices independently in StepUp.

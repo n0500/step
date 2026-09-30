@@ -13,7 +13,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-needs-practice-20260930-1";
+  const VERSION = "u2-reading-strategy-speed-20260930-1";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -22,6 +22,9 @@
   let profile = null;
   let session = null;
   let saving = false;
+  let stepTimerHandle = null;
+  let readingTimerHandle = null;
+  let readingAudioToken = 0;
 
   const old = {
     html: J.html,
@@ -308,7 +311,10 @@
           <span>Reading Passage</span>
           <b>JobPool Has the Job for You</b>
         </div>
-        <button type="button" onclick="document.getElementById('u2ReadingQuestion')?.scrollIntoView({behavior:'smooth',block:'start'})">↓ Go to Question</button>
+        <div class="u2-reading-passage-actions">
+          <button type="button" onclick="STEPUP_U2_EXAM.listenReading()">🔊 Listen</button>
+          <button type="button" onclick="document.getElementById('u2ReadingQuestion')?.scrollIntoView({behavior:'smooth',block:'start'})">↓ Go to Question</button>
+        </div>
       </div>
       ${READING_PASSAGE.map(part=>`
         <div class="u2-reading-part">
@@ -428,6 +434,344 @@
       "He says he is bored and wants something more challenging.",
       "Mega Goal 1 Unit 2 • Conversation")
   ];
+
+  const STEP_SKILLS = [...new Set(step.map(item=>item.skill))];
+
+  function formatElapsed(seconds){
+    const total=Math.max(0,Math.floor(Number(seconds)||0));
+    const m=Math.floor(total/60);
+    const s=total%60;
+    return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function stepElapsedSeconds(){
+    if(!session || session.sectionKey!=="step")return 0;
+    return Math.max(0,Math.floor((Date.now()-(session.started||Date.now()))/1000));
+  }
+
+  function updateStepTimer(){
+    const el=document.getElementById("u2StepTimer");
+    if(el)el.textContent=formatElapsed(stepElapsedSeconds());
+  }
+
+  function stopStepTimer(){
+    if(stepTimerHandle){
+      clearInterval(stepTimerHandle);
+      stepTimerHandle=null;
+    }
+  }
+
+  function startStepTimer(){
+    stopStepTimer();
+    updateStepTimer();
+    stepTimerHandle=setInterval(updateStepTimer,1000);
+  }
+
+  function stepSkillShort(skill){
+    const map={
+      "Simple Present":"Simple Present",
+      "Present Perfect Progressive":"Present Perfect Prog.",
+      "Past Progressive with While":"Past Progressive",
+      "Relative Pronouns":"Relative Pronouns",
+      "Adjective + Preposition + Gerund":"Adj. + Prep. + Gerund",
+      "Present Perfect Simple":"Present Perfect",
+      "Wh-Questions":"Wh-Questions",
+      "Prepositions of Time":"Time Prepositions"
+    };
+    return map[skill] || skill;
+  }
+
+  function stepSkillsHTML(){
+    const compact=STEP_SKILLS.map(stepSkillShort);
+    const split=Math.ceil(compact.length/2);
+    const row1=compact.slice(0,split);
+    const row2=compact.slice(split);
+    return `<div class="u2-step-skills-compact">
+      <b>Skills covered</b>
+      <span>${row1.map(esc).join(" • ")}</span>
+      <span>${row2.map(esc).join(" • ")}</span>
+    </div>`;
+  }
+
+  function openStepIntro(){
+    stopListening();
+    stopStepTimer();
+    const h=studentView();
+    if(!h)return;
+    const answered=answeredCount("step");
+    const total=sections.step.questions.length;
+    const done=answered===total;
+
+    h.innerHTML=`<div class="journey-breadcrumb">
+      <button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>STEP Practice</b>
+    </div>
+
+    <section class="journey-unit-hero u2-step-intro">
+      <span class="journey-kicker">Unit 2 • STEP</span>
+      <h1>STEP Practice</h1>
+      <p>Practice the STEP skills connected to this unit. The timer tracks your practice time only.</p>
+      <div class="u2-step-quick-meta">
+        <b>${total} Questions</b><span>•</span><b>⏱ Timer</b>
+      </div>
+    </section>
+
+    <section class="journey-master-card">
+      <div class="journey-stage-title">
+        <span class="u2-step-heading-icon">STEP</span>
+        <div>
+          <h2>Skills in this practice</h2>
+          <p>Each question shows its skill while the timer remains visible.</p>
+        </div>
+      </div>
+      ${stepSkillsHTML()}
+      <button class="journey-main-btn u2-step-start" onclick="STEPUP_U2_EXAM.startTimedStep()">
+        ${done?"Practice again":"Start STEP Practice"} →
+      </button>
+    </section>`;
+  }
+
+  function readingPassageText(){
+    return READING_PASSAGE
+      .flatMap(part=>[part.title, ...part.paragraphs])
+      .join(". ");
+  }
+
+  function stopReadingAudio(){
+    readingAudioToken++;
+    try{
+      if("speechSynthesis" in window)window.speechSynthesis.cancel();
+    }catch(_){}
+  }
+
+  function playReadingAudio(){
+    stopReadingAudio();
+    if(!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance==="undefined")return;
+    const token=readingAudioToken;
+    const u=new SpeechSynthesisUtterance(readingPassageText());
+    u.lang="en-US";
+    u.rate=.92;
+    u.pitch=1;
+    const voices=(window.speechSynthesis.getVoices?.()||[])
+      .filter(v=>String(v.lang||"").toLowerCase().startsWith("en"));
+    if(voices[0])u.voice=voices[0];
+    u.onend=()=>{ if(token===readingAudioToken){} };
+    window.speechSynthesis.speak(u);
+  }
+
+  function readingStrategyForItem(item,index){
+    const id=item?.id||"";
+    if(id==="U2-READ-STEP-01" || /Main Idea/i.test(item?.skill||"")){
+      return {
+        key:"main",
+        name:"Main Idea",
+        title:"Main Idea — Predict → Read → Confirm",
+        steps:[
+          ["1","Start with the title","It gives you the broad topic."],
+          ["2","Scan the headings","Look for what the sections have in common."],
+          ["3","Make a prediction","Confirm it as you read; do not lock the answer too early."]
+        ],
+        tip:"Think about the whole text, not one small detail.",
+        button:"Try Main Idea"
+      };
+    }
+    if(id==="U2-READ-STEP-02"){
+      return {
+        key:"scan",
+        name:"Scanning",
+        title:"Scanning for Details",
+        steps:[
+          ["1","Pick the key word","Look for a job title, number, skill, or requirement."],
+          ["2","Move your eyes quickly","Do not reread every line."],
+          ["3","Stop at the matching clue","Then read that sentence carefully."]
+        ],
+        tip:"Read the question first, then search the text for the clue.",
+        button:"Try Scanning"
+      };
+    }
+    if(id==="U2-READ-STEP-03"){
+      return {
+        key:"scan-context",
+        name:"Scanning + Context",
+        title:"Scanning — Find the word, then read around it",
+        steps:[
+          ["1","Find the target word","Scan quickly until your eyes reach “painstaking”."],
+          ["2","Read the sentence around it","Use the nearby words as clues."],
+          ["3","Choose the closest meaning","Reject choices that do not fit the sentence."]
+        ],
+        tip:"Scan first; read closely only when you reach the target word.",
+        button:"Try It Again"
+      };
+    }
+    return {
+      key:"infer",
+      name:"Inference",
+      title:"Inference — Use clues together",
+      steps:[
+        ["1","Collect two or more clues","The answer may not be copied exactly from the text."],
+        ["2","Match the clues","Connect the details to what the question asks."],
+        ["3","Choose the best fit","Reject options that add unsupported ideas."]
+      ],
+      tip:"Your answer must be supported by clues in the passage.",
+      button:"Try Inference"
+    };
+  }
+
+  function readingStrategyHTML(item,index){
+    const s=readingStrategyForItem(item,index);
+    return `<section class="u2-reading-strategy-card">
+      <div class="u2-reading-strategy-head">
+        <span>Reading Strategy</span>
+        <h2>${esc(s.title)}</h2>
+      </div>
+      <div class="u2-reading-strategy-steps">
+        ${s.steps.map(step=>`
+          <div>
+            <span>${step[0]}</span>
+            <b>${esc(step[1])}</b>
+            <small>${esc(step[2])}</small>
+          </div>`).join("")}
+      </div>
+      <div class="u2-reading-strategy-tip"><b>Remember:</b> ${esc(s.tip)}</div>
+      <button class="journey-main-btn u2-reading-try" onclick="STEPUP_U2_EXAM.beginReadingQuestion()">${esc(s.button)} →</button>
+      <small class="u2-reading-timer-note">The timer starts only when you press this button.</small>
+    </section>`;
+  }
+
+  function readingTotalMilliseconds(){
+    if(!session || session.sectionKey!=="reading")return 0;
+    const saved=Number(session.readingAccumulatedMs||0);
+    const live=session.readingQuestionActive && session.readingQuestionStartedAt
+      ? Math.max(0,Date.now()-session.readingQuestionStartedAt)
+      : 0;
+    return saved+live;
+  }
+
+  function readingElapsedSeconds(){
+    return Math.max(0,Math.round(readingTotalMilliseconds()/1000));
+  }
+
+  function updateReadingTimer(){
+    const el=document.getElementById("u2ReadingTimer");
+    if(el)el.textContent=formatElapsed(readingElapsedSeconds());
+  }
+
+  function stopReadingTimer(){
+    if(readingTimerHandle){
+      clearInterval(readingTimerHandle);
+      readingTimerHandle=null;
+    }
+  }
+
+  function startReadingTimer(){
+    stopReadingTimer();
+    updateReadingTimer();
+    readingTimerHandle=setInterval(updateReadingTimer,500);
+  }
+
+  function pauseReadingQuestionTimer(){
+    if(!session || session.sectionKey!=="reading" || !session.readingQuestionActive)return 0;
+    const ms=Math.max(0,Date.now()-(session.readingQuestionStartedAt||Date.now()));
+    session.readingAccumulatedMs=(session.readingAccumulatedMs||0)+ms;
+    session.readingQuestionActive=false;
+    session.readingQuestionStartedAt=null;
+    session.lastReadingQuestionSeconds=Math.max(1,Math.round(ms/1000));
+    stopReadingTimer();
+    return session.lastReadingQuestionSeconds;
+  }
+
+  function priorBestReadingTime(){
+    const sec=sections?.reading;
+    if(!sec)return null;
+    const values=stageAttempts(sec.trainingId)
+      .map(a=>Number(a.bestReadingTimeSeconds ?? a.readingTimeSeconds ?? 0))
+      .filter(v=>Number.isFinite(v) && v>0);
+    return values.length?Math.min(...values):null;
+  }
+
+  function beginReadingQuestion(){
+    if(!session || session.sectionKey!=="reading")return;
+    stopReadingAudio();
+    session.readingQuestionActive=true;
+    session.readingQuestionStartedAt=Date.now();
+    session.lastReadingQuestionSeconds=0;
+    startReadingTimer();
+    renderQuestion();
+  }
+
+  function startReadingFlow(){
+    stopListening();
+    stopStepTimer();
+    stopReadingAudio();
+    stopReadingTimer();
+    const sec=sections.reading;
+    if(!sec)return;
+    session={
+      sectionKey:"reading",
+      sec,
+      queue:[...sec.questions],
+      pos:0,
+      started:Date.now(),
+      runAnswers:[],
+      readingFlow:true,
+      readingQuestionActive:false,
+      readingQuestionStartedAt:null,
+      readingAccumulatedMs:0,
+      lastReadingQuestionSeconds:0
+    };
+    helpMode=null;
+    renderQuestion();
+  }
+
+  function renderReadingQuestion(){
+    if(!session || session.sectionKey!=="reading")return;
+    const h=studentView();
+    if(!h)return;
+    const item=session.queue[session.pos];
+
+    if(!session.readingQuestionActive){
+      h.innerHTML=`<div class="journey-breadcrumb">
+          <button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>Reading</b>
+        </div>
+        <section class="journey-question-card u2-reading-learning">
+          <div class="journey-question-meta">
+            <span>${esc(readingStrategyForItem(item,session.pos).name)}</span>
+            <b>${session.pos+1}/${session.queue.length}</b>
+          </div>
+          ${readingStrategyHTML(item,session.pos)}
+        </section>`;
+      return;
+    }
+
+    const strategy=readingStrategyForItem(item,session.pos);
+    h.innerHTML=`<div class="journey-breadcrumb">
+        <button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>Reading</b>
+      </div>
+      <section class="journey-question-card u2-reading-question-card">
+        <div class="journey-question-meta">
+          <span>${esc(strategy.name)}</span>
+          <div class="u2-question-meta-right">
+            <b class="u2-reading-live-timer">⏱ <span id="u2ReadingTimer">${formatElapsed(readingElapsedSeconds())}</span></b>
+            <b>${session.pos+1}/${session.queue.length}</b>
+          </div>
+        </div>
+        <div class="u2-reading-layout">
+          ${readingPassageHTML()}
+          <div class="u2-reading-question-pane" id="u2ReadingQuestion">
+            <div class="u2-reading-mini-reminder">
+              <b>${esc(strategy.name)}</b>
+              <span>${esc(strategy.tip)}</span>
+            </div>
+            <h2 dir="ltr">${esc(item.prompt)}</h2>
+            <div class="journey-options">
+              ${item.choices.map((x,i)=>`<button ${saving?'disabled':''} onclick="STEPUP_U2_EXAM.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join("")}
+            </div>
+            <small class="u2-source-note">${esc(item.source)}</small>
+            <button type="button" class="u2-back-to-passage" onclick="document.getElementById('u2ReadingPassage')?.scrollIntoView({behavior:'smooth',block:'start'})">↑ Back to Passage</button>
+          </div>
+        </div>
+      </section>`;
+    startReadingTimer();
+  }
 
   const sections = {
     vocab: {
@@ -735,6 +1079,10 @@
       bestCorrect:priorBestCorrect || correct,
       bestScore:(priorBestCorrect || correct)?1:0,
       bestPercentage:(priorBestCorrect || correct)?100:0,
+      ...(sectionKey==="reading"?{
+        readingStrategy:readingStrategyForItem(item,session?.pos||0).name,
+        readingQuestionSeconds:Number(session?.lastReadingQuestionSeconds||0)
+      }:{}),
       source:item.source,
       studyMethod:"u2-exam-review-question",
       submittedAt:now
@@ -767,6 +1115,15 @@
     const priorStages=stageAttempts(sec.trainingId);
     const priorBest=priorStages.reduce((m,a)=>Math.max(m,Number(a.bestPercentage ?? a.percentage ?? 0)),0);
     const currentRunScore=(session?.runAnswers||[]).filter(a=>a.correct).length;
+    const currentRunTotal=(session?.runAnswers||[]).length;
+    const readingTimeSeconds=sectionKey==="reading"?readingElapsedSeconds():null;
+    const previousBestReadingTime=sectionKey==="reading"?priorBestReadingTime():null;
+    const readingQualifies=sectionKey==="reading" && currentRunTotal===sec.questions.length && currentRunScore>=3;
+    const bestReadingTimeSeconds=sectionKey==="reading"
+      ? (readingQualifies
+          ? (previousBestReadingTime?Math.min(previousBestReadingTime,readingTimeSeconds):readingTimeSeconds)
+          : previousBestReadingTime)
+      : null;
     const payload={
       trainingId:sec.trainingId,
       trainingTitle:sec.title,
@@ -780,6 +1137,11 @@
       bestScore:Math.max(score,Math.round(priorBest*total/100)),
       bestTotal:total,
       bestPercentage:Math.max(percentage,priorBest),
+      ...(sectionKey==="reading"?{
+        readingTimeSeconds,
+        readingQualifies,
+        bestReadingTimeSeconds
+      }:{}),
       elapsedSeconds:Math.max(1,Math.round((Date.now()-(session?.started||Date.now()))/1000)),
       answers,
       studyMethod:"u2-exam-review"
@@ -787,7 +1149,14 @@
     await window.PROVE.recordJourneyAttempt(payload);
     // Keep local rendering state current without waiting for a dashboard refresh.
     attempts.push({...payload,submittedAt:new Date().toISOString()});
-    return {score,total,percentage};
+    return {
+      score,total,percentage,
+      attemptScore:currentRunScore,
+      attemptTotal:currentRunTotal,
+      readingTimeSeconds,
+      readingQualifies,
+      bestReadingTimeSeconds
+    };
   }
 
   function sectionCard(key){
@@ -799,17 +1168,56 @@
     const attemptsCount=stageAttemptCount(sec.trainingId);
     const practiceCount=Math.max(0,attemptsCount-1);
     const reviewCount=sec.questions.filter(q=>q.review).length;
-    return `<button class="journey-stop ${done?'done':''} ${key==='step'?'u2-step-card':''}" onclick="STEPUP_U2_EXAM.start('${key}')">
+
+    const action = key==="reading"
+      ? "STEPUP_U2_EXAM.readingLesson()"
+      : key==="step"
+        ? "STEPUP_U2_EXAM.stepIntro()"
+        : `STEPUP_U2_EXAM.start('${key}')`;
+
+    const extra = key==="reading"
+      ? (done ? "3 strategies • 4 timed questions • Practice again" : "3 strategies • learn then apply immediately")
+      : key==="step"
+        ? `${STEP_SKILLS.length} skills • timer • ${answered}/${sec.questions.length} answered`
+        : "";
+
+    return `<button class="journey-stop ${done?'done':''} ${key==='step'?'u2-step-card':''}" onclick="${action}">
       <span class="journey-stop-icon ${key==='step'&&!done?'u2-step-icon':''}">${done?'✓':sec.icon}</span>
       <span class="journey-stop-copy">
         <b>${esc(sec.title)}</b>
-        <small>${done?`Completed ${score?`• ${score}`:''} • Practice again${practiceCount?` • ${practiceCount}× practiced`:''}`:`${answered}/${sec.questions.length} answered${reviewCount?` • ${reviewCount} review questions`:''}`}</small>
+        <small>${extra || (done?`Completed ${score?`• ${score}`:''} • Practice again${practiceCount?` • ${practiceCount}× practiced`:''}`:`${answered}/${sec.questions.length} answered${reviewCount?` • ${reviewCount} review questions`:''}`)}</small>
       </span>
       <span class="journey-stop-arrow">›</span>
     </button>`;
   }
 
+  function openReadingLesson(){
+    startReadingFlow();
+  }
+
+  function startTimedStep(){
+    stopListening();
+    stopStepTimer();
+    const sec=sections.step;
+    const queue=pendingQuestions("step");
+    session={
+      sectionKey:"step",
+      sec,
+      queue,
+      pos:0,
+      started:Date.now(),
+      runAnswers:[],
+      timedStep:true
+    };
+    helpMode=null;
+    startStepTimer();
+    renderQuestion();
+  }
+
   function openUnit2(){
+    stopStepTimer();
+    stopReadingTimer();
+    stopReadingAudio();
     if(!unit2IsOpen()) return old.openUnit("u2");
     const h=studentView();
     if(!h)return;
@@ -848,10 +1256,11 @@
           <span class="u2-step-heading-icon">STEP</span>
           <div>
             <h2>STEP Practice</h2>
-            <p>Quick grammar practice.</p>
+            <p>Skills from Unit 2 • timed practice</p>
           </div>
           <b>${answeredCount("step")}/${sections.step.questions.length}</b>
         </div>
+        ${stepSkillsHTML()}
         <div class="journey-stops">
           ${sectionCard("step")}
         </div>
@@ -870,6 +1279,9 @@
   }
 
   function openPractice(){
+    stopStepTimer();
+    stopReadingTimer();
+    stopReadingAudio();
     const h=studentView();
     if(!h)return;
     const completed=requiredKeys.filter(sectionDone);
@@ -907,7 +1319,11 @@
   }
 
   function startSection(sectionKey){
+    if(sectionKey==="reading")return startReadingFlow();
     stopListening();
+    stopReadingAudio();
+    stopReadingTimer();
+    if(sectionKey!=="step")stopStepTimer();
     const sec=sections[sectionKey];
     if(!sec)return;
     const queue=pendingQuestions(sectionKey);
@@ -923,8 +1339,12 @@
 
   function startWeakness(sectionKeyEncoded,skillEncoded){
     stopListening();
+    stopStepTimer();
+    stopReadingTimer();
+    stopReadingAudio();
     const sectionKey=decodeURIComponent(sectionKeyEncoded||"");
     const skill=decodeURIComponent(skillEncoded||"");
+    if(sectionKey==="reading")return startReadingFlow();
     const sec=sections[sectionKey];
     if(!sec)return;
 
@@ -947,6 +1367,7 @@
 
   function renderQuestion(){
     if(!session)return;
+    if(session.sectionKey==="reading")return renderReadingQuestion();
     const h=studentView();
     if(!h)return;
     const item=session.queue[session.pos];
@@ -957,7 +1378,10 @@
       <section class="journey-question-card ${isReading?'u2-reading-question-card':''}">
         <div class="journey-question-meta">
           <span>${esc(item.skill)}</span>
-          <b>${session.pos+1}/${session.queue.length}</b>
+          <div class="u2-question-meta-right">
+            ${session.sectionKey==="step"?`<b class="u2-step-live-timer">⏱ <span id="u2StepTimer">${formatElapsed(stepElapsedSeconds())}</span></b>`:""}
+            <b>${session.pos+1}/${session.queue.length}</b>
+          </div>
         </div>
         ${reviewBadge}
         <div class="${isReading?'u2-reading-layout':''}">
@@ -985,8 +1409,12 @@
     const h=studentView();
     if(!h)return;
     const ok=record.correct;
+    const isReading=session?.sectionKey==="reading";
+    const strategy=isReading?readingStrategyForItem(item,session.pos):null;
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>${esc(session.sec.title)}</b></div>
       <section class="journey-feedback ${ok?'good':'support'}">
+        ${session?.sectionKey==="step"?`<div class="u2-feedback-timer">⏱ <span id="u2StepTimer">${formatElapsed(stepElapsedSeconds())}</span></div>`:""}
+        ${isReading?`<div class="u2-feedback-timer">⏱ ${formatElapsed(record.readingQuestionSeconds||0)} • ${esc(strategy.name)}</div>`:""}
         <span>${ok?'✓':'✕'}</span>
         <h2>${ok?'Correct!':'Not quite'}</h2>
         ${!ok?`
@@ -1004,6 +1432,10 @@
   async function answer(selected){
     if(!session||saving)return;
     const item=session.queue[session.pos];
+    if(session.sectionKey==="reading"){
+      pauseReadingQuestionTimer();
+      stopReadingAudio();
+    }
     saving=true;
     try{
       const record=await saveQuestion(session.sectionKey,item,Number(selected));
@@ -1024,6 +1456,13 @@
     if(session.pos<session.queue.length-1){
       session.pos++;
       helpMode=null;
+      if(session.sectionKey==="reading"){
+        session.readingQuestionActive=false;
+        session.readingQuestionStartedAt=null;
+        session.lastReadingQuestionSeconds=0;
+        stopReadingTimer();
+        stopReadingAudio();
+      }
       return renderQuestion();
     }
 
@@ -1061,6 +1500,7 @@
     }catch(e){
       console.error("Unit 2 section save failed",e);
       alert("Your answers are saved, but the section summary could not be saved yet. Open the section again to retry.");
+      if(session?.sectionKey==="step")stopStepTimer();
       session=null;
       return openUnit2();
     }
@@ -1069,16 +1509,45 @@
     const sectionKey=session.sectionKey;
     const focused=!!session.focusOnly;
     const focusSkill=session.focusSkill||"";
+    const stepElapsed=sectionKey==="step"?stepElapsedSeconds():0;
+    if(sectionKey==="step")stopStepTimer();
     const passNeeded=sec.pass||Math.ceil(sec.questions.length*0.67);
-    const passed=result.score>=passNeeded;
+    const currentDisplayScore=sectionKey==="reading"?(result.attemptScore||0):result.score;
+    const currentDisplayTotal=sectionKey==="reading"?(result.attemptTotal||result.total):result.total;
+    const passed=currentDisplayScore>=passNeeded;
     const h=studentView();
+    stopReadingTimer();
+    stopReadingAudio();
     session=null;
 
     if(h){
+      if(sectionKey==="reading"){
+        const acc=currentDisplayTotal?Math.round(currentDisplayScore/currentDisplayTotal*100):0;
+        const bestTime=result.bestReadingTimeSeconds;
+        h.innerHTML=`<section class="journey-result ${passed?'good':'review'} u2-reading-result">
+          <div class="journey-result-score">${currentDisplayScore}<span>/${currentDisplayTotal}</span></div>
+          <h2>${passed?'Reading practice complete ✨':'Reading practice complete'}</h2>
+          <div class="u2-reading-result-grid">
+            <span><b>${acc}%</b><small>Accuracy</small></span>
+            <span><b>⏱ ${formatElapsed(result.readingTimeSeconds||0)}</b><small>Reading Time</small></span>
+            <span><b>${bestTime?`⏱ ${formatElapsed(bestTime)}`:"—"}</b><small>Best Time</small></span>
+          </div>
+          <p>${result.readingQualifies
+            ? "Your time qualifies because you scored at least 3/4."
+            : "Score 3/4 or 4/4 to save a new Best Time."}</p>
+          <div class="journey-result-actions">
+            <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
+            <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.readingLesson()">Practice again</button>
+          </div>
+        </section>`;
+        return;
+      }
+
       h.innerHTML=`<section class="journey-result ${passed?'good':'review'}">
         <div class="journey-result-score">${result.score}<span>/${result.total}</span></div>
         <h2>${focused?'Focused practice complete ✨':(passed?'Review stop complete ✨':'Review complete — check the missed answers')}</h2>
         <p>${focused?`You practiced ${esc(focusSkill)}. Your best result has been updated.`:`All ${result.total} questions in ${esc(sec.title)} were shown and saved.`}</p>
+        ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
         <div class="journey-result-actions">
           <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
           <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.start('${sectionKey}')">Practice again</button>
@@ -1272,6 +1741,88 @@
         padding:16px;border:1px dashed #dfe6ef;border-radius:16px;
         text-align:center;color:#6a778c;background:#fafbfd;
       }
+      .u2-reading-learning{max-width:900px;margin-inline:auto}
+      .u2-reading-strategy-card{
+        padding:18px;border:1px solid #e1e8f0;border-radius:20px;background:#fbfcfe;
+      }
+      .u2-reading-strategy-head span{
+        display:block;margin-bottom:4px;color:#5d7088;font-size:11px;font-weight:900;
+        text-transform:uppercase;letter-spacing:.05em;
+      }
+      .u2-reading-strategy-head h2{margin:0;color:#172033;font-size:23px;line-height:1.3}
+      .u2-reading-strategy-steps{
+        display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0;
+      }
+      .u2-reading-strategy-steps>div{
+        position:relative;padding:13px 12px 12px 44px;border:1px solid #e2e8f0;
+        border-radius:15px;background:#fff;min-height:82px;
+      }
+      .u2-reading-strategy-steps>div>span{
+        position:absolute;left:10px;top:12px;width:25px;height:25px;display:grid;place-items:center;
+        border-radius:50%;background:#eef4fb;color:#24527d;font-size:11px;font-weight:900;
+      }
+      .u2-reading-strategy-steps b{display:block;font-size:13px;color:#243a56;line-height:1.35}
+      .u2-reading-strategy-steps small{display:block;margin-top:4px;color:#6a778c;line-height:1.45}
+      .u2-reading-strategy-tip{
+        padding:10px 12px;border-radius:13px;background:#eef6ff;color:#315274;
+        font-size:12px;line-height:1.5;
+      }
+      .u2-reading-try{width:100%;margin-top:14px}
+      .u2-reading-timer-note{display:block;margin-top:7px;text-align:center;color:#7a8798;font-size:11px}
+      .u2-reading-live-timer{font-variant-numeric:tabular-nums;color:#173b63}
+      .u2-reading-mini-reminder{
+        margin-bottom:13px;padding:9px 11px;border-radius:12px;background:#f3f7fb;
+        color:#445b74;font-size:11px;line-height:1.45;
+      }
+      .u2-reading-mini-reminder b{display:block;margin-bottom:2px;color:#234d78}
+      .u2-reading-passage-actions{display:flex;gap:7px;flex-wrap:wrap}
+      .u2-reading-result-grid{
+        display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+        width:min(680px,100%);margin:16px auto;
+      }
+      .u2-reading-result-grid>span{
+        display:flex;flex-direction:column;gap:3px;padding:12px;border:1px solid #e1e8f0;
+        border-radius:15px;background:#fff;
+      }
+      .u2-reading-result-grid b{font-size:17px;color:#173b63;font-variant-numeric:tabular-nums}
+      .u2-reading-result-grid small{font-size:11px;color:#6a778c}
+      @media(max-width:680px){
+        .u2-reading-strategy-steps{grid-template-columns:1fr}
+        .u2-reading-result-grid{grid-template-columns:1fr}
+      }
+
+      .u2-step-skills-compact{
+        margin:12px 0 15px;padding:11px 12px;border:1px solid #e3e9f1;
+        border-radius:14px;background:#fafbfd;
+      }
+      .u2-step-skills-compact>b{
+        display:block;margin-bottom:6px;color:#56667a;font-size:11px;
+        text-transform:uppercase;letter-spacing:.04em;
+      }
+      .u2-step-skills-compact>span{
+        display:block;color:#334a68;font-size:11px;line-height:1.65;font-weight:700;
+      }
+      .u2-step-quick-meta{
+        display:flex;align-items:center;gap:7px;margin-top:13px;
+        color:#40536c;font-size:12px;
+      }
+      .u2-step-quick-meta b{font-size:12px;color:#243a56}
+      .u2-step-start{margin-top:4px;width:100%}
+      .u2-question-meta-right{display:flex;align-items:center;gap:9px}
+      .u2-step-live-timer,.u2-feedback-timer{
+        font-variant-numeric:tabular-nums;
+        color:#173b63;font-weight:900;
+      }
+      .u2-feedback-timer{
+        display:inline-flex;align-items:center;gap:4px;
+        margin-bottom:10px;padding:7px 10px;border-radius:999px;
+        background:#eef4fb;
+      }
+      .u2-step-result-time{
+        display:inline-flex;flex-direction:column;gap:2px;margin:10px 0;
+        padding:10px 14px;border-radius:14px;background:#f4f7fb;color:#173b63;
+      }
+      .u2-step-result-time small{color:#6a778c}
       .u2-needs-card{margin-top:14px}
       .u2-needs-list{display:grid;gap:9px}
       .u2-need-row{
@@ -1362,13 +1913,14 @@
 
   J.homeHTML=function(a,o,p){
     hydrate(a,o,p);
-    return examBanner()+stepHomeCard()+old.homeHTML(a,o,p);
+    // STEP now lives inside its related unit, so Home stays focused on the unit sequence.
+    return old.homeHTML(a,o,p);
   };
 
   J.html=function(a,o,p){
     hydrate(a,o,p);
-    const base=old.html(a,o,p);
-    return (unit2IsOpen()?examBanner():"")+base;
+    // Preserve the original full unit sequence without a Unit 2 priority banner.
+    return old.html(a,o,p);
   };
 
   J.progressHTML=function(a,o,p){
@@ -1393,9 +1945,9 @@
     if(key==="core-1")return startSection("vocab");
     if(key==="core-2")return startSection("grammar");
     if(key==="core-3"||key==="core-4")return startSection("functions");
-    if(key==="step")return startSection("step");
+    if(key==="step")return openStepIntro();
     if(key==="final")return openUnit2();
-    if(key==="reading")return startSection("reading");
+    if(key==="reading")return openReadingLesson();
     if(key==="listening")return startSection("listening");
     return openUnit2();
   };
@@ -1407,6 +1959,12 @@
     open:openUnit2,
     practice:openPractice,
     practiceWeakness:startWeakness,
+    readingLesson:openReadingLesson,
+    beginReadingQuestion,
+    listenReading:playReadingAudio,
+    stopReadingAudio,
+    stepIntro:openStepIntro,
+    startTimedStep,
     start:startSection,
     answer,
     next,
