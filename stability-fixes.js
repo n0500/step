@@ -269,10 +269,11 @@
     const uid = firebase.auth().currentUser?.uid;
     if(!uid) return [];
     const now = Date.now();
-    if(motivationCache.uid === uid && now - motivationCache.at < 5000 && !document.querySelector('.motivation-toast')) return motivationCache.attempts;
+    const home = document.querySelector('.student-home-clean');
+    if(motivationCache.uid === uid && motivationCache.home === home && now - motivationCache.at < 120000) return motivationCache.attempts;
     const snap = await firebase.firestore().collection('attempts').where('studentId','==',uid).get();
-    const attempts = snap.docs.map(d => ({id:d.id,...d.data()}));
-    motivationCache = {uid,at:now,attempts};
+    const attempts = snap.docs.map(d => ({id:d.id,...d.data()})).filter(a => a.recordKind !== 'question');
+    motivationCache = {uid,at:now,attempts,home};
     return attempts;
   }
 
@@ -288,11 +289,14 @@
       const xpText = panel.querySelector('.motivation-level small');
       const nextStrong = panel.querySelector('.motivation-xp-line strong');
       const track = panel.querySelector('.motivation-xp-track i');
-      if(levelNo) levelNo.textContent = `Level ${stats.levelNum}`;
-      if(levelName) levelName.textContent = stats.name;
-      if(xpText) xpText.textContent = `${stats.xp} XP`;
-      if(nextStrong) nextStrong.textContent = stats.remaining ? `${stats.remaining} XP to ${stats.nextName}` : 'Keep your momentum';
-      if(track) track.style.width = `${stats.progress}%`;
+      // Write only when the text really changes: rewriting it on every run
+      // re-triggered every page observer in a constant loop.
+      const put = (el,v) => { if(el && el.textContent !== v) el.textContent = v; };
+      put(levelNo, `Level ${stats.levelNum}`);
+      put(levelName, stats.name);
+      put(xpText, `${stats.xp} XP`);
+      put(nextStrong, stats.remaining ? `${stats.remaining} XP to ${stats.nextName}` : 'Keep your momentum');
+      if(track && track.style.width !== `${stats.progress}%`) track.style.width = `${stats.progress}%`;
 
       const toast = document.querySelector('.motivation-toast small');
       if(toast && attempts.length){

@@ -226,6 +226,13 @@
       else head.insertAdjacentElement('afterbegin', top);
       head.insertAdjacentHTML('beforeend', wave());
     }
+    var SHORT={'vocabulary & real talk':'Vocab','vocabulary':'Vocab','form, meaning & function':'Functions','language functions':'Functions',
+      'reading':'Read','listening':'Listen','reading • step style':'Read','listening • step style':'Listen','final challenge':'Final','step practice':'STEP'};
+    view.querySelectorAll('.journey-focus-stage small').forEach(function(sm){
+      var full=txt(sm), key=full.toLowerCase().replace(/\s*•\s*\d+\s*questions?$/,'');
+      var short=SHORT[key] || (full.length>9 ? full.split(/[\s,&•]+/)[0] : null);
+      if(short && short!==full){ sm.textContent=short; sm.setAttribute('title',full); }
+    });
     var task=view.querySelector('.journey-focus-task');
     if(task && once(task,'art')){
       var title=(task.querySelector('h2')||{}).textContent||'';
@@ -359,6 +366,18 @@
   }
   document.addEventListener('click', onChoose);
   document.addEventListener('keydown', onChoose);
+
+  /* ---------- credits ---------- */
+  var CREDIT='<p class="sx-credit-main">Idea &amp; Design: <b>Ms. Nuha Falah Almutairi</b></p>'+
+    '<p class="sx-credit-sub">© '+new Date().getFullYear()+' StepUp · All rights reserved</p>';
+  function addCredits(root){
+    var host=root.querySelector('.auth-shell') || root.querySelector('.student-view') ||
+      root.querySelector('main.container') || root.querySelector('.classmode-content');
+    if(!host || host.querySelector(':scope > .sx-credit')) return;
+    var f=el('footer','sx-credit', CREDIT);
+    f.setAttribute('data-sx-in','1');
+    host.appendChild(f);
+  }
 
   /* ---------- motion ---------- */
   function animate(scope){

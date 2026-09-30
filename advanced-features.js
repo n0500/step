@@ -62,7 +62,7 @@
   async function getTeacherAttempts(uid){
     const F=fb(); if(!F)return[];
     const s=await F.db.collection("attempts").where("teacherId","==",uid).get();
-    return s.docs.map(d=>({id:d.id,...d.data()}));
+    return s.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.recordKind!=="question");
   }
   async function getTeacherCollection(name, uid){
     const F=fb(); if(!F)return[];

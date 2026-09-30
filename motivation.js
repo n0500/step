@@ -49,13 +49,20 @@
     return {xp,levelNum,name:cur.name,nextName:next?.name||"Master",progress,remaining,streak,todayDone:active.has(dayKey(today))};
   }
 
+  // Read the history once per Home screen (a new Home is rendered after every
+  // finished practice), not on every DOM change — that looped thousands of reads.
+  const cache={uid:null,home:null,at:0,data:null};
   async function loadAttempts(){
     try{
       if (!window.firebase?.auth || !window.firebase?.firestore) return [];
       const user=firebase.auth().currentUser;
       if(!user) return [];
+      const home=document.querySelector('.student-home-clean');
+      if(cache.data && cache.uid===user.uid && cache.home===home && Date.now()-cache.at<120000) return cache.data;
       const snap=await firebase.firestore().collection("attempts").where("studentId","==",user.uid).get();
-      return snap.docs.map(d=>({id:d.id,...d.data()}));
+      const data=snap.docs.map(d=>({id:d.id,...d.data()})).filter(a=>a.recordKind!=="question");
+      Object.assign(cache,{uid:user.uid,home,at:Date.now(),data});
+      return data;
     }catch(e){
       console.warn("StepUp motivation: attempts unavailable",e);
       return [];

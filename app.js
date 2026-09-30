@@ -21,6 +21,29 @@
     return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join("");
   }
 
+  /* Teacher-only libraries (QR, PDF, Excel ≈1.5 MB) load on demand instead of
+     for every student on every visit. */
+  const LIBS={
+    qrcode:"https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+    jspdf:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+    html2canvas:"https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    xlsx:"https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+  };
+  const libLoads={};
+  function loadLib(name){
+    if(!libLoads[name])libLoads[name]=new Promise(res=>{
+      const sc=document.createElement("script");sc.src=LIBS[name];sc.async=true;
+      sc.onload=()=>res(true);sc.onerror=()=>{delete libLoads[name];res(false);};
+      document.head.appendChild(sc);
+    });
+    return libLoads[name];
+  }
+  function loadLibs(names){return Promise.all(names.map(loadLib));}
+  function prefetchTeacherLibs(){
+    const go=()=>loadLibs(Object.keys(LIBS));
+    if("requestIdleCallback" in window)requestIdleCallback(go,{timeout:4000});else setTimeout(go,2500);
+  }
+
   function initFirebase(){
     try{
       if(!cfg.firebase.enabled) return null;
@@ -390,6 +413,7 @@
 
   async function renderDashboard(){
     if(!state.profile)return renderLanding();
+    if(state.profile.role==="owner"||state.profile.role==="teacher")prefetchTeacherLibs();
     if(state.profile.role==="owner")return renderOwner();
     if(state.profile.role==="teacher")return renderTeacher();
     return renderStudent();
@@ -439,6 +463,9 @@
       if(filters.classId)q=q.where("classId","==",filters.classId);
       const s=await q.get();arr=s.docs.map(d=>({id:d.id,...d.data()}));
     } else arr=local.attempts();
+    // Per-answer records (Unit 2 exam review) are kept for the student's own
+    // resume logic, but are not results: keep them out of teacher/owner reports.
+    if(state.profile?.role!=="student")arr=arr.filter(a=>a.recordKind!=="question");
     return arr.filter(a=>(!filters.studentId||a.studentId===filters.studentId)&&(!filters.teacherId||a.teacherId===filters.teacherId)&&(!filters.classId||a.classId===filters.classId));
   }
 
@@ -832,6 +859,10 @@
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    const box=document.getElementById("classQrBox");
+    if(!window.QRCode){box.innerHTML="<span>Loading QR…</span>";loadLib("qrcode").then(()=>{if(document.getElementById("classQrBox")===box){box.innerHTML="";drawQR();}});return;}
+    drawQR();
+    function drawQR(){
     if(window.QRCode){
       new QRCode(document.getElementById("classQrBox"),{
         text:link,width:205,height:205,
@@ -840,6 +871,7 @@
       });
     }else{
       document.getElementById("classQrBox").innerHTML="<span>QR library did not load. Use Copy Link.</span>";
+    }
     }
   }
 
@@ -1228,6 +1260,7 @@
   }
 
   async function renderStudent(){
+    if(readUnsaved().some(x=>x.studentId===state.profile?.id))flushUnsaved();
     const ctx=await buildStudentContext();let body="";
     if(state.studentTab==="home")body=studentHome(ctx);
     if(state.studentTab==="journey"||state.studentTab==="practice")body=studentJourney(ctx);
@@ -1441,10 +1474,12 @@
   }
 
   function studentProgress(ctx){
+    const allAttempts=ctx.attempts;
+    ctx={...ctx,attempts:ctx.attempts.filter(a=>a.recordKind!=="question")};
     const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=u.trainings.length?Math.round(done/u.trainings.length*100):0;return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
     const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
     const rows=ctx.attempts.slice(0,12).map(a=>{const l=resultLevel(a.percentage);return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.percentage}%</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`}).join("");
-    const journeyProgress=window.STEPUP_JOURNEY?.progressHTML?window.STEPUP_JOURNEY.progressHTML(ctx.attempts,ctx.openUnits,state.profile):"";
+    const journeyProgress=window.STEPUP_JOURNEY?.progressHTML?window.STEPUP_JOURNEY.progressHTML(allAttempts,ctx.openUnits,state.profile):"";
     return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>See what you have mastered and what deserves one quick review.</p></div>${journeyProgress}
       <details class="card" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:800">Detailed STEP practice results</summary><div style="margin-top:14px"><div class="grid grid-2">${cards}</div>
       <div class="card"><h2>Current Skill Profile</h2>${renderStudentSkillBars(latest)}</div>
@@ -1485,9 +1520,58 @@
       score:Number(payload.score||0),total:Number(payload.total||0),percentage:Number(payload.percentage||0),elapsedSeconds:Number(payload.elapsedSeconds||0),
       autoSubmitted:false,answers:Array.isArray(payload.answers)?payload.answers:[],studyMethod:payload.studyMethod||"journey",submittedAt:nowISO()
     };
-    if(state.fb)await state.fb.db.collection("attempts").add(attempt);else{attempt.id=uid();local.saveAttempt(attempt)}
+    if(!state.fb){attempt.id=uid();local.saveAttempt(attempt);return attempt;}
+    try{
+      await state.fb.db.collection("attempts").add(attempt);
+    }catch(firstError){
+      // The teacher may have moved the student to another class since sign-in:
+      // reload the profile and try once more with the current class.
+      try{
+        await loadProfile();
+        if(state.profile){attempt.classId=state.profile.classId;attempt.classCode=state.profile.classCode;attempt.teacherId=state.profile.teacherId;}
+        await state.fb.db.collection("attempts").add(attempt);
+      }catch(secondError){
+        console.error("StepUp: result not saved",firstError,secondError);
+        queueUnsaved(attempt,secondError);
+        throw secondError;
+      }
+    }
+    flushUnsaved();
     return attempt;
   }
+
+  /* Results that could not be saved: shown to the student with a Save again button,
+     kept on this device, and re-sent automatically the next time the app opens. */
+  const UNSAVED_KEY="stepup_unsaved_results_v2";
+  function readUnsaved(){try{const a=JSON.parse(localStorage.getItem(UNSAVED_KEY)||"[]");return Array.isArray(a)?a:[]}catch(_){return []}}
+  function writeUnsaved(a){try{localStorage.setItem(UNSAVED_KEY,JSON.stringify(a))}catch(_){}}
+  function queueUnsaved(attempt,err){
+    const list=readUnsaved().filter(x=>!(x.studentId===attempt.studentId&&x.trainingId===attempt.trainingId&&x.submittedAt===attempt.submittedAt));
+    list.push(attempt);writeUnsaved(list);showUnsavedBanner(err);
+  }
+  function showUnsavedBanner(err){
+    const mine=readUnsaved().filter(x=>x.studentId===state.profile?.id);
+    let b=document.getElementById("stepupUnsavedBanner");
+    if(!mine.length){b?.remove();return;}
+    if(!b){b=document.createElement("div");b.id="stepupUnsavedBanner";document.body.appendChild(b);}
+    const code=err?.code?` (${esc(String(err.code))})`:"";
+    b.innerHTML=`<div><b>⚠ ${mine.length===1?"Your last result was":mine.length+" results were"} not saved.</b><small>Check the internet connection, then tap Save again.${code}</small></div><button type="button" onclick="PROVE.retryUnsaved()">Save again</button>`;
+  }
+  let flushing=false;
+  async function flushUnsaved(manual=false){
+    if(!state.fb||flushing||!state.profile?.id||state.profile.role!=="student")return;
+    const all=readUnsaved(),mine=all.filter(x=>x.studentId===state.profile.id);
+    if(!mine.length){showUnsavedBanner();return;}
+    flushing=true;let lastErr=null;const left=all.filter(x=>x.studentId!==state.profile.id);
+    for(const a of mine){
+      try{a.classId=state.profile.classId;a.classCode=state.profile.classCode;a.teacherId=state.profile.teacherId;await state.fb.db.collection("attempts").add(a);}
+      catch(e){lastErr=e;left.push(a);}
+    }
+    writeUnsaved(left);flushing=false;
+    if(lastErr){showUnsavedBanner(lastErr);if(manual)alert("Still not saved. Please check the internet connection and try again.");}
+    else{document.getElementById("stepupUnsavedBanner")?.remove();if(manual||mine.length){if(state.studentTab)renderStudent();}}
+  }
+  function retryUnsaved(){return flushUnsaved(true);}
 
   async function editStudentName(){
     const current=(state.profile.displayName||"").trim();
@@ -1877,6 +1961,7 @@ Do not start a new lesson unless I ask.`;
 
 
   async function savePdfPages(pageHtmls, filename, orientation="portrait"){
+    await loadLibs(["jspdf","html2canvas"]);
     if(!window.html2canvas || !window.jspdf){
       alert("PDF libraries did not load. Please refresh the page and try again.");
       return;
@@ -2093,7 +2178,8 @@ Do not start a new lesson unless I ask.`;
 
   async function exportClassExcel(){
     if(!state.selectedClassId)return alert("Select a class first.");
-    if(typeof XLSX==="undefined")return alert("Excel library did not load.");
+    await loadLib("xlsx");
+    if(typeof XLSX==="undefined")return alert("Excel library did not load. Check the internet connection and try again.");
     const r=await classReportData(state.selectedClassId);
     if(!r.cls)return;
     const wb=XLSX.utils.book_new();
@@ -2126,7 +2212,8 @@ Do not start a new lesson unless I ask.`;
   }
 
   async function downloadStudentExcel(studentId){
-    if(typeof XLSX==="undefined")return alert("Excel library did not load.");
+    await loadLib("xlsx");
+    if(typeof XLSX==="undefined")return alert("Excel library did not load. Check the internet connection and try again.");
     const s=await getUserById(studentId); if(!s)return;
     const attempts=(await getAttempts({studentId})).sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt));
     const latest=latestPerTraining(attempts);
@@ -2169,7 +2256,7 @@ Do not start a new lesson unless I ask.`;
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
     renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
-    downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt
+    downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
   boot();
 })();
