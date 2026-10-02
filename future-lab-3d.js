@@ -171,11 +171,89 @@
     setCamera([7.1,3.9,6.1],[4.75,1.4,.55]);state.o.querySelector('[data-scene-place]').textContent='Entry area • tomorrow’s trip';state.o.querySelector('[data-scene-instruction]').textContent='Inspect the suitcase and boarding pass. Are they evidence of a previous plan?';
   }
   function buildClouds(){
-    var T=state.T,g=state.scenario;state.room.sky.material.color.set(0x43576a);state.room.windowLight.color.set(0x88a9c4);state.room.windowLight.intensity=16;state.room.warmLight.intensity=8;
-    var clouds=new T.Group();var vals=[[-.9,.2,.72],[0,.45,.95],[.95,.15,.72],[-.2,-.18,.82],[.65,-.25,.62]];vals.forEach(function(v){var s=new T.Mesh(new T.SphereGeometry(v[2],20,14),new T.MeshStandardMaterial({color:0x525f6a,roughness:.97}));s.scale.y=.68;s.position.set(2.45+v[0],3.65+v[1],-4.3);clouds.add(s);});g.add(clouds);addInteractive(clouds,'clouds');
-    var rain=new T.Group();for(var i=0;i<28;i++){var line=new T.Mesh(new T.BoxGeometry(.015,.48,.012),new T.MeshBasicMaterial({color:0x9bcff1,transparent:true,opacity:.55}));line.position.set(.3+(i%8)*.6,1.8+((i*37)%170)/100,-4.15);rain.add(line);}g.add(rain);state.animations.push({type:'rain',obj:rain});setEvidence([clouds]);
-    var label=makeLabel('VISIBLE EVIDENCE', 'rgba(44,63,78,.94)');label.position.set(2.4,5.1,-3.9);g.add(label);
-    setCamera([6.1,3.65,5.8],[2.35,3.35,-4.3]);state.o.querySelector('[data-scene-place]').textContent='Window • changing weather';state.o.querySelector('[data-scene-instruction]').textContent='The class can see the evidence before making the prediction.';
+    var T=state.T,g=state.scenario;
+    state.room.sky.material.color.set(0x536575);
+    state.room.windowLight.color.set(0x91a8ba);
+    state.room.windowLight.intensity=11;
+    state.room.warmLight.intensity=7;
+
+    /* Storm clouds stay OUTSIDE the room: between the sky plane and the glass. */
+    var texCanvas=document.createElement('canvas');
+    texCanvas.width=256;texCanvas.height=256;
+    var cx=texCanvas.getContext('2d');
+    var grad=cx.createRadialGradient(128,122,12,128,128,122);
+    grad.addColorStop(0,'rgba(255,255,255,.98)');
+    grad.addColorStop(.38,'rgba(245,248,250,.95)');
+    grad.addColorStop(.68,'rgba(210,219,226,.72)');
+    grad.addColorStop(.9,'rgba(160,173,184,.28)');
+    grad.addColorStop(1,'rgba(130,145,158,0)');
+    cx.fillStyle=grad;cx.fillRect(0,0,256,256);
+    var cloudTex=new T.CanvasTexture(texCanvas);
+    cloudTex.colorSpace=T.SRGBColorSpace;
+    cloudTex.minFilter=T.LinearFilter;
+    cloudTex.magFilter=T.LinearFilter;
+
+    var clouds=new T.Group();
+    var puffData=[
+      [0.65,4.02,1.10,.62,0x70808c,.84],
+      [1.20,4.24,1.25,.72,0x788996,.90],
+      [1.80,4.08,1.42,.78,0x657581,.94],
+      [2.45,4.30,1.58,.90,0x748490,.94],
+      [3.10,4.12,1.48,.80,0x606f7a,.94],
+      [3.72,4.26,1.22,.68,0x778792,.88],
+      [4.18,3.98,1.04,.60,0x64737e,.86],
+      [1.00,3.62,1.28,.66,0x56646f,.92],
+      [1.72,3.55,1.50,.72,0x4b5964,.94],
+      [2.45,3.62,1.72,.80,0x46535e,.96],
+      [3.18,3.53,1.55,.72,0x4c5964,.95],
+      [3.88,3.62,1.28,.64,0x56646f,.92],
+      [1.45,3.28,1.20,.52,0x3f4b55,.82],
+      [2.18,3.25,1.45,.56,0x39454f,.88],
+      [2.92,3.23,1.48,.56,0x39454f,.88],
+      [3.58,3.30,1.16,.50,0x414e58,.82]
+    ];
+    puffData.forEach(function(v,i){
+      var mat=new T.SpriteMaterial({
+        map:cloudTex,
+        color:v[4],
+        transparent:true,
+        opacity:v[5],
+        depthWrite:false,
+        depthTest:true,
+        fog:false
+      });
+      var p=new T.Sprite(mat);
+      p.position.set(v[0],v[1],-4.985-(i%3)*.002);
+      p.scale.set(v[2]*1.55,v[2]*v[3],1);
+      clouds.add(p);
+    });
+    clouds.renderOrder=1;
+    g.add(clouds);
+    addInteractive(clouds,'clouds');
+
+    /* Soft rain also remains outside, just behind the window glass. */
+    var rain=new T.Group();
+    for(var i=0;i<38;i++){
+      var line=new T.Mesh(
+        new T.BoxGeometry(.012,.34,.008),
+        new T.MeshBasicMaterial({color:0xa9cde2,transparent:true,opacity:.34,depthWrite:false})
+      );
+      line.position.set(.28+(i%10)*.45,2.0+((i*43)%245)/100,-4.972-(i%4)*.001);
+      line.rotation.z=-.08;
+      rain.add(line);
+    }
+    g.add(rain);
+    state.animations.push({type:'rain',obj:rain});
+    setEvidence([clouds]);
+
+    var label=makeLabel('VISIBLE EVIDENCE', 'rgba(37,54,68,.92)');
+    label.position.set(2.45,5.16,-4.70);
+    label.scale.set(2.15,.66,1);
+    g.add(label);
+
+    setCamera([5.85,3.72,5.45],[2.45,3.62,-4.95]);
+    state.o.querySelector('[data-scene-place]').textContent='Window • storm approaching';
+    state.o.querySelector('[data-scene-instruction]').textContent='Look through the window: dark storm clouds are visible evidence for the prediction.';
   }
   function buildOpinion(){
     var T=state.T,g=state.scenario;state.room.sky.material.color.set(0x91b7d6);state.room.windowLight.color.set(0xbcdcff);state.room.windowLight.intensity=28;state.room.warmLight.intensity=14;
