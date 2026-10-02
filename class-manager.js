@@ -359,9 +359,13 @@
     }
   }
 
-  function scheduleStudentGuard(delay=250){
+  // Check at most once every 2 minutes (it was running on every DOM change:
+  // two database reads per tap while a student answered questions).
+  let lastStudentGuard=0;
+  function scheduleStudentGuard(delay=250,force=false){
+    if(!force && Date.now()-lastStudentGuard<120000) return;
     clearTimeout(studentGuardTimer);
-    studentGuardTimer=setTimeout(guardArchivedStudent,delay);
+    studentGuardTimer=setTimeout(()=>{lastStudentGuard=Date.now();guardArchivedStudent();},delay);
   }
 
   function enhanceClassCards(){
@@ -396,8 +400,8 @@
   observer.observe(document.body,{childList:true,subtree:true});
   window.addEventListener("DOMContentLoaded",()=>{enhanceClassCards();scheduleStudentGuard();});
   setTimeout(()=>{enhanceClassCards();scheduleStudentGuard();},250);
-  setInterval(()=>scheduleStudentGuard(0),30000);
-  try{firebase.auth().onAuthStateChanged(()=>scheduleStudentGuard(50));}catch(e){}
+  setInterval(()=>scheduleStudentGuard(0),120000);
+  try{firebase.auth().onAuthStateChanged(()=>scheduleStudentGuard(50,true));}catch(e){}
 
   window.StepUpClassManager={openManager,archiveClass,moveAndDelete,deleteClassData,restoreClass};
 })();
