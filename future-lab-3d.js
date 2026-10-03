@@ -172,86 +172,150 @@
   }
   function buildClouds(){
     var T=state.T,g=state.scenario;
-    state.room.sky.material.color.set(0x536575);
-    state.room.windowLight.color.set(0x91a8ba);
-    state.room.windowLight.intensity=11;
-    state.room.warmLight.intensity=7;
+    state.room.sky.material.color.set(0x4b5e70);
+    state.room.windowLight.color.set(0x8da4b6);
+    state.room.windowLight.intensity=10;
+    state.room.warmLight.intensity=6.5;
 
-    /* Storm clouds stay OUTSIDE the room: between the sky plane and the glass. */
-    var texCanvas=document.createElement('canvas');
-    texCanvas.width=256;texCanvas.height=256;
-    var cx=texCanvas.getContext('2d');
-    var grad=cx.createRadialGradient(128,122,12,128,128,122);
-    grad.addColorStop(0,'rgba(255,255,255,.98)');
-    grad.addColorStop(.38,'rgba(245,248,250,.95)');
-    grad.addColorStop(.68,'rgba(210,219,226,.72)');
-    grad.addColorStop(.9,'rgba(160,173,184,.28)');
-    grad.addColorStop(1,'rgba(130,145,158,0)');
-    cx.fillStyle=grad;cx.fillRect(0,0,256,256);
-    var cloudTex=new T.CanvasTexture(texCanvas);
-    cloudTex.colorSpace=T.SRGBColorSpace;
-    cloudTex.minFilter=T.LinearFilter;
-    cloudTex.magFilter=T.LinearFilter;
+    /* Build one continuous storm front instead of separate cloud balls. */
+    function stormTexture(seed,lowLayer){
+      var c=document.createElement('canvas');
+      c.width=1024;c.height=576;
+      var x=c.getContext('2d');
+      x.clearRect(0,0,c.width,c.height);
 
-    var clouds=new T.Group();
-    var puffData=[
-      [0.65,4.02,1.10,.62,0x70808c,.84],
-      [1.20,4.24,1.25,.72,0x788996,.90],
-      [1.80,4.08,1.42,.78,0x657581,.94],
-      [2.45,4.30,1.58,.90,0x748490,.94],
-      [3.10,4.12,1.48,.80,0x606f7a,.94],
-      [3.72,4.26,1.22,.68,0x778792,.88],
-      [4.18,3.98,1.04,.60,0x64737e,.86],
-      [1.00,3.62,1.28,.66,0x56646f,.92],
-      [1.72,3.55,1.50,.72,0x4b5964,.94],
-      [2.45,3.62,1.72,.80,0x46535e,.96],
-      [3.18,3.53,1.55,.72,0x4c5964,.95],
-      [3.88,3.62,1.28,.64,0x56646f,.92],
-      [1.45,3.28,1.20,.52,0x3f4b55,.82],
-      [2.18,3.25,1.45,.56,0x39454f,.88],
-      [2.92,3.23,1.48,.56,0x39454f,.88],
-      [3.58,3.30,1.16,.50,0x414e58,.82]
-    ];
-    puffData.forEach(function(v,i){
-      var mat=new T.SpriteMaterial({
-        map:cloudTex,
-        color:v[4],
-        transparent:true,
-        opacity:v[5],
-        depthWrite:false,
-        depthTest:true,
-        fog:false
-      });
-      var p=new T.Sprite(mat);
-      p.position.set(v[0],v[1],-4.985-(i%3)*.002);
-      p.scale.set(v[2]*1.55,v[2]*v[3],1);
-      clouds.add(p);
+      var rnd=(function(s){
+        return function(){
+          s=(s*1664525+1013904223)>>>0;
+          return s/4294967296;
+        };
+      })(seed||1);
+
+      function puff(px,py,rx,ry,inner,outer,alpha){
+        x.save();
+        x.translate(px,py);
+        x.scale(1,ry/rx);
+        var grd=x.createRadialGradient(0,0,rx*.08,0,0,rx);
+        grd.addColorStop(0,'rgba('+inner+','+alpha+')');
+        grd.addColorStop(.48,'rgba('+inner+','+(alpha*.92)+')');
+        grd.addColorStop(.78,'rgba('+outer+','+(alpha*.48)+')');
+        grd.addColorStop(1,'rgba('+outer+',0)');
+        x.fillStyle=grd;
+        x.beginPath();x.arc(0,0,rx,0,Math.PI*2);x.fill();
+        x.restore();
+      }
+
+      /* Broad connected body. */
+      var rows=lowLayer?3:4;
+      for(var r=0;r<rows;r++){
+        var count=lowLayer?9:11;
+        for(var i=0;i<count;i++){
+          var baseX=80+i*88+(rnd()-.5)*45;
+          var baseY=(lowLayer?315:135)+r*(lowLayer?45:72)+(rnd()-.5)*38;
+          var rx=(lowLayer?105:125)+rnd()*70;
+          var ry=(lowLayer?50:58)+rnd()*48;
+          var shade=lowLayer?Math.round(44+rnd()*18):Math.round(70+rnd()*28);
+          var edge=Math.max(28,shade-24);
+          puff(baseX,baseY,rx,ry,
+            shade+','+(shade+10)+','+(shade+18),
+            edge+','+(edge+8)+','+(edge+15),
+            lowLayer?.72:.78
+          );
+        }
+      }
+
+      /* Irregular rising tops. */
+      var tops=lowLayer?7:12;
+      for(var j=0;j<tops;j++){
+        var px=75+j*(880/Math.max(1,tops-1))+(rnd()-.5)*55;
+        var py=(lowLayer?280:105)+(rnd()-.5)*(lowLayer?35:70);
+        var rr=(lowLayer?82:92)+rnd()*62;
+        var shade2=lowLayer?Math.round(52+rnd()*16):Math.round(90+rnd()*28);
+        puff(px,py,rr,rr*(.62+rnd()*.18),
+          shade2+','+(shade2+12)+','+(shade2+20),
+          (shade2-28)+','+(shade2-18)+','+(shade2-10),
+          lowLayer?.68:.74
+        );
+      }
+
+      /* Heavy underside. */
+      var under=x.createLinearGradient(0,250,0,560);
+      under.addColorStop(0,'rgba(35,46,56,0)');
+      under.addColorStop(.42,'rgba(34,45,55,'+(lowLayer?.26:.34)+')');
+      under.addColorStop(1,'rgba(22,31,39,'+(lowLayer?.52:.58)+')');
+      x.globalCompositeOperation='source-atop';
+      x.fillStyle=under;x.fillRect(0,0,c.width,c.height);
+      x.globalCompositeOperation='source-over';
+
+      /* Fine translucent wisps soften the silhouette. */
+      for(var k=0;k<24;k++){
+        var wx=rnd()*1024, wy=(lowLayer?235:75)+rnd()*(lowLayer?220:330);
+        var wr=45+rnd()*90;
+        puff(wx,wy,wr,wr*(.28+rnd()*.22),
+          '118,132,145','72,85,96',.16+rnd()*.12);
+      }
+
+      var tex=new T.CanvasTexture(c);
+      tex.colorSpace=T.SRGBColorSpace;
+      tex.minFilter=T.LinearFilter;
+      tex.magFilter=T.LinearFilter;
+      tex.generateMipmaps=false;
+      return tex;
+    }
+
+    var farMat=new T.MeshBasicMaterial({
+      map:stormTexture(731,false),
+      transparent:true,
+      opacity:.96,
+      depthWrite:false,
+      fog:false
     });
-    clouds.renderOrder=1;
-    g.add(clouds);
-    addInteractive(clouds,'clouds');
+    var farCloud=new T.Mesh(new T.PlaneGeometry(4.68,2.92),farMat);
+    farCloud.position.set(2.45,3.35,-5.025);
+    g.add(farCloud);
 
-    /* Soft rain also remains outside, just behind the window glass. */
+    var nearMat=new T.MeshBasicMaterial({
+      map:stormTexture(1847,true),
+      transparent:true,
+      opacity:.68,
+      depthWrite:false,
+      fog:false
+    });
+    var nearCloud=new T.Mesh(new T.PlaneGeometry(4.75,2.95),nearMat);
+    nearCloud.position.set(2.42,3.26,-5.005);
+    nearCloud.scale.set(1.06,1.02,1);
+    g.add(nearCloud);
+
+    var cloudHit=new T.Mesh(
+      new T.PlaneGeometry(4.65,2.9),
+      new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})
+    );
+    cloudHit.position.set(2.45,3.35,-4.995);
+    g.add(cloudHit);
+    addInteractive(cloudHit,'clouds');
+
+    /* Rain remains outside the glass. */
     var rain=new T.Group();
-    for(var i=0;i<38;i++){
-      var line=new T.Mesh(
-        new T.BoxGeometry(.012,.34,.008),
-        new T.MeshBasicMaterial({color:0xa9cde2,transparent:true,opacity:.34,depthWrite:false})
+    for(var i=0;i<46;i++){
+      var drop=new T.Mesh(
+        new T.PlaneGeometry(.013,.30+(i%5)*.035),
+        new T.MeshBasicMaterial({
+          color:0xb7d3e4,
+          transparent:true,
+          opacity:.20+(i%4)*.035,
+          depthWrite:false,
+          side:T.DoubleSide
+        })
       );
-      line.position.set(.28+(i%10)*.45,2.0+((i*43)%245)/100,-4.972-(i%4)*.001);
-      line.rotation.z=-.08;
-      rain.add(line);
+      drop.position.set(.20+(i%11)*.43,1.95+((i*47)%255)/100,-4.965-(i%3)*.002);
+      drop.rotation.z=-.10;
+      rain.add(drop);
     }
     g.add(rain);
     state.animations.push({type:'rain',obj:rain});
-    setEvidence([clouds]);
 
-    var label=makeLabel('VISIBLE EVIDENCE', 'rgba(37,54,68,.92)');
-    label.position.set(2.45,5.16,-4.70);
-    label.scale.set(2.15,.66,1);
-    g.add(label);
-
-    setCamera([5.85,3.72,5.45],[2.45,3.62,-4.95]);
+    setEvidence([cloudHit]);
+    setCamera([5.7,3.75,5.25],[2.45,3.50,-4.95]);
     state.o.querySelector('[data-scene-place]').textContent='Window • storm approaching';
     state.o.querySelector('[data-scene-instruction]').textContent='Look through the window: dark storm clouds are visible evidence for the prediction.';
   }
