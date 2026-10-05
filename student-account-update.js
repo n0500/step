@@ -375,8 +375,9 @@
             '<span class="stepup-account-check">✉</span>',
             '<div><strong>افتحي الرسالة واضغطي رابط التحقق</strong><small>بعدها ارجعي إلى Step Up واضغطي «تم التحقق من البريد».</small></div>',
           '</div>',
-          '<div class="stepup-account-safe-note">حتى يتم التحقق، حسابك الحالي وتقدمك يظلان كما هما.</div>',
+          '<div class="stepup-account-safe-note">حتى يتم التحقق، حسابك الحالي وتقدمك يظلان كما هما.<br>إذا لم تجدي الرسالة، تحققي من Junk / Spam وابحثي عن المرسل noreply@step-c44ef.firebaseapp.com.</div>',
           '<button id="stepupCheckVerificationBtn" class="btn btn-primary stepup-account-main-btn">تم التحقق من البريد</button>',
+          '<button id="stepupResendVerificationBtn" class="btn btn-secondary stepup-account-main-btn">إعادة إرسال رسالة التحقق</button>',
           '<button id="stepupRestartUpgradeBtn" class="stepup-account-skip">تغيير البريد أو البدء من جديد</button>',
         '</div>',
       '</div>'
@@ -429,8 +430,10 @@
 
   function bindVerificationUpgrade(){
     var checkBtn = document.getElementById("stepupCheckVerificationBtn");
+    var resendBtn = document.getElementById("stepupResendVerificationBtn");
     var restartBtn = document.getElementById("stepupRestartUpgradeBtn");
     if(checkBtn) checkBtn.addEventListener("click",checkVerifiedEmail);
+    if(resendBtn) resendBtn.addEventListener("click",resendVerificationEmail);
     if(restartBtn) restartBtn.addEventListener("click",restartEmailUpgrade);
   }
 
@@ -549,6 +552,44 @@
       if(btn && document.body.contains(btn)){
         btn.disabled = false;
         btn.textContent = "إرسال رسالة التحقق";
+      }
+    }
+  }
+
+  async function resendVerificationEmail(){
+    if(upgradeBusy) return;
+    var user = auth().currentUser;
+    if(!user) return alert("أعيدي تسجيل الدخول ثم حاولي مرة أخرى.");
+
+    var pending = readPendingByUid(user.uid);
+    if(!pending || !pending.newEmail) return alert("لم نجد طلب تحقق قيد الانتظار.");
+
+    var btn = document.getElementById("stepupResendVerificationBtn");
+    upgradeBusy = true;
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "جاري إعادة الإرسال...";
+    }
+
+    try{
+      auth().languageCode = "ar";
+      await user.verifyBeforeUpdateEmail(pending.newEmail);
+      alert(
+        "أُعيد إرسال رسالة التحقق ✓\n\n" +
+        "تحققي من Inbox ثم Junk / Spam.\n" +
+        "ابحثي عن المرسل: noreply@step-c44ef.firebaseapp.com"
+      );
+    }catch(error){
+      if(error && error.code === "auth/requires-recent-login"){
+        alert("انتهت صلاحية جلسة التحقق. ارجعي إلى الدخول بالاسم وPIN ثم حاولي إعادة الإرسال مرة أخرى.");
+      }else{
+        alert("تعذر إعادة الإرسال: " + friendlyError(error,"upgrade"));
+      }
+    }finally{
+      upgradeBusy = false;
+      if(btn && document.body.contains(btn)){
+        btn.disabled = false;
+        btn.textContent = "إعادة إرسال رسالة التحقق";
       }
     }
   }
@@ -747,6 +788,7 @@
     maybeShowUpgrade:maybeShowUpgrade,
     requestEmailUpgrade:requestEmailUpgrade,
     checkVerifiedEmail:checkVerifiedEmail,
+    resendVerificationEmail:resendVerificationEmail,
     finishPasswordUpgrade:finishPasswordUpgrade,
     skipUpgrade:skipUpgrade,
     isLegacyEmail:isLegacyEmail
