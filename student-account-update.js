@@ -167,10 +167,22 @@
       var result = await auth().signInWithEmailAndPassword(creds.email,creds.password);
       await ensureStudentProfile(result.user,name,classObj,classCode);
     }catch(error){
+      var pending = readPendingByLegacy(creds.email);
+      if(pending && pending.newEmail){
+        try{
+          var pendingResult = await auth().signInWithEmailAndPassword(pending.newEmail,creds.password);
+          await ensureStudentProfile(pendingResult.user,name,classObj,classCode);
+          setTimeout(maybeShowUpgrade,180);
+          return;
+        }catch(pendingError){
+          console.warn("StepUp pending upgraded-email login failed",pendingError);
+        }
+      }
       console.warn("StepUp legacy student login failed",error);
       alert(
         "تعذر الدخول بالاسم وPIN.\n\n" +
         "• إذا سبق أن أضفتِ بريدك الإلكتروني إلى حسابك، اختاري «الدخول بالبريد الإلكتروني».\n" +
+        "• إذا كنتِ في منتصف تحديث البريد، ارجعي للجهاز الذي بدأتِ منه وأكملي التحقق أولًا.\n" +
         "• إذا لم تضيفي البريد من قبل، تحققي من الاسم وPIN.\n" +
         "• إذا كانت هذه أول مرة لك في Step Up، اختاري «إنشاء حساب لأول مرة»."
       );
