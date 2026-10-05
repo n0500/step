@@ -335,34 +335,108 @@
         '<div class="stepup-account-upgrade-card">',
           '<div class="stepup-account-update-badge">تحديث جديد في Step Up</div>',
           '<h2 id="stepupUpgradeTitle">مرحبًا ' + firstName + ' 👋</h2>',
-          '<p class="stepup-account-lead">أضيفي بريدك الإلكتروني وكلمة مرور إلى <strong>حسابك الحالي نفسه</strong>.</p>',
+          '<p class="stepup-account-lead">سنضيف البريد إلى <strong>حسابك الحالي نفسه</strong> دون إنشاء حساب جديد.</p>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
             '<div><strong>لن يتغير حسابك أو تقدمك</strong><small>نتائجك، وحداتك، شهاداتك وتقدمك ستبقى كما هي.</small></div>',
           '</div>',
-          '<div class="stepup-account-steps">',
+          '<div class="stepup-account-steps stepup-account-steps-four">',
             '<div><span>1</span><strong>أنتِ داخل حسابك الحالي</strong></div>',
             '<div><span>2</span><strong>أضيفي بريدك</strong></div>',
-            '<div><span>3</span><strong>اختاري كلمة مرور</strong></div>',
+            '<div><span>3</span><strong>تحققي من البريد</strong></div>',
+            '<div><span>4</span><strong>اختاري كلمة مرور</strong></div>',
           '</div>',
           '<div class="stepup-account-form">',
             '<label for="stepupUpgradeEmail">البريد الإلكتروني</label>',
             '<input id="stepupUpgradeEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">',
             '<label for="stepupUpgradeEmailConfirm">تأكيد البريد الإلكتروني</label>',
             '<input id="stepupUpgradeEmailConfirm" type="email" inputmode="email" autocomplete="email" placeholder="أعيدي كتابة البريد">',
+            '<label for="stepupUpgradePin">PIN الحالي للتأكيد</label>',
+            '<input id="stepupUpgradePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
+          '</div>',
+          '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">إرسال رسالة التحقق</button>',
+          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لاحقًا</button>',
+          '<div class="stepup-account-footer-note">لن يتغير البريد في حسابك إلا بعد أن تضغطي رابط التحقق المرسل إليك.</div>',
+        '</div>',
+      '</div>'
+    ].join("");
+  }
+
+  function verificationHTML(profile,pending){
+    var firstName = esc(((profile && profile.displayName) || "طالبة").trim().split(/\s+/)[0]);
+    return [
+      '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
+        '<div class="stepup-account-upgrade-card">',
+          '<div class="stepup-account-update-badge">الخطوة 3 من 4</div>',
+          '<h2>تحققي من بريدك يا ' + firstName + '</h2>',
+          '<p class="stepup-account-lead">أرسلنا رسالة تحقق إلى:</p>',
+          '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
+          '<div class="stepup-account-preserve">',
+            '<span class="stepup-account-check">✉</span>',
+            '<div><strong>افتحي الرسالة واضغطي رابط التحقق</strong><small>بعدها ارجعي إلى Step Up واضغطي «تم التحقق من البريد».</small></div>',
+          '</div>',
+          '<div class="stepup-account-safe-note">حتى يتم التحقق، حسابك الحالي وتقدمك يظلان كما هما.</div>',
+          '<button id="stepupCheckVerificationBtn" class="btn btn-primary stepup-account-main-btn">تم التحقق من البريد</button>',
+          '<button id="stepupRestartUpgradeBtn" class="stepup-account-skip">تغيير البريد أو البدء من جديد</button>',
+        '</div>',
+      '</div>'
+    ].join("");
+  }
+
+  function passwordHTML(profile,pending){
+    var firstName = esc(((profile && profile.displayName) || "طالبة").trim().split(/\s+/)[0]);
+    return [
+      '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
+        '<div class="stepup-account-upgrade-card">',
+          '<div class="stepup-account-update-badge">الخطوة 4 من 4</div>',
+          '<h2>تم التحقق من البريد ✓</h2>',
+          '<p class="stepup-account-lead">بقي أن تختاري كلمة مرور لحسابك نفسه.</p>',
+          '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
+          '<div class="stepup-account-form">',
             '<label for="stepupUpgradePassword">كلمة المرور الجديدة</label>',
             '<input id="stepupUpgradePassword" type="password" autocomplete="new-password" placeholder="8 أحرف أو أكثر">',
             '<label for="stepupUpgradePasswordConfirm">تأكيد كلمة المرور</label>',
             '<input id="stepupUpgradePasswordConfirm" type="password" autocomplete="new-password" placeholder="أعيدي كتابة كلمة المرور">',
-            '<label for="stepupUpgradePin">PIN الحالي للتأكيد</label>',
+            '<label for="stepupUpgradePin">PIN القديم للتأكيد الأخير</label>',
             '<input id="stepupUpgradePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
           '</div>',
-          '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">حفظ البريد وكلمة المرور</button>',
-          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لاحقًا</button>',
-          '<div class="stepup-account-footer-note">بعد الحفظ يمكنك الدخول بالبريد الإلكتروني واستعادة كلمة المرور عند الحاجة.</div>',
+          '<button id="stepupFinishUpgradeBtn" class="btn btn-primary stepup-account-main-btn">حفظ كلمة المرور وإكمال التحديث</button>',
+          '<div class="stepup-account-footer-note">بعد هذه الخطوة يمكنك الدخول بالبريد وكلمة المرور الجديدة واستعادة كلمة المرور عند الحاجة.</div>',
         '</div>',
       '</div>'
     ].join("");
+  }
+
+  async function getStudentProfileForUpgrade(user){
+    var snap = await db().collection("users").doc(user.uid).get();
+    if(!snap.exists) return null;
+    var profile = snap.data() || {};
+    return profile.role === "student" ? profile : null;
+  }
+
+  function replaceUpgradeOverlay(html){
+    var old = document.getElementById("stepupAccountUpgradeOverlay");
+    if(old) old.remove();
+    document.body.insertAdjacentHTML("beforeend",html);
+  }
+
+  function bindInitialUpgrade(){
+    var saveBtn = document.getElementById("stepupCompleteUpgradeBtn");
+    var skipBtn = document.getElementById("stepupSkipUpgradeBtn");
+    if(saveBtn) saveBtn.addEventListener("click",requestEmailUpgrade);
+    if(skipBtn) skipBtn.addEventListener("click",skipUpgrade);
+  }
+
+  function bindVerificationUpgrade(){
+    var checkBtn = document.getElementById("stepupCheckVerificationBtn");
+    var restartBtn = document.getElementById("stepupRestartUpgradeBtn");
+    if(checkBtn) checkBtn.addEventListener("click",checkVerifiedEmail);
+    if(restartBtn) restartBtn.addEventListener("click",restartEmailUpgrade);
+  }
+
+  function bindPasswordUpgrade(){
+    var finishBtn = document.getElementById("stepupFinishUpgradeBtn");
+    if(finishBtn) finishBtn.addEventListener("click",finishPasswordUpgrade);
   }
 
   async function maybeShowUpgrade(){
@@ -371,37 +445,45 @@
     if(!firebase.apps || !firebase.apps.length) return;
 
     var user = auth().currentUser;
-    if(!user || !isLegacyEmail(user.email)) return;
-    if(sessionStorage.getItem(skipKey(user.uid)) === "1") return;
+    if(!user) return;
 
     try{
-      var snap = await db().collection("users").doc(user.uid).get();
-      if(!snap.exists) return;
-      var profile = snap.data() || {};
-      if(profile.role !== "student") return;
+      var pending = readPendingByUid(user.uid);
+      if(pending){
+        try{ await user.reload(); }catch(e){}
+        user = auth().currentUser || user;
+        var pendingProfile = await getStudentProfileForUpgrade(user);
+        if(!pendingProfile) return;
 
-      document.body.insertAdjacentHTML("beforeend",upgradeHTML(profile));
-      var saveBtn = document.getElementById("stepupCompleteUpgradeBtn");
-      var skipBtn = document.getElementById("stepupSkipUpgradeBtn");
-      if(saveBtn) saveBtn.addEventListener("click",completeUpgrade);
-      if(skipBtn) skipBtn.addEventListener("click",skipUpgrade);
+        if(String(user.email || "").toLowerCase() === String(pending.newEmail || "").toLowerCase()){
+          replaceUpgradeOverlay(passwordHTML(pendingProfile,pending));
+          bindPasswordUpgrade();
+        }else{
+          replaceUpgradeOverlay(verificationHTML(pendingProfile,pending));
+          bindVerificationUpgrade();
+        }
+        return;
+      }
+
+      if(!isLegacyEmail(user.email)) return;
+      if(sessionStorage.getItem(skipKey(user.uid)) === "1") return;
+
+      var profile = await getStudentProfileForUpgrade(user);
+      if(!profile) return;
+
+      replaceUpgradeOverlay(upgradeHTML(profile));
+      bindInitialUpgrade();
     }catch(error){
       console.warn("StepUp account upgrade prompt unavailable",error);
     }
   }
 
-  async function completeUpgrade(){
+  async function requestEmailUpgrade(){
     if(upgradeBusy) return;
 
-    var email = (document.getElementById("stepupUpgradeEmail") || {}).value || "";
-    var emailConfirm = (document.getElementById("stepupUpgradeEmailConfirm") || {}).value || "";
-    var password = (document.getElementById("stepupUpgradePassword") || {}).value || "";
-    var passwordConfirm = (document.getElementById("stepupUpgradePasswordConfirm") || {}).value || "";
-    var pin = (document.getElementById("stepupUpgradePin") || {}).value || "";
-
-    email = email.trim().toLowerCase();
-    emailConfirm = emailConfirm.trim().toLowerCase();
-    pin = pin.trim();
+    var email = ((document.getElementById("stepupUpgradeEmail") || {}).value || "").trim().toLowerCase();
+    var emailConfirm = ((document.getElementById("stepupUpgradeEmailConfirm") || {}).value || "").trim().toLowerCase();
+    var pin = ((document.getElementById("stepupUpgradePin") || {}).value || "").trim();
 
     if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
       alert("اكتبي بريدًا إلكترونيًا صحيحًا.");
@@ -415,6 +497,129 @@
       alert("استخدمي بريدك الإلكتروني الحقيقي.");
       return;
     }
+    if(!/^\d{4}$/.test(pin)){
+      alert("أدخلي PIN الحالي المكوّن من 4 أرقام.");
+      return;
+    }
+
+    var user = auth().currentUser;
+    if(!user || !isLegacyEmail(user.email)){
+      alert("تعذر بدء التحديث من هذا الحساب. أعيدي تسجيل الدخول بالاسم وPIN.");
+      return;
+    }
+
+    var legacyEmail = String(user.email).toLowerCase();
+    var oldPassword = legacyPasswordFromCurrentEmail(legacyEmail,pin);
+    var btn = document.getElementById("stepupCompleteUpgradeBtn");
+
+    upgradeBusy = true;
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "جاري إرسال رسالة التحقق...";
+    }
+
+    try{
+      var credential = firebase.auth.EmailAuthProvider.credential(legacyEmail,oldPassword);
+      await user.reauthenticateWithCredential(credential);
+
+      if(typeof user.verifyBeforeUpdateEmail !== "function"){
+        throw new Error("Firebase verifyBeforeUpdateEmail is not available.");
+      }
+
+      auth().languageCode = "ar";
+      await user.verifyBeforeUpdateEmail(email);
+
+      var pending = {
+        uid:user.uid,
+        legacyEmail:legacyEmail,
+        newEmail:email,
+        startedAt:new Date().toISOString()
+      };
+      savePendingUpgrade(pending);
+      sessionStorage.removeItem(skipKey(user.uid));
+
+      var profile = await getStudentProfileForUpgrade(user);
+      replaceUpgradeOverlay(verificationHTML(profile || {},pending));
+      bindVerificationUpgrade();
+    }catch(error){
+      console.error("StepUp email verification request failed",error);
+      alert("لم يتم تغيير حسابك. " + friendlyError(error,"upgrade"));
+    }finally{
+      upgradeBusy = false;
+      if(btn && document.body.contains(btn)){
+        btn.disabled = false;
+        btn.textContent = "إرسال رسالة التحقق";
+      }
+    }
+  }
+
+  async function checkVerifiedEmail(){
+    if(upgradeBusy) return;
+    var user = auth().currentUser;
+    if(!user) return alert("أعيدي تسجيل الدخول ثم تابعي التحديث.");
+
+    var pending = readPendingByUid(user.uid);
+    if(!pending) return alert("لم نجد طلب تحديث قيد الانتظار.");
+
+    var btn = document.getElementById("stepupCheckVerificationBtn");
+    upgradeBusy = true;
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "جاري التحقق...";
+    }
+
+    try{
+      await user.reload();
+      user = auth().currentUser || user;
+      if(String(user.email || "").toLowerCase() !== String(pending.newEmail || "").toLowerCase()){
+        alert("لم يكتمل التحقق بعد. افتحي رسالة Firebase في بريدك واضغطي رابط التحقق، ثم ارجعي وحاولي مرة أخرى.");
+        return;
+      }
+
+      var profile = await getStudentProfileForUpgrade(user);
+      replaceUpgradeOverlay(passwordHTML(profile || {},pending));
+      bindPasswordUpgrade();
+    }catch(error){
+      alert("تعذر التأكد من حالة البريد: " + friendlyError(error,"upgrade"));
+    }finally{
+      upgradeBusy = false;
+      if(btn && document.body.contains(btn)){
+        btn.disabled = false;
+        btn.textContent = "تم التحقق من البريد";
+      }
+    }
+  }
+
+  async function restartEmailUpgrade(){
+    var user = auth().currentUser;
+    if(!user) return;
+    var pending = readPendingByUid(user.uid);
+    if(!pending) return;
+
+    try{ await user.reload(); }catch(e){}
+    user = auth().currentUser || user;
+
+    if(String(user.email || "").toLowerCase() === String(pending.newEmail || "").toLowerCase()){
+      alert("تم التحقق من البريد بالفعل. أكملي الآن اختيار كلمة المرور.");
+      var profileDone = await getStudentProfileForUpgrade(user);
+      replaceUpgradeOverlay(passwordHTML(profileDone || {},pending));
+      bindPasswordUpgrade();
+      return;
+    }
+
+    clearPendingUpgrade(pending);
+    var profile = await getStudentProfileForUpgrade(user);
+    replaceUpgradeOverlay(upgradeHTML(profile || {}));
+    bindInitialUpgrade();
+  }
+
+  async function finishPasswordUpgrade(){
+    if(upgradeBusy) return;
+
+    var password = ((document.getElementById("stepupUpgradePassword") || {}).value || "");
+    var passwordConfirm = ((document.getElementById("stepupUpgradePasswordConfirm") || {}).value || "");
+    var pin = ((document.getElementById("stepupUpgradePin") || {}).value || "").trim();
+
     if(password.length < 8){
       alert("اختاري كلمة مرور من 8 أحرف أو أكثر.");
       return;
@@ -424,87 +629,58 @@
       return;
     }
     if(!/^\d{4}$/.test(pin)){
-      alert("أدخلي PIN الحالي المكوّن من 4 أرقام.");
+      alert("أدخلي PIN القديم المكوّن من 4 أرقام.");
       return;
     }
 
     var user = auth().currentUser;
-    if(!user || !isLegacyEmail(user.email)){
-      alert("تم تحديث الحساب بالفعل أو انتهت جلسة الدخول.");
-      var overlayDone = document.getElementById("stepupAccountUpgradeOverlay");
-      if(overlayDone) overlayDone.remove();
-      return;
-    }
+    if(!user) return alert("أعيدي تسجيل الدخول ثم تابعي التحديث.");
 
-    var legacyEmail = String(user.email).toLowerCase();
-    var oldPassword = legacyPasswordFromCurrentEmail(legacyEmail,pin);
-    var emailChanged = false;
-    var passwordChanged = false;
-    var btn = document.getElementById("stepupCompleteUpgradeBtn");
+    var pending = readPendingByUid(user.uid);
+    if(!pending) return alert("لم نجد طلب تحديث قيد الانتظار.");
 
+    var btn = document.getElementById("stepupFinishUpgradeBtn");
     upgradeBusy = true;
     if(btn){
       btn.disabled = true;
-      btn.textContent = "جاري حفظ بيانات حسابك...";
+      btn.textContent = "جاري إكمال التحديث...";
     }
 
     try{
-      var credential = firebase.auth.EmailAuthProvider.credential(legacyEmail,oldPassword);
-      await user.reauthenticateWithCredential(credential);
+      await user.reload();
+      user = auth().currentUser || user;
 
-      await user.updateEmail(email);
-      emailChanged = true;
-
-      await user.updatePassword(password);
-      passwordChanged = true;
-
-      localStorage.setItem(upgradedKey(legacyEmail),"1");
-      sessionStorage.removeItem(skipKey(user.uid));
-
-      try{
-        auth().languageCode = "ar";
-        await user.sendEmailVerification();
-      }catch(verificationError){
-        console.warn("StepUp email verification message was not sent",verificationError);
+      if(String(user.email || "").toLowerCase() !== String(pending.newEmail || "").toLowerCase()){
+        alert("يجب التحقق من البريد أولًا.");
+        return;
       }
+
+      var oldPassword = legacyPasswordFromCurrentEmail(pending.legacyEmail,pin);
+      var credential = firebase.auth.EmailAuthProvider.credential(pending.newEmail,oldPassword);
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(password);
+
+      localStorage.setItem(upgradedKey(pending.legacyEmail),"1");
+      sessionStorage.removeItem(skipKey(user.uid));
+      clearPendingUpgrade(pending);
 
       var overlay = document.getElementById("stepupAccountUpgradeOverlay");
       if(overlay) overlay.remove();
 
       alert(
         "تم تحديث حسابك بنجاح ✓\n\n" +
-        "• حسابك وتقدمك السابق محفوظان كما هما.\n" +
-        "• من الآن يمكنك الدخول بالبريد الإلكتروني وكلمة المرور الجديدة.\n" +
-        "• أرسلنا رسالة تحقق إلى بريدك إذا كانت خدمة التحقق متاحة."
+        "• نفس الحساب ونفس التقدم محفوظان.\n" +
+        "• من الآن استخدمي بريدك الإلكتروني وكلمة المرور الجديدة.\n" +
+        "• يمكنك استخدام «نسيت كلمة المرور؟» عند الحاجة."
       );
     }catch(error){
-      console.error("StepUp account upgrade failed",error);
-
-      if(emailChanged || passwordChanged){
-        try{
-          if(passwordChanged) await user.updatePassword(oldPassword);
-          if(emailChanged) await user.updateEmail(legacyEmail);
-        }catch(rollbackError){
-          console.error("StepUp account upgrade rollback failed",rollbackError);
-          alert(
-            "حدث خطأ أثناء تحديث الحساب ولم نتمكن من إعادة كل البيانات تلقائيًا.\n" +
-            "لا تسجلي خروجًا الآن، وتواصلي مع المعلمة للمساعدة."
-          );
-          upgradeBusy = false;
-          if(btn){
-            btn.disabled = false;
-            btn.textContent = "حفظ البريد وكلمة المرور";
-          }
-          return;
-        }
-      }
-
-      alert("لم يتم تغيير حسابك. " + friendlyError(error,"upgrade"));
+      console.error("StepUp password upgrade failed",error);
+      alert("لم يتغير تقدمك أو حسابك. " + friendlyError(error,"upgrade"));
     }finally{
       upgradeBusy = false;
       if(btn && document.body.contains(btn)){
         btn.disabled = false;
-        btn.textContent = "حفظ البريد وكلمة المرور";
+        btn.textContent = "حفظ كلمة المرور وإكمال التحديث";
       }
     }
   }
@@ -569,7 +745,9 @@
     studentEmailLogin:studentEmailLogin,
     studentResetPassword:studentResetPassword,
     maybeShowUpgrade:maybeShowUpgrade,
-    completeUpgrade:completeUpgrade,
+    requestEmailUpgrade:requestEmailUpgrade,
+    checkVerifiedEmail:checkVerifiedEmail,
+    finishPasswordUpgrade:finishPasswordUpgrade,
     skipUpgrade:skipUpgrade,
     isLegacyEmail:isLegacyEmail
   };
