@@ -199,11 +199,12 @@
       }
       console.warn("StepUp legacy student login failed",error);
       alert(
-        "تعذر الدخول بالاسم وPIN.\n\n" +
-        "• إذا سبق أن أضفتِ بريدك الإلكتروني إلى حسابك، اختاري «الدخول بالبريد الإلكتروني».\n" +
-        "• إذا كنتِ في منتصف تحديث البريد، ارجعي للجهاز الذي بدأتِ منه وأكملي التحقق أولًا.\n" +
-        "• إذا لم تضيفي البريد من قبل، تحققي من الاسم وPIN.\n" +
-        "• إذا كانت هذه أول مرة لك في Step Up، اختاري «إنشاء حساب لأول مرة»."
+        "لم نتمكن من الدخول بهذه البيانات.\n\n" +
+        "إذا سبق لك استخدام Step Up:\n" +
+        "• اكتبي الاسم بالطريقة نفسها التي سجلتِ بها أول مرة.\n" +
+        "• استخدمي PIN نفسه.\n\n" +
+        "إذا سبق أن ربطتِ بريدك بالحساب، اختاري «الدخول بالبريد الإلكتروني».\n\n" +
+        "إذا كانت هذه أول مرة لك فقط، اختاري «إنشاء حساب لأول مرة»."
       );
     }
   }
@@ -225,14 +226,14 @@
 
     var creds = await legacyCreds(name,classCode,pin);
     if(localStorage.getItem(upgradedKey(creds.email)) === "1"){
-      alert("هذا الحساب سبق تحديثه بالبريد الإلكتروني على هذا الجهاز. استخدمي «الدخول بالبريد الإلكتروني» بدل إنشاء حساب جديد.");
+      alert("هذا الحساب مرتبط ببريد إلكتروني بالفعل. لا تنشئي حسابًا جديدًا؛ اختاري «الدخول بالبريد الإلكتروني» للدخول إلى حسابك نفسه.");
       return;
     }
 
     var ok = confirm(
-      "إنشاء حساب جديد مخصص لأول دخول فقط.\n\n" +
-      "إذا سبق لك استخدام Step Up من قبل فلا تنشئي حسابًا جديدًا؛ استخدمي دخول أو الدخول بالبريد الإلكتروني.\n\n" +
-      "هل هذه أول مرة لك في Step Up؟"
+      "إنشاء حساب جديد — لأول استخدام فقط.\n\n" +
+      "إذا سبق لك استخدام Step Up من قبل، اختاري «إلغاء» ثم استخدمي «دخول» حتى يبقى تقدمك في حسابك الحالي.\n\n" +
+      "هل هذه أول مرة لك فعلًا في Step Up؟"
     );
     if(!ok) return;
 
@@ -305,7 +306,7 @@
           '<div class="stepup-account-brand">STEP <span>UP</span></div>',
           '<div class="eyebrow">تسجيل دخول الطالبة</div>',
           '<h1>الدخول بالبريد الإلكتروني</h1>',
-          '<p class="muted">استخدمي هذه الطريقة إذا سبق أن أضفتِ بريدك الإلكتروني إلى حساب Step Up.</p>',
+          '<p class="muted"><strong>هذا الخيار فقط لمن سبق أن ربطت بريدها بحساب Step Up.</strong><br>اكتبي البريد وكلمة المرور التي اخترتِها عند تحديث الحساب.</p>',
           classLine,
           '<div class="stepup-account-form">',
             '<label for="stepupStudentEmail">البريد الإلكتروني</label>',
@@ -354,7 +355,7 @@
         '<div class="stepup-account-upgrade-card">',
           '<div class="stepup-account-update-badge">تحديث جديد في Step Up</div>',
           '<h2 id="stepupUpgradeTitle">مرحبًا ' + firstName + ' 👋</h2>',
-          '<p class="stepup-account-lead">سنضيف البريد إلى <strong>حسابك الحالي نفسه</strong> دون إنشاء حساب جديد.</p>',
+          '<p class="stepup-account-lead"><strong>أنتِ الآن داخل حسابك الحالي.</strong><br>سنضيف البريد إلى هذا الحساب نفسه، ولن ننشئ لك حسابًا جديدًا.</p>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
             '<div><strong>لن يتغير حسابك أو تقدمك</strong><small>نتائجك، وحداتك، شهاداتك وتقدمك ستبقى كما هي.</small></div>',
@@ -409,10 +410,10 @@
         '<div class="stepup-account-upgrade-card">',
           '<div class="stepup-account-update-badge">تم تأكيد البريد ✓</div>',
           '<h2>بقيت خطوة أمان بسيطة</h2>',
-          '<p class="stepup-account-lead">بعد تأكيد البريد، أنهى Firebase جلسة الدخول القديمة تلقائيًا لحماية حسابك.</p>',
+          '<p class="stepup-account-lead">تم تأكيد بريدك بنجاح. بقي أن نفتح <strong>نفس حسابك الحالي</strong> مرة أخرى.</p>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
-            '<div><strong>حسابك وتقدمك محفوظان</strong><small>سنستخدم PIN الحالي فقط لإعادة فتح نفس الحساب، ولن ننشئ حسابًا جديدًا.</small></div>',
+            '<div><strong>حسابك وتقدمك محفوظان</strong><small>أدخلي PIN القديم مرة واحدة فقط لإكمال التحديث على الحساب نفسه.</small></div>',
           '</div>',
           '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
           '<div class="stepup-account-form">',
@@ -876,12 +877,16 @@
 
     var note = root.querySelector(".quick-entry-note");
     if(note){
-      note.textContent = "لديك حساب سابق؟ استخدمي الاسم نفسه وPIN. إذا كانت هذه أول مرة لك، اختاري «إنشاء حساب لأول مرة».";
+      note.innerHTML =
+        '<strong>اختاري الطريقة المناسبة لك:</strong><br>' +
+        '• استخدمتِ Step Up من قبل؟ اكتبي نفس الاسم وPIN ثم اضغطي «دخول بالحساب الحالي».<br>' +
+        '• أول مرة لك؟ اختاري «إنشاء حساب جديد — أول مرة فقط».<br>' +
+        '• سبق أن ربطتِ بريدك؟ اختاري «الدخول بالبريد الإلكتروني».';
     }
 
     var primary = root.querySelector("button.btn-primary");
     if(primary && /studentContinue/.test(primary.getAttribute("onclick") || "")){
-      primary.textContent = "دخول";
+      primary.textContent = "دخول بالحساب الحالي";
     }
 
     var forcedClassCode = classCodeFromUrl();
@@ -891,13 +896,13 @@
     var createBtn = document.createElement("button");
     createBtn.type = "button";
     createBtn.className = "btn btn-secondary stepup-account-create";
-    createBtn.textContent = "إنشاء حساب لأول مرة";
+    createBtn.textContent = "إنشاء حساب جديد — أول مرة فقط";
     createBtn.addEventListener("click",function(){ studentRegister(forcedClassCode); });
 
     var emailBtn = document.createElement("button");
     emailBtn.type = "button";
     emailBtn.className = "stepup-account-email-entry";
-    emailBtn.textContent = "سبق أن أضفتِ بريدك؟ الدخول بالبريد الإلكتروني";
+    emailBtn.textContent = "سبق أن ربطتِ بريدك؟ الدخول بالبريد الإلكتروني";
     emailBtn.addEventListener("click",showEmailLogin);
 
     actions.appendChild(createBtn);
