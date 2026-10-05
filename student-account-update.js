@@ -148,9 +148,7 @@
   }
 
   async function studentRegister(forcedClassCode){
-    if(!firebase.apps || !firebase.apps.length){
-      return originalRegister ? originalRegister.apply(window.PROVE,arguments) : null;
-    }
+    if(!originalRegister) return;
 
     var nameEl = document.getElementById("stName");
     var codeEl = document.getElementById("stClassCode");
@@ -164,14 +162,7 @@
       return;
     }
 
-    var classObj = await getClassByCode(classCode);
-    if(!classObj){
-      alert("تعذر العثور على الفصل. تحققي من الرابط أو كود الفصل.");
-      return;
-    }
-
     var creds = await legacyCreds(name,classCode,pin);
-
     if(localStorage.getItem(upgradedKey(creds.email)) === "1"){
       alert("هذا الحساب سبق تحديثه بالبريد الإلكتروني على هذا الجهاز. استخدمي «الدخول بالبريد الإلكتروني» بدل إنشاء حساب جديد.");
       return;
@@ -184,24 +175,21 @@
     );
     if(!ok) return;
 
+    var temporaryCode = null;
+    if(!codeEl){
+      temporaryCode = document.createElement("input");
+      temporaryCode.type = "hidden";
+      temporaryCode.id = "stClassCode";
+      temporaryCode.value = classCode;
+      (nameEl && nameEl.parentNode ? nameEl.parentNode : document.body).appendChild(temporaryCode);
+    }else if(forcedClassCode){
+      codeEl.value = classCode;
+    }
+
     try{
-      var result = await auth().createUserWithEmailAndPassword(creds.email,creds.password);
-      await db().collection("users").doc(result.user.uid).set({
-        role:"student",
-        displayName:name,
-        classId:classObj.id,
-        classCode:classCode,
-        teacherId:classObj.teacherId,
-        school:classObj.school || "",
-        createdAt:new Date().toISOString()
-      });
-      setTimeout(maybeShowUpgrade,180);
-    }catch(error){
-      if(error && error.code === "auth/email-already-in-use"){
-        alert("هذا الحساب موجود بالفعل. استخدمي «دخول» بدل إنشاء حساب جديد.");
-        return;
-      }
-      alert("تعذر إنشاء الحساب: " + friendlyError(error,"register"));
+      return await originalRegister.call(window.PROVE);
+    }finally{
+      if(temporaryCode) temporaryCode.remove();
     }
   }
 
