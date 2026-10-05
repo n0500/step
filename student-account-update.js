@@ -315,7 +315,7 @@
           '<div class="stepup-account-brand">STEP <span>UP</span></div>',
           '<div class="eyebrow">تسجيل دخول الطالبة</div>',
           '<h1>الدخول بالبريد الإلكتروني</h1>',
-          '<p class="muted"><strong>هذا الخيار فقط لمن اختارت سابقًا ربط بريدها بالحساب.</strong><br>ربط البريد ليس إلزاميًا؛ هو وسيلة إضافية لاستعادة كلمة المرور عند نسيانها.</p>',
+          '<p class="muted"><strong>سبق أن ربطتِ بريدك؟</strong><br>اكتبي بريدك وكلمة المرور التي اخترتِها. إذا لم تربطي بريدًا من قبل، عودي للدخول بالاسم وPIN.</p>',
           classLine,
           '<div class="stepup-account-form">',
             '<label for="stepupStudentEmail">البريد الإلكتروني</label>',
@@ -362,30 +362,24 @@
     return [
       '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true" aria-labelledby="stepupUpgradeTitle">',
         '<div class="stepup-account-upgrade-card">',
-          '<div class="stepup-account-update-badge">تحديث جديد في Step Up</div>',
-          '<h2 id="stepupUpgradeTitle">مرحبًا ' + firstName + ' 👋</h2>',
-          '<p class="stepup-account-lead"><strong>إضافة البريد اختيارية.</strong><br>تفيدك إذا نسيتِ كلمة المرور وأردتِ استعادتها لاحقًا. يمكنك إضافته الآن أو اختيار «تخطي» والاستمرار بحسابك الحالي.</p>',
+          '<div class="stepup-account-update-badge">اختياري</div>',
+          '<h2 id="stepupUpgradeTitle">احفظي طريقة استعادة حسابك</h2>',
+          '<p class="stepup-account-lead">إذا كنتِ تخافين تنسين PIN، أضيفي بريدك الإلكتروني. وإذا ما تحتاجين، تخطي وكَمّلي عادي.</p>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
-            '<div><strong>لن يتغير حسابك أو تقدمك</strong><small>نتائجك، وحداتك، شهاداتك وتقدمك ستبقى كما هي.</small></div>',
-          '</div>',
-          '<div class="stepup-account-steps stepup-account-steps-four">',
-            '<div><span>1</span><strong>أنتِ داخل حسابك الحالي</strong></div>',
-            '<div><span>2</span><strong>أضيفي بريدك</strong></div>',
-            '<div><span>3</span><strong>تحققي من البريد</strong></div>',
-            '<div><span>4</span><strong>اختاري كلمة مرور</strong></div>',
+            '<div><strong>لن يتغير حسابك أو تقدمك</strong><small>البريد فقط يعطيك طريقة لاستعادة الدخول إذا نسيتِ بياناتك.</small></div>',
           '</div>',
           '<div class="stepup-account-form">',
-            '<label for="stepupUpgradeEmail">البريد الإلكتروني</label>',
+            '<label for="stepupUpgradeEmail">بريدك الإلكتروني</label>',
             '<input id="stepupUpgradeEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">',
-            '<label for="stepupUpgradeEmailConfirm">تأكيد البريد الإلكتروني</label>',
-            '<input id="stepupUpgradeEmailConfirm" type="email" inputmode="email" autocomplete="email" placeholder="أعيدي كتابة البريد">',
-            '<label for="stepupUpgradePin">PIN الحالي للتأكيد</label>',
+            '<label for="stepupUpgradeEmailConfirm">أعيدي كتابة البريد للتأكد</label>',
+            '<input id="stepupUpgradeEmailConfirm" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com">',
+            '<label for="stepupUpgradePin">PIN الحالي</label>',
             '<input id="stepupUpgradePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
           '</div>',
-          '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">إرسال رسالة التحقق</button>',
-          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">تخطي الآن والمتابعة بدون بريد</button>',
-          '<div class="stepup-account-footer-note">إذا اخترتِ التخطي، سيبقى حسابك الحالي وتقدمك كما هما ويمكنك الاستمرار باستخدام الاسم وPIN.</div>',
+          '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">أضيفي بريدي للاستعادة</button>',
+          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لا أحتاجه الآن — متابعة</button>',
+          '<div class="stepup-account-footer-note">سنرسل رسالة واحدة لتأكيد البريد، وبعد التأكيد نرسل تلقائيًا رسالة اختيار كلمة المرور.</div>',
         '</div>',
       '</div>'
     ].join("");
@@ -396,39 +390,42 @@
     return [
       '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
         '<div class="stepup-account-upgrade-card">',
-          '<div class="stepup-account-update-badge">الخطوة 3 من 4</div>',
-          '<h2>تحققي من بريدك يا ' + firstName + '</h2>',
-          '<p class="stepup-account-lead">أرسلنا رسالة تحقق إلى:</p>',
+          '<div class="stepup-account-update-badge">1 من 2</div>',
+          '<h2>أكدي بريدك يا ' + firstName + '</h2>',
+          '<p class="stepup-account-lead">أرسلنا رسالة إلى:</p>',
           '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✉</span>',
-            '<div><strong>افتحي الرسالة واضغطي رابط التحقق</strong><small>بعدها ارجعي إلى Step Up واضغطي «تم التحقق من البريد».</small></div>',
+            '<div><strong>افتحي الرسالة واضغطي رابط التأكيد</strong><small>بعدها ارجعي هنا واضغطي الزر أدناه.</small></div>',
           '</div>',
-          '<div class="stepup-account-safe-note">حتى يتم التحقق، حسابك الحالي وتقدمك يظلان كما هما.<br>إذا لم تجدي الرسالة، تحققي من Junk / Spam وابحثي عن المرسل noreply@step-c44ef.firebaseapp.com.</div>',
-          '<button id="stepupCheckVerificationBtn" class="btn btn-primary stepup-account-main-btn">تم التحقق من البريد</button>',
-          '<button id="stepupResendVerificationBtn" class="btn btn-secondary stepup-account-main-btn">إعادة إرسال رسالة التحقق</button>',
-          '<button id="stepupRestartUpgradeBtn" class="stepup-account-skip">تغيير البريد أو البدء من جديد</button>',
+          '<button id="stepupCheckVerificationBtn" class="btn btn-primary stepup-account-main-btn">أكدت بريدي — متابعة</button>',
+          '<button id="stepupResendVerificationBtn" class="stepup-account-skip">ما وصلتني الرسالة — إعادة الإرسال</button>',
+          '<button id="stepupRestartUpgradeBtn" class="stepup-account-skip">كتبت بريدًا خطأ — تغييره</button>',
+          '<div class="stepup-account-footer-note">إذا لم تجدي الرسالة، تحققي من Junk / Spam.</div>',
         '</div>',
       '</div>'
     ].join("");
+  }
+
+  function passwordSetupKey(pending){
+    return "stepup_password_setup_sent_" + String((pending && pending.uid) || "");
   }
 
   function recoveryHTML(pending){
     return [
       '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
         '<div class="stepup-account-upgrade-card">',
-          '<div class="stepup-account-update-badge">تم تأكيد البريد ✓</div>',
-          '<h2>أنشئي كلمة مرور لحسابك</h2>',
-          '<p class="stepup-account-lead">تم ربط البريد بحسابك الحالي بنجاح. بقي أن تختاري كلمة مرور تستخدمينها عند الدخول بالبريد.</p>',
+          '<div class="stepup-account-update-badge">2 من 2</div>',
+          '<h2>تم تأكيد بريدك ✓</h2>',
+          '<p class="stepup-account-lead">أرسلنا لك الآن رسالة ثانية لاختيار كلمة مرور لحسابك.</p>',
+          '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
-            '<div><strong>نفس الحساب ونفس التقدم</strong><small>لن ننشئ حسابًا جديدًا، ولن يتغير UID أو نتائجك أو شهاداتك.</small></div>',
+            '<div><strong>افتحي الرسالة واختاري كلمة مرور</strong><small>ثم ارجعي إلى Step Up وسجلي بالبريد وكلمة المرور التي اخترتِها.</small></div>',
           '</div>',
-          '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
-          '<div class="stepup-account-safe-note">اضغطي الزر أدناه. سيصلك رابط من Firebase لاختيار كلمة مرور جديدة. بعد تعيينها، ارجعي إلى Step Up وسجلي بالبريد وكلمة المرور الجديدة.</div>',
-          '<button id="stepupRecoverSessionBtn" class="btn btn-primary stepup-account-main-btn">إرسال رابط إنشاء كلمة المرور</button>',
-          '<button id="stepupGoEmailLoginBtn" class="btn btn-secondary stepup-account-main-btn">تم إنشاء كلمة المرور — الدخول بالبريد</button>',
-          '<div class="stepup-account-footer-note">إذا لم تصلك الرسالة، تحققي من Junk / Spam ثم أعيدي الإرسال.</div>',
+          '<button id="stepupGoEmailLoginBtn" class="btn btn-primary stepup-account-main-btn">اخترت كلمة المرور — الدخول بالبريد</button>',
+          '<button id="stepupRecoverSessionBtn" class="stepup-account-skip">ما وصلتني الرسالة — إعادة الإرسال</button>',
+          '<div id="stepupPasswordSetupStatus" class="stepup-account-footer-note">جاري إرسال رسالة اختيار كلمة المرور...</div>',
         '</div>',
       '</div>'
     ].join("");
@@ -437,7 +434,7 @@
   function bindRecoveryUpgrade(){
     var recoverBtn = document.getElementById("stepupRecoverSessionBtn");
     var loginBtn = document.getElementById("stepupGoEmailLoginBtn");
-    if(recoverBtn) recoverBtn.addEventListener("click",recoverVerifiedSession);
+    if(recoverBtn) recoverBtn.addEventListener("click",function(){ sendPasswordSetupEmail(findAnyPendingUpgrade(),true); });
     if(loginBtn) loginBtn.addEventListener("click",function(){
       var pending = findAnyPendingUpgrade();
       var email = pending && pending.newEmail ? pending.newEmail : "";
@@ -452,51 +449,48 @@
   async function showRecoveryStep(pending){
     replaceUpgradeOverlay(recoveryHTML(pending));
     bindRecoveryUpgrade();
+    await sendPasswordSetupEmail(pending,false);
   }
 
-  async function recoverVerifiedSession(){
-    if(upgradeBusy) return;
-
-    var pending = findAnyPendingUpgrade();
-    if(!pending || !pending.newEmail){
-      alert("لم نجد طلب تحديث البريد. أعيدي الدخول إلى Step Up وحاولي مرة أخرى.");
+  async function sendPasswordSetupEmail(pending,force){
+    if(!pending || !pending.newEmail) return;
+    var key = passwordSetupKey(pending);
+    var last = Number(localStorage.getItem(key) || "0");
+    var now = Date.now();
+    if(!force && last && (now-last) < 120000){
+      var existing = document.getElementById("stepupPasswordSetupStatus");
+      if(existing) existing.textContent = "رسالة اختيار كلمة المرور أُرسلت إلى بريدك.";
       return;
     }
 
     var btn = document.getElementById("stepupRecoverSessionBtn");
-    upgradeBusy = true;
+    var status = document.getElementById("stepupPasswordSetupStatus");
     if(btn){
       btn.disabled = true;
-      btn.textContent = "جاري إرسال الرابط...";
+      btn.textContent = "جاري الإرسال...";
     }
+    if(status) status.textContent = "جاري إرسال رسالة اختيار كلمة المرور...";
 
     try{
       auth().languageCode = "ar";
-      var continueUrl = window.location.origin + window.location.pathname + window.location.search;
-      try{
-        await auth().sendPasswordResetEmail(pending.newEmail,{url:continueUrl,handleCodeInApp:false});
-      }catch(actionSettingsError){
-        console.warn("StepUp password setup continue URL unavailable; retrying default reset flow",actionSettingsError);
-        await auth().sendPasswordResetEmail(pending.newEmail);
-      }
-
-      alert(
-        "تم إرسال رابط إنشاء كلمة المرور ✓\n\n" +
-        "1. افتحي الرسالة في بريدك.\n" +
-        "2. اختاري كلمة مرور جديدة.\n" +
-        "3. ارجعي إلى Step Up.\n" +
-        "4. اختاري «تم إنشاء كلمة المرور — الدخول بالبريد»."
-      );
+      await auth().sendPasswordResetEmail(pending.newEmail);
+      localStorage.setItem(key,String(now));
+      if(status) status.textContent = "تم إرسال رسالة اختيار كلمة المرور ✓";
+      if(force) alert("تمت إعادة إرسال رسالة اختيار كلمة المرور ✓");
     }catch(error){
       console.error("StepUp password setup email failed",error);
-      alert("تعذر إرسال رابط إنشاء كلمة المرور: " + friendlyError(error,"reset"));
+      if(status) status.textContent = "تعذر إرسال الرسالة الآن. اضغطي «إعادة الإرسال».";
+      if(force) alert("تعذر إعادة الإرسال: " + friendlyError(error,"reset"));
     }finally{
-      upgradeBusy = false;
       if(btn && document.body.contains(btn)){
         btn.disabled = false;
-        btn.textContent = "إعادة إرسال رابط إنشاء كلمة المرور";
+        btn.textContent = "ما وصلتني الرسالة — إعادة الإرسال";
       }
     }
+  }
+
+  async function recoverVerifiedSession(){
+    return sendPasswordSetupEmail(findAnyPendingUpgrade(),true);
   }
 
   function passwordHTML(profile,pending){
