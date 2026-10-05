@@ -88,6 +88,24 @@
     if(data.legacyEmail) localStorage.removeItem(pendingLegacyKey(data.legacyEmail));
   }
 
+  function findAnyPendingUpgrade(){
+    try{
+      var found = null;
+      Object.keys(localStorage).some(function(k){
+        if(k.indexOf("stepup_pending_email_upgrade_uid_") !== 0) return false;
+        var x = JSON.parse(localStorage.getItem(k) || "null");
+        if(x && x.uid && x.legacyEmail && x.newEmail){
+          found = x;
+          return true;
+        }
+        return false;
+      });
+      return found;
+    }catch(e){
+      return null;
+    }
+  }
+
   function legacyPasswordFromCurrentEmail(email,pin){
     var id = legacyId(email);
     var h4 = id.indexOf("s_") === 0 ? id.slice(2,6) : "";
@@ -429,16 +447,7 @@
     var pending = null;
     var staleUser = auth().currentUser;
     if(staleUser) pending = readPendingByUid(staleUser.uid);
-    if(!pending){
-      try{
-        Object.keys(localStorage).some(function(k){
-          if(k.indexOf("stepup_pending_email_upgrade_uid_") !== 0) return false;
-          var x = JSON.parse(localStorage.getItem(k) || "null");
-          if(x && x.newEmail){ pending = x; return true; }
-          return false;
-        });
-      }catch(e){}
-    }
+    if(!pending) pending = findAnyPendingUpgrade();
     if(!pending || !pending.newEmail || !pending.legacyEmail){
       alert("لم نجد طلب تحديث البريد. أعيدي الدخول بالاسم وPIN ثم حاولي مرة أخرى.");
       return;
@@ -546,7 +555,13 @@
     if(!firebase.apps || !firebase.apps.length) return;
 
     var user = auth().currentUser;
-    if(!user) return;
+    if(!user){
+      var signedOutPending = findAnyPendingUpgrade();
+      if(signedOutPending){
+        await showRecoveryStep(signedOutPending);
+      }
+      return;
+    }
 
     try{
       var pending = readPendingByUid(user.uid);
@@ -711,9 +726,16 @@
   async function checkVerifiedEmail(){
     if(upgradeBusy) return;
     var user = auth().currentUser;
-    if(!user) return alert("أعيدي تسجيل الدخول ثم تابعي التحديث.");
+    if(!user){
+      var signedOutPending = findAnyPendingUpgrade();
+      if(signedOutPending){
+        await showRecoveryStep(signedOutPending);
+        return;
+      }
+      return alert("لم نجد جلسة التحديث. أعيدي الدخول بالاسم وPIN.");
+    }
 
-    var pending = readPendingByUid(user.uid);
+    var pending = readPendingByUid(user.uid) || findAnyPendingUpgrade();
     if(!pending) return alert("لم نجد طلب تحديث قيد الانتظار.");
 
     var btn = document.getElementById("stepupCheckVerificationBtn");
