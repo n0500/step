@@ -355,7 +355,7 @@
         '<div class="stepup-account-upgrade-card">',
           '<div class="stepup-account-update-badge">تحديث جديد في Step Up</div>',
           '<h2 id="stepupUpgradeTitle">مرحبًا ' + firstName + ' 👋</h2>',
-          '<p class="stepup-account-lead"><strong>أنتِ الآن داخل حسابك الحالي.</strong><br>سنضيف البريد إلى هذا الحساب نفسه، ولن ننشئ لك حسابًا جديدًا.</p>',
+          '<p class="stepup-account-lead"><strong>إضافة البريد اختيارية.</strong><br>تفيدك إذا نسيتِ كلمة المرور وأردتِ استعادتها لاحقًا. يمكنك إضافته الآن أو اختيار «تخطي» والاستمرار بحسابك الحالي.</p>',
           '<div class="stepup-account-preserve">',
             '<span class="stepup-account-check">✓</span>',
             '<div><strong>لن يتغير حسابك أو تقدمك</strong><small>نتائجك، وحداتك، شهاداتك وتقدمك ستبقى كما هي.</small></div>',
@@ -376,7 +376,7 @@
           '</div>',
           '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">إرسال رسالة التحقق</button>',
           '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لاحقًا</button>',
-          '<div class="stepup-account-footer-note">لن يتغير البريد في حسابك إلا بعد أن تضغطي رابط التحقق المرسل إليك.</div>',
+          '<div class="stepup-account-footer-note">إذا اخترتِ التخطي، سيبقى حسابك الحالي وتقدمك كما هما ويمكنك الاستمرار باستخدام الاسم وPIN.</div>',
         '</div>',
       '</div>'
     ].join("");
@@ -879,9 +879,10 @@
     if(note){
       note.innerHTML =
         '<strong>اختاري الطريقة المناسبة لك:</strong><br>' +
-        '• استخدمتِ Step Up من قبل؟ اكتبي نفس الاسم وPIN ثم اضغطي «دخول بالحساب الحالي».<br>' +
+        '• لديك حساب؟ اكتبي نفس الاسم وPIN ثم اضغطي «دخول بالحساب الحالي».<br>' +
         '• أول مرة لك؟ اختاري «إنشاء حساب جديد — أول مرة فقط».<br>' +
-        '• سبق أن ربطتِ بريدك؟ اختاري «الدخول بالبريد الإلكتروني».';
+        '• ربط البريد اختياري، ويفيدك في استعادة كلمة المرور إذا نسيتِها.<br>' +
+        '• إذا سبق أن ربطتِ بريدك، يمكنك الدخول بالبريد الإلكتروني.';
     }
 
     var primary = root.querySelector("button.btn-primary");
