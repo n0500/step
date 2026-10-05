@@ -59,6 +59,35 @@
     return "stepup_account_upgraded_" + legacyId(email);
   }
 
+  function pendingUidKey(uid){
+    return "stepup_pending_email_upgrade_uid_" + String(uid || "");
+  }
+
+  function pendingLegacyKey(email){
+    return "stepup_pending_email_upgrade_legacy_" + legacyId(email);
+  }
+
+  function savePendingUpgrade(data){
+    if(!data || !data.uid || !data.legacyEmail) return;
+    var raw = JSON.stringify(data);
+    localStorage.setItem(pendingUidKey(data.uid),raw);
+    localStorage.setItem(pendingLegacyKey(data.legacyEmail),raw);
+  }
+
+  function readPendingByUid(uid){
+    try{return JSON.parse(localStorage.getItem(pendingUidKey(uid)) || "null");}catch(e){return null;}
+  }
+
+  function readPendingByLegacy(email){
+    try{return JSON.parse(localStorage.getItem(pendingLegacyKey(email)) || "null");}catch(e){return null;}
+  }
+
+  function clearPendingUpgrade(data){
+    if(!data) return;
+    if(data.uid) localStorage.removeItem(pendingUidKey(data.uid));
+    if(data.legacyEmail) localStorage.removeItem(pendingLegacyKey(data.legacyEmail));
+  }
+
   function legacyPasswordFromCurrentEmail(email,pin){
     var id = legacyId(email);
     var h4 = id.indexOf("s_") === 0 ? id.slice(2,6) : "";
@@ -77,6 +106,7 @@
     if(code === "auth/too-many-requests") return "تمت محاولات كثيرة. حاولي مرة أخرى لاحقًا.";
     if(code === "auth/network-request-failed") return "تعذر الاتصال بالإنترنت. تحققي من الشبكة وحاولي مرة أخرى.";
     if(code === "auth/requires-recent-login") return "أعيدي تسجيل الدخول ثم حاولي تحديث الحساب مرة أخرى.";
+    if(code === "auth/operation-not-allowed") return "يتطلب Firebase التحقق من البريد الجديد أولًا. أُعيد ترتيب الخطوات لهذا الغرض.";
     return (error && error.message) ? error.message : "تعذر إكمال العملية.";
   }
 
