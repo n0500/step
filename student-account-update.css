@@ -264,3 +264,23 @@
     text-align:center;
   }
 }
+
+.stepup-account-steps-four{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.stepup-account-email-chip{
+  margin:14px 0;
+  padding:12px 14px;
+  border-radius:14px;
+  background:#f3f0ff;
+  color:#4d3aaa;
+  font-weight:900;
+  text-align:center;
+  direction:ltr;
+  overflow-wrap:anywhere;
+}
+@media (max-width:640px){
+  .stepup-account-steps-four{
+    grid-template-columns:1fr;
+  }
+}
