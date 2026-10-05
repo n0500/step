@@ -106,6 +106,7 @@
     if(code === "auth/too-many-requests") return "تمت محاولات كثيرة. حاولي مرة أخرى لاحقًا.";
     if(code === "auth/network-request-failed") return "تعذر الاتصال بالإنترنت. تحققي من الشبكة وحاولي مرة أخرى.";
     if(code === "auth/requires-recent-login") return "أعيدي تسجيل الدخول ثم حاولي تحديث الحساب مرة أخرى.";
+    if(code === "auth/user-token-expired") return "انتهت جلسة الدخول القديمة بعد تأكيد البريد. سنعيد ربط الجلسة بالحساب نفسه.";
     if(code === "auth/operation-not-allowed") return "يتطلب Firebase التحقق من البريد الجديد أولًا. أُعيد ترتيب الخطوات لهذا الغرض.";
     return (error && error.message) ? error.message : "تعذر إكمال العملية.";
   }
@@ -384,6 +385,103 @@
     ].join("");
   }
 
+  function recoveryHTML(pending){
+    return [
+      '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
+        '<div class="stepup-account-upgrade-card">',
+          '<div class="stepup-account-update-badge">تم تأكيد البريد ✓</div>',
+          '<h2>بقيت خطوة أمان بسيطة</h2>',
+          '<p class="stepup-account-lead">بعد تأكيد البريد، أنهى Firebase جلسة الدخول القديمة تلقائيًا لحماية حسابك.</p>',
+          '<div class="stepup-account-preserve">',
+            '<span class="stepup-account-check">✓</span>',
+            '<div><strong>حسابك وتقدمك محفوظان</strong><small>سنستخدم PIN الحالي فقط لإعادة فتح نفس الحساب، ولن ننشئ حسابًا جديدًا.</small></div>',
+          '</div>',
+          '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
+          '<div class="stepup-account-form">',
+            '<label for="stepupRecoveryPin">PIN الحالي</label>',
+            '<input id="stepupRecoveryPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
+          '</div>',
+          '<button id="stepupRecoverSessionBtn" class="btn btn-primary stepup-account-main-btn">متابعة على نفس الحساب</button>',
+          '<div class="stepup-account-footer-note">لن يتغير UID أو النتائج أو التقدم.</div>',
+        '</div>',
+      '</div>'
+    ].join("");
+  }
+
+  function bindRecoveryUpgrade(){
+    var recoverBtn = document.getElementById("stepupRecoverSessionBtn");
+    if(recoverBtn) recoverBtn.addEventListener("click",recoverVerifiedSession);
+  }
+
+  async function showRecoveryStep(pending){
+    replaceUpgradeOverlay(recoveryHTML(pending));
+    bindRecoveryUpgrade();
+  }
+
+  async function recoverVerifiedSession(){
+    if(upgradeBusy) return;
+    var pin = ((document.getElementById("stepupRecoveryPin") || {}).value || "").trim();
+    if(!/^\d{4}$/.test(pin)){
+      alert("أدخلي PIN الحالي المكوّن من 4 أرقام.");
+      return;
+    }
+
+    var pending = null;
+    var staleUser = auth().currentUser;
+    if(staleUser) pending = readPendingByUid(staleUser.uid);
+    if(!pending){
+      try{
+        Object.keys(localStorage).some(function(k){
+          if(k.indexOf("stepup_pending_email_upgrade_uid_") !== 0) return false;
+          var x = JSON.parse(localStorage.getItem(k) || "null");
+          if(x && x.newEmail){ pending = x; return true; }
+          return false;
+        });
+      }catch(e){}
+    }
+    if(!pending || !pending.newEmail || !pending.legacyEmail){
+      alert("لم نجد طلب تحديث البريد. أعيدي الدخول بالاسم وPIN ثم حاولي مرة أخرى.");
+      return;
+    }
+
+    var oldPassword = legacyPasswordFromCurrentEmail(pending.legacyEmail,pin);
+    var btn = document.getElementById("stepupRecoverSessionBtn");
+    upgradeBusy = true;
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "جاري فتح حسابك...";
+    }
+
+    try{
+      try{ await auth().signOut(); }catch(e){}
+      var result = await auth().signInWithEmailAndPassword(pending.newEmail,oldPassword);
+
+      if(!result.user || result.user.uid !== pending.uid){
+        try{ await auth().signOut(); }catch(e){}
+        throw new Error("ACCOUNT_UID_MISMATCH");
+      }
+
+      var profile = await getStudentProfileForUpgrade(result.user);
+      replaceUpgradeOverlay(passwordHTML(profile || {},pending));
+      bindPasswordUpgrade();
+    }catch(error){
+      console.error("StepUp verified session recovery failed",error);
+      if(error && error.message === "ACCOUNT_UID_MISMATCH"){
+        alert("تعذر مطابقة الحساب. لم يتم تغيير أي تقدم. تواصلي مع المعلمة.");
+      }else if(error && (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential")){
+        alert("PIN الحالي غير صحيح. جرّبي PIN الذي كنتِ تستخدمينه قبل إضافة البريد.");
+      }else{
+        alert("تعذر إكمال إعادة الدخول: " + friendlyError(error,"upgrade"));
+      }
+    }finally{
+      upgradeBusy = false;
+      if(btn && document.body.contains(btn)){
+        btn.disabled = false;
+        btn.textContent = "متابعة على نفس الحساب";
+      }
+    }
+  }
+
   function passwordHTML(profile,pending){
     var firstName = esc(((profile && profile.displayName) || "طالبة").trim().split(/\s+/)[0]);
     return [
@@ -453,9 +551,25 @@
     try{
       var pending = readPendingByUid(user.uid);
       if(pending){
-        try{ await user.reload(); }catch(e){}
+        try{
+          await user.reload();
+        }catch(e){
+          if(e && e.code === "auth/user-token-expired"){
+            await showRecoveryStep(pending);
+            return;
+          }
+        }
         user = auth().currentUser || user;
-        var pendingProfile = await getStudentProfileForUpgrade(user);
+        var pendingProfile = null;
+        try{
+          pendingProfile = await getStudentProfileForUpgrade(user);
+        }catch(profileError){
+          if(profileError && profileError.code === "auth/user-token-expired"){
+            await showRecoveryStep(pending);
+            return;
+          }
+          throw profileError;
+        }
         if(!pendingProfile) return;
 
         if(String(user.email || "").toLowerCase() === String(pending.newEmail || "").toLowerCase()){
@@ -621,7 +735,11 @@
       replaceUpgradeOverlay(passwordHTML(profile || {},pending));
       bindPasswordUpgrade();
     }catch(error){
-      alert("تعذر التأكد من حالة البريد: " + friendlyError(error,"upgrade"));
+      if(error && error.code === "auth/user-token-expired"){
+        await showRecoveryStep(pending);
+      }else{
+        alert("تعذر التأكد من حالة البريد: " + friendlyError(error,"upgrade"));
+      }
     }finally{
       upgradeBusy = false;
       if(btn && document.body.contains(btn)){
@@ -788,6 +906,7 @@
     maybeShowUpgrade:maybeShowUpgrade,
     requestEmailUpgrade:requestEmailUpgrade,
     checkVerifiedEmail:checkVerifiedEmail,
+    recoverVerifiedSession:recoverVerifiedSession,
     resendVerificationEmail:resendVerificationEmail,
     finishPasswordUpgrade:finishPasswordUpgrade,
     skipUpgrade:skipUpgrade,
