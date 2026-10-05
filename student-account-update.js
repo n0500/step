@@ -226,7 +226,7 @@
 
     var creds = await legacyCreds(name,classCode,pin);
     if(localStorage.getItem(upgradedKey(creds.email)) === "1"){
-      alert("هذا الحساب مرتبط ببريد إلكتروني بالفعل. لا تنشئي حسابًا جديدًا؛ اختاري «الدخول بالبريد الإلكتروني» للدخول إلى حسابك نفسه.");
+      alert("سبق ربط هذا الحساب ببريد إلكتروني. اختاري «الدخول بالبريد الإلكتروني» للدخول إلى حسابك نفسه. ربط البريد اختياري للحسابات الأخرى.");
       return;
     }
 
@@ -306,7 +306,7 @@
           '<div class="stepup-account-brand">STEP <span>UP</span></div>',
           '<div class="eyebrow">تسجيل دخول الطالبة</div>',
           '<h1>الدخول بالبريد الإلكتروني</h1>',
-          '<p class="muted"><strong>هذا الخيار فقط لمن سبق أن ربطت بريدها بحساب Step Up.</strong><br>اكتبي البريد وكلمة المرور التي اخترتِها عند تحديث الحساب.</p>',
+          '<p class="muted"><strong>هذا الخيار فقط لمن اختارت سابقًا ربط بريدها بالحساب.</strong><br>ربط البريد ليس إلزاميًا؛ هو وسيلة إضافية لاستعادة كلمة المرور عند نسيانها.</p>',
           classLine,
           '<div class="stepup-account-form">',
             '<label for="stepupStudentEmail">البريد الإلكتروني</label>',
@@ -375,7 +375,7 @@
             '<input id="stepupUpgradePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
           '</div>',
           '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">إرسال رسالة التحقق</button>',
-          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لاحقًا</button>',
+          '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">تخطي الآن والمتابعة بدون بريد</button>',
           '<div class="stepup-account-footer-note">إذا اخترتِ التخطي، سيبقى حسابك الحالي وتقدمك كما هما ويمكنك الاستمرار باستخدام الاسم وPIN.</div>',
         '</div>',
       '</div>'
