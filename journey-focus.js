@@ -50,12 +50,16 @@
     const title=text(current.querySelector('.journey-stop-copy b')) || 'Continue';
     const detail=text(current.querySelector('.journey-stop-copy small')) || 'Continue your journey.';
     const durations={Read:'3–4 min',Listen:'3–4 min','STEP Practice':'4–5 min','Final Challenge':'6–8 min'};
+    const rawAction=current.getAttribute('onclick') || '';
+    const action=(title==='STEP Practice' && rawAction==='STEPUP_U2_EXAM.stepIntro()')
+      ? 'STEPUP_U2_EXAM.startTimedStep()'
+      : rawAction;
     return {
       eyebrow:title==='STEP Practice'?'STEP':title.replace('Final Challenge','Final'),
       title,
       meta:durations[title] || '2–4 min',
       detail,
-      action:current.getAttribute('onclick') || '',
+      action,
       button:title==='Final Challenge'?'Start challenge':'Start'
     };
   }
