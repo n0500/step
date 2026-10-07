@@ -4,10 +4,32 @@
 (() => {
   'use strict';
 
-  const VERSION = '20260929-account-guard-lite';
+  const VERSION = '20261007-auth-sync-retry';
   let refreshTimer = null;
 
   const fbReady = () => !!(window.firebase?.auth && window.firebase?.firestore);
+
+  const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
+  const isPermissionDenied = err => String(err?.code || '').includes('permission-denied');
+
+  // Firebase Auth can finish before Firestore has picked up the fresh ID token,
+  // especially inside in-app browsers. Retry only permission-denied briefly,
+  // forcing a fresh token before the next attempt.
+  async function withAuthRetry(user,operation){
+    const waits = [0,250,750];
+    let lastError = null;
+    for(let attempt=0; attempt<waits.length; attempt++){
+      if(waits[attempt]) await sleep(waits[attempt]);
+      try{
+        if(user?.getIdToken) await user.getIdToken(attempt > 0);
+        return await operation();
+      }catch(error){
+        lastError = error;
+        if(!isPermissionDenied(error) || attempt === waits.length - 1) throw error;
+      }
+    }
+    throw lastError;
+  }
 
   async function sha256(txt){
     const data = new TextEncoder().encode(txt);
@@ -106,14 +128,18 @@
       if(cr){
         try{
           const ref = db.collection('users').doc(cr.user.uid);
-          const profile = await ref.get();
+          const profile = await withAuthRetry(cr.user,() => ref.get());
           if(!profile.exists){
-            await ref.set({
+            await withAuthRetry(cr.user,() => ref.set({
               role:'student',displayName:name,classId:join.classId,classCode,
               teacherId:join.teacherId,school:join.school || '',createdAt:new Date().toISOString()
-            });
-            window.location.reload();
+            }));
           }
+
+          // Reload once after a confirmed profile read/write so app.js starts
+          // from a settled authenticated session instead of racing Firestore.
+          try{ await cr.user.getIdToken(true); }catch(_){}
+          window.location.reload();
         }catch(profileError){
           console.error('StepUp profile load failed',profileError);
           alert(explain(profileError));
@@ -126,10 +152,12 @@
       try{
         const created = await firebase.auth().createUserWithEmailAndPassword(creds.email,creds.password);
         createdUser = created.user;
-        await db.collection('users').doc(created.user.uid).set({
+        const createdRef = db.collection('users').doc(created.user.uid);
+        await withAuthRetry(created.user,() => createdRef.set({
           role:'student',displayName:name,classId:join.classId,classCode,
           teacherId:join.teacherId,school:join.school || '',createdAt:new Date().toISOString()
-        });
+        }));
+        try{ await created.user.getIdToken(true); }catch(_){}
         window.location.reload();
       }catch(createError){
         if(createError?.code === 'auth/email-already-in-use'){
