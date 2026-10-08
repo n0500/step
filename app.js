@@ -394,6 +394,7 @@
       ["classes","👥 Classes"],
       ["classmode","🖥️ Class Mode"],
       ["reports","📊 Reports"],
+      ["certificates","🏅 Certificates"],
       ["profile","👤 Profile"]
     ];
     return `<nav class="role-tabs" data-role="teacher">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
@@ -465,7 +466,7 @@
     } else arr=local.attempts();
     // Per-answer records (Unit 2 exam review) are kept for the student's own
     // resume logic, but are not results: keep them out of teacher/owner reports.
-    if(state.profile?.role!=="student")arr=arr.filter(a=>a.recordKind!=="question");
+    if(state.profile?.role!=="student"&&!filters.includeQuestionRecords)arr=arr.filter(a=>a.recordKind!=="question");
     return arr.filter(a=>(!filters.studentId||a.studentId===filters.studentId)&&(!filters.teacherId||a.teacherId===filters.teacherId)&&(!filters.classId||a.classId===filters.classId));
   }
 
@@ -647,6 +648,7 @@
     if(state.teacherTab==="classes")body=await teacherClasses(classes,cls);
     if(state.teacherTab==="classmode")body=await teacherClassMode(classes,cls);
     if(state.teacherTab==="reports")body=await teacherReports(classes,cls);
+    if(state.teacherTab==="certificates")body=await teacherCertificates(classes,cls);
     if(state.teacherTab==="profile")body=teacherProfile(classes);
     app.innerHTML=shell(`<main class="container">${teacherTabs()}${body}</main>`,"Teacher");
   }
@@ -992,6 +994,23 @@
         <div class="teacher-practice-list">${items||"<p class='muted'>No open content.</p>"}</div>
       </div>
     </section>`;
+  }
+
+  async function teacherCertificates(classes,cls){
+    if(!cls)return '<section class="card" dir="rtl">أنشئي فصلًا أولًا لعرض شهادات الطالبات.</section>';
+    if(!window.STEPUP_CERT_REPORT)return '<div class="notice">تعذر تحميل قائمة الشهادات. أعيدي تحديث الصفحة.</div>';
+    try{
+      const [students,attempts]=await Promise.all([
+        getStudentsForTeacher(state.profile.id),
+        getAttempts({teacherId:state.profile.id,includeQuestionRecords:true})
+      ]);
+      return window.STEPUP_CERT_REPORT.render({
+        students,attempts,classes,cls,classSelectHTML:classSelect(classes)
+      });
+    }catch(error){
+      console.error("StepUp: certificate roster could not be loaded",error);
+      return '<div class="notice" dir="rtl">تعذر تحميل شهادات الطالبات. تحققي من الاتصال ثم أعيدي المحاولة.</div>';
+    }
   }
 
   async function teacherReports(classes,cls){
