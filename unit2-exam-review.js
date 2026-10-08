@@ -1971,6 +1971,9 @@
     help:toggleHelp,
     listen:playListening,
     stopAudio:stopListening,
+    getCertificateRequirements:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
+      section:key, questionId:q.id, trainingId:sections[key].trainingId
+    }))),
     getProgress:()=>({
       answered:requiredAnswered(),
       total:TOTAL_REQUIRED,
