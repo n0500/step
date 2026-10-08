@@ -444,6 +444,9 @@
       correct:requiredCorrect(), accuracy:accuracyPct(), complete:TOTAL_REQUIRED>0 && requiredAnswered()>=TOTAL_REQUIRED,
       nextSection:nextMissingSection()
     }),
+    getCertificateRequirements:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
+      section:key, questionId:q.question_id, trainingId:sections[key].trainingId
+    }))),
     sectionProgress:key => sections[key] ? ({answered:answeredCount(key), total:sections[key].questions.length, correct:correctCount(key), done:sectionDone(key)}) : null
   };
 })();
