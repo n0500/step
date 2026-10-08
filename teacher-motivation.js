@@ -4,12 +4,12 @@
   'use strict';
   const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const CARDS=[
-    {id:'leap',ar:'وسام القفزة',en:'My Progress Star',icon:'⭐',tone:'gold',message:'Your effort is paying off!',arabic:'تقدمك يعكس أثر جهودك!'},
-    {id:'persistence',ar:'نجمة الاستمرار',en:'Keep Going Star',icon:'💗',tone:'pink',message:'You have shown consistent effort!',arabic:'مثابرتك تستحق التقدير!'},
-    {id:'goal',ar:'محققة الهدف',en:'Goal Achiever',icon:'🎯',tone:'blue',message:'You achieved your practice goal!',arabic:'حققت هدفك في هذا التدريب!'},
-    {id:'steady',ar:'تقدم ثابت',en:'Steady Progress',icon:'📈',tone:'violet',message:'You improved with every attempt!',arabic:'تقدمك واضح من محاولة إلى أخرى!'},
-    {id:'growth',ar:'تنوع المهارات',en:'Multi-Skill Star',icon:'🌱',tone:'green',message:'You are building skills in different areas!',arabic:'لديك نتائج جيدة في مهارات متنوعة!'},
-    {id:'curious',ar:'نجمة الاستكشاف',en:'Curious Learner',icon:'💡',tone:'orange',message:'You explored different learning activities!',arabic:'استكشفت أنشطة تعلم متنوعة!'}
+    {id:'leap',ar:'وسام القفزة',en:'My Progress Star',icon:'⭐',tone:'gold',message:'Your effort is making a difference!',arabic:'جهودك تصنع فرقا حقيقيا!'},
+    {id:'persistence',ar:'نجمة الاستمرار',en:'Keep Going Star',icon:'💗',tone:'pink',message:'You showed consistent effort!',arabic:'مثابرتك تستحق التقدير!'},
+    {id:'goal',ar:'محققة الأهداف',en:'Goal Achiever',icon:'🎯',tone:'blue',message:'You are getting closer to your goals!',arabic:'خطوة جديدة نحو هدفك!'},
+    {id:'steady',ar:'تقدم ثابت',en:'Steady Progress',icon:'📈',tone:'violet',message:'You keep getting better!',arabic:'تقدمك مستمر خطوة بخطوة!'},
+    {id:'growth',ar:'نمو في التعلم',en:'Learning Growth',icon:'🌱',tone:'green',message:'Your hard work is paying off!',arabic:'تتطور مهاراتك بجهودك!'},
+    {id:'curious',ar:'متعلمة مستكشفة',en:'Curious Learner',icon:'💡',tone:'orange',message:'You explore new ways to learn!',arabic:'استكشافك للمهارات يقودك إلى التقدم!'}
   ];
   const cardById=id=>CARDS.find(c=>c.id===id);
   const units=()=>window.STEPUP_JOURNEY?.data?.units||[];
