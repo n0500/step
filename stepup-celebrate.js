@@ -599,7 +599,7 @@
     x.font = '800 26px Tajawal'; var pw = spacedWidth(x,'CERTIFICATE OF ACHIEVEMENT',6) + 70;
     x.fillStyle = '#dff1e6'; rr(x,W/2-pw/2,474,pw,52,26); x.fill();
     x.fillStyle = '#123a2a'; spaced(x,'CERTIFICATE OF ACHIEVEMENT',W/2,501,6);
-    x.fillStyle = muted; x.direction='rtl'; x.font = '500 34px Tajawal'; x.fillText('تُمنح هذه الشهادة للطالبة', W/2, 576); x.direction='ltr';
+    x.fillStyle = muted; x.direction='rtl'; x.font = '500 34px Tajawal'; x.fillText('تمنح هذه الشهادة للطالبة', W/2, 576); x.direction='ltr';
     x.font = '500 28px Tajawal'; x.fillText('Proudly presented to', W/2, 618);
     // name
     x.fillStyle = ink; nameText(x, d, W/2, 712, 1100, [132,'$px "Great Vibes"'], [104,'700 $px "Aref Ruqaa"']);
