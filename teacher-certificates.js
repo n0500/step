@@ -131,10 +131,10 @@
       <div class="sct-heading">
         <div><div class="eyebrow">StepUp · Certificates</div>
           <h1>شهادات إتقان الوحدات</h1>
-          <p>أسماء الطالبات اللاتي أكملن متطلبات الوحدة وحققن إتقانًا لا يقل عن 80%، مع تحديد الوحدات المكتسبة لكل طالبة.</p></div>
+          <p>أسماء الطالبات اللاتي أكملن متطلبات الوحدة وحققن نسبة إتقان لا تقل عن 80%، مع بيان الوحدات المستحقة لكل طالبة.</p></div>
         <div class="sct-actions">
           <button type="button" class="btn btn-secondary" onclick="PROVE.setTeacherTab('certificates')">تحديث القائمة</button>
-          <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">تصدير Excel / CSV</button>
+          <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">تصدير القائمة (CSV)</button>
         </div>
       </div>
       <div class="teacher-report-toolbar card" dir="ltr">
@@ -151,7 +151,7 @@
         <div class="teacher-card-head"><div><h2>قائمة الشهادات — ${esc(cls.name)}</h2></div><span class="teacher-code-pill">${rows.length} طالبة</span></div>
         <div class="table-wrap"><table class="sct-table">
           <thead><tr><th>م</th><th>اسم الطالبة</th><th>الوحدات التي أتقنتها</th><th>عدد الشهادات</th></tr></thead>
-          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">لا توجد شهادات إتقان مكتسبة لهذا الفصل حتى الآن.</td></tr>'}</tbody>
+          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">لا توجد شهادات إتقان مستحقة لهذا الفصل حتى الآن.</td></tr>'}</tbody>
         </table></div>
       </div>
       <p class="sct-note">تعتمد القائمة على نتائج الأسئلة المحفوظة ومتطلبات شهادة كل وحدة. الشهادة المكتسبة متاحة للطالبة للعرض والتنزيل، لكن هذه القائمة لا تعني بالضرورة أنها نزّلت ملف الشهادة.</p>
