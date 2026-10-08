@@ -395,6 +395,7 @@
       ["classmode","🖥️ Class Mode"],
       ["reports","📊 Reports"],
       ["certificates","🏅 Certificates"],
+      ["motivation","🌟 Encouragement"],
       ["profile","👤 Profile"]
     ];
     return `<nav class="role-tabs" data-role="teacher">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
@@ -649,6 +650,7 @@
     if(state.teacherTab==="classmode")body=await teacherClassMode(classes,cls);
     if(state.teacherTab==="reports")body=await teacherReports(classes,cls);
     if(state.teacherTab==="certificates")body=await teacherCertificates(classes,cls);
+    if(state.teacherTab==="motivation")body=await teacherMotivation(classes,cls);
     if(state.teacherTab==="profile")body=teacherProfile(classes);
     app.innerHTML=shell(`<main class="container">${teacherTabs()}${body}</main>`,"Teacher");
   }
@@ -1010,6 +1012,23 @@
     }catch(error){
       console.error("StepUp: certificate roster could not be loaded",error);
       return '<div class="notice" dir="rtl">تعذر تحميل شهادات الطالبات. تحققي من الاتصال ثم أعيدي المحاولة.</div>';
+    }
+  }
+
+  async function teacherMotivation(classes,cls){
+    if(!cls)return '<section class="card" dir="rtl">أنشئي فصلا أولا لعرض البطاقات التشجيعية.</section>';
+    if(!window.STEPUP_MOTIVATION)return '<div class="notice">تعذر تحميل البطاقات التشجيعية. أعيدي تحديث الصفحة.</div>';
+    try{
+      const [students,attempts]=await Promise.all([
+        getStudentsForTeacher(state.profile.id),
+        getAttempts({teacherId:state.profile.id})
+      ]);
+      return window.STEPUP_MOTIVATION.render({
+        students,attempts,cls,classSelectHTML:classSelect(classes)
+      });
+    }catch(error){
+      console.error("StepUp: encouragement cards could not be loaded",error);
+      return '<div class="notice" dir="rtl">تعذر تحميل البطاقات التشجيعية. تحققي من الاتصال ثم أعيدي المحاولة.</div>';
     }
   }
 
