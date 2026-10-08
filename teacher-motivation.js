@@ -4,12 +4,12 @@
   'use strict';
   const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const CARDS=[
-    {id:'leap',ar:'وسام القفزة',en:'My Progress Star',icon:'⭐',tone:'gold',message:'Your effort is making a difference!',arabic:'جهودك تصنع فرقا حقيقيا!'},
-    {id:'persistence',ar:'نجمة الاستمرار',en:'Keep Going Star',icon:'💗',tone:'pink',message:'You showed consistent effort!',arabic:'مثابرتك تستحق التقدير!'},
-    {id:'goal',ar:'محققة الأهداف',en:'Goal Achiever',icon:'🎯',tone:'blue',message:'You are getting closer to your goals!',arabic:'خطوة جديدة نحو هدفك!'},
-    {id:'steady',ar:'تقدم ثابت',en:'Steady Progress',icon:'📈',tone:'violet',message:'You keep getting better!',arabic:'تقدمك مستمر خطوة بخطوة!'},
-    {id:'growth',ar:'نمو في التعلم',en:'Learning Growth',icon:'🌱',tone:'green',message:'Your hard work is paying off!',arabic:'تتطور مهاراتك بجهودك!'},
-    {id:'curious',ar:'متعلمة مستكشفة',en:'Curious Learner',icon:'💡',tone:'orange',message:'You explore new ways to learn!',arabic:'استكشافك للمهارات يقودك إلى التقدم!'}
+    {id:'leap',ar:'وسام القفزة',en:'My Progress Star',icon:'⭐',tone:'gold',message:'Your effort is paying off!',arabic:'تقدمك يعكس أثر جهودك!'},
+    {id:'persistence',ar:'نجمة الاستمرار',en:'Keep Going Star',icon:'💗',tone:'pink',message:'You have shown consistent effort!',arabic:'مثابرتك تستحق التقدير!'},
+    {id:'goal',ar:'محققة الهدف',en:'Goal Achiever',icon:'🎯',tone:'blue',message:'You achieved your practice goal!',arabic:'حققت هدفك في هذا التدريب!'},
+    {id:'steady',ar:'تقدم ثابت',en:'Steady Progress',icon:'📈',tone:'violet',message:'You improved with every attempt!',arabic:'تقدمك واضح من محاولة إلى أخرى!'},
+    {id:'growth',ar:'تنوع المهارات',en:'Multi-Skill Star',icon:'🌱',tone:'green',message:'You are building skills in different areas!',arabic:'لديك نتائج جيدة في مهارات متنوعة!'},
+    {id:'curious',ar:'نجمة الاستكشاف',en:'Curious Learner',icon:'💡',tone:'orange',message:'You explored different learning activities!',arabic:'استكشفت أنشطة تعلم متنوعة!'}
   ];
   const cardById=id=>CARDS.find(c=>c.id===id);
   const units=()=>window.STEPUP_JOURNEY?.data?.units||[];
@@ -70,16 +70,16 @@
         }
       }
     });
-    if(leap)add('leap',leap.before+'% → '+leap.after+'% (+'+leap.value+' نقطة)');
+    if(leap)add('leap',leap.before+'% → '+leap.after+'% (+'+leap.value+' نقطة مئوية)');
     const dates=new Set(attempts.map(a=>String(a.submittedAt).slice(0,10)));
-    if(attempts.length>=3&&dates.size>=2)add('persistence',attempts.length+' محاولات في '+dates.size+' أيام');
+    if(attempts.length>=3&&dates.size>=2)add('persistence','محاولات: '+attempts.length+' · أيام التدريب: '+dates.size);
     const reached=attempts.filter(a=>area(a)!=='STEP'&&pct(a)>=80).sort((a,b)=>pct(b)-pct(a))[0];
     if(reached)add('goal',area(reached)+' · '+pct(reached)+'%');
     if(steady)add('steady',steady.before+'% → '+steady.after+'% (3 محاولات متتالية)');
     const strong=new Map();
     attempts.forEach(a=>{const type=area(a);if(type&&type!=='STEP'&&pct(a)>=70)strong.set(type,Math.max(strong.get(type)||0,pct(a)));});
     if(strong.size>=2)add('growth',Array.from(strong.keys()).slice(0,3).join(' + '));
-    if(byTraining.size>=3)add('curious',byTraining.size+' أنشطة مختلفة');
+    if(byTraining.size>=3)add('curious','أنشطة متنوعة: '+byTraining.size);
     return output;
   }
   function buildRows(students,attempts,classId){
@@ -183,7 +183,7 @@
   }
   function render({students,attempts,cls,classSelectHTML}){
     css();
-    if(!cls)return '<section class="card" dir="rtl">أنشئي فصلا أولا لعرض البطاقات التشجيعية.</section>';
+    if(!cls)return '<section class="card" dir="rtl">يرجى إنشاء فصل لعرض البطاقات التشجيعية.</section>';
     const roster=(students||[]).filter(s=>s.role==='student'&&s.classId===cls.id);
     const rows=buildRows(roster,attempts,cls.id);
     current={rows,cls};
@@ -209,9 +209,9 @@
       '<div class="card teacher-students-table"><div class="teacher-card-head"><h2>سجل البطاقات — '+esc(cls.name)+'</h2>'+
       '<span class="teacher-code-pill">'+rows.length+' بطاقة</span></div>'+
       '<div class="table-wrap"><table><thead><tr><th>الطالبة</th><th>الوحدة</th><th>البطاقة</th><th>دليل الاستحقاق</th><th>الإجراء</th></tr></thead>'+
-      '<tbody>'+ (names||'<tr><td colspan="5" class="smc-empty">لا توجد بطاقات مستحقة حتى الآن. تظهر تلقائيا بعد تحقيق معايير التشجيع.</td></tr>') +
+      '<tbody>'+ (names||'<tr><td colspan="5" class="smc-empty">لا توجد بطاقات مستحقة حتى الآن. ستظهر عند استيفاء معايير التشجيع.</td></tr>') +
       '</tbody></table></div></div>'+
-      '<p class="smc-note">تظهر بطاقة واحدة من كل نوع لكل طالبة في الوحدة نفسها. يتم حسابها من المحاولات المكتملة فعليا؛ ولا تُغيّر شهادات إتقان الوحدات.</p>'+
+      '<p class="smc-note">تظهر بطاقة واحدة من كل نوع للطالبة في الوحدة نفسها، وتُحتسب من نتائج التدريب المحفوظة دون التأثير في شهادات إتقان الوحدات.</p>'+
     '</section>';
   }
   window.STEPUP_MOTIVATION={render,buildRows,evaluateUnit,printCard,exportCSV};
