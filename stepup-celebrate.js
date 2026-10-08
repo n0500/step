@@ -662,6 +662,39 @@
   function spacedWidth(x, text, gap){ return text.split('').reduce(function(s,c){ return s + x.measureText(c).width + gap; }, -gap); }
 
 
+  /* STEP completion is an extra achievement on the existing unit certificate.
+     The saved attempt history is the source of truth; STEP never blocks mastery. */
+  function drawStepAchievementStamp(x, u){
+    var award = stepStats(u);
+    if(!award || award.attempts < 1) return;
+    var cx = 1668, cy = 814, radius = 110;
+    x.save();
+    x.translate(cx, cy);
+    x.rotate(-0.09);
+    x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'ltr';
+    x.shadowColor = 'rgba(10,63,74,.20)'; x.shadowBlur = 18; x.shadowOffsetY = 5;
+    x.fillStyle = gold(x,-radius,-radius,radius,radius);
+    x.beginPath(); x.arc(0,0,radius,0,Math.PI*2); x.fill();
+    x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
+    x.fillStyle = '#fffcf0'; x.beginPath(); x.arc(0,0,97,0,Math.PI*2); x.fill();
+    x.strokeStyle = '#ba8a2d'; x.lineWidth = 3;
+    x.beginPath(); x.arc(0,0,91,0,Math.PI*2); x.stroke();
+    x.strokeStyle = 'rgba(15,78,89,.45)'; x.lineWidth = 1.5;
+    x.beginPath(); x.arc(0,0,84,0,Math.PI*2); x.stroke();
+    x.fillStyle = '#0f4e59'; x.font = '900 34px Tajawal'; x.fillText('STEP',0,-53);
+    x.fillStyle = '#d1a043'; star(x,0,-12,20,9,5); x.fill();
+    x.fillStyle = '#0f4e59'; x.font = '800 20px Tajawal'; x.fillText('CHALLENGE',0,24);
+    x.font = '900 25px Tajawal'; x.fillText('ACHIEVED',0,54);
+    x.restore();
+    if(award.ready){
+      x.save(); x.textAlign = 'center'; x.textBaseline = 'middle'; x.direction = 'ltr';
+      x.fillStyle = '#0c7259'; rr(x,cx-99,cy+116,198,46,23); x.fill();
+      x.strokeStyle = '#f7d77b'; x.lineWidth = 3; rr(x,cx-99,cy+116,198,46,23); x.stroke();
+      x.fillStyle = '#ffffff'; x.font = '800 23px Tajawal'; x.fillText('STEP READY',cx,cy+139);
+      x.restore();
+    }
+  }
+
   async function drawCertificate(u){
     var p = await getProfile(); var teacher = await getTeacherName(); await loadCertFonts();
     var st = unitStats(u);
@@ -673,6 +706,7 @@
       school: p.school || '', teacher: teacher, teacherFirst: teacher.split(/\s+/)[0], teacherTitled: titled(teacher),
       year: new Date().getFullYear()
     });
+    drawStepAchievementStamp(x, u);
     return c;
   }
   function fileName(u){
@@ -925,7 +959,9 @@
     var shelf = document.createElement('section'); shelf.className = 'sxc-shelf';
     shelf.innerHTML = '<div class="sxc-shelf-head"><h2>🎓 My Certificates</h2><span>'+done.length+' earned</span></div>'+
       (done.length ? '<div class="sxc-shelf-list">'+done.map(function(u){
-          return '<button type="button" class="sxc-cert-item" data-unit="'+u.id+'"><span class="sxc-medal">'+u.number+'</span><span><b>Unit '+u.number+'</b><small>'+esc(u.title)+'</small></span><span class="sxc-view">View</span></button>';
+          var award = stepStats(u);
+          var achievement = award.attempts ? ' • '+(award.ready ? 'STEP Ready' : 'STEP Challenge Achieved') : '';
+          return '<button type="button" class="sxc-cert-item" data-unit="'+u.id+'"><span class="sxc-medal">'+u.number+'</span><span><b>Unit '+u.number+'</b><small>'+esc(u.title)+achievement+'</small></span><span class="sxc-view">View</span></button>';
         }).join('')+'</div>'
         : '<p class="sxc-empty">Complete the unit mastery goal to earn its certificate.'+(next ? ' Next up: <b>Unit '+next.number+'</b>.' : '')+'</p>');
     shelf.addEventListener('click', function(e){
