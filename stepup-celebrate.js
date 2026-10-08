@@ -599,14 +599,14 @@
     x.font = '800 26px Tajawal'; var pw = spacedWidth(x,'CERTIFICATE OF ACHIEVEMENT',6) + 70;
     x.fillStyle = '#dff1e6'; rr(x,W/2-pw/2,474,pw,52,26); x.fill();
     x.fillStyle = '#123a2a'; spaced(x,'CERTIFICATE OF ACHIEVEMENT',W/2,501,6);
-    x.fillStyle = muted; x.direction='rtl'; x.font = '500 34px Tajawal'; x.fillText('تُمنح هذه الشهادة للطالبة المتميزة', W/2, 576); x.direction='ltr';
+    x.fillStyle = muted; x.direction='rtl'; x.font = '500 34px Tajawal'; x.fillText('تُمنح هذه الشهادة للطالبة', W/2, 576); x.direction='ltr';
     x.font = '500 28px Tajawal'; x.fillText('Proudly presented to', W/2, 618);
     // name
     x.fillStyle = ink; nameText(x, d, W/2, 712, 1100, [132,'$px "Great Vibes"'], [104,'700 $px "Aref Ruqaa"']);
     var ug = x.createLinearGradient(W/2-220,0,W/2+220,0); ug.addColorStop(0,AQ); ug.addColorStop(1,'#2fd27a');
     x.fillStyle = ug; rr(x,W/2-220,786,440,12,6); x.fill();
-    x.fillStyle = muted; x.direction='rtl'; x.font = '500 32px Tajawal'; x.fillText('لإتمامها بنجاح', W/2, 842); x.direction='ltr';
-    x.font = '500 26px Tajawal'; x.fillText('for successfully completing', W/2, 880);
+    x.fillStyle = muted; x.direction='rtl'; x.font = '500 32px Tajawal'; x.fillText('لاستيفائها متطلبات إتقان الوحدة', W/2, 842); x.direction='ltr';
+    x.font = '500 26px Tajawal'; x.fillText('for meeting the unit mastery requirements', W/2, 880);
     // unit on a teal ribbon
     var ut = 'Unit '+d.unitNo+' · '+d.unitTitle; x.font = '800 52px Tajawal';
     var bw = Math.min(1000, x.measureText(ut).width) + 150, by = 958;
@@ -630,7 +630,7 @@
     x.strokeStyle = rg; x.lineCap='round'; x.beginPath(); x.arc(rx,ry,58,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(.02,Math.min(1,d.acc/100))); x.stroke(); x.lineCap='butt';
     x.fillStyle = BL; x.font = '800 34px Tajawal'; x.fillText(d.acc+'%', rx, ry+2);
     x.textAlign='left'; x.fillStyle = ink; x.font = '800 32px Tajawal'; x.fillText('Accuracy', rx+86, ry-26);
-    x.fillStyle = muted; x.direction='rtl'; x.textAlign='right'; x.font = '700 28px Tajawal'; x.fillText('نسبة الإنجاز', rx+86+165, ry+22); x.direction='ltr'; x.textAlign='center';
+    x.fillStyle = muted; x.direction='rtl'; x.textAlign='right'; x.font = '700 28px Tajawal'; x.fillText('دقة الإجابات', rx+86+165, ry+22); x.direction='ltr'; x.textAlign='center';
     // teacher tile
     var tx = W-470;
     x.fillStyle = '#1b2f63'; if(ar(d.teacher)){ x.direction='rtl'; x.font='700 48px "Aref Ruqaa"'; } else x.font = '68px "Great Vibes"';
