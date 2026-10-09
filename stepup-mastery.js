@@ -246,7 +246,8 @@
     const unit=(J.data.units||[]).find(u=>u.title===title.textContent.trim());
     if(!unit||!modules[unit.id])return;
     const hero=view.querySelector('.journey-unit-hero');if(!hero)return;
-    const signature=[unit.id,studentStatus(unit.id).mode,studentStatus(unit.id).accuracy,readyToCheck(unit.id),bank(unit.id)?.length].join('|');
+    const st=studentStatus(unit.id),p=st.progress||{};
+    const signature=[unit.id,st.mode,st.accuracy,p.answered||0,p.correct||0,p.total||0].join('|');
     let block=hero.querySelector('.sum-card-slot');
     if(block?.getAttribute('data-sig')===signature)return;
     if(!block){block=document.createElement('div');block.className='sum-card-slot';hero.appendChild(block);}
@@ -356,5 +357,5 @@
   }
   css();
   window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,bestCheck,bank,requirements,validBank,
-    studentStatus,readyToCheck,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
+    studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
