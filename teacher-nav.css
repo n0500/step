@@ -20,6 +20,22 @@ main.container.teacher-loading .role-tabs::after{content:"";display:block;height
 .teacher-pin-name{font-weight:800}
 .teacher-pin-code{font-family:ui-monospace,Menlo,monospace;font-size:20px;font-weight:900;letter-spacing:4px;background:#eef4ff;color:#1d3f8f;border-radius:10px;padding:4px 12px}
 .teacher-pin-missing{font-size:13px;color:#8a96a3}
+.teacher-pin-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.teacher-pin-reset{font-size:13px;white-space:nowrap;min-height:40px}
+.teacher-pin-reset:disabled{opacity:.5;cursor:default}
+.teacher-pin-help{font-size:14px;line-height:1.8}
+.teacher-pin-dialog{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;border:1px solid #dce5ee;border-radius:20px;padding:24px;color:#172d49;background:#fff;box-shadow:0 24px 80px #142e4940;font-family:Tajawal,sans-serif}
+.teacher-pin-dialog::backdrop{background:#102b4e70}
+.teacher-pin-dialog h2{margin:0 0 8px;font-size:24px}
+.teacher-pin-target{font-size:19px;font-weight:800;margin:0 0 12px;overflow-wrap:anywhere}
+.teacher-pin-form label{display:block;font-weight:700;margin-top:18px}
+.teacher-pin-form input{box-sizing:border-box;width:100%;min-height:52px;margin-top:8px;padding:10px 14px;border:1px solid #c7d7e6;border-radius:12px;text-align:center;font-family:ui-monospace,monospace;font-size:26px;font-weight:700;letter-spacing:6px;background:#f8fbff;color:#173c73}
+.teacher-pin-form input:focus{outline:3px solid #cee0ff;border-color:#3d70bf}
+.teacher-pin-status{min-height:40px;font-size:15px;line-height:1.8;margin:16px 0;overflow-wrap:anywhere}
+.teacher-pin-dialog-actions{display:flex;gap:10px;flex-wrap:wrap}
+.teacher-pin-dialog-actions .btn{flex:1;min-height:44px}
+.teacher-pin-dialog-actions .btn[hidden]{display:none}
+@media(max-width:520px){.teacher-pin-row{align-items:flex-start}.teacher-pin-actions{max-width:60%;gap:6px}.teacher-pin-name{overflow-wrap:anywhere}.teacher-pin-reset{padding:7px 9px}}
 
 @media(max-width:700px){
   .role-tabs.teacher-nav{flex-direction:column-reverse !important;overflow:visible !important}
@@ -37,3 +53,4 @@ main.container.teacher-loading .role-tabs::after{content:"";display:block;height
 main.container.teacher-loading>.teacher-first-load{opacity:1}
 .teacher-first-spinner{width:34px;height:34px;border-radius:50%;border:4px solid #dfe8f6;border-top-color:#2f6fdb;animation:teacherSpin .8s linear infinite}
 @keyframes teacherSpin{to{transform:rotate(360deg)}}
+

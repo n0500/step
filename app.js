@@ -715,10 +715,14 @@
     const known=students.filter(s=>s.pin).length;
     const rows=students.map(s=>`<div class="teacher-pin-row" data-name="${esc(String(s.displayName||"").toLowerCase())}">
         <span class="teacher-pin-name">${esc(s.displayName||"")}</span>
+        <div class="teacher-pin-actions">
         ${s.pin?`<span class="teacher-pin-code" dir="ltr">${esc(s.pin)}</span>`:`<span class="teacher-pin-missing">لم تدخل بعد التحديث</span>`}
+        <button type="button" class="btn btn-secondary teacher-pin-reset" data-student-id="${esc(s.id)}" ${/^[0-9]{4}$/.test(String(s.pin||""))?"":'disabled title="الرمز الحالي غير محفوظ"'}>تعيين PIN جديد</button>
+        </div>
       </div>`).join("");
     return `<section class="teacher-pins" dir="rtl">
       <div class="teacher-section-head"><div><div class="eyebrow">Students</div><h1>🔐 رموز الطالبات</h1><p class="muted">يظهر رمز كل طالبة بعد أول دخول لها. محفوظ: ${known} من ${students.length}</p></div></div>
+      <p class="muted teacher-pin-help">إذا نسيت الطالبة رمزها، أعطيها الرمز المحفوظ أو عيّني رمزًا جديدًا. للحسابات التي تدخل بالاسم وPIN؛ الحسابات المرتبطة بالبريد تستعيد كلمة المرور بالبريد.</p>
       ${classes.length>1?classSelect(classes):""}
       <input id="teacherPinSearch" class="teacher-pin-search" type="search" placeholder="ابحثي باسم الطالبة…" autocomplete="off">
       <div class="teacher-pin-list">${rows||'<div class="notice">لا توجد طالبات في هذا الفصل بعد.</div>'}</div>
@@ -730,6 +734,15 @@
     input.addEventListener("input",()=>{
       const q=input.value.trim().toLowerCase();
       document.querySelectorAll(".teacher-pin-row").forEach(r=>{r.hidden=!!q&&!r.dataset.name.includes(q);});
+    });
+    document.querySelector(".teacher-pin-list")?.addEventListener("click",event=>{
+      const button=event.target.closest(".teacher-pin-reset");
+      if(!button||button.disabled)return;
+      if(!window.STEPUP_PIN_RECOVERY)return alert("حدّثي الصفحة لإظهار خاصية تغيير PIN.");
+      return STEPUP_PIN_RECOVERY.open(button.dataset.studentId,async()=>{
+        clearTeacherCache();
+        if(state.profile?.role==="teacher"&&state.teacherTab==="pins")await renderTeacher();
+      });
     });
   }
   function classSelect(classes){return `<div class="field"><label>Class</label><select onchange="PROVE.selectClass(this.value)">${classes.map(c=>`<option value="${c.id}" ${c.id===state.selectedClassId?"selected":""}>${esc(c.name)} (${esc(c.code)})</option>`).join("")||"<option>No classes</option>"}</select></div>`}
@@ -2382,3 +2395,4 @@ Do not start a new lesson unless I ask.`;
   };
   boot();
 })();
+

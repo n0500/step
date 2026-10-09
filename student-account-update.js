@@ -157,6 +157,21 @@
       }
       if((snap.data() || {}).role !== "student") return true;
       if((snap.data() || {}).pin === String(pin)) return true;
+      // A pending PIN from an older session must not overwrite a teacher reset.
+      // Re-check a differing saved credential; ordinary logins need no extra call.
+      if((snap.data() || {}).pin){
+        var currentUser = auth().currentUser;
+        var profile = snap.data();
+        if(!currentUser || currentUser.uid !== uid || !isLegacyEmail(currentUser.email)) return true;
+        var capturedCreds = await legacyCreds(profile.displayName,profile.classCode,pin);
+        if(capturedCreds.email !== currentUser.email) return true;
+        try{
+          await currentUser.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(capturedCreds.email,capturedCreds.password));
+        }catch(checkError){
+          if(/invalid-credential|wrong-password|user-not-found|user-token-expired/.test(String(checkError && checkError.code || ""))) return true;
+          return false;
+        }
+      }
       await ref.update({pin:String(pin)});
       return true;
     }catch(error){
