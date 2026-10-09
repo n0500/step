@@ -1,7 +1,7 @@
 /* STEP UP • certificate policy 2026-10-09
    Protect every legacy-earned certificate using immutable pre-migration evidence.
-   All NEW unit certificates require >=80% in ONE full-unit mastery attempt.
-   Unit review progress and STEP seals remain separate. */
+   Restore cumulative >=80% mastery for all six units.
+   Previously earned certificates remain valid; STEP seals stay independent. */
 (function(){
   'use strict';
   const PASS=80;
@@ -134,16 +134,54 @@
     return best;
   }
 
+  // Credits every correct answer once across all saved attempts, by unit.
+  // STEP practice is not a certificate requirement.
+  function cumulativeStatus(id,records){
+    const req=requirements(id);
+    if(!req||!req.length)return {earned:false,answered:0,total:0,correct:0,accuracy:0};
+    const questions=new Map(),stages=new Map();
+    req.forEach(r=>{
+      questions.set(String(r.section)+'|'+String(r.questionId),{answered:false,correct:false});
+      stages.set(String(r.trainingId),String(r.section));
+    });
+    for(const a of records||[]){
+      if(!a)continue;
+      if(a.recordKind==='question'){
+        if(a.examUnit!==id)continue;
+        const q=questions.get(String(a.examSection)+'|'+String(a.questionId));
+        if(!q)continue;
+        q.answered=true;
+        if(a.correct===true||a.bestCorrect===true)q.correct=true;
+        continue;
+      }
+      const isAssessment=a.trainingId===trainingId(id);
+      const section=isAssessment?null:stages.get(String(a.trainingId));
+      if(!isAssessment&&!section || !Array.isArray(a.answers))continue;
+      a.answers.forEach(ans=>{
+        const key=(isAssessment?String(ans?.section):section)+'|'+String(ans?.question_id||ans?.questionId);
+        const q=questions.get(key);
+        if(!q)return;
+        q.answered=true;
+        if(ans.correct===true||ans.bestCorrect===true)q.correct=true;
+      });
+    }
+    let answered=0,correct=0;
+    questions.forEach(q=>{if(q.answered)answered++;if(q.correct)correct++;});
+    const total=req.length;
+    return {earned:total>0&&answered===total&&correct*100>=PASS*total,
+      answered,total,correct,accuracy:total?Math.round(correct/total*10000)/100:0};
+  }
   function status(id,records){
     if(!modules[id])return {earned:false,mode:'unsupported',accuracy:0};
-    const old=legacyStatus(id,records),check=bestCheck(id,records);
-    if(old.earned)return {earned:true,mode:'legacy',accuracy:old.accuracy,best:check,legacy:old};
-    if(check&&check.qualifies)return {earned:true,mode:'new',accuracy:check.accuracy,best:check,legacy:old};
-    return {earned:false,mode:'pending',accuracy:check?.accuracy||0,best:check,legacy:old};
+    const old=legacyStatus(id,records),check=bestCheck(id,records),progress=cumulativeStatus(id,records);
+    if(old.earned)return {earned:true,mode:'legacy',accuracy:old.accuracy,progress,best:check,legacy:old};
+    if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:check.accuracy,progress,best:check,legacy:old};
+    if(progress.earned)return {earned:true,mode:'cumulative',accuracy:progress.accuracy,progress,best:check,legacy:old};
+    return {earned:false,mode:'pending',accuracy:progress.accuracy,progress,best:check,legacy:old};
   }
 
   let attempts=[],student=null,session=null,saving=false;
-  function hydrate(a,p){if(Array.isArray(a))attempts=a.slice();if(p&&p.role==='student')student=p;}
+  function hydrate(a,p){if(Array.isArray(a))attempts=a;if(p&&p.role==='student')student=p;}
   function studentStatus(id){return status(id,attempts);}
   const J=window.STEPUP_JOURNEY;
   if(J){
@@ -182,28 +220,22 @@
     document.head.appendChild(style);
   }
   function infoUnit(id){const u=unitData(id);return 'Unit '+(u?.number||id.replace('u',''))+(u?.title?' · '+u.title:'');}
-  function readyToCheck(id){
-    if(['u4','u5','u6'].includes(id)){
-      const u=unitData(id),n=(u?.missions||[]).filter(m=>m.type==='core').length;
-      if(!n)return false;
-      const required=[...Array.from({length:n},(_,i)=>'core-'+(i+1)),'reading','listening'];
-      return required.every(key=>attempts.some(a=>a?.recordKind!=='question'&&a.trainingId==='journey-'+id+'-'+key));
-    }
-    try{const p=api(id)?.getProgress?.();return !!p&&Number(p.total)>0&&Number(p.answered)>=Number(p.total);}catch(_){return false;}
-  }
+  // Certificates are unlocked by the existing guided review, not a new test.
   function cardHTML(id){
-    if(!validBank(id))return '<div class="sum-card"><div><strong>Mastery Check unavailable</strong><p>Please refresh the page to load the full question bank.</p></div></div>';
-    const st=studentStatus(id),u=unitData(id),n=bank(id).length,ready=readyToCheck(id);
+    const st=studentStatus(id),p=st.progress||{answered:0,total:0,correct:0,accuracy:0};
     if(st.earned){
-      return '<div class="sum-card"><div><strong>🏆 Certificate earned</strong><p>'+
-        (st.mode==='legacy'?'Your previously earned certificate is protected.':'You passed the full Unit Mastery Check.')+
-        '</p></div><button type="button" onclick="STEPUP_MASTERY.viewCertificate(\''+id+'\')">View Certificate</button></div>';
+      const description=st.mode==='legacy'||st.mode==='assessment'
+        ? 'Your previously earned certificate remains available.'
+        : 'You reached the 80% goal through saved practice.';
+      return '<div class="sum-card"><div><strong>🏆 Unit mastered</strong><p>'+description+
+        '</p></div><button type="button" data-mastery-view="'+id+'">View Certificate</button></div>';
     }
-    return '<div class="sum-card"><div><strong>🎓 Unit Mastery Check · 80%</strong>'+
-      '<p>'+n+' questions · One complete attempt · Unlimited retries</p>'+
-      '<p>'+(st.best?'Best complete attempt: '+st.best.accuracy+'%':'Complete the review, then take one full-unit assessment to earn your certificate.')+'</p>'+
-      '</div><button type="button" '+(ready?'':'disabled')+' onclick="STEPUP_MASTERY.start(\''+id+'\')">'+
-      (ready?'Start Mastery Check':'Complete Unit Review First')+'</button></div>';
+    const need=Math.max(0,Math.ceil(p.total*PASS/100)-p.correct);
+    return '<div class="sum-card"><div><strong>🎯 Unit Certificate Goal · 80%</strong>'+
+      '<p>Correct answers: '+p.correct+'/'+p.total+' · Questions attempted: '+p.answered+'/'+p.total+'</p>'+
+      '<p>'+(p.answered<p.total?'Complete the remaining review questions.':
+        'Review missed answers. '+need+' more correct '+(need===1?'answer':'answers')+' needed.')+'</p>'+
+      '<p>Each correct answer remains credited after a retry. No separate test.</p></div></div>';
   }
   function decorate(){
     if(!student||!J||session)return;
@@ -219,6 +251,7 @@
     if(block?.getAttribute('data-sig')===signature)return;
     if(!block){block=document.createElement('div');block.className='sum-card-slot';hero.appendChild(block);}
     block.setAttribute('data-sig',signature);block.innerHTML=cardHTML(unit.id);
+    block.querySelector('[data-mastery-view]')?.addEventListener('click',()=>viewCertificate(unit.id));
   }
   let scheduled=false;
   const host=document.getElementById('app');
@@ -229,12 +262,8 @@
   function viewCertificate(id){
     const u=unitData(id);if(u&&studentStatus(id).earned)window.STEPUP_CELEBRATE?.showCertificate?.(u);
   }
-  function start(id){
-    if(!modules[id]||studentStatus(id).earned||!readyToCheck(id)||!validBank(id))return;
-    const questions=bank(id);
-    session={unitId:id,questions,pos:0,answers:Array(questions.length).fill(null),started:Date.now()};
-    css();show();
-  }
+  // The standalone mastery test has been retired.
+  function start(id){openUnit(id);}
   function contextHTML(q){
     if(q.section==='reading'&&q.context){
       return '<details open><summary>📖 Reading passage</summary><div class="sum-context" dir="ltr">'+esc(q.context)+'</div></details>';
@@ -326,6 +355,6 @@
     else api(id)?.open?.();
   }
   css();
-  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,bestCheck,bank,requirements,validBank,
+  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,bestCheck,bank,requirements,validBank,
     studentStatus,readyToCheck,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
