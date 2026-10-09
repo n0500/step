@@ -69,8 +69,13 @@
     return (students||[]).filter(s=>s.classId===classId && s.role==='student').map(s=>{
       const studentAttempts=groups.get(s.id)||[];
       const units=sources.filter(item=>item.questions?.length)
-        .map(item=>({unitId:item.unitId,number:item.unit.number,title:item.unit.title,
-          ...evaluateUnit(item.unitId,studentAttempts,item.questions)}))
+        .map(item=>{
+          // Use the SAME protected certificate policy as the student's screen.
+          // Never grant a new certificate from post-migration cumulative answers.
+          const result=window.STEPUP_MASTERY?.status?.(item.unitId,studentAttempts);
+          return {unitId:item.unitId,number:item.unit.number,title:item.unit.title,
+            earned:!!result?.earned,accuracy:result?.accuracy||0,mode:result?.mode||'pending'};
+        })
         .filter(u=>u.earned);
       return {id:s.id,name:s.displayName||'طالبة',units};
     }).filter(row=>row.units.length)
@@ -131,7 +136,7 @@
       <div class="sct-heading">
         <div><div class="eyebrow">StepUp · Certificates</div>
           <h1>شهادات إتقان الوحدات</h1>
-          <p>أسماء الطالبات اللاتي أكملن متطلبات الوحدة وحققن نسبة إتقان لا تقل عن 80%، مع بيان الوحدات المستحقة لكل طالبة.</p></div>
+          <p>أسماء الطالبات المستحقات لشهادات الوحدات: شهادات النظام السابق محفوظة، والشهادات الجديدة تتطلب 80% فأكثر في اختبار إتقان مكتمل.</p></div>
         <div class="sct-actions">
           <button type="button" class="btn btn-secondary" onclick="PROVE.setTeacherTab('certificates')">تحديث القائمة</button>
           <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">تصدير القائمة (CSV)</button>
@@ -154,7 +159,7 @@
           <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">لا توجد شهادات إتقان مستحقة لهذا الفصل حتى الآن.</td></tr>'}</tbody>
         </table></div>
       </div>
-      <p class="sct-note">تعتمد القائمة على نتائج الأسئلة المحفوظة ومتطلبات شهادة كل وحدة. الشهادة المكتسبة متاحة للطالبة للعرض والتنزيل، لكن هذه القائمة لا تعني بالضرورة أنها نزّلت ملف الشهادة.</p>
+      <p class="sct-note">تحتفظ القائمة بجميع شهادات الإتقان المستحقة وفق النظام السابق. أما الشهادات الجديدة فتعتمد على أفضل محاولة مكتملة في اختبار إتقان الوحدة بنسبة 80% فأكثر. لا يعني الاستحقاق بالضرورة تنزيل ملف الشهادة.</p>
     </section>`;
   }
   function exportCSV(){
