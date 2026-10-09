@@ -11,6 +11,7 @@
   var LEGACY_DOMAIN = "@students.proveit.local";
   var observerTimer = null;
   var upgradeBusy = false;
+  var activeVerifiedUpgrade = null;
 
   function auth(){ return firebase.auth(); }
   function db(){ return firebase.firestore(); }
@@ -84,6 +85,7 @@
 
   function clearPendingUpgrade(data){
     if(!data) return;
+    if(activeVerifiedUpgrade?.uid===data.uid)activeVerifiedUpgrade=null;
     if(data.uid) localStorage.removeItem(pendingUidKey(data.uid));
     if(data.legacyEmail) localStorage.removeItem(pendingLegacyKey(data.legacyEmail));
   }
@@ -300,7 +302,7 @@
     try{
       auth().languageCode = "ar";
       await auth().sendPasswordResetEmail(email);
-      alert("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني.");
+      alert("تم طلب رابط استعادة كلمة المرور. تحققي من البريد والرسائل غير المرغوبة؛ قد يتأخر وصوله.");
     }catch(error){
       alert("تعذر إرسال رابط الاستعادة: " + friendlyError(error,"reset"));
     }
@@ -448,6 +450,7 @@
 
   async function showRecoveryStep(pending){
     // Verified email: complete on-device with the student's existing PIN.
+    activeVerifiedUpgrade=pending;
     replaceUpgradeOverlay(passwordHTML({},pending));
     bindPasswordUpgrade();
   }
@@ -555,10 +558,10 @@
     var recoverBtn=document.getElementById("stepupRecoverSessionBtn");
     if(finishBtn)finishBtn.addEventListener("click",finishPasswordUpgrade);
     if(skipBtn)skipBtn.addEventListener("click",continueWithoutPassword);
-    if(recoverBtn)recoverBtn.addEventListener("click",function(){sendPasswordSetupEmail(findAnyPendingUpgrade(),true);});
+    if(recoverBtn)recoverBtn.addEventListener("click",function(){sendPasswordSetupEmail(activeVerifiedUpgrade||findAnyPendingUpgrade(),true);});
   }
   function continueWithoutPassword(){
-    var pending=findAnyPendingUpgrade();
+    var pending=activeVerifiedUpgrade||findAnyPendingUpgrade();
     if(pending)sessionStorage.setItem(skipKey(pending.uid),"1");
     document.getElementById("stepupAccountUpgradeOverlay")?.remove();
     if(!auth().currentUser)window.location.reload();
@@ -796,6 +799,7 @@
     if(String(user.email || "").toLowerCase() === String(pending.newEmail || "").toLowerCase()){
       alert("تم التحقق من البريد بالفعل. أكملي الآن اختيار كلمة المرور.");
       var profileDone = await getStudentProfileForUpgrade(user);
+      activeVerifiedUpgrade=pending;
       replaceUpgradeOverlay(passwordHTML(profileDone || {},pending));
       bindPasswordUpgrade();
       return;
@@ -816,7 +820,7 @@
     if(password!==confirmation)return alert("كلمة المرور وتأكيدها غير متطابقين.");
     if(!/^\d{4}$/.test(pin))return alert("أدخلي PIN القديم المكوّن من 4 أرقام.");
 
-    var pending=findAnyPendingUpgrade();
+    var pending=activeVerifiedUpgrade||(auth().currentUser?readPendingByUid(auth().currentUser.uid):null)||findAnyPendingUpgrade();
     if(!pending?.uid||!pending?.legacyEmail||!pending?.newEmail){
       alert("لم نجد طلب ربط البريد. ارجعي للدخول بحسابك الحالي، ولا تنشئي حسابًا جديدًا.");
       return;
