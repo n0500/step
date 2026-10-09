@@ -62,7 +62,8 @@ service cloud.firestore {
           request.resource.data.role == "student" &&
           request.resource.data.teacherId == resource.data.teacherId &&
           request.resource.data.classId == resource.data.classId &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["displayName"])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["displayName", "pin"]) &&
+          request.resource.data.get("pin", "0000").matches("^[0-9]{4}$")
         ) ||
         (
           request.auth.uid == uid &&

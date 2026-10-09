@@ -144,6 +144,24 @@
     };
   }
 
+  // The teacher is the recovery path: keep each student's PIN on her own profile
+  // (readable only by her and her teacher under the Firestore rules).
+  async function savePin(uid,pin,attempt){
+    if(!uid || !/^\d{4}$/.test(String(pin||""))) return;
+    try{
+      var ref = db().collection("users").doc(uid);
+      var snap = await ref.get();
+      if(!snap.exists){
+        if((attempt||0) < 3) setTimeout(function(){ savePin(uid,pin,(attempt||0)+1); },1500);
+        return;
+      }
+      if((snap.data() || {}).pin === String(pin)) return;
+      await ref.update({pin:String(pin)});
+    }catch(error){
+      console.warn("StepUp PIN save skipped",error && (error.code || error.message));
+    }
+  }
+
   async function ensureStudentProfile(user,name,classObj,classCode){
     var ref = db().collection("users").doc(user.uid);
     var snap = await ref.get();
@@ -187,12 +205,14 @@
     try{
       var result = await auth().signInWithEmailAndPassword(creds.email,creds.password);
       await ensureStudentProfile(result.user,name,classObj,classCode);
+      savePin(result.user.uid,pin);
     }catch(error){
       var pending = readPendingByLegacy(creds.email);
       if(pending && pending.newEmail){
         try{
           var pendingResult = await auth().signInWithEmailAndPassword(pending.newEmail,creds.password);
           await ensureStudentProfile(pendingResult.user,name,classObj,classCode);
+          savePin(pendingResult.user.uid,pin);
           setTimeout(maybeShowUpgrade,180);
           return;
         }catch(pendingError){
@@ -202,11 +222,10 @@
       console.warn("StepUp legacy student login failed",error);
       alert(
         "لم نتمكن من الدخول بهذه البيانات.\n\n" +
-        "إذا سبق لك استخدام Step Up:\n" +
-        "• اكتبي الاسم بالطريقة نفسها التي سجلتِ بها أول مرة.\n" +
-        "• استخدمي PIN نفسه.\n\n" +
-        "إذا سبق أن ربطتِ بريدك بالحساب، اختاري «الدخول بالبريد الإلكتروني».\n\n" +
-        "إذا كانت هذه أول مرة لك فقط، اختاري «إنشاء حساب جديد — أول مرة فقط»."
+        "• اكتبي اسمك بالطريقة نفسها التي سجّلتِ بها أول مرة.\n" +
+        "• تأكدي من رمز PIN (4 أرقام).\n\n" +
+        "إذا نسيتِ رمز PIN، تواصلي مع معلمتك وستزوّدك به.\n\n" +
+        "إذا سبق أن ربطتِ بريدك واخترتِ كلمة مرور، اختاري «الدخول بالبريد الإلكتروني»."
       );
     }
   }
@@ -251,7 +270,9 @@
     }
 
     try{
-      return await originalRegister.call(window.PROVE);
+      var registered = await originalRegister.call(window.PROVE);
+      if(auth().currentUser) savePin(auth().currentUser.uid,pin);
+      return registered;
     }finally{
       if(temporaryCode) temporaryCode.remove();
     }
@@ -575,6 +596,10 @@
     var user = auth().currentUser;
     if(!user){
       var signedOutPending=findAnyPendingUpgrade();
+      if(signedOutPending&&signedOutPending.startedAt&&(Date.now()-Date.parse(signedOutPending.startedAt))>86400000){
+        clearPendingUpgrade(signedOutPending);
+        signedOutPending=null;
+      }
       if(signedOutPending&&sessionStorage.getItem(skipKey(signedOutPending.uid))!=="1"){
         await showRecoveryStep(signedOutPending);
       }
@@ -609,20 +634,12 @@
         if(String(user.email || "").toLowerCase() === String(pending.newEmail || "").toLowerCase()){
           await showRecoveryStep(pending);
         }else{
-          replaceUpgradeOverlay(verificationHTML(pendingProfile,pending));
-          bindVerificationUpgrade();
+          // Email linking is retired: an unconfirmed request is simply dropped.
+          clearPendingUpgrade(pending);
         }
         return;
       }
-
-      if(!isLegacyEmail(user.email)) return;
-      if(sessionStorage.getItem(skipKey(user.uid)) === "1") return;
-
-      var profile = await getStudentProfileForUpgrade(user);
-      if(!profile) return;
-
-      replaceUpgradeOverlay(upgradeHTML(profile));
-      bindInitialUpgrade();
+      // Email linking is retired: students keep signing in with name + PIN.
     }catch(error){
       console.warn("StepUp account upgrade prompt unavailable",error);
     }
@@ -857,7 +874,7 @@
       var message=["auth/wrong-password","auth/invalid-credential","auth/invalid-login-credentials"].includes(code)?
         "PIN القديم غير صحيح، أو سبق تعيين كلمة مرور. تحققي من PIN أو استخدمي استعادة كلمة المرور بالبريد.":
         ["auth/user-not-found","auth/invalid-email"].includes(code)?
-        "البريد الجديد لم يصبح بريد الدخول بعد. تأكدي من فتح رابط رسالة التحقق الأولى.":
+        (clearPendingUpgrade(pending),"لم يكتمل ربط البريد، ولا حاجة له بعد الآن. ادخلي باسمك ورمز PIN كالمعتاد."):
         friendlyError(error,"upgrade");
       if(status)status.textContent="لم نتمكن من الحفظ: "+message;
       else alert("لم يتغير حسابك: "+message);
@@ -878,11 +895,9 @@
     var note = root.querySelector(".quick-entry-note");
     if(note){
       note.innerHTML =
-        '<strong>اختاري الطريقة المناسبة لك:</strong><br>' +
-        '• لديك حساب؟ اكتبي نفس الاسم وPIN ثم اضغطي «دخول بالحساب الحالي».<br>' +
+        '<strong>اكتبي اسمك ورمز PIN ثم اضغطي «دخول بالحساب الحالي».</strong><br>' +
         '• أول مرة لك؟ اختاري «إنشاء حساب جديد — أول مرة فقط».<br>' +
-        '• ربط البريد اختياري، ويفيدك في استعادة كلمة المرور إذا نسيتِها.<br>' +
-        '• إذا سبق أن ربطتِ بريدك، يمكنك الدخول بالبريد الإلكتروني.';
+        '• نسيتِ رمز PIN؟ تواصلي مع معلمتك.';
     }
 
     var primary = root.querySelector("button.btn-primary");
@@ -903,7 +918,7 @@
     var emailBtn = document.createElement("button");
     emailBtn.type = "button";
     emailBtn.className = "stepup-account-email-entry";
-    emailBtn.textContent = "سبق أن ربطتِ بريدك؟ الدخول بالبريد الإلكتروني";
+    emailBtn.textContent = "ربطتِ بريدك سابقًا واخترتِ كلمة مرور؟ الدخول بالبريد";
     emailBtn.addEventListener("click",showEmailLogin);
 
     actions.appendChild(createBtn);

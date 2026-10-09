@@ -1172,7 +1172,7 @@
     app.innerHTML=shell(`
       <main class="container">
         <div class="report-head">
-          <div><div class="eyebrow">Student Profile</div><h1>${esc(s.displayName)}</h1><p class="muted">${esc(s.classCode||"")}</p></div>
+          <div><div class="eyebrow">Student Profile</div><h1>${esc(s.displayName)}</h1><p class="muted">${esc(s.classCode||"")}</p><p class="muted"><strong>رمز PIN:</strong> <span dir="ltr">${s.pin?esc(s.pin):"يظهر بعد أول دخول للطالبة"}</span></p></div>
           <div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setTeacherTab('reports')">← Back</button><button class="btn btn-secondary" onclick="PROVE.downloadStudentPDF('${s.id}')">Export PDF</button><button class="btn btn-primary" onclick="PROVE.downloadStudentExcel('${s.id}')">Export Excel</button><button class="btn btn-danger" onclick="PROVE.deleteStudent('${s.id}',true)">Delete Student</button></div>
         </div>
         <div class="grid grid-4">
