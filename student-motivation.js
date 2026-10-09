@@ -90,12 +90,13 @@
   }
 
   function shelfHTML(){
+    style();
     const earned=calculate(),preview=earned.slice(0,4);
     const summary=earned.length?('You have '+earned.length+' encouragement '+(earned.length===1?'card':'cards')+'.'):
       'Every improvement counts. Your earned cards will appear here.';
-    return '<section class="ssm-shelf" aria-label="My Encouragement Cards">'+
+    return '<section class="ssm-shelf" dir="rtl" aria-label="بطاقاتي التشجيعية">'+
       '<div class="ssm-shelf-main"><div class="ssm-shelf-heading"><span class="ssm-shelf-icon">🌟</span>'+
-      '<div><h2>My Encouragement Cards</h2><small>بطاقاتي التشجيعية · '+earned.length+' مكتسبة</small></div></div>'+
+      '<div><h2>بطاقاتي التشجيعية</h2><small>My Encouragement Cards · '+earned.length+' مكتسبة</small></div></div>'+
       '<button type="button" class="ssm-btn" onclick="STEPUP_STUDENT_MOTIVATION.openGallery()">View My Cards</button></div>'+
       '<p>'+escapeHTML(summary)+'</p>'+
       (preview.length?'<div class="ssm-preview">'+preview.map(a=>
