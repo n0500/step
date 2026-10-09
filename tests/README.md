@@ -56,3 +56,18 @@ entry points, reading evidence and listening replay on feedback, the decorated
 student screen, and preservation of historical records and certificate question
 requirements. Speech synthesis and Firebase use isolated test doubles; the tests
 never access student accounts or production records.
+
+## Unit 3 reading and listening checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/unit3-review-media.test.cjs
+```
+
+These checks cover the five-paragraph Tulsa passage with all seven reading
+questions, the complete graduation audioscript with all four listening questions,
+direct entry points, replay and reading evidence on feedback, audio failures and
+stale callbacks, the decorated student flow, historical answers, certificate
+requirements, and delegation to Units 1 and 2. Speech synthesis and Firebase are
+replaced by isolated test doubles; production records are never accessed.

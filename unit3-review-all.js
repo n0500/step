@@ -6,7 +6,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J?.data) return;
 
-  const VERSION = 'u3-full-review-20261001-2';
+  const VERSION = 'u3-reading-listening-context-20261010-1';
   const UNIT_ID = 'u3';
   const UNIT_NUMBER = 3;
   const UNIT = (J.data.units || []).find(u => u.id === UNIT_ID || Number(u.number) === UNIT_NUMBER);
@@ -17,7 +17,9 @@
     homeHTML: J.homeHTML,
     progressHTML: J.progressHTML,
     openUnit: J.openUnit,
-    go: J.go
+    go: J.go,
+    startReading: J.startReading,
+    startListening: J.startListening
   };
 
   let attempts = [];
@@ -25,6 +27,7 @@
   let profile = null;
   let session = null;
   let saving = false;
+  let listeningAudioToken = 0;
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -293,11 +296,38 @@
     return `<details class="u3-reading-passage" open><summary>📖 The Tulsa Time Capsule • Reading text</summary><div>${String(UNIT.reading||'').split(/\n\s*\n/).map(p=>`<p dir="ltr">${esc(p)}</p>`).join('')}</div><small>Reading strategy: read the question first, scan for the evidence, then choose.</small></details>`;
   }
   function speakListening(){
-    if(!('speechSynthesis' in window)) return alert('Audio is not available on this device.');
-    speechSynthesis.cancel(); const x=new SpeechSynthesisUtterance(String(UNIT.listening||'')); x.lang='en-US'; x.rate=.88; speechSynthesis.speak(x);
+    stopListening();
+    if(!window.speechSynthesis || typeof SpeechSynthesisUtterance==='undefined'){
+      setListeningStatus('Audio playback is not supported on this device.');
+      return;
+    }
+    const token=listeningAudioToken;
+    const status=message=>{if(token===listeningAudioToken)setListeningStatus(message);};
+    try{
+      const speech=new SpeechSynthesisUtterance(String(UNIT.listening||''));
+      speech.lang='en-US';speech.rate=.88;
+      const voice=(window.speechSynthesis.getVoices?.()||[]).find(v=>String(v.lang||'').toLowerCase().startsWith('en'));
+      if(voice)speech.voice=voice;
+      speech.onstart=()=>status('Playing…');
+      speech.onend=()=>status('Finished. Replay anytime.');
+      speech.onerror=()=>status('Audio stopped. Tap Play to try again.');
+      status('Playing…');
+      window.speechSynthesis.speak(speech);
+    }catch(_){status('Audio stopped. Tap Play to try again.');}
   }
-  function stopListening(){ try{ if('speechSynthesis' in window) speechSynthesis.cancel(); }catch(_){} }
-  function listeningHTML(){ return `<div class="u3-listening-player"><span>🎧</span><div><b>Graduation Predictions</b><small>Listen as many times as you need, then answer from evidence.</small></div><button onclick="STEPUP_U3_REVIEW.listen()">▶ Play</button><button onclick="STEPUP_U3_REVIEW.stopAudio()">■ Stop</button></div>`; }
+  function setListeningStatus(message){
+    const element=document.getElementById('u3ListeningStatus');
+    if(element)element.textContent=message;
+  }
+  function stopListening(){
+    listeningAudioToken++;
+    try{window.speechSynthesis?.cancel();}catch(_){}
+    setListeningStatus('Stopped. Tap Play to listen again.');
+  }
+  function listeningHTML(){ return `<div class="u3-listening-player" aria-label="Listening audio"><span>🎧</span><div><b>Graduation Predictions</b><small id="u3ListeningStatus" role="status" aria-live="polite">Listen as many times as you need, then answer from evidence.</small></div><button type="button" onclick="STEPUP_U3_REVIEW.listen()">▶ Play</button><button type="button" onclick="STEPUP_U3_REVIEW.stopAudio()">■ Stop</button></div>`; }
+  function mediaHTML(sectionKey){
+    return sectionKey==='reading'?passageHTML():sectionKey==='listening'?listeningHTML():'';
+  }
 
   function renderQuestion(){
     if (!session) return;
@@ -306,7 +336,7 @@
     const q = session.queue[session.pos];
     const choices = qChoices(q);
     const seenBefore = !!latestQuestion(session.sectionKey, q.question_id);
-    const context = session.sectionKey==='reading' ? passageHTML() : session.sectionKey==='listening' ? listeningHTML() : '';
+    const context = mediaHTML(session.sectionKey);
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="STEPUP_U3_REVIEW.open()">Unit 3</button><span>›</span><b>${esc(session.sec.title)}</b></div>
       ${context}
       <section class="journey-question-card">
@@ -391,12 +421,14 @@
     const choices = qChoices(q);
     const answer = qAnswer(q);
     const ok = record.correct;
+    const context = mediaHTML(session.sectionKey);
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="STEPUP_U3_REVIEW.open()">Unit 3</button><span>›</span><b>${esc(session.sec.title)}</b></div>
       <section class="journey-feedback ${ok?'good':'support'}">
         <span>${ok?'✓':'✕'}</span><h2>${ok?'Correct!':'Not quite'}</h2>
         ${!ok ? `<div class="u3-review-correct" dir="ltr"><b>Correct answer:</b> ${esc(choices[answer])}</div>` : ''}
         <p>${esc(q.explanation || (ok?'Great work.':'Review the clue and keep going.'))}</p>
         ${!ok && q.hint ? `<div class="u3-review-hint">💡 ${esc(q.hint)}</div>` : ''}
+        ${context?`<div class="u3-feedback-context">${context}</div>`:''}
         <div class="u3-review-saved">Saved ✓</div>
         <button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.next()">Continue</button>
       </section>`;
@@ -406,6 +438,7 @@
   function answer(selected){
     if(!session)return;
     const ticket=session,position=ticket.pos,q=ticket.queue[position],choice=Number(selected);
+    if(ticket.sectionKey==='listening')stopListening();
     return window.STEPUP_ANSWER_RESPONSE.submit({
       session:ticket,questionId:String(q.question_id),position,selected:choice,
       persist:()=>saveQuestion(ticket.sectionKey,q,choice),
@@ -503,6 +536,8 @@
       .u3-step-extra{margin-top:14px}.u3-review-source{display:block;margin-top:14px;color:#78879a;font-size:12px}
       .u3-review-correct,.u3-review-hint{margin:10px 0;padding:11px 13px;border-radius:13px;background:#f3f6fb;color:#24354c}
       .u3-review-saved{display:inline-block;margin:8px 0;padding:7px 11px;border-radius:999px;background:#e7f7ee;color:#176b4a;font-weight:900}
+      .u3-feedback-context{text-align:left;margin:18px 0}
+      .u3-feedback-context .u3-reading-passage{max-height:420px;overflow-y:auto}
       .u3-review-continue{width:100%;margin-top:14px;min-height:52px;border:0;border-radius:16px;background:#284f88;color:#fff;font-weight:900;cursor:pointer}
       .u3-review-done{margin-top:14px;padding:14px;border-radius:16px;background:#eaf7ef;color:#24623f;font-weight:900;text-align:center}
       .u3-cert-goal{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 13px;border-radius:15px;background:#fff8e8;border:1px solid #f0dfb7;color:#624b13}.u3-cert-goal.unlocked{background:#eaf7ef;border-color:#c9ead8;color:#24623f}.u3-cert-goal span{font-size:24px}.u3-cert-goal div{flex:1}.u3-cert-goal b,.u3-cert-goal small{display:block}.u3-cert-goal small{margin-top:2px;font-size:11px;opacity:.8}.u3-cert-goal button{border:0;border-radius:999px;padding:8px 12px;background:#244e86;color:#fff;font-weight:900;cursor:pointer}
@@ -518,6 +553,10 @@
   J.progressHTML = function(a,o,p){ hydrate(a,o,p); return old.progressHTML(a,o,p); };
   J.openUnit = function(uid){ if(uid==='u3') return openUnit3(); return old.openUnit(uid); };
   J.go = function(uid,key){ if(uid!=='u3') return old.go(uid,key); if(key==='step') return startStep(); if(sections[key]) return startSection(key); return openUnit3(); };
+
+  // Direct links use the same full-text and replayable-audio review as the journey.
+  J.startReading = function(uid){ return uid==='u3'?startSection('reading'):old.startReading(uid); };
+  J.startListening = function(uid){ return uid==='u3'?startSection('listening'):old.startListening(uid); };
 
   addStyles();
 
