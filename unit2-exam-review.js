@@ -1974,6 +1974,15 @@
     getCertificateRequirements:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
       section:key, questionId:q.id, trainingId:sections[key].trainingId
     }))),
+    // STEP stamp fallback: completed question records remain authoritative even
+    // if the final aggregate attempt could not be saved.
+    getStepProgress:()=>{
+      const total=sections.step.questions.length;
+      const answered=answeredCount('step');
+      const correct=correctCount('step');
+      return {total,answered,correct,complete:total>0 && answered===total,
+        accuracy:answered?Math.round(correct/answered*100):0};
+    },
     getProgress:()=>({
       answered:requiredAnswered(),
       total:TOTAL_REQUIRED,
