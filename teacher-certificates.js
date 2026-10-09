@@ -11,12 +11,13 @@
     const mods = [
       ['u1',window.STEPUP_U1_REVIEW],
       ['u2',window.STEPUP_U2_EXAM],
-      ['u3',window.STEPUP_U3_REVIEW]
+      ['u3',window.STEPUP_U3_REVIEW],
+      ['u4',null],['u5',null],['u6',null]
     ];
     const available=(window.STEPUP_JOURNEY?.data?.units || []);
     return mods.filter(([unitId])=>available.some(u=>u.id===unitId)).map(([unitId,mod])=>{
       const questions=typeof mod?.getCertificateRequirements==='function'
-        ? mod.getCertificateRequirements() : null;
+        ? mod.getCertificateRequirements() : window.STEPUP_MASTERY?.requirements?.(unitId)||null;
       return {unitId,questions:Array.isArray(questions) ? questions : null,
         unit:available.find(u=>u.id===unitId)};
     });
