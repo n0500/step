@@ -155,10 +155,13 @@
         if((attempt||0) < 3) setTimeout(function(){ savePin(uid,pin,(attempt||0)+1); },1500);
         return;
       }
-      if((snap.data() || {}).pin === String(pin)) return;
+      if((snap.data() || {}).role !== "student") return true;
+      if((snap.data() || {}).pin === String(pin)) return true;
       await ref.update({pin:String(pin)});
+      return true;
     }catch(error){
       console.warn("StepUp PIN save skipped",error && (error.code || error.message));
+      return false;
     }
   }
 
@@ -245,6 +248,7 @@
       return;
     }
 
+    rememberPin();
     var creds = await legacyCreds(name,classCode,pin);
     if(localStorage.getItem(upgradedKey(creds.email)) === "1"){
       alert("سبق ربط هذا الحساب ببريد إلكتروني. اختاري «الدخول بالبريد الإلكتروني» للدخول إلى حسابك نفسه. ربط البريد اختياري للحسابات الأخرى.");
@@ -894,6 +898,7 @@
 
     var note = root.querySelector(".quick-entry-note");
     if(note){
+      note.setAttribute("dir","rtl");
       note.innerHTML =
         '<strong>اكتبي اسمك ورمز PIN ثم اضغطي «دخول بالحساب الحالي».</strong><br>' +
         '• أول مرة لك؟ اختاري «إنشاء حساب جديد — أول مرة فقط».<br>' +
@@ -931,10 +936,104 @@
     }
   }
 
+  // ---- Login button feedback + PIN capture -------------------------------
+  // The live sign-in function is provided by student-flow-guard.js, which
+  // reloads the page after a successful sign-in. We wrap it to (1) show at
+  // once that the tap was received, (2) remember the PIN for this tab so it is
+  // saved to the student's profile after the reload, and (3) sign in students
+  // who started linking an email on this device instead of creating a new,
+  // empty account for them.
+  var PIN_SAVE_KEY = "stepup_pin_to_save";
+
+  function loginButtons(){
+    var root = document.getElementById("stName");
+    root = root ? (root.closest(".student-entry-card") || document.getElementById("authBox") || document) : document;
+    return Array.prototype.slice.call(root.querySelectorAll("button.btn-primary, .stepup-account-create, .stepup-account-email-entry"));
+  }
+
+  function setLoginBusy(on){
+    loginButtons().forEach(function(b){
+      if(on){
+        if(!b.dataset.idleText) b.dataset.idleText = b.textContent;
+        b.disabled = true;
+        if(b.classList.contains("btn-primary")) b.textContent = "جاري الدخول… ⏳";
+      }else{
+        b.disabled = false;
+        if(b.dataset.idleText){ b.textContent = b.dataset.idleText; delete b.dataset.idleText; }
+      }
+    });
+  }
+
+  function rememberPin(){
+    var pinEl = document.getElementById("stPin");
+    var pin = pinEl ? pinEl.value.trim() : "";
+    try{ if(/^\d{4}$/.test(pin)) sessionStorage.setItem(PIN_SAVE_KEY,pin); }catch(e){}
+  }
+
+  async function tryPendingLogin(forcedClassCode){
+    var nameEl = document.getElementById("stName");
+    var codeEl = document.getElementById("stClassCode");
+    var pinEl = document.getElementById("stPin");
+    var name = nameEl ? nameEl.value.trim() : "";
+    var classCode = String(forcedClassCode || (codeEl ? codeEl.value : "") || "").trim().toUpperCase();
+    var pin = pinEl ? pinEl.value.trim() : "";
+    if(!name || !classCode || !/^\d{4}$/.test(pin)) return false;
+    var creds = await legacyCreds(name,classCode,pin);
+    var pending = readPendingByLegacy(creds.email);
+    if(!pending || !pending.newEmail) return false;
+    try{
+      await auth().signInWithEmailAndPassword(creds.email,creds.password);
+      return true; // email was never confirmed: the original login still works
+    }catch(e){}
+    try{
+      await auth().signInWithEmailAndPassword(pending.newEmail,creds.password);
+      return true;
+    }catch(e){
+      console.warn("StepUp pending-email login failed",e && e.code);
+      return false;
+    }
+  }
+
+  function wrapLiveLogin(){
+    var live = window.PROVE && window.PROVE.studentContinue;
+    if(!live || live.__busyWrapped) return;
+    // Wait until the flow guard has installed its version, then wrap that one.
+    if(!live.__accountGuardPatched && live !== studentContinue) return;
+    if(!live.__accountGuardPatched && (Date.now() - startedAt) < 3000) return;
+    var wrapped = async function(forcedClassCode){
+      if(wrapped.__running) return;
+      wrapped.__running = true;
+      rememberPin();
+      setLoginBusy(true);
+      try{
+        if(await tryPendingLogin(forcedClassCode)){ window.location.reload(); return; }
+        return await live.apply(this,arguments);
+      }finally{
+        wrapped.__running = false;
+        setTimeout(function(){ setLoginBusy(false); },400);
+      }
+    };
+    wrapped.__busyWrapped = true;
+    if(live.__accountGuardPatched) wrapped.__accountGuardPatched = live.__accountGuardPatched;
+    window.PROVE.studentContinue = wrapped;
+  }
+  var startedAt = Date.now();
+
+  function savePinAfterLogin(user){
+    if(!user) return;
+    var pin = null;
+    try{ pin = sessionStorage.getItem(PIN_SAVE_KEY); }catch(e){}
+    if(!pin) return;
+    Promise.resolve(savePin(user.uid,pin)).then(function(done){
+      if(done){ try{ sessionStorage.removeItem(PIN_SAVE_KEY); }catch(e){} }
+    });
+  }
+
   function scheduleEnhance(){
     clearTimeout(observerTimer);
     observerTimer = setTimeout(function(){
       enhanceAuthUI();
+      wrapLiveLogin();
       maybeShowUpgrade();
     },80);
   }
@@ -957,7 +1056,10 @@
   };
 
   try{
-    auth().onAuthStateChanged(function(){ setTimeout(maybeShowUpgrade,220); });
+    auth().onAuthStateChanged(function(user){
+      savePinAfterLogin(user);
+      setTimeout(maybeShowUpgrade,220);
+    });
   }catch(error){
     console.warn("StepUp account auth observer unavailable",error);
   }
@@ -966,4 +1068,6 @@
   observer.observe(document.documentElement,{childList:true,subtree:true});
   window.addEventListener("DOMContentLoaded",scheduleEnhance);
   setTimeout(scheduleEnhance,120);
+  setTimeout(scheduleEnhance,1000);
+  setTimeout(scheduleEnhance,3200);
 })();
