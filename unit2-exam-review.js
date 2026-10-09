@@ -1977,6 +1977,12 @@
     getCertificateRequirements:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
       section:key, questionId:q.id, trainingId:sections[key].trainingId
     }))),
+    getMasteryBank:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
+      section:key, sectionTitle:sections[key].title, id:q.id,
+      prompt:q.prompt, choices:[...q.choices], answer:q.answer,
+      context:key==='reading'?READING_PASSAGE.flatMap(p=>[p.title,...p.paragraphs]).join('\n\n'):'',
+      audio:key==='listening'?LISTENING_DIALOGUE.map(p=>p.speaker+': '+p.text).join(' '):''
+    }))),
     // A STEP stamp must reflect a complete 75%+ run, not cumulative best answers.
     // Saved question runs also recover a qualifying retry if its summary failed.
     getStepProgress:()=>{
