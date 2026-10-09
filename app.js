@@ -687,6 +687,11 @@
   let teacherRenderSeq=0;
   async function renderTeacher(){
     const seq=++teacherRenderSeq;
+    // First load can take a few seconds on a slow network: show the bar and a
+    // loading card right away instead of an empty page.
+    if(!document.querySelector('.role-tabs[data-role="teacher"]')){
+      app.innerHTML=shell(`<main class="container teacher-loading">${teacherTabs()}<div class="card teacher-first-load"><div class="teacher-first-spinner"></div><strong>جاري تحميل بيانات فصولك…</strong></div></main>`,"Teacher");
+    }
     const classes=await getClasses(state.profile.id);
     if(!state.selectedClassId&&classes[0])state.selectedClassId=classes[0].id;
     const cls=classes.find(c=>c.id===state.selectedClassId);

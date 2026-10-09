@@ -8,7 +8,7 @@
 .teacher-refresh-btn{margin-inline-start:auto;border:1px solid var(--line,#d6dfe5);background:#fff;border-radius:50%;width:38px;height:38px;font-size:18px;font-weight:900;cursor:pointer;color:inherit}
 .teacher-refresh-btn:active{transform:rotate(90deg)}
 .teacher-profile-btn{padding:6px 11px;margin-inline-end:6px}
-main.container.teacher-loading>*:not(.role-tabs){opacity:.45;transition:opacity .15s}
+main.container.teacher-loading>*:not(.role-tabs):not(.teacher-first-load){opacity:.45;transition:opacity .15s}
 main.container.teacher-loading .role-tabs::after{content:"";display:block;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,#2f6fdb,transparent);background-size:200% 100%;animation:teacherNavLoad 1s linear infinite}
 @keyframes teacherNavLoad{from{background-position:200% 0}to{background-position:-200% 0}}
 
@@ -23,9 +23,17 @@ main.container.teacher-loading .role-tabs::after{content:"";display:block;height
 
 @media(max-width:700px){
   .role-tabs.teacher-nav{flex-direction:column-reverse !important;overflow:visible !important}
-  .teacher-nav .teacher-nav-main .role-tab{flex:1 1 0 !important;min-width:0 !important;padding:6px 4px !important}
+  .teacher-nav .teacher-nav-main{gap:2px !important;overflow:hidden}
+  html body .role-tabs.teacher-nav .teacher-nav-main .role-tab,html.sx body.sx .role-tabs.teacher-nav:not(.student-nav) .teacher-nav-main .role-tab{flex:1 1 0 !important;min-width:0 !important;min-height:44px !important;padding:4px 1px !important;font-size:10.5px !important;white-space:normal !important;line-height:1.25 !important;text-align:center}
+  .teacher-nav .teacher-subtabs{flex-wrap:wrap !important;gap:4px !important}
+  html body .role-tabs.teacher-nav .teacher-subtabs .role-tab,html.sx body.sx .role-tabs.teacher-nav:not(.student-nav) .teacher-subtabs .role-tab{flex:1 1 40% !important;min-height:40px !important;font-size:12px !important}
   .teacher-nav .teacher-nav-main{justify-content:space-around;flex-wrap:nowrap}
   .teacher-nav .teacher-subtabs{justify-content:center;padding:6px}
-  .teacher-refresh-btn{width:32px;height:32px;font-size:15px;margin-inline-start:0;flex:0 0 auto}
+  .teacher-refresh-btn{width:28px;height:28px;font-size:14px;margin-inline-start:0;flex:0 0 28px;align-self:center;padding:0}
   main.container:has(.teacher-subtabs:not([hidden])){padding-bottom:170px !important}
 }
+
+.teacher-first-load{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 20px !important;text-align:center;opacity:1 !important}
+main.container.teacher-loading>.teacher-first-load{opacity:1}
+.teacher-first-spinner{width:34px;height:34px;border-radius:50%;border:4px solid #dfe8f6;border-top-color:#2f6fdb;animation:teacherSpin .8s linear infinite}
+@keyframes teacherSpin{to{transform:rotate(360deg)}}
