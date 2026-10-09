@@ -111,7 +111,7 @@
         <div class="nav-actions">
           ${state.profile?(isStudent
             ?`<button class="student-header-avatar" aria-label="Open profile" onclick="PROVE.setStudentTab('profile')">${initial}</button>`
-            :`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span><button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`):""}
+            :`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span>${state.profile.role==="teacher"?`<button class="btn btn-outline teacher-profile-btn" onclick="PROVE.setTeacherTab('profile')" aria-label="Profile">👤</button>`:""}<button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`):""}
         </div>
       </header>
       ${content}`;
@@ -357,6 +357,7 @@
   }
 
   async function logout(){
+    clearTeacherCache();
     if(state.fb) await state.fb.auth.signOut();
     else {localStorage.removeItem("proveit_session");state.user=null;state.profile=null;renderLanding();}
   }
@@ -388,17 +389,28 @@
     return `<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" data-student-tab="${id}" onclick="PROVE.setStudentTab('${id}')"><span class="student-nav-icon">${navIcon(id==="journey"?"practice":id==="assistant"?"tools":id)}</span><span class="student-nav-label">${label}</span></button>`).join("")}</nav>`;
   }
 
+  const TEACHER_STUDENT_TABS=["reports","pins","certificates","motivation"];
   function teacherTabs(){
-    const items=[
-      ["home","🏠 Home"],
-      ["classes","👥 Classes"],
-      ["classmode","🖥️ Class Mode"],
-      ["reports","📊 Reports"],
-      ["certificates","🏅 Certificates"],
-      ["motivation","🌟 Encouragement"],
-      ["profile","👤 Profile"]
-    ];
-    return `<nav class="role-tabs" data-role="teacher">${items.map(([id,label])=>`<button class="role-tab ${state.teacherTab===id?"active":""}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`).join("")}</nav>`;
+    const tab=state.teacherTab;
+    const btn=(id,label,cls="")=>`<button class="role-tab ${cls} ${tab===id?"active":""}" data-tab="${id}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`;
+    const inStudents=TEACHER_STUDENT_TABS.includes(tab);
+    return `<nav class="role-tabs teacher-nav" data-role="teacher">
+      <div class="teacher-nav-main">
+        ${btn("home","🏠 Home")}
+        ${btn("classes","👥 Classes")}
+        ${btn("classmode","🖥️ Class Mode")}
+        <button class="role-tab teacher-group-btn ${inStudents?"active":""}" data-group="students" onclick="PROVE.setTeacherTab('reports')">📊 Students</button>
+        <button class="role-tab teacher-group-btn" data-group="tools" onclick="window.STEPUP_TEACHER_NAV&&STEPUP_TEACHER_NAV.toggleTools()">🧰 Tools</button>
+        <button class="teacher-refresh-btn" type="button" title="Refresh data" aria-label="Refresh data" onclick="PROVE.refreshTeacher()">↻</button>
+      </div>
+      <div class="teacher-subtabs" data-group="students" ${inStudents?"":"hidden"}>
+        ${btn("reports","📊 Reports","teacher-sub")}
+        ${btn("pins","🔐 PINs","teacher-sub")}
+        ${btn("certificates","🏅 Certificates","teacher-sub")}
+        ${btn("motivation","🌟 Encouragement","teacher-sub")}
+      </div>
+      <div class="teacher-subtabs" data-group="tools" hidden></div>
+    </nav>`;
   }
 
   function setStudentTab(tab){
@@ -408,9 +420,35 @@
     renderStudent();
   }
 
+  // Navigation reuses recently loaded data so switching tabs is instant.
+  // Any other render (after saving, deleting, refresh) reads fresh data.
+  const teacherReadCache=new Map();
+  const TEACHER_CACHE_MS=120000;
+  let teacherPreferCache=false;
+  async function teacherCached(key,loader){
+    if(!state.fb||state.profile?.role!=="teacher")return loader();
+    const hit=teacherReadCache.get(key);
+    if(teacherPreferCache&&hit&&Date.now()-hit.ts<TEACHER_CACHE_MS)return hit.value.slice();
+    const value=await loader();
+    teacherReadCache.set(key,{ts:Date.now(),value});
+    return value.slice();
+  }
+  function clearTeacherCache(){teacherReadCache.clear();}
   function setTeacherTab(tab){
     state.teacherTab=tab;
-    renderTeacher();
+    const inStudents=TEACHER_STUDENT_TABS.includes(tab);
+    document.querySelectorAll('.role-tabs[data-role="teacher"] .role-tab').forEach(b=>{
+      const on=b.dataset.tab===tab||(b.dataset.group==="students"&&inStudents);
+      b.classList.toggle("active",on);
+    });
+    document.querySelector("main.container")?.classList.add("teacher-loading");
+    teacherPreferCache=true;
+    return renderTeacher().finally(()=>{teacherPreferCache=false;});
+  }
+  function refreshTeacher(){
+    clearTeacherCache();
+    document.querySelector("main.container")?.classList.add("teacher-loading");
+    return renderTeacher();
   }
 
   async function renderDashboard(){
@@ -435,8 +473,10 @@
   }
   async function getStudentsForTeacher(teacherId){
     if(state.fb){
-      const s=await state.fb.db.collection("users").where("teacherId","==",teacherId).get();
-      return s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.role==="student");
+      return teacherCached("students|"+teacherId,async()=>{
+        const s=await state.fb.db.collection("users").where("teacherId","==",teacherId).get();
+        return s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.role==="student");
+      });
     }
     return local.users().filter(x=>x.role==="student"&&x.teacherId===teacherId);
   }
@@ -451,19 +491,23 @@
 
   async function getClasses(filterTeacher=null){
     if(state.fb){
-      let q=state.fb.db.collection("classes"); if(filterTeacher)q=q.where("teacherId","==",filterTeacher);
-      const s=await q.get();return s.docs.map(d=>({id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}));
+      return teacherCached("classes|"+(filterTeacher||""),async()=>{
+        let q=state.fb.db.collection("classes"); if(filterTeacher)q=q.where("teacherId","==",filterTeacher);
+        const s=await q.get();return s.docs.map(d=>({id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}));
+      });
     }
     return local.classes().filter(c=>!filterTeacher||c.teacherId===filterTeacher).map(c=>({...c,openUnits:c.openUnits||["u1"]}));
   }
   async function getAttempts(filters={}){
     let arr;
     if(state.fb){
-      let q=state.fb.db.collection("attempts");
-      if(filters.studentId)q=q.where("studentId","==",filters.studentId);
-      if(filters.teacherId)q=q.where("teacherId","==",filters.teacherId);
-      if(filters.classId)q=q.where("classId","==",filters.classId);
-      const s=await q.get();arr=s.docs.map(d=>({id:d.id,...d.data()}));
+      arr=await teacherCached("attempts|"+(filters.studentId||"")+"|"+(filters.teacherId||"")+"|"+(filters.classId||""),async()=>{
+        let q=state.fb.db.collection("attempts");
+        if(filters.studentId)q=q.where("studentId","==",filters.studentId);
+        if(filters.teacherId)q=q.where("teacherId","==",filters.teacherId);
+        if(filters.classId)q=q.where("classId","==",filters.classId);
+        const s=await q.get();return s.docs.map(d=>({id:d.id,...d.data()}));
+      });
     } else arr=local.attempts();
     // Per-answer records (Unit 2 exam review) are kept for the student's own
     // resume logic, but are not results: keep them out of teacher/owner reports.
@@ -640,7 +684,9 @@
     return `<div class="card"><h2>Platform Skill Performance</h2>${rows||"<p class='muted'>No attempt data yet.</p>"}</div>`;
   }
 
+  let teacherRenderSeq=0;
   async function renderTeacher(){
+    const seq=++teacherRenderSeq;
     const classes=await getClasses(state.profile.id);
     if(!state.selectedClassId&&classes[0])state.selectedClassId=classes[0].id;
     const cls=classes.find(c=>c.id===state.selectedClassId);
@@ -651,8 +697,35 @@
     if(state.teacherTab==="reports")body=await teacherReports(classes,cls);
     if(state.teacherTab==="certificates")body=await teacherCertificates(classes,cls);
     if(state.teacherTab==="motivation")body=await teacherMotivation(classes,cls);
+    if(state.teacherTab==="pins")body=await teacherPins(classes,cls);
     if(state.teacherTab==="profile")body=teacherProfile(classes);
+    if(seq!==teacherRenderSeq)return; // a newer tab click is already loading
     app.innerHTML=shell(`<main class="container">${teacherTabs()}${body}</main>`,"Teacher");
+    if(state.teacherTab==="pins")bindPinSearch();
+  }
+  async function teacherPins(classes,cls){
+    if(!cls)return `<section class="teacher-pins"><div class="notice">Create a class first.</div></section>`;
+    const all=await getStudentsForTeacher(state.profile.id);
+    const students=all.filter(s=>s.classId===cls.id).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"ar"));
+    const known=students.filter(s=>s.pin).length;
+    const rows=students.map(s=>`<div class="teacher-pin-row" data-name="${esc(String(s.displayName||"").toLowerCase())}">
+        <span class="teacher-pin-name">${esc(s.displayName||"")}</span>
+        ${s.pin?`<span class="teacher-pin-code" dir="ltr">${esc(s.pin)}</span>`:`<span class="teacher-pin-missing">لم تدخل بعد التحديث</span>`}
+      </div>`).join("");
+    return `<section class="teacher-pins" dir="rtl">
+      <div class="teacher-section-head"><div><div class="eyebrow">Students</div><h1>🔐 رموز الطالبات</h1><p class="muted">يظهر رمز كل طالبة بعد أول دخول لها. محفوظ: ${known} من ${students.length}</p></div></div>
+      ${classes.length>1?classSelect(classes):""}
+      <input id="teacherPinSearch" class="teacher-pin-search" type="search" placeholder="ابحثي باسم الطالبة…" autocomplete="off">
+      <div class="teacher-pin-list">${rows||'<div class="notice">لا توجد طالبات في هذا الفصل بعد.</div>'}</div>
+    </section>`;
+  }
+  function bindPinSearch(){
+    const input=document.getElementById("teacherPinSearch");
+    if(!input)return;
+    input.addEventListener("input",()=>{
+      const q=input.value.trim().toLowerCase();
+      document.querySelectorAll(".teacher-pin-row").forEach(r=>{r.hidden=!!q&&!r.dataset.name.includes(q);});
+    });
   }
   function classSelect(classes){return `<div class="field"><label>Class</label><select onchange="PROVE.selectClass(this.value)">${classes.map(c=>`<option value="${c.id}" ${c.id===state.selectedClassId?"selected":""}>${esc(c.name)} (${esc(c.code)})</option>`).join("")||"<option>No classes</option>"}</select></div>`}
 
@@ -1129,7 +1202,7 @@
     }
     renderTeacher();
   }
-  function selectClass(id){state.selectedClassId=id;renderTeacher()}
+  function selectClass(id){state.selectedClassId=id;teacherPreferCache=true;renderTeacher().finally(()=>{teacherPreferCache=false;})}
   async function toggleUnit(classId,unitId,open){
     const classes=await getClasses(state.profile.id),c=classes.find(x=>x.id===classId);if(!c)return;
     let openUnits=[...(c.openUnits||["u1"])];
@@ -2298,7 +2371,7 @@ Do not start a new lesson unless I ask.`;
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
