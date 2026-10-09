@@ -351,6 +351,10 @@
     if (!window.firebase?.auth || !window.firebase?.firestore) throw new Error('Firebase unavailable');
     const user = firebase.auth().currentUser;
     if (!user) throw new Error('Student not signed in');
+    // Reuse the signed-in student's known profile instead of a remote read per answer.
+    if(profile?.role==='student' && (profile.id===user.uid || profile.uid===user.uid)){
+      return {user,p:profile};
+    }
     const snap = await firebase.firestore().collection('users').doc(user.uid).get();
     const p = snap.exists ? (snap.data() || {}) : {};
     return {user,p};
@@ -397,22 +401,28 @@
       </section>`;
   }
 
-  async function answer(selected){
-    if (!session || saving) return;
-    const q = session.queue[session.pos];
-    saving = true;
-    try{
-      const record = await saveQuestion(session.sectionKey, q, Number(selected));
-      session.runAnswers.push(record);
-      if (record.correct) session.correct++;
-      feedback(q, record);
-    } catch (e){
-      console.error('Unit 3 answer save failed', e);
-      alert('This answer was not saved. Please tap your answer again.');
-      renderQuestion();
-    } finally {
-      saving = false;
-    }
+
+  function answer(selected){
+    if(!session)return;
+    const ticket=session,position=ticket.pos,q=ticket.queue[position],choice=Number(selected);
+    return window.STEPUP_ANSWER_RESPONSE.submit({
+      session:ticket,questionId:String(q.question_id),position,selected:choice,
+      persist:()=>saveQuestion(ticket.sectionKey,q,choice),
+      isActive:()=>session===ticket && session.pos===position,
+      onStart:()=>{saving=true;},
+      onSlow:()=>{saving=false;},
+      onSaved:(record)=>{
+        saving=false;
+        ticket.runAnswers.push(record);
+        if(record.correct)ticket.correct++;
+        feedback(q,record);
+      },
+      onError:(err)=>{
+        saving=false;
+        console.error('U3 answer save failed',err);
+        renderQuestion();
+      }
+    });
   }
 
   async function saveSectionSummary(sectionKey){
