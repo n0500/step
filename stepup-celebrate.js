@@ -979,9 +979,9 @@
         if(eligible){
           box.innerHTML = '<span class="sxc-u2-award-icon">🏆</span><div><b>Certificate unlocked</b><small>Unit 2 mastered • '+acc+'% overall accuracy</small></div>';
         }else if(total && answered >= total){
-          box.innerHTML = '<span class="sxc-u2-award-icon">🎯</span><div><b>Certificate goal: '+CERT_MASTERY+'%</b><small>Current accuracy '+acc+'% • Practice missed skills to unlock it.</small></div>';
+          box.innerHTML = '<span class="sxc-u2-award-icon">🎯</span><div><b>Unit Mastery Check · '+CERT_MASTERY+'%</b><small>Review complete. Pass one complete mastery attempt to earn your certificate.</small></div>';
         }else{
-          box.innerHTML = '<span class="sxc-u2-award-icon">🎓</span><div><b>Certificate goal</b><small>Complete all required review questions and reach '+CERT_MASTERY+'% accuracy.</small></div>';
+          box.innerHTML = '<span class="sxc-u2-award-icon">🎓</span><div><b>Unit Mastery Check</b><small>Complete the required review first, then score at least '+CERT_MASTERY+'% in one full check.</small></div>';
         }
       }
     }
