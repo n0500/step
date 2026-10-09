@@ -684,7 +684,7 @@ function addTabs(){
   const nav=document.querySelector(".role-tabs");
   if(!nav) return;
   const existingText=nav.textContent||"";
-  if(!/Home|Practice|Progress|Results|Profile/.test(existingText)) return;
+  if(nav.dataset.role!=="teacher"&&!/Home|Practice|Progress|Results|Profile/.test(existingText)) return;
   if(!document.getElementById("mg1AssistantTab")){
     const b=document.createElement("button");
     b.id="mg1AssistantTab"; b.className="role-tab mg1-tab-special"; b.textContent="✨ MG1 Assistant";
@@ -1859,3 +1859,4 @@ addTabs();
 window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,openDictionary:renderDictionary,startQuickPractice,choosePracticeAnswer};
 window.StepUpAI={evaluateWriting:evaluateWritingRubric};
 window.StepUpDictionary={render:renderDictionary,lookup:lookupDictionaryCurrent,speak:speakDictionaryWord};
+

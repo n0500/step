@@ -201,8 +201,8 @@
       '<p>تقدير التحسن والمثابرة والاستكشاف من نتائج التدريب المحفوظة، دون اشتراط اجتياز الوحدة أو إصدار شهادة إتقان.</p></div>'+
       '<div class="smc-actions"><button class="btn btn-secondary" onclick="PROVE.setTeacherTab(\'motivation\')">تحديث القائمة</button>'+
       '<button class="btn btn-primary" onclick="STEPUP_MOTIVATION.exportCSV()">تصدير القائمة</button></div></div>'+
-      '<div class="teacher-report-toolbar card" dir="ltr">'+classSelectHTML+
-      '<div class="teacher-report-code"><span>Class Code</span><strong>'+esc(cls.code||'')+'</strong></div></div>'+
+      '<div class="teacher-report-toolbar card" dir="rtl">'+classSelectHTML+
+      '<div class="teacher-report-code"><span>رمز الفصل</span><strong dir="ltr">'+esc(cls.code||'')+'</strong></div></div>'+
       '<div class="smc-stats"><div class="smc-stat"><span>طالبات الفصل</span><strong>'+roster.length+'</strong></div>'+
       '<div class="smc-stat"><span>الطالبات المستحقات للتشجيع</span><strong>'+unique.size+'</strong></div>'+
       '<div class="smc-stat"><span>البطاقات المكتسبة</span><strong>'+rows.length+'</strong></div></div>'+

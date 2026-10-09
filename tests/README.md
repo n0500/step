@@ -71,3 +71,20 @@ direct entry points, replay and reading evidence on feedback, audio failures and
 stale callbacks, the decorated student flow, historical answers, certificate
 requirements, and delegation to Units 1 and 2. Speech synthesis and Firebase are
 replaced by isolated test doubles; production records are never accessed.
+
+## Teacher workspace checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/teacher-workspace.test.cjs
+```
+
+These checks load the application and real question banks with an isolated,
+read-only test store. They verify Arabic navigation, class-scoped counts and
+rosters, student search, unit and activity filters, partial saved answers,
+coverage versus cumulative accuracy, CSV export, student profiles, caching and
+refresh, PIN access, certificate preservation for closed units, and compatibility
+with the existing assistant, dictionary, teaching hub and class archive modules.
+Browsing must not create, overwrite or delete student records. These are source
+and DOM checks; they do not inspect a signed-in teacher account or browser layout.

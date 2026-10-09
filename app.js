@@ -107,11 +107,11 @@
     const initial=esc((state.profile?.displayName||"S").trim().charAt(0).toUpperCase()||"S");
     return `
       <header class="appbar ${isStudent?"student-appbar":""}">
-        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>Learn • Master • Practice • Progress${title?` • ${esc(title)}`:""}</small></div></div>
+        <div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>${state.profile?.role==="teacher"?"لوحة المعلمة · متابعة التعلم والإتقان":`Learn • Master • Practice • Progress${title?` • ${esc(title)}`:""}`}</small></div></div>
         <div class="nav-actions">
           ${state.profile?(isStudent
             ?`<button class="student-header-avatar" aria-label="Open profile" onclick="PROVE.setStudentTab('profile')">${initial}</button>`
-            :`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span>${state.profile.role==="teacher"?`<button class="btn btn-outline teacher-profile-btn" onclick="PROVE.setTeacherTab('profile')" aria-label="Profile">👤</button>`:""}<button class="btn btn-outline" onclick="PROVE.logout()">Logout</button>`):""}
+            :`<span>${esc(state.profile.displayName||state.profile.name||state.profile.role)}</span>${state.profile.role==="teacher"?`<button class="btn btn-outline teacher-profile-btn" onclick="PROVE.setTeacherTab('profile')" aria-label="الملف الشخصي">👤</button>`:""}<button class="btn btn-outline" onclick="PROVE.logout()">${state.profile.role==="teacher"?"خروج":"Logout"}</button>`):""}
         </div>
       </header>
       ${content}`;
@@ -389,27 +389,27 @@
     return `<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation">${items.map(([id,label])=>`<button class="role-tab ${state.studentTab===id?"active":""}" data-student-tab="${id}" onclick="PROVE.setStudentTab('${id}')"><span class="student-nav-icon">${navIcon(id==="journey"?"practice":id==="assistant"?"tools":id)}</span><span class="student-nav-label">${label}</span></button>`).join("")}</nav>`;
   }
 
-  const TEACHER_STUDENT_TABS=["reports","pins","certificates","motivation"];
+  const TEACHER_STUDENT_TABS=["reports","certificates","motivation"];
   function teacherTabs(){
     const tab=state.teacherTab;
-    const btn=(id,label,cls="")=>`<button class="role-tab ${cls} ${tab===id?"active":""}" data-tab="${id}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`;
+    const btn=(id,label,cls="")=>`<button type="button" class="role-tab ${cls} ${tab===id?"active":""}" ${tab===id?'aria-current="page"':''} data-tab="${id}" onclick="PROVE.setTeacherTab('${id}')">${label}</button>`;
     const inStudents=TEACHER_STUDENT_TABS.includes(tab);
-    return `<nav class="role-tabs teacher-nav" data-role="teacher">
+    return `<nav class="role-tabs teacher-nav" data-role="teacher" dir="rtl" aria-label="أقسام لوحة المعلمة">
       <div class="teacher-nav-main">
-        ${btn("home","🏠 Home")}
-        ${btn("classes","👥 Classes")}
-        ${btn("classmode","🖥️ Class Mode")}
-        <button class="role-tab teacher-group-btn ${inStudents?"active":""}" data-group="students" onclick="PROVE.setTeacherTab('reports')">📊 Students</button>
-        <button class="role-tab teacher-group-btn" data-group="tools" onclick="window.STEPUP_TEACHER_NAV&&STEPUP_TEACHER_NAV.toggleTools()">🧰 Tools</button>
-        <button class="teacher-refresh-btn" type="button" title="Refresh data" aria-label="Refresh data" onclick="PROVE.refreshTeacher()">↻</button>
+        ${btn("home","الرئيسية")}
+        <button type="button" class="role-tab teacher-group-btn ${inStudents?"active":""}" data-group="students" onclick="PROVE.setTeacherTab('reports')">الطالبات والنتائج</button>
+        ${btn("pins","حسابات الدخول")}
+        ${btn("classes","الفصول والوحدات")}
+        ${btn("classmode","العرض الصفي")}
+        <button type="button" class="role-tab teacher-group-btn" data-group="tools" aria-expanded="false" aria-controls="teacherTools" onclick="window.STEPUP_TEACHER_NAV&&STEPUP_TEACHER_NAV.toggleTools()">أدوات التدريس</button>
+        <button class="teacher-refresh-btn" type="button" title="تحديث البيانات" aria-label="تحديث البيانات" onclick="PROVE.refreshTeacher()">↻</button>
       </div>
       <div class="teacher-subtabs" data-group="students" ${inStudents?"":"hidden"}>
-        ${btn("reports","📊 Reports","teacher-sub")}
-        ${btn("pins","🔐 PINs","teacher-sub")}
-        ${btn("certificates","🏅 Certificates","teacher-sub")}
-        ${btn("motivation","🌟 Encouragement","teacher-sub")}
+        ${btn("reports","نتائج الطالبات","teacher-sub")}
+        ${btn("certificates","شهادات الوحدات","teacher-sub")}
+        ${btn("motivation","البطاقات التشجيعية","teacher-sub")}
       </div>
-      <div class="teacher-subtabs" data-group="tools" hidden></div>
+      <div id="teacherTools" class="teacher-subtabs" data-group="tools" hidden></div>
     </nav>`;
   }
 
@@ -629,14 +629,14 @@
     return {kind:"none"};
   }
 
-  async function classReportData(classId){
-    const classes=await getClasses(state.profile.role==="teacher"?state.profile.id:null);
+  async function classReportData(classId,snapshot=null){
+    const classes=snapshot?.classes||await getClasses(state.profile.role==="teacher"?state.profile.id:null);
     const cls=classes.find(c=>c.id===classId);
     let students,attempts;
     if(state.profile.role==="teacher"){
-      const teacherStudents=await getStudentsForTeacher(state.profile.id);
+      const teacherStudents=snapshot?.students||await getStudentsForTeacher(state.profile.id);
       students=teacherStudents.filter(x=>x.classId===classId);
-      const teacherAttempts=await getAttempts({teacherId:state.profile.id});
+      const teacherAttempts=snapshot?.attempts||await getAttempts({teacherId:state.profile.id});
       attempts=teacherAttempts.filter(a=>a.classId===classId);
     } else {
       const users=await getAllUsers();
@@ -690,10 +690,10 @@
     // First load can take a few seconds on a slow network: show the bar and a
     // loading card right away instead of an empty page.
     if(!document.querySelector('.role-tabs[data-role="teacher"]')){
-      app.innerHTML=shell(`<main class="container teacher-loading">${teacherTabs()}<div class="card teacher-first-load"><div class="teacher-first-spinner"></div><strong>جاري تحميل بيانات فصولك…</strong></div></main>`,"Teacher");
+      app.innerHTML=shell(`<main class="container teacher-workspace-shell teacher-loading" dir="rtl">${teacherTabs()}<div class="card teacher-first-load"><div class="teacher-first-spinner"></div><strong>جاري تحميل بيانات فصولك…</strong></div></main>`,"Teacher");
     }
     const classes=await getClasses(state.profile.id);
-    if(!state.selectedClassId&&classes[0])state.selectedClassId=classes[0].id;
+    if(!classes.some(c=>c.id===state.selectedClassId))state.selectedClassId=classes[0]?.id||null;
     const cls=classes.find(c=>c.id===state.selectedClassId);
     let body="";
     if(state.teacherTab==="home")body=await teacherHome(classes,cls);
@@ -705,11 +705,12 @@
     if(state.teacherTab==="pins")body=await teacherPins(classes,cls);
     if(state.teacherTab==="profile")body=teacherProfile(classes);
     if(seq!==teacherRenderSeq)return; // a newer tab click is already loading
-    app.innerHTML=shell(`<main class="container">${teacherTabs()}${body}</main>`,"Teacher");
+    app.innerHTML=shell(`<main class="container teacher-workspace-shell" dir="rtl">${teacherTabs()}${body}</main>`,"Teacher");
+    window.STEPUP_TEACHER_WORKSPACE?.bind();
     if(state.teacherTab==="pins")bindPinSearch();
   }
   async function teacherPins(classes,cls){
-    if(!cls)return `<section class="teacher-pins"><div class="notice">Create a class first.</div></section>`;
+    if(!cls)return `<section class="teacher-pins"><div class="notice">أنشئي فصلا أولا لعرض حسابات الطالبات.</div></section>`;
     const all=await getStudentsForTeacher(state.profile.id);
     const students=all.filter(s=>s.classId===cls.id).sort((a,b)=>String(a.displayName||"").localeCompare(String(b.displayName||""),"ar"));
     const known=students.filter(s=>s.pin).length;
@@ -721,9 +722,10 @@
         </div>
       </div>`).join("");
     return `<section class="teacher-pins" dir="rtl">
-      <div class="teacher-section-head"><div><div class="eyebrow">Students</div><h1>🔐 رموز الطالبات</h1><p class="muted">يظهر رمز كل طالبة بعد أول دخول لها. محفوظ: ${known} من ${students.length}</p></div></div>
+      <div class="teacher-section-head"><div><div class="eyebrow">الوصول والاستعادة</div><h1>حسابات الدخول</h1><p class="muted">رموز طالبات الفصل وإعادة تعيين PIN. الرموز المحفوظة: ${known} من ${students.length}</p></div><button type="button" class="btn btn-secondary" onclick="PROVE.refreshTeacher()">تحديث البيانات</button></div>
       <p class="muted teacher-pin-help">إذا نسيت الطالبة رمزها، أعطيها الرمز المحفوظ أو عيّني رمزًا جديدًا. للحسابات التي تدخل بالاسم وPIN؛ الحسابات المرتبطة بالبريد تستعيد كلمة المرور بالبريد.</p>
-      ${classes.length>1?classSelect(classes):""}
+      ${classSelect(classes)}
+      <label for="teacherPinSearch">البحث عن رمز طالبة</label>
       <input id="teacherPinSearch" class="teacher-pin-search" type="search" placeholder="ابحثي باسم الطالبة…" autocomplete="off">
       <div class="teacher-pin-list">${rows||'<div class="notice">لا توجد طالبات في هذا الفصل بعد.</div>'}</div>
     </section>`;
@@ -745,7 +747,7 @@
       });
     });
   }
-  function classSelect(classes){return `<div class="field"><label>Class</label><select onchange="PROVE.selectClass(this.value)">${classes.map(c=>`<option value="${c.id}" ${c.id===state.selectedClassId?"selected":""}>${esc(c.name)} (${esc(c.code)})</option>`).join("")||"<option>No classes</option>"}</select></div>`}
+  function classSelect(classes){return `<div class="field"><label for="teacherClassSelect">الفصل المحدد</label><select id="teacherClassSelect" onchange="PROVE.selectClass(this.value)">${classes.map(c=>`<option value="${esc(c.id)}" ${c.id===state.selectedClassId?"selected":""}>${esc(c.name)} (${esc(c.code)})</option>`).join("")||"<option>لا توجد فصول</option>"}</select></div>`}
 
   function teacherRecentActivity(attempts){
     const recent=[...attempts].sort((a,b)=>(b.submittedAt||"").localeCompare(a.submittedAt||"")).slice(0,5);
@@ -788,138 +790,12 @@
   }
 
   async function teacherHome(classes,cls){
-    if(!cls){
-      return `<section class="teacher-home-v2">
-        <div class="teacher-hero">
-          <div>
-            <div class="eyebrow">Teacher Workspace</div>
-            <h1>${esc(state.profile.displayName)}</h1>
-            <p>${esc(state.profile.school||"")}</p>
-          </div>
-          <button class="btn btn-success" onclick="PROVE.createClass()">+ Create Class</button>
-        </div>
-        <div class="teacher-empty-main card">
-          <div class="teacher-empty-icon">👥</div>
-          <h2>Create your first class</h2>
-          <p class="muted">Each class gets its own student link, QR code, unit access, and reports.</p>
-          <button class="btn btn-primary" onclick="PROVE.createClass()">Create Class</button>
-        </div>
-      </section>`;
-    }
-
-    const [r,allStudents,allAttempts]=await Promise.all([
-      classReportData(cls.id),
+    if(!window.STEPUP_TEACHER_WORKSPACE)return '<div class="notice" dir="rtl">تعذر تحميل لوحة المعلمة. أعيدي تحديث الصفحة.</div>';
+    const [students,attempts]=await Promise.all([
       getStudentsForTeacher(state.profile.id),
-      getAttempts({teacherId:state.profile.id})
+      getAttempts({teacherId:state.profile.id,includeQuestionRecords:true})
     ]);
-
-    const open=openUnitsForClass(cls);
-    const current=open[open.length-1];
-    const currentStats=skillStats(r.attempts);
-    const weak=currentStats[0]||null;
-    const allLatest=latestPerTraining(allAttempts.filter(a=>a.trainingType!=="remedial"));
-    const overallReading=trainingTypeAverage(allLatest,"reading");
-    const overallGrammar=trainingTypeAverage(allLatest,"grammar");
-    const activeClasses=classes.length;
-    const currentUnitLabel=current?`Unit ${current.number}: ${current.title}`:"No unit open";
-
-    return `<section class="teacher-home-v2">
-      <div class="teacher-hero">
-        <div class="teacher-hero-copy">
-          <div class="eyebrow">Teacher Workspace</div>
-          <h1>${esc(state.profile.displayName)}</h1>
-          <p>${esc(state.profile.school||"")}</p>
-          <div class="teacher-hero-meta">
-            <span>${activeClasses} ${activeClasses===1?"class":"classes"}</span>
-            <span>${allStudents.length} students</span>
-            <span>${esc(currentUnitLabel)}</span>
-          </div>
-        </div>
-        <div class="teacher-hero-control">
-          ${classSelect(classes)}
-          <button class="btn btn-primary" onclick="PROVE.copyStudentLink('${esc(cls.code)}')">Copy Student Link</button>
-        </div>
-      </div>
-
-      <div class="teacher-section-head">
-        <div>
-          <div class="eyebrow">All Students</div>
-          <h2>Teaching Overview</h2>
-        </div>
-        <button class="btn btn-success" onclick="PROVE.createClass()">+ Create Class</button>
-      </div>
-
-      <div class="teacher-metric-grid">
-        <div class="teacher-metric-card">
-          <span class="teacher-metric-label">Students</span>
-          <strong>${allStudents.length}</strong>
-          <small>Across all classes</small>
-        </div>
-        <div class="teacher-metric-card">
-          <span class="teacher-metric-label">Classes</span>
-          <strong>${classes.length}</strong>
-          <small>Active classes</small>
-        </div>
-        <div class="teacher-metric-card">
-          <span class="teacher-metric-label">Reading</span>
-          <strong>${overallReading}%</strong>
-          <small>Latest performance</small>
-        </div>
-        <div class="teacher-metric-card">
-          <span class="teacher-metric-label">Grammar</span>
-          <strong>${overallGrammar}%</strong>
-          <small>Latest performance</small>
-        </div>
-      </div>
-
-      <div class="teacher-section-head compact">
-        <div>
-          <div class="eyebrow">Selected Class</div>
-          <h2>${esc(cls.name)}</h2>
-        </div>
-        <span class="teacher-code-pill">${esc(cls.code)}</span>
-      </div>
-
-      <div class="teacher-class-snapshot">
-        <div class="teacher-snapshot-main card">
-          <div class="teacher-snapshot-top">
-            <div>
-              <span class="mini-stat">Current open content</span>
-              <h3>${esc(currentUnitLabel)}</h3>
-            </div>
-            <span class="pill open-chip">${r.completion}% complete</span>
-          </div>
-          <div class="teacher-class-kpis">
-            <div><strong>${r.students.length}</strong><span>Students</span></div>
-            <div><strong>${r.completion}%</strong><span>Completion</span></div>
-            <div><strong>${r.readingAvg}%</strong><span>Reading</span></div>
-            <div><strong>${r.grammarAvg}%</strong><span>Grammar</span></div>
-          </div>
-        </div>
-
-        <div class="teacher-insight-card card">
-          <div class="eyebrow">Priority</div>
-          ${weak?`
-            <h3>${esc(weak.skill)}</h3>
-            <div class="teacher-insight-number">${weak.pct}%</div>
-            <p class="muted">${esc(weak.need||"This is currently the lowest-performing skill in the selected class.")}</p>
-          `:`<div class="teacher-empty-state"><strong>No skill data yet</strong><span>Insights will appear after students begin practicing.</span></div>`}
-        </div>
-      </div>
-
-      ${teacherQuickActions(cls)}
-
-      <div class="grid grid-2 teacher-bottom-grid">
-        <div class="card">
-          <div class="teacher-card-head"><div><div class="eyebrow">Needs</div><h2>Class Focus</h2></div><button class="btn btn-secondary" onclick="PROVE.setTeacherTab('reports')">Full Report</button></div>
-          ${renderNeeds(r.attempts)}
-        </div>
-        <div class="card">
-          <div class="teacher-card-head"><div><div class="eyebrow">Activity</div><h2>Recent Attempts</h2></div></div>
-          ${teacherRecentActivity(r.attempts)}
-        </div>
-      </div>
-    </section>`;
+    return STEPUP_TEACHER_WORKSPACE.home({classes,cls,profile:state.profile,students,attempts,classSelectHTML:classSelect(classes)});
   }
   function studentClassLink(code){
     const base=window.location.origin+window.location.pathname;
@@ -987,53 +863,53 @@
           <div>
             <div class="teacher-class-title-row">
               <h2>${esc(c.name)}</h2>
-              ${isSelected?`<span class="pill open-chip">Selected</span>`:""}
+              ${isSelected?`<span class="pill open-chip">الفصل المحدد</span>`:""}
             </div>
             <div class="teacher-class-meta">
-              <span><strong>${count}</strong> students</span>
-              <span><strong>${openCount}</strong> open units</span>
+              <span><strong>${count}</strong> طالبة</span>
+              <span><strong>${openCount}</strong> وحدات مفتوحة</span>
               <span class="teacher-code-pill">${esc(c.code)}</span>
             </div>
           </div>
           <div class="teacher-class-actions">
-            <button class="btn btn-secondary" onclick="PROVE.selectClass('${c.id}')">Select</button>
+            <button class="btn btn-secondary" onclick="PROVE.selectClass('${c.id}')">تحديد الفصل</button>
           </div>
         </div>
 
         <div class="teacher-class-share">
-          <button class="btn btn-primary" onclick="PROVE.copyStudentLink('${esc(c.code)}')">Copy Student Link</button>
-          <button class="btn btn-secondary" onclick="PROVE.showClassQR('${esc(c.code)}','${esc(c.name).replace(/'/g,"&#39;")}')">Class QR</button>
+          <button class="btn btn-primary" onclick="PROVE.copyStudentLink('${esc(c.code)}')">نسخ رابط الطالبات</button>
+          <button class="btn btn-secondary" onclick="PROVE.showClassQR('${esc(c.code)}','${esc(c.name).replace(/'/g,"&#39;")}')">باركود الفصل</button>
         </div>
 
-        <div class="teacher-unit-access">
-          <div class="teacher-card-head"><div><h3>Unit Access</h3><p class="muted">Control what this class can practice.</p></div></div>
+        <details class="teacher-unit-access" ${isSelected?"open":""}><summary>الوحدات المتاحة لهذا الفصل</summary>
+          <div class="teacher-card-head"><div><h3>فتح الوحدات وإغلاقها</h3><p class="muted">حددي الوحدات المتاحة لطالبات هذا الفصل.</p></div></div>
           ${DATA.units.map(u=>{
             const isOpen=(c.openUnits||["u1"]).includes(u.id),ready=(u.trainings||[]).length>0;
             return `<div class="lock-row">
               <div>
-                <strong>Unit ${u.number}: ${esc(u.title)}</strong>
-                <div class="mini-stat">${!ready?"Content not added yet":isOpen?"Available to students":"Hidden from students"}</div>
+                <strong>الوحدة ${u.number}: ${esc(u.title)}</strong>
+                <div class="mini-stat">${!ready?"المحتوى غير متاح بعد":isOpen?"متاحة للطالبات":"مخفية عن الطالبات"}</div>
               </div>
               <div class="teacher-unit-actions">
-                <span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"Open":"Locked"}</span>
-                ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"Lock":"Open Unit"}</button>`:""}
+                <span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"مفتوحة":"مغلقة"}</span>
+                ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"إغلاق":"فتح الوحدة"}</button>`:""}
               </div>
             </div>`;
           }).join("")}
-        </div>
+        </details>
       </div>`;
     }).join("");
 
     return `<section class="teacher-classes-v2">
       <div class="teacher-section-head">
         <div>
-          <div class="eyebrow">Classes</div>
-          <h1>Classes & Unit Access</h1>
-          <p class="muted">Each class has its own student link, QR code, unit access, and results.</p>
+          <div class="eyebrow">الإعداد والمشاركة</div>
+          <h1>الفصول والوحدات</h1>
+          <p class="muted">اختاري الفصل، ثم انسخي رابطه أو افتحي الوحدات لطالباته.</p>
         </div>
-        <button class="btn btn-success" onclick="PROVE.createClass()">+ Create Class</button>
+        <button class="btn btn-success" onclick="PROVE.createClass()">+ إنشاء فصل</button>
       </div>
-      <div class="teacher-class-list">${cards||"<div class='notice'>No classes yet.</div>"}</div>
+      <div class="teacher-class-list">${cards||"<div class='notice'>لا توجد فصول بعد.</div>"}</div>
     </section>`;
   }
   function findRecommendedClassTraining(openUnits,attempts){
@@ -1043,7 +919,7 @@
   }
 
   async function teacherClassMode(classes,cls){
-    if(!cls)return `<section class="teacher-classmode-v2"><div class="teacher-section-head"><div><div class="eyebrow">Class Mode</div><h1>Teach & Solve Together</h1></div></div><div class="notice">Create a class first.</div></section>`;
+    if(!cls)return `<section class="teacher-classmode-v2"><div class="teacher-section-head"><div><div class="eyebrow">داخل الحصة</div><h1>العرض الصفي</h1></div></div><div class="notice">أنشئي فصلا أولا.</div></section>`;
     const open=openUnitsForClass(cls),r=await classReportData(cls.id),rec=findRecommendedClassTraining(open,r.attempts);
     const items=open.flatMap(u=>u.trainings.map(t=>`
       <div class="teacher-practice-row">
@@ -1052,15 +928,15 @@
           <strong>Unit ${u.number} • ${esc(t.title)}</strong>
           <span>${esc(t.subtitle)}</span>
         </div>
-        <button class="btn btn-primary" onclick="PROVE.startClassMode('${t.id}')">Start</button>
+        <button class="btn btn-primary" onclick="PROVE.startClassMode('${t.id}')">بدء العرض</button>
       </div>`)).join("");
 
     return `<section class="teacher-classmode-v2">
       <div class="teacher-section-head">
         <div>
-          <div class="eyebrow">Class Mode</div>
-          <h1>Teach & Solve Together</h1>
-          <p class="muted">Project a large question, discuss, then reveal the answer. Student scores are never changed.</p>
+          <div class="eyebrow">داخل الحصة</div>
+          <h1>العرض الصفي</h1>
+          <p class="muted">اعرضي الأسئلة، ناقشي الإجابات مع الطالبات، ثم اكشفي الحل.</p>
         </div>
       </div>
 
@@ -1068,23 +944,22 @@
         ${classSelect(classes)}
         <div class="teacher-classmode-summary">
           <span class="teacher-code-pill">${esc(cls.code)}</span>
-          <span>${r.students.length} students</span>
-          <span>${r.completion}% completion</span>
+          <span>${r.students.length} طالبة</span>
         </div>
       </div>
 
       ${rec?`<div class="teacher-recommended card">
         <div>
-          <div class="eyebrow">Recommended Next</div>
+          <div class="eyebrow">تدريب مقترح للفصل</div>
           <h2>${esc(rec.title)}</h2>
-          <p class="muted">${rec.type==="reading"?"Reading":"Grammar"} • based on the selected class activity</p>
+          <p class="muted">${rec.type==="reading"?"القراءة":"القواعد"} • حسب النشاط المحفوظ للفصل المحدد</p>
         </div>
-        <button class="btn btn-primary" onclick="PROVE.startClassMode('${rec.id}')">Start Recommended Practice</button>
+        <button class="btn btn-primary" onclick="PROVE.startClassMode('${rec.id}')">بدء التدريب المقترح</button>
       </div>`:""}
 
       <div class="card">
-        <div class="teacher-card-head"><div><div class="eyebrow">Available</div><h2>Open Unit Practices</h2></div></div>
-        <div class="teacher-practice-list">${items||"<p class='muted'>No open content.</p>"}</div>
+        <div class="teacher-card-head"><div><div class="eyebrow">المحتوى المتاح</div><h2>تدريبات الوحدات المفتوحة</h2></div></div>
+        <div class="teacher-practice-list">${items||"<p class='muted'>لا توجد وحدات مفتوحة بعد.</p>"}</div>
       </div>
     </section>`;
   }
@@ -1124,62 +999,23 @@
   }
 
   async function teacherReports(classes,cls){
-    if(!cls)return `<section class="teacher-reports-v2"><div class="teacher-section-head"><div><div class="eyebrow">Reports</div><h1>Class Results</h1></div></div><div class="notice">Create a class first.</div></section>`;
-    const r=await classReportData(cls.id);
-    const rows=r.studentRows.map(s=>{
-      const l=resultLevel(s.overall);
-      return `<tr>
-        <td><button class="teacher-student-link" onclick="PROVE.openStudent('${s.id}')">${esc(s.name)}</button></td>
-        <td>${s.completed}/${s.totalTrainings}</td>
-        <td>${s.reading||"-"}${s.reading?"%":""}</td>
-        <td>${s.grammar||"-"}${s.grammar?"%":""}</td>
-        <td>${s.overall||"-"}${s.overall?"%":""}</td>
-        <td><span class="result-badge ${l.cls}">${s.attempts?l.label:"No data"}</span></td>
-        <td><button class="btn btn-danger teacher-delete-student" onclick="PROVE.deleteStudent('${s.id}')">Delete</button></td>
-      </tr>`;
-    }).join("");
-
-    return `<section class="teacher-reports-v2">
-      <div class="teacher-section-head">
-        <div>
-          <div class="eyebrow">Reports</div>
-          <h1>Class Results</h1>
-          <p class="muted">Open an individual student or export the selected class report.</p>
-        </div>
-        <div class="teacher-export-actions">
-          <button class="btn btn-secondary" onclick="PROVE.exportClassPDF()">Export PDF</button>
-          <button class="btn btn-primary" onclick="PROVE.exportClassExcel()">Export Excel</button>
-        </div>
-      </div>
-
-      <div class="teacher-report-toolbar card">
-        ${classSelect(classes)}
-        <div class="teacher-report-code">
-          <span>Class Code</span>
-          <strong>${esc(cls.code)}</strong>
-        </div>
-      </div>
-
-      <div class="teacher-metric-grid compact">
-        <div class="teacher-metric-card"><span class="teacher-metric-label">Students</span><strong>${r.students.length}</strong><small>Selected class</small></div>
-        <div class="teacher-metric-card"><span class="teacher-metric-label">Completion</span><strong>${r.completion}%</strong><small>Core practices</small></div>
-        <div class="teacher-metric-card"><span class="teacher-metric-label">Reading</span><strong>${r.readingAvg}%</strong><small>Class average</small></div>
-        <div class="teacher-metric-card"><span class="teacher-metric-label">Grammar</span><strong>${r.grammarAvg}%</strong><small>Class average</small></div>
-      </div>
-
-      <div class="grid grid-2 teacher-report-insights">
-        <div class="card"><div class="teacher-card-head"><div><div class="eyebrow">Priority</div><h2>Class Needs</h2></div></div>${renderNeeds(r.attempts)}</div>
-        <div class="card"><div class="teacher-card-head"><div><div class="eyebrow">Mastery</div><h2>Skill Performance</h2></div></div>${renderSkillBars(r.attempts)}</div>
-      </div>
-
-      <div class="card teacher-students-table">
-        <div class="teacher-card-head"><div><div class="eyebrow">Students</div><h2>Individual Results</h2></div><span class="teacher-code-pill">${r.studentRows.length} students</span></div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Student</th><th>Completed</th><th>Reading</th><th>Grammar</th><th>Overall</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>${rows||"<tr><td colspan='7'>No students yet.</td></tr>"}</tbody>
-        </table></div>
-      </div>
-    </section>`;
+    if(!cls)return '<section class="tw" dir="rtl"><h1>الطالبات والنتائج</h1><div class="notice">أنشئي فصلا أولا لعرض النتائج.</div></section>';
+    if(!window.STEPUP_TEACHER_WORKSPACE)return '<div class="notice" dir="rtl">تعذر تحميل قائمة النتائج. أعيدي تحديث الصفحة.</div>';
+    const [students,saved]=await Promise.all([getStudentsForTeacher(state.profile.id),getAttempts({teacherId:state.profile.id,includeQuestionRecords:true})]);
+    const r=await classReportData(cls.id,{classes,students,attempts:saved.filter(a=>a.recordKind!=="question")});
+    const rows=r.studentRows.map(s=>`<tr>
+      <td><button class="teacher-student-link" onclick="PROVE.openStudent('${s.id}')">${esc(s.name)}</button></td>
+      <td>${s.completed}/${s.totalTrainings}</td><td>${s.reading}%</td><td>${s.grammar}%</td><td>${s.overall}%</td>
+      <td><button class="btn btn-danger teacher-delete-student" onclick="PROVE.deleteStudent('${s.id}')">حذف</button></td>
+    </tr>`).join('');
+    const legacyHTML=`<details class="tw-details"><summary>تحليل المهارات وتقارير التدريبات الإضافية</summary><div class="tw-details-body">
+      <p class="tw-note">هذه نتائج التدريبات الإضافية في المنصة. نتائج مراجعة الوحدات تظهر في قائمة الطالبات أعلاه.</p>
+      <div class="teacher-export-actions"><button class="btn btn-secondary" onclick="PROVE.exportClassPDF()">تقرير التدريبات PDF</button><button class="btn btn-primary" onclick="PROVE.exportClassExcel()">تقرير التدريبات Excel</button></div>
+      <div class="teacher-metric-grid compact"><div class="teacher-metric-card"><span>إكمال التدريبات</span><strong>${r.completion}%</strong></div><div class="teacher-metric-card"><span>متوسط القراءة</span><strong>${r.readingAvg}%</strong></div><div class="teacher-metric-card"><span>متوسط القواعد</span><strong>${r.grammarAvg}%</strong></div></div>
+      <div class="grid grid-2 teacher-report-insights"><div class="card"><h2>احتياجات الفصل</h2>${renderNeeds(r.attempts)}</div><div class="card"><h2>أداء المهارات</h2>${renderSkillBars(r.attempts)}</div></div>
+      <div class="card teacher-students-table"><h2>تفاصيل التدريبات لكل طالبة</h2><div class="table-wrap"><table><thead><tr><th>الطالبة</th><th>التدريبات المكتملة</th><th>القراءة</th><th>القواعد</th><th>المتوسط</th><th>إدارة الحساب</th></tr></thead><tbody>${rows||'<tr><td colspan="6">لا توجد طالبات في هذا الفصل.</td></tr>'}</tbody></table></div></div>
+    </div></details>`;
+    return STEPUP_TEACHER_WORKSPACE.reports({classes,cls,students:r.students,attempts:saved,classSelectHTML:classSelect(classes),legacyHTML});
   }
   function teacherProfile(classes){
     return `<section class="teacher-profile-v2">
@@ -1220,7 +1056,7 @@
     }
     renderTeacher();
   }
-  function selectClass(id){state.selectedClassId=id;teacherPreferCache=true;renderTeacher().finally(()=>{teacherPreferCache=false;})}
+  function selectClass(id){state.selectedClassId=id;teacherPreferCache=true;return renderTeacher().finally(()=>{teacherPreferCache=false;})}
   async function toggleUnit(classId,unitId,open){
     const classes=await getClasses(state.profile.id),c=classes.find(x=>x.id===classId);if(!c)return;
     let openUnits=[...(c.openUnits||["u1"])];
@@ -1249,7 +1085,12 @@
   async function openStudent(id){
     state.selectedStudentId=id;
     const s=await getUserById(id); if(!s)return;
-    const attempts=(await getAttempts({studentId:id})).sort((a,b)=>b.submittedAt.localeCompare(a.submittedAt));
+    const isTeacher=state.profile?.role==="teacher";
+    if(isTeacher&&s.teacherId!==state.profile.id)return alert("هذه الطالبة غير مسجلة في فصولك.");
+    const saved=(await getAttempts({studentId:id,includeQuestionRecords:isTeacher})).sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')));
+    const attempts=isTeacher?saved.filter(a=>a.recordKind!=="question"):saved;
+    const cls=isTeacher?await getClassById(s.classId):null;
+    if(isTeacher)state.selectedClassId=s.classId;
     const latest=latestPerTraining(attempts);
     const avg=pctAverage(latest.length?latest:attempts);
     const reading=trainingTypeAverage(latest.length?latest:attempts,"reading");
@@ -1261,7 +1102,9 @@
       return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.score}/${a.total} (${a.percentage}%)</td><td><span class="result-badge ${level.cls}">${level.label}</span></td><td>${fmtTime(a.elapsedSeconds)}</td><td>${new Date(a.submittedAt).toLocaleString()}</td></tr>`;
     }).join("");
     app.innerHTML=shell(`
-      <main class="container">
+      <main class="container ${isTeacher?'teacher-workspace-shell':''}" ${isTeacher?'dir="rtl"':''}>
+        ${isTeacher?teacherTabs()+STEPUP_TEACHER_WORKSPACE.studentSummary({student:s,attempts:saved,cls}):''}
+        ${isTeacher?'<details class="tw-details"><summary>تقارير التدريبات الإضافية والسجل التفصيلي</summary><div class="tw-details-body">':''}
         <div class="report-head">
           <div><div class="eyebrow">Student Profile</div><h1>${esc(s.displayName)}</h1><p class="muted">${esc(s.classCode||"")}</p><p class="muted"><strong>رمز PIN:</strong> <span dir="ltr">${s.pin?esc(s.pin):"يظهر بعد أول دخول للطالبة"}</span></p></div>
           <div class="no-print"><button class="btn btn-secondary" onclick="PROVE.setTeacherTab('reports')">← Back</button><button class="btn btn-secondary" onclick="PROVE.downloadStudentPDF('${s.id}')">Export PDF</button><button class="btn btn-primary" onclick="PROVE.downloadStudentExcel('${s.id}')">Export Excel</button><button class="btn btn-danger" onclick="PROVE.deleteStudent('${s.id}',true)">Delete Student</button></div>
@@ -1274,7 +1117,9 @@
         </div>
         <div class="grid grid-2"><div class="card"><h2>Skill Profile</h2>${renderSkillBars(attempts)}</div><div class="card"><h2>Recommended Focus</h2>${renderNeeds(attempts)}</div></div>
         <div class="card"><h2>Attempt History</h2><div class="table-wrap"><table><thead><tr><th>Training</th><th>Type</th><th>Score</th><th>Status</th><th>Time</th><th>Date</th></tr></thead><tbody>${rows||"<tr><td colspan='6'>No attempts yet.</td></tr>"}</tbody></table></div></div>
+        ${isTeacher?'</div></details>':''}
       </main>`,"Student Report");
+    if(isTeacher)window.STEPUP_TEACHER_WORKSPACE?.bind();
   }
 
   function studentStepCopy(step){

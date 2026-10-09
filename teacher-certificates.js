@@ -143,9 +143,9 @@
           <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">تصدير القائمة (CSV)</button>
         </div>
       </div>
-      <div class="teacher-report-toolbar card" dir="ltr">
+      <div class="teacher-report-toolbar card" dir="rtl">
         ${classSelectHTML}
-        <div class="teacher-report-code"><span>Class Code</span><strong>${esc(cls.code||'')}</strong></div>
+        <div class="teacher-report-code"><span>رمز الفصل</span><strong dir="ltr">${esc(cls.code||'')}</strong></div>
       </div>
       ${message}
       <div class="sct-stats">
@@ -179,3 +179,4 @@
 
   window.STEPUP_CERT_REPORT={render,exportCSV,evaluateUnit,buildRows};
 })();
+
