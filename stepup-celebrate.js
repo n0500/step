@@ -239,6 +239,20 @@
     var stop = stopsOf(u).find(function(x){ return x.key === 'step'; });
     if(!stop) return {attempts:0,best:-1,bestScore:0,bestTotal:0,bestTime:0,ready:false};
     var h = history(stop.id);
+    // Unit 2 stores each STEP answer separately before its aggregate result.
+    // If that final aggregate save was interrupted, award the same certificate
+    // stamp from ALL saved STEP question records (never from partial progress).
+    if(!h.length && u && u.id === 'u2' && U2() && typeof U2().getStepProgress === 'function'){
+      try{
+        var qp = U2().getStepProgress();
+        if(qp && qp.complete && Number(qp.total) > 0){
+          var qa = Number(qp.accuracy||0);
+          return {attempts:1,best:qa,bestScore:Number(qp.correct||0),
+            bestTotal:Number(qp.total||0),bestTime:0,ready:qa>=STEP_READY,
+            recoveredFromQuestions:true};
+        }
+      }catch(_){}
+    }
     var bestAttempt = null, fastest = 0, fastestReady = 0;
     h.forEach(function(a){
       var pct = Number(a.bestPercentage != null ? a.bestPercentage : a.percentage || 0);
