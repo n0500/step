@@ -90,8 +90,8 @@
       const keys=new Set(a.answers.map(q=>String(q.section)+'|'+String(q.question_id)));
       if(keys.size!==n)continue;
       const score=a.answers.filter(q=>q.correct===true).length;
-      if(Number(a.score)!==score||Math.round(score/n*100)!==Number(a.percentage))continue;
-      if(!best||score>best.score)best={score,total:n,accuracy:Math.round(score/n*100),submittedAt:a.submittedAt||''};
+      if(Number(a.score)!==score||Math.abs(Math.round(score/n*10000)/100-Number(a.percentage))>0.011)continue;
+      if(!best||score>best.score)best={score,total:n,accuracy:Math.round(score/n*10000)/100,qualifies:score*100>=PASS*n,submittedAt:a.submittedAt||''};
     }
     return best;
   }
@@ -100,7 +100,7 @@
     if(!modules[id])return {earned:false,mode:'unsupported',accuracy:0};
     const old=legacyStatus(id,records),check=bestCheck(id,records);
     if(old.earned)return {earned:true,mode:'legacy',accuracy:old.accuracy,best:check,legacy:old};
-    if(check&&check.accuracy>=PASS)return {earned:true,mode:'new',accuracy:check.accuracy,best:check,legacy:old};
+    if(check&&check.qualifies)return {earned:true,mode:'new',accuracy:check.accuracy,best:check,legacy:old};
     return {earned:false,mode:'pending',accuracy:check?.accuracy||0,best:check,legacy:old};
   }
 
@@ -251,7 +251,7 @@
       section:q.section,question_id:q.id,selected:completed.answers[i],
       correct:completed.answers[i]===q.answer,skill:q.sectionTitle
     }));
-    const score=answers.filter(x=>x.correct).length,total=answers.length,percentage=Math.round(score/total*100);
+    const score=answers.filter(x=>x.correct).length,total=answers.length,percentage=Math.round(score/total*10000)/100;
     const payload={trainingId:trainingId(completed.unitId),trainingTitle:'Unit '+completed.unitId.slice(1)+' Mastery Check',
       trainingType:'mastery-check',unitId:completed.unitId,unitNumber:Number(completed.unitId.slice(1)),
       score,total,percentage,answers,
@@ -262,7 +262,7 @@
       attempts.push(saved&&saved.studentId?saved:{...payload,studentId:student?.id,submittedAt:new Date().toISOString()});
       session=null;
       if(!h)return;
-      const earned=percentage>=PASS;
+      const earned=score*100>=PASS*total;
       h.innerHTML='<section class="sum-test"><div class="sum-summary"><h1>'+(earned?'🏆 Unit mastered!':'Keep going! You can try again.')+'</h1>'+
         '<p><strong>Score: '+score+'/'+total+' · '+percentage+'%</strong></p>'+
         '<p>'+(earned?'You earned your unit certificate.':'Review the unit and try another complete attempt. Your progress is saved.')+'</p>'+
