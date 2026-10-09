@@ -9,15 +9,16 @@ const shuffle=a=>[...a].sort(()=>Math.random()-.5);
 const unitById=id=>DATA.units.find(u=>u.id===id);
 const questionsFor=(u,m)=>DATA.questions.filter(q=>q.unit_id===`MG1_U${u.number}`&&q.mission===m.source);
 const latest=(attempts,id)=>[...(attempts||[])].filter(a=>a.trainingId===id).sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))[0]||null;
+const bestStage=(attempts,id)=>[...(attempts||[])].filter(a=>a.trainingId===id).sort((a,b)=>Number(b.percentage||0)-Number(a.percentage||0))[0]||null;
 const attemptId=(u,key)=>`journey-${u.id}-${key}`;
 function passed(attempt,kind){if(!attempt)return false;if(kind==='step')return true;const p=Number(attempt.percentage||0);if(kind==='core')return p>=67;if(kind==='reading'||kind==='listening')return p>=67;if(kind==='final')return p>=83;return false;}
 function unitState(u){
   const cores=u.missions.filter(m=>m.type==='core');
-  const coreDone=cores.filter((m,i)=>passed(latest(last.attempts,attemptId(u,`core-${i+1}`)),'core')).length;
-  const read=passed(latest(last.attempts,attemptId(u,'reading')),'reading');
-  const listen=passed(latest(last.attempts,attemptId(u,'listening')),'listening');
+  const coreDone=cores.filter((m,i)=>passed(bestStage(last.attempts,attemptId(u,`core-${i+1}`)),'core')).length;
+  const read=passed(bestStage(last.attempts,attemptId(u,'reading')),'reading');
+  const listen=passed(bestStage(last.attempts,attemptId(u,'listening')),'listening');
   const step=!!latest(last.attempts,attemptId(u,'step'));
-  const final=passed(latest(last.attempts,attemptId(u,'final')),'final');
+  const final=passed(bestStage(last.attempts,attemptId(u,'final')),'final');
   const stops=[coreDone===cores.length,read,listen,final];
   // STEP is optional enrichment and never blocks the unit journey or certificate.
   const done=stops.filter(Boolean).length;
@@ -55,7 +56,7 @@ function station(label,icon,done,unlocked,action,sub,current=false){return `<but
 function openUnit(id){
   const u=unitById(id);if(!u||!last.openIds.has(id))return;const st=unitState(u);const host=$('.student-view');if(!host)return;
   const cores=u.missions.filter(m=>m.type==='core');
-  const masterSubs=cores.map((m,i)=>{const a=latest(last.attempts,attemptId(u,`core-${i+1}`));const done=passed(a,'core');const unlock=i===0||passed(latest(last.attempts,attemptId(u,`core-${i}`)),'core');return `<button class="journey-subtask ${done?'done':''} ${!unlock?'locked':''}" ${unlock?`onclick="STEPUP_JOURNEY.startCore('${u.id}',${i})"`:''}><span>${done?'✓':i+1}</span><div><b>${esc(m.title)}</b><small>${done?'Mastered':unlock?'Quick adaptive check':'Unlocks next'}</small></div></button>`}).join('');
+  const masterSubs=cores.map((m,i)=>{const a=bestStage(last.attempts,attemptId(u,`core-${i+1}`));const done=passed(a,'core');const unlock=i===0||passed(bestStage(last.attempts,attemptId(u,`core-${i}`)),'core');return `<button class="journey-subtask ${done?'done':''} ${!unlock?'locked':''}" ${unlock?`onclick="STEPUP_JOURNEY.startCore('${u.id}',${i})"`:''}><span>${done?'✓':i+1}</span><div><b>${esc(m.title)}</b><small>${done?'Mastered':unlock?'Quick adaptive check':'Unlocks next'}</small></div></button>`}).join('');
   const masterDone=st.coreDone===cores.length;
   const readUnlock=masterDone,listenUnlock=st.read,stepUnlock=st.listen,finalUnlock=st.listen;
   host.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit ${u.number}</b></div><section class="journey-unit-hero"><span class="journey-kicker">Unit ${u.number}</span><h1>${esc(u.title)}</h1><p>${esc(u.objective)}</p><div class="journey-mini-progress"><i style="width:${st.pct}%"></i></div><small>${st.done}/4 required stages complete</small></section><section class="journey-master-card"><div class="journey-stage-title"><span>01</span><div><h2>Master the Unit</h2><p>StepUp checks what you know and gives support only when needed.</p></div><b>${st.coreDone}/${cores.length}</b></div><div class="journey-subtasks">${masterSubs}</div></section><div class="journey-stops">${station('Read','📖',st.read,readUnlock,`STEPUP_JOURNEY.startReading('${u.id}')`,'Find evidence in a short reading.',!st.read&&readUnlock)}${station('Listen','🎧',st.listen,listenUnlock,`STEPUP_JOURNEY.startListening('${u.id}')`,'Listen for the idea and key details.',!st.listen&&listenUnlock)}${station('STEP Practice','⚡',st.step,stepUnlock,`STEPUP_JOURNEY.startStep('${u.id}')`,'6 quick questions • strategy first.',!st.step&&stepUnlock)}${station('Final Challenge','🏁',st.final,finalUnlock,`STEPUP_JOURNEY.startFinal('${u.id}')`,'Finish the unit with confidence.',!st.final&&finalUnlock)}</div>${st.complete?`<section class="journey-celebrate"><span>✨</span><div><b>Unit ${u.number} complete!</b><p>You finished the full journey. Nice work.</p></div></section>`:''}`;
