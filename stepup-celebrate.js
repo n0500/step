@@ -219,7 +219,9 @@
     if(usesUnit3Mastery(u)){ acc = unit3Progress(u).accuracy; }
     var masteryState=window.STEPUP_MASTERY?.status?.(u.id,attempts);
     if(masteryState?.progress?.total && !usesExam(u) && !usesUnit1Mastery(u) && !usesUnit3Mastery(u))acc=masteryState.progress.accuracy;
-    if(masteryState?.earned && ['cumulative','assessment'].includes(masteryState.mode))acc=masteryState.accuracy;
+    if(masteryState?.earned && ['cumulative','assessment','legacy'].includes(masteryState.mode) &&
+      !usesExam(u) && !usesUnit1Mastery(u) && !usesUnit3Mastery(u))acc=masteryState.accuracy;
+    if(masteryState?.earned && masteryState.mode==='assessment')acc=masteryState.accuracy;
     if(acc == null){
       var vals = s.map(function(x){ return best(x.id); }).filter(function(v){ return v>=0; });
       acc = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
