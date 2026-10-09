@@ -42,3 +42,17 @@ scores versus cumulative mastery, summary retries, the full decorated journey
 screen, and preservation of historical answers and earned certificates. Firebase
 is replaced by an isolated test store; no student accounts or production records
 are changed.
+
+## Unit 2 reading and listening checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/unit2-review-media.test.cjs
+```
+
+These checks cover all Unit 2 reading and listening questions, direct and journey
+entry points, reading evidence and listening replay on feedback, the decorated
+student screen, and preservation of historical records and certificate question
+requirements. Speech synthesis and Firebase use isolated test doubles; the tests
+never access student accounts or production records.

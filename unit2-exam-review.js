@@ -13,7 +13,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-reading-strategy-speed-20260930-1";
+  const VERSION = "u2-reading-listening-context-20261009-1";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -31,7 +31,9 @@
     homeHTML: J.homeHTML,
     progressHTML: J.progressHTML,
     openUnit: J.openUnit,
-    go: J.go
+    go: J.go,
+    startReading: J.startReading,
+    startListening: J.startListening
   };
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({
@@ -304,7 +306,7 @@
     }
   ];
 
-  function readingPassageHTML(){
+  function readingPassageHTML(showQuestionLink=true){
     return `<section id="u2ReadingPassage" class="u2-reading-passage" dir="ltr">
       <div class="u2-reading-passage-head">
         <div>
@@ -313,7 +315,7 @@
         </div>
         <div class="u2-reading-passage-actions">
           <button type="button" onclick="STEPUP_U2_EXAM.listenReading()">🔊 Listen</button>
-          <button type="button" onclick="document.getElementById('u2ReadingQuestion')?.scrollIntoView({behavior:'smooth',block:'start'})">↓ Go to Question</button>
+          ${showQuestionLink?`<button type="button" onclick="document.getElementById('u2ReadingQuestion')?.scrollIntoView({behavior:'smooth',block:'start'})">↓ Go to Question</button>`:""}
         </div>
       </div>
       ${READING_PASSAGE.map(part=>`
@@ -1420,6 +1422,7 @@
     if(!h)return;
     const ok=record.correct;
     const isReading=session?.sectionKey==="reading";
+    const isListening=session?.sectionKey==="listening";
     const strategy=isReading?readingStrategyForItem(item,session.pos):null;
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>${esc(session.sec.title)}</b></div>
       <section class="journey-feedback ${ok?'good':'support'}">
@@ -1434,6 +1437,8 @@
             <div class="u2-explain-box ar" dir="rtl"><b>الشرح بالعربي</b><p>${esc(arabicExplanation(item))}</p></div>
           </div>
         `:`<p>${esc(item.explanation)}</p>`}
+        ${isReading?`<div class="u2-feedback-context">${readingPassageHTML(false)}</div>`:""}
+        ${isListening?`<div class="u2-feedback-context">${listeningPlayerHTML()}</div>`:""}
         <div class="u2-saved-pill">Saved ✓</div>
         <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.next()">Continue</button>
       </section>`;
@@ -1443,6 +1448,7 @@
   function answer(selected){
     if(!session)return;
     const ticket=session,position=ticket.pos,item=ticket.queue[position],choice=Number(selected);
+    if(ticket.sectionKey==='listening')stopListening();
     if(ticket.sectionKey==='reading'){
       pauseReadingQuestionTimer();
       stopReadingAudio();
@@ -1665,6 +1671,8 @@
         margin:0 0 16px;padding:14px;border:1px solid #d9e4ef;
         border-radius:18px;background:#f8fbff;
       }
+      .u2-feedback-context{text-align:left;margin:18px 0}
+      .u2-feedback-context .u2-reading-passage{max-height:420px;overflow-y:auto}
       .u2-listening-player-copy{display:flex;align-items:center;gap:11px}
       .u2-listening-player-copy>span{
         width:42px;height:42px;display:grid;place-items:center;flex:0 0 auto;
@@ -1966,6 +1974,14 @@
     if(key==="reading")return openReadingLesson();
     if(key==="listening")return startSection("listening");
     return openUnit2();
+  };
+
+  // Legacy entry points share the complete media-equipped Unit 2 review.
+  J.startReading=function(uid){
+    return uid==="u2"?openReadingLesson():old.startReading(uid);
+  };
+  J.startListening=function(uid){
+    return uid==="u2"?startSection("listening"):old.startListening(uid);
   };
 
   addStyles();
