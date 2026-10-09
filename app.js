@@ -1556,6 +1556,12 @@
       studentId:state.profile.id,studentName:state.profile.displayName,classId:state.profile.classId,classCode:state.profile.classCode,teacherId:state.profile.teacherId,
       trainingId:payload.trainingId,trainingTitle:payload.trainingTitle,trainingType:payload.trainingType,unitId:payload.unitId,unitNumber:payload.unitNumber,
       score:Number(payload.score||0),total:Number(payload.total||0),percentage:Number(payload.percentage||0),elapsedSeconds:Number(payload.elapsedSeconds||0),
+      // Keep actual STEP retry scores separate from the cumulative question mastery.
+      ...(payload.trainingId==="journey-u2-step"?{
+        attemptScore:Number(payload.attemptScore||0),
+        attemptTotal:Number(payload.attemptTotal||0),
+        attemptPercentage:Number(payload.attemptPercentage||0)
+      }:{}),
       autoSubmitted:false,answers:Array.isArray(payload.answers)?payload.answers:[],studyMethod:payload.studyMethod||"journey",submittedAt:nowISO()
     };
     if(!state.fb){attempt.id=uid();local.saveAttempt(attempt);return attempt;}
