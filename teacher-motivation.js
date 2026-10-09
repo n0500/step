@@ -214,5 +214,7 @@
       '<p class="smc-note">تظهر بطاقة واحدة من كل نوع للطالبة في الوحدة نفسها، وتُحتسب من نتائج التدريب المحفوظة دون التأثير في شهادات إتقان الوحدات.</p>'+
     '</section>';
   }
-  window.STEPUP_MOTIVATION={render,buildRows,evaluateUnit,printCard,exportCSV};
+  // Reuse the exact approved award definitions in students' own card gallery.
+  window.STEPUP_MOTIVATION={render,buildRows,evaluateUnit,printCard,exportCSV,
+    getCards:()=>CARDS.map(card=>({...card}))};
 })();
