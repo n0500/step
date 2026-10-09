@@ -4,6 +4,30 @@
   function text(el){ return (el?.textContent || '').trim(); }
 
   function makeRoadmap(masterCard, stops){
+    if (stops.some(s => s.hasAttribute('data-review-section'))) {
+      const wrap = document.createElement('div');
+      wrap.className = 'journey-focus-roadmap';
+      wrap.dataset.reviewUnit = 'u1';
+      wrap.setAttribute('aria-label','Unit 1 skill accuracy');
+      stops.forEach(stop => {
+        const key = stop.dataset.reviewSection;
+        if (!key) return;
+        const state = window.STEPUP_U1_REVIEW.sectionProgress(key);
+        const stage = document.createElement('button');
+        stage.type = 'button';
+        stage.className = `journey-focus-stage ${state.mastered?'done':''} ${state.done&&!state.mastered?'needs-review':''} ${stop.classList.contains('current')?'current':''}`;
+        stage.dataset.reviewSection = key;
+        stage.setAttribute('aria-label',`${text(stop.querySelector('b'))}: ${state.correct} of ${state.total} correct across attempts`);
+        const dot = document.createElement('span'); dot.className = 'journey-focus-dot';
+        dot.textContent = state.correct===state.total ? '✓' : state.done ? '↻' : String(wrap.children.length+1);
+        const label = document.createElement('small'); label.textContent = text(stop.querySelector('b')).replace('Final Challenge','Final');
+        const accuracy = document.createElement('em'); accuracy.textContent = state.answered ? `${state.accuracy}%` : 'Ready';
+        stage.append(dot,label,accuracy);
+        stage.addEventListener('click',()=>window.STEPUP_U1_REVIEW.start(key));
+        wrap.appendChild(stage);
+      });
+      return wrap;
+    }
     const masterCount=text(masterCard.querySelector('.journey-stage-title > b')) || '0/4';
     const [doneCount,totalCount]=masterCount.split('/').map(Number);
     const masterDone=Number.isFinite(doneCount)&&Number.isFinite(totalCount)&&totalCount>0&&doneCount>=totalCount;
@@ -60,7 +84,7 @@
       meta:durations[title] || '2–4 min',
       detail,
       action,
-      button:title==='Final Challenge'?'Start challenge':'Start'
+      button:current.dataset.reviewSection && Number(current.dataset.answered)>=Number(current.dataset.total)?'Review missed answers':title==='Final Challenge'?'Start challenge':'Start'
     };
   }
 
@@ -101,7 +125,8 @@
     const master=host?.querySelector('.journey-master-card');
     if(!host||!hero||!master||host.querySelector('.journey-focus-shell')) return;
 
-    const stops=[...host.querySelectorAll('.journey-stops .journey-stop')];
+    const unit1Review=hero.dataset.reviewUnit==='u1';
+    const stops=unit1Review ? [...master.querySelectorAll('.journey-stop')] : [...host.querySelectorAll('.journey-stops .journey-stop')];
     const complete=!!host.querySelector('.journey-celebrate');
     const task=currentMasterTask(master) || currentJourneyStop(stops);
 
@@ -109,7 +134,7 @@
     const title=text(hero.querySelector('h1'));
     const objective=text(hero.querySelector('p'));
     const progress=hero.querySelector('.journey-mini-progress i')?.style.width || '0%';
-    const progressText=text(hero.querySelector('small')) || '0/5 stops complete';
+    const progressText=unit1Review ? `${window.STEPUP_U1_REVIEW.getProgress().answered}/${window.STEPUP_U1_REVIEW.getProgress().total} questions answered` : text(hero.querySelector('small')) || '0/5 stops complete';
 
     const shell=document.createElement('div');
     shell.className='journey-focus-shell';
@@ -126,8 +151,16 @@
         </div>
       </section>`;
 
+    if (unit1Review) {
+      const head = shell.querySelector('.journey-focus-head');
+      head.dataset.reviewUnit = 'u1';
+      head.dataset.ringPct = hero.dataset.ringPct;
+      head.dataset.ringLabel = hero.dataset.ringLabel;
+      hero.querySelectorAll('.u1-review-stats,.u1-review-skill-count,.sxc-u1-award').forEach(el => head.appendChild(el));
+    }
+
     shell.appendChild(makeRoadmap(master,stops));
-    shell.appendChild(complete?completeCard():taskCard(task||{eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'}));
+    shell.appendChild(complete?completeCard():taskCard(task||(unit1Review ? {title:'All answers correct',meta:'Review complete',detail:'Your previous correct answers are kept. You can revisit any skill above.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
 
     const breadcrumb=host.querySelector('.journey-breadcrumb');
     if(breadcrumb) breadcrumb.remove();

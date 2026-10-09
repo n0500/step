@@ -219,9 +219,11 @@
       var row=head.querySelector('.journey-focus-progress-row strong, small');
       var pct=fractionPct(row&&row.textContent);
       if(pct==null){ var bar=head.querySelector('.journey-focus-progress i, .journey-mini-progress i'); pct=bar?parseInt(bar.style.width,10)||0:0; }
+      var explicitPct=head.getAttribute('data-ring-pct');
+      if(explicitPct!==null && Number.isFinite(Number(explicitPct))) pct=Number(explicitPct);
       var copy=head.querySelector('.journey-focus-head-copy');
       var top=el('div','sx-hero-top');
-      top.innerHTML=ring(pct,'complete');
+      top.innerHTML=ring(pct,head.getAttribute('data-ring-label') || 'complete');
       if(copy){ head.insertBefore(top, head.firstChild); top.insertBefore(copy, top.firstChild); }
       else head.insertAdjacentElement('afterbegin', top);
       head.insertAdjacentHTML('beforeend', wave());
@@ -463,3 +465,4 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', start, {once:true}); else start();
 })();
+

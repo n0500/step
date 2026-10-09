@@ -1607,7 +1607,13 @@
     ctx={...ctx,attempts:ctx.attempts.filter(a=>a.recordKind!=="question")};
     const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=u.trainings.length?Math.round(done/u.trainings.length*100):0;return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
     const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
-    const rows=ctx.attempts.slice(0,12).map(a=>{const l=resultLevel(a.percentage);return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${a.percentage}%</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`}).join("");
+    const rows=ctx.attempts.slice(0,12).map(a=>{
+      const fullReview=a.studyMethod==="u1-full-review";
+      const current=fullReview && Number(a.attemptTotal)>0 && Number.isFinite(Number(a.attemptPercentage));
+      const pct=current?Number(a.attemptPercentage):a.percentage,l=resultLevel(pct);
+      const detail=fullReview?`<small class="muted" style="display:block">${current?`This attempt • cumulative accuracy ${a.percentage}%`:"Cumulative accuracy"}</small>`:"";
+      return `<tr><td>${esc(a.trainingTitle)}</td><td>${esc(a.trainingType)}</td><td>${pct}%${detail}</td><td><span class="result-badge ${l.cls}">${l.label}</span></td><td>${new Date(a.submittedAt).toLocaleDateString()}</td></tr>`;
+    }).join("");
     const journeyProgress=window.STEPUP_JOURNEY?.progressHTML?window.STEPUP_JOURNEY.progressHTML(allAttempts,ctx.openUnits,state.profile):"";
     return `<div class="student-page-head"><div class="section-kicker">Progress</div><h1>My Progress</h1><p>See what you have mastered and what deserves one quick review.</p></div>${journeyProgress}
       <details class="card" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:800">Detailed STEP practice results</summary><div style="margin-top:14px"><div class="grid grid-2">${cards}</div>
@@ -1647,8 +1653,8 @@
       studentId:state.profile.id,studentName:state.profile.displayName,classId:state.profile.classId,classCode:state.profile.classCode,teacherId:state.profile.teacherId,
       trainingId:payload.trainingId,trainingTitle:payload.trainingTitle,trainingType:payload.trainingType,unitId:payload.unitId,unitNumber:payload.unitNumber,
       score:Number(payload.score||0),total:Number(payload.total||0),percentage:Number(payload.percentage||0),elapsedSeconds:Number(payload.elapsedSeconds||0),
-      // Keep actual STEP retry scores separate from the cumulative question mastery.
-      ...(payload.trainingId==="journey-u2-step"?{
+      // Keep actual retry scores separate from cumulative question mastery.
+      ...(payload.trainingId==="journey-u2-step" || payload.studyMethod==="u1-full-review"?{
         attemptScore:Number(payload.attemptScore||0),
         attemptTotal:Number(payload.attemptTotal||0),
         attemptPercentage:Number(payload.attemptPercentage||0)

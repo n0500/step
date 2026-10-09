@@ -418,8 +418,9 @@
     var m = ((node.querySelector('.journey-result-score')||{}).textContent||'').match(/(\d+)\s*\/\s*(\d+)/);
     var lr = lastResult && Date.now() - lastResult.at < 20000 ? lastResult : null;
     var pl = lr ? lr.payload : null;
-    var score = pl ? Number(pl.score||0) : (m ? +m[1] : 0);
-    var total = pl ? Number(pl.total||0) : (m ? +m[2] : 0);
+    var unit1Run = node.hasAttribute('data-u1-run-result');
+    var score = pl && !unit1Run ? Number(pl.score||0) : (m ? +m[1] : 0);
+    var total = pl && !unit1Run ? Number(pl.total||0) : (m ? +m[2] : 0);
     var pct = total ? Math.round(score/total*100) : 0;
     var name = firstName();
 
@@ -433,7 +434,8 @@
 
     var prevList = lr ? lr.prev : [];
     var prev = prevList.length ? prevList[prevList.length-1] : null;
-    var prevPct = prev ? Number(prev.percentage||0) : null;
+    if(unit1Run && prev && prev.attemptTotal == null) prev=null;
+    var prevPct = prev ? Number(unit1Run ? prev.attemptPercentage||0 : prev.percentage||0) : null;
     var u = pl ? unitOf(pl.trainingId) : null;
     var stopName = (function(){
       if(!pl) return 'your';
@@ -461,7 +463,7 @@
     }else if(prev && pct > prevPct && pct >= 100){
       v = 'improved';
       html = '<div class="sxc-art">'+ART.rocket+'</div><h2>Amazing progress! 🚀</h2><p class="sxc-sub">Your score improved.</p>'+
-        '<div class="sxc-box sxc-cmp"><span><b>'+Number(prev.score||0)+' / '+Number(prev.total||total)+'</b><small>Previous</small></span><i>→</i><span class="now"><b>'+score+' / '+total+'</b><small>Now</small></span></div>'+
+        '<div class="sxc-box sxc-cmp"><span><b>'+Number(unit1Run ? prev.attemptScore||0 : prev.score||0)+' / '+Number(unit1Run ? prev.attemptTotal||total : prev.total||total)+'</b><small>Previous</small></span><i>→</i><span class="now"><b>'+score+' / '+total+'</b><small>Now</small></span></div>'+
         '<div class="sxc-tip green"><span>📊</span><p>You improved by '+(pct-prevPct)+'%.<br>That’s great progress!</p></div>';
     }else if(prev && pct > prevPct){
       v = 'big';
@@ -795,6 +797,8 @@
     var road = view.querySelector('.journey-focus-roadmap');
     var head = view.querySelector('.journey-focus-head');
     if(!road || !head) return;
+    // The Unit 1 review owns its accuracy labels; coverage is not mastery.
+    if(road.getAttribute('data-review-unit') === 'u1') return;
     var t = ((head.querySelector('h1')||{}).textContent||'').trim();
     var u = J.data.units.find(function(x){ return x.title === t; });
     if(!u) return;

@@ -27,3 +27,18 @@ checks student ownership and restricts updates to `pin`, matching the existing
 rules. It never contacts the production Firebase project. It verifies that the
 old PIN stops working, the new PIN signs in with the same UID, the teacher's
 default session stays active, and a failed profile write can be repaired.
+
+## Unit 1 review checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/unit1-review-flow.test.cjs
+```
+
+These checks load the real question bank and review scripts. They cover the book
+passage, listening controls, answer feedback, duplicate taps, current-attempt
+scores versus cumulative mastery, summary retries, the full decorated journey
+screen, and preservation of historical answers and earned certificates. Firebase
+is replaced by an isolated test store; no student accounts or production records
+are changed.

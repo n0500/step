@@ -28,7 +28,9 @@
     const best = new Map();
     for(const a of (attempts || [])){
       const id = String(a?.trainingId || '');
-      if(!id.startsWith('journey-')){
+      // Full-review mastery credits answers across every saved Unit 1 attempt.
+      // Older adaptive runs can contain different question IDs, even at lower scores.
+      if(!id.startsWith('journey-') || id.startsWith('journey-u1-')){
         keep.push(a);
         continue;
       }
