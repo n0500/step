@@ -204,7 +204,7 @@
   function fmtTime(seconds){ seconds=Math.max(0,Math.round(Number(seconds)||0)); return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`; }
   function stepSummaryText(){ const s=stepStats(); return s.attempts ? `${s.ready?'STEP Ready':'Best'} • ${s.best}%${s.bestTime?` • ${fmtTime(s.bestTime)}`:''}` : '6 questions • timed • STEP Ready at 75%+'; }
   function weakestSection(){ return requiredKeys.slice().sort((a,b)=>{ const pa=correctCount(a)/Math.max(1,sections[a].questions.length), pb=correctCount(b)/Math.max(1,sections[b].questions.length); return pa-pb; })[0] || null; }
-  function certificateEligible(){ return TOTAL_REQUIRED>0 && requiredAnswered()>=TOTAL_REQUIRED && accuracyPct()>=CERT_MASTERY; }
+  function certificateEligible(){ return !!window.STEPUP_MASTERY?.studentStatus?.('u3')?.earned; }
 
   function pendingQuestions(sectionKey){
     const sec = sections[sectionKey];
@@ -254,7 +254,7 @@
         <p>Every approved review question is included. Questions you already answered are kept, so you only need to complete what you have not seen yet.</p>
         <div class="journey-mini-progress"><i style="width:${progressPct()}%"></i></div>
         ${progressStatsHTML()}
-        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Certificate goal: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
+        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Unit Mastery Check: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
       </section>
       <section class="journey-master-card">
         <div class="journey-stage-title"><span>✓</span><div><h2>Review Path</h2><p>Complete every approved question once. After that, each section becomes optional practice.</p></div><b>${progressPct()}%</b></div>
@@ -268,7 +268,7 @@
         <div class="journey-stage-title"><span>🏁</span><div><h2>Final Challenge</h2><p>Complete the final mixed review after you have worked through the unit. STEP is recommended, but it is not a prerequisite.</p></div></div>
         <div class="journey-stops">${sectionCard('final')}</div>
       </section>
-      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All questions seen • Practice weakest section to reach ${CERT_MASTERY}% →</button>`}`;
+      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All review questions seen • Take the full Unit Mastery Check above, or revisit a weak skill →</button>`}`;
   }
 
   function startSection(sectionKey){
