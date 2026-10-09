@@ -286,7 +286,7 @@
   function exit(){
     if(saving)return;
     const id=session?.unitId;session=null;stopAudio();
-    if(id)api(id)?.open?.();
+    if(id)openUnit(id);
   }
   async function finish(){
     if(!session||saving||session.answers.some(a=>a===null))return;
@@ -320,7 +320,11 @@
     }finally{saving=false;}
   }
   function retrySubmit(){if(!saving)finish();}
-  function openUnit(id){session=null;api(id)?.open?.();}
+  function openUnit(id){
+    session=null;stopAudio();
+    if(['u4','u5','u6'].includes(id))J?.openUnit?.(id);
+    else api(id)?.open?.();
+  }
   css();
   window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,bestCheck,bank,requirements,validBank,
     studentStatus,readyToCheck,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
