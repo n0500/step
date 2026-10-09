@@ -1034,6 +1034,9 @@
       wrapJourney();
       var view = app && app.querySelector('.student-view');
       if(view){
+        // Active question/choice pages do not need progress decorations.
+        // Avoid CPU-heavy certificate scans during taps and timed practice.
+        if(view.querySelector('.journey-options'))return;
         var r = view.querySelector('.journey-result:not([data-sxc])');
         if(r){ r.setAttribute('data-sxc','1'); getProfile().then(function(){ celebrateResult(r); }); }
         decorateUnitMap(view);
