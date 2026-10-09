@@ -1076,6 +1076,8 @@
       total:1,
       percentage:correct?100:0,
       attemptNumber:previous.length+1,
+      // Group saved STEP answers by the actual timed run (including retakes).
+      ...(sectionKey==="step"?{stepRunId:String(session?.started||"")}:{}),
       bestCorrect:priorBestCorrect || correct,
       bestScore:(priorBestCorrect || correct)?1:0,
       bestPercentage:(priorBestCorrect || correct)?100:0,
@@ -1133,7 +1135,8 @@
       score,total,percentage,
       attemptNumber:priorStages.length+1,
       attemptScore:currentRunScore,
-      attemptPercentage:Math.round(currentRunScore/Math.max(1,(session?.runAnswers||[]).length)*100),
+      attemptTotal:currentRunTotal,
+      attemptPercentage:Math.round(currentRunScore/Math.max(1,currentRunTotal)*100),
       bestScore:Math.max(score,Math.round(priorBest*total/100)),
       bestTotal:total,
       bestPercentage:Math.max(percentage,priorBest),
@@ -1974,14 +1977,36 @@
     getCertificateRequirements:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
       section:key, questionId:q.id, trainingId:sections[key].trainingId
     }))),
-    // STEP stamp fallback: completed question records remain authoritative even
-    // if the final aggregate attempt could not be saved.
+    // A STEP stamp must reflect a complete 75%+ run, not cumulative best answers.
+    // Saved question runs also recover a qualifying retry if its summary failed.
     getStepProgress:()=>{
       const total=sections.step.questions.length;
       const answered=answeredCount('step');
       const correct=correctCount('step');
+      const ids=new Set(sections.step.questions.map(q=>String(q.id)));
+      const runs=new Map();
+      attempts.forEach(a=>{
+        if(a?.recordKind!=="question" || a.examUnit!=="u2" ||
+           a.examSection!=="step" || !a.stepRunId ||
+           !ids.has(String(a.questionId)))return;
+        const key=String(a.stepRunId);
+        if(!runs.has(key))runs.set(key,new Map());
+        runs.get(key).set(String(a.questionId),a.correct===true);
+      });
+      let bestRunPercentage=-1,bestRunScore=0,completeRuns=0;
+      runs.forEach(answers=>{
+        if(answers.size!==total)return;
+        completeRuns++;
+        const score=Array.from(answers.values()).filter(Boolean).length;
+        const percentage=Math.round(score/total*100);
+        if(percentage>bestRunPercentage){
+          bestRunPercentage=percentage;
+          bestRunScore=score;
+        }
+      });
       return {total,answered,correct,complete:total>0 && answered===total,
-        accuracy:answered?Math.round(correct/answered*100):0};
+        accuracy:answered?Math.round(correct/answered*100):0,
+        bestRunPercentage,bestRunScore,completeRuns};
     },
     getProgress:()=>({
       answered:requiredAnswered(),
