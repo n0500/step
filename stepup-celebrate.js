@@ -189,6 +189,11 @@
   function unitOf(id){ var m = String(id||'').match(/^journey-(u\d+)-/); return m ? J.data.units.find(function(u){ return u.id === m[1]; }) : null; }
   function unitComplete(u){
     if(!u) return false;
+    // New policy: existing legacy certificates stay earned; otherwise only
+    // a full Unit Mastery Check with >=80% can unlock the certificate.
+    if(['u1','u2','u3'].includes(u.id)){
+      return !!window.STEPUP_MASTERY?.status?.(u.id,attempts)?.earned;
+    }
     if(usesExam(u)){
       try{
         var g = U2().getProgress();
@@ -212,6 +217,8 @@
     if(usesExam(u)){ try{ acc = U2().getProgress().accuracy; }catch(_){} }
     if(usesUnit1Mastery(u)){ acc = unit1Progress(u).accuracy; }
     if(usesUnit3Mastery(u)){ acc = unit3Progress(u).accuracy; }
+    var masteryState=window.STEPUP_MASTERY?.status?.(u.id,attempts);
+    if(masteryState?.earned && masteryState.mode==='new')acc=masteryState.accuracy;
     if(acc == null){
       var vals = s.map(function(x){ return best(x.id); }).filter(function(v){ return v>=0; });
       acc = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
@@ -496,7 +503,11 @@
     if(!unitComplete(u)){
       var locked = unitStats(u);
       var need = Math.max(0, CERT_MASTERY - Number(locked.accuracy||0));
-      var lo = overlay('<div class="sxc-step-badge">CERTIFICATE GOAL</div><div class="sxc-art">'+ART.bars+'</div><h2>Almost there! 🎯</h2><p class="sxc-sub">Finish the required Unit '+u.number+' review and reach <b>'+CERT_MASTERY+'% overall accuracy</b> to unlock your certificate.</p><div class="sxc-box"><span><b>'+locked.accuracy+'%</b><small>Current Accuracy</small></span><span><b>'+(need?need+'%':'Complete')+'</b><small>Next Goal</small></span></div><button type="button" class="sxc-primary" data-sxc-journey>Continue Journey →</button>', 'sxc-unit');
+      var oldMode=['u1','u2','u3'].includes(u.id);
+      var goal=oldMode
+        ? 'Complete the unit review, then score <b>'+CERT_MASTERY+'% or higher in one full Unit Mastery Check</b> to earn your certificate. You can retry.'
+        : 'Finish the required Unit '+u.number+' review and reach <b>'+CERT_MASTERY+'% overall accuracy</b> to unlock your certificate.';
+      var lo = overlay('<div class="sxc-step-badge">CERTIFICATE GOAL</div><div class="sxc-art">'+ART.bars+'</div><h2>Almost there! 🎯</h2><p class="sxc-sub">'+goal+'</p><div class="sxc-box"><span><b>'+locked.accuracy+'%</b><small>Review Accuracy</small></span><span><b>'+CERT_MASTERY+'%</b><small>Certificate Goal</small></span></div><button type="button" class="sxc-primary" data-sxc-journey>Continue Journey →</button>', 'sxc-unit');
       lo.querySelector('[data-sxc-journey]').onclick = function(){ closeOverlay(function(){ P.setStudentTab('journey'); }); };
       return;
     }
