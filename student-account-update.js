@@ -379,7 +379,7 @@
           '</div>',
           '<button id="stepupCompleteUpgradeBtn" class="btn btn-primary stepup-account-main-btn">أضيفي بريدي للاستعادة</button>',
           '<button id="stepupSkipUpgradeBtn" class="stepup-account-skip">لا أحتاجه الآن — متابعة</button>',
-          '<div class="stepup-account-footer-note">سنرسل رسالة واحدة لتأكيد البريد، وبعد التأكيد نرسل تلقائيًا رسالة اختيار كلمة المرور.</div>',
+          '<div class="stepup-account-footer-note">سنرسل رسالة واحدة لتأكيد البريد. بعد التأكيد تختارين كلمة المرور هنا مباشرة دون رسالة ثانية.</div>',
         '</div>',
       '</div>'
     ].join("");
@@ -447,9 +447,9 @@
   }
 
   async function showRecoveryStep(pending){
-    replaceUpgradeOverlay(recoveryHTML(pending));
-    bindRecoveryUpgrade();
-    await sendPasswordSetupEmail(pending,false);
+    // Verified email: complete on-device with the student's existing PIN.
+    replaceUpgradeOverlay(passwordHTML({},pending));
+    bindPasswordUpgrade();
   }
 
   async function sendPasswordSetupEmail(pending,force){
@@ -459,7 +459,7 @@
     var now = Date.now();
     if(!force && last && (now-last) < 120000){
       var existing = document.getElementById("stepupPasswordSetupStatus");
-      if(existing) existing.textContent = "رسالة اختيار كلمة المرور أُرسلت إلى بريدك.";
+      if(existing) existing.textContent = "طُلب رابط الاستعادة مؤخرًا. تحققي من بريدك أو استخدمي PIN القديم.";
       return;
     }
 
@@ -469,22 +469,22 @@
       btn.disabled = true;
       btn.textContent = "جاري الإرسال...";
     }
-    if(status) status.textContent = "جاري إرسال رسالة اختيار كلمة المرور...";
+    if(status) status.textContent = "جاري طلب رابط استعادة كلمة المرور...";
 
     try{
       auth().languageCode = "ar";
       await auth().sendPasswordResetEmail(pending.newEmail);
       localStorage.setItem(key,String(now));
-      if(status) status.textContent = "تم إرسال رسالة اختيار كلمة المرور ✓";
-      if(force) alert("تمت إعادة إرسال رسالة اختيار كلمة المرور ✓");
+      if(status) status.textContent = "طُلب رابط الاستعادة. تحققي من البريد والرسائل غير المرغوبة؛ وصوله قد يتأخر.";
+      if(force) alert("تم طلب رابط استعادة كلمة المرور. تحققي من البريد والرسائل غير المرغوبة؛ وصوله قد يتأخر.");
     }catch(error){
       console.error("StepUp password setup email failed",error);
-      if(status) status.textContent = "تعذر إرسال الرسالة الآن. اضغطي «إعادة الإرسال».";
+      if(status) status.textContent = "تعذر طلب الاستعادة. يمكنك استخدام PIN القديم مباشرة.";
       if(force) alert("تعذر إعادة الإرسال: " + friendlyError(error,"reset"));
     }finally{
       if(btn && document.body.contains(btn)){
         btn.disabled = false;
-        btn.textContent = "ما وصلتني الرسالة — إعادة الإرسال";
+        btn.textContent = "نسيت PIN القديم — استعادة كلمة المرور بالبريد";
       }
     }
   }
@@ -498,9 +498,9 @@
     return [
       '<div id="stepupAccountUpgradeOverlay" class="stepup-account-overlay" dir="rtl" role="dialog" aria-modal="true">',
         '<div class="stepup-account-upgrade-card">',
-          '<div class="stepup-account-update-badge">الخطوة 4 من 4</div>',
+          '<div class="stepup-account-update-badge">2 من 2</div>',
           '<h2>تم التحقق من البريد ✓</h2>',
-          '<p class="stepup-account-lead">بقي أن تختاري كلمة مرور لحسابك نفسه.</p>',
+          '<p class="stepup-account-lead">اختاري كلمة المرور هنا مباشرة، دون انتظار رسالة ثانية. سيبقى حسابك وتقدمك محفوظين.</p>',
           '<div class="stepup-account-email-chip">' + esc(pending.newEmail) + '</div>',
           '<div class="stepup-account-form">',
             '<label for="stepupUpgradePassword">كلمة المرور الجديدة</label>',
@@ -510,7 +510,10 @@
             '<label for="stepupUpgradePin">PIN القديم للتأكيد الأخير</label>',
             '<input id="stepupUpgradePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="4 أرقام">',
           '</div>',
-          '<button id="stepupFinishUpgradeBtn" class="btn btn-primary stepup-account-main-btn">حفظ كلمة المرور وإكمال التحديث</button>',
+          '<button id="stepupFinishUpgradeBtn" class="btn btn-primary stepup-account-main-btn">حفظ كلمة المرور ومتابعة STEP UP</button>',
+          '<button id="stepupSkipVerifiedUpgradeBtn" class="stepup-account-skip" type="button">المتابعة الآن دون إكمال كلمة المرور</button>',
+          '<button id="stepupRecoverSessionBtn" class="stepup-account-skip" type="button">نسيت PIN القديم — استعادة كلمة المرور بالبريد</button>',
+          '<div id="stepupPasswordSetupStatus" class="stepup-account-footer-note" aria-live="polite"></div>',
           '<div class="stepup-account-footer-note">بعد هذه الخطوة يمكنك الدخول بالبريد وكلمة المرور الجديدة واستعادة كلمة المرور عند الحاجة.</div>',
         '</div>',
       '</div>'
@@ -547,8 +550,18 @@
   }
 
   function bindPasswordUpgrade(){
-    var finishBtn = document.getElementById("stepupFinishUpgradeBtn");
-    if(finishBtn) finishBtn.addEventListener("click",finishPasswordUpgrade);
+    var finishBtn=document.getElementById("stepupFinishUpgradeBtn");
+    var skipBtn=document.getElementById("stepupSkipVerifiedUpgradeBtn");
+    var recoverBtn=document.getElementById("stepupRecoverSessionBtn");
+    if(finishBtn)finishBtn.addEventListener("click",finishPasswordUpgrade);
+    if(skipBtn)skipBtn.addEventListener("click",continueWithoutPassword);
+    if(recoverBtn)recoverBtn.addEventListener("click",function(){sendPasswordSetupEmail(findAnyPendingUpgrade(),true);});
+  }
+  function continueWithoutPassword(){
+    var pending=findAnyPendingUpgrade();
+    if(pending)sessionStorage.setItem(skipKey(pending.uid),"1");
+    document.getElementById("stepupAccountUpgradeOverlay")?.remove();
+    if(!auth().currentUser)window.location.reload();
   }
 
   async function maybeShowUpgrade(){
@@ -558,8 +571,8 @@
 
     var user = auth().currentUser;
     if(!user){
-      var signedOutPending = findAnyPendingUpgrade();
-      if(signedOutPending){
+      var signedOutPending=findAnyPendingUpgrade();
+      if(signedOutPending&&sessionStorage.getItem(skipKey(signedOutPending.uid))!=="1"){
         await showRecoveryStep(signedOutPending);
       }
       return;
@@ -568,6 +581,7 @@
     try{
       var pending = readPendingByUid(user.uid);
       if(pending){
+        if(sessionStorage.getItem(skipKey(pending.uid))==="1")return;
         try{
           await user.reload();
         }catch(e){
@@ -794,74 +808,58 @@
   }
 
   async function finishPasswordUpgrade(){
-    if(upgradeBusy) return;
+    if(upgradeBusy)return;
+    var password=((document.getElementById("stepupUpgradePassword")||{}).value||"");
+    var confirmation=((document.getElementById("stepupUpgradePasswordConfirm")||{}).value||"");
+    var pin=((document.getElementById("stepupUpgradePin")||{}).value||"").trim();
+    if(password.length<8)return alert("اختاري كلمة مرور من 8 أحرف أو أكثر.");
+    if(password!==confirmation)return alert("كلمة المرور وتأكيدها غير متطابقين.");
+    if(!/^\d{4}$/.test(pin))return alert("أدخلي PIN القديم المكوّن من 4 أرقام.");
 
-    var password = ((document.getElementById("stepupUpgradePassword") || {}).value || "");
-    var passwordConfirm = ((document.getElementById("stepupUpgradePasswordConfirm") || {}).value || "");
-    var pin = ((document.getElementById("stepupUpgradePin") || {}).value || "").trim();
-
-    if(password.length < 8){
-      alert("اختاري كلمة مرور من 8 أحرف أو أكثر.");
+    var pending=findAnyPendingUpgrade();
+    if(!pending?.uid||!pending?.legacyEmail||!pending?.newEmail){
+      alert("لم نجد طلب ربط البريد. ارجعي للدخول بحسابك الحالي، ولا تنشئي حسابًا جديدًا.");
       return;
     }
-    if(password !== passwordConfirm){
-      alert("كلمة المرور وتأكيدها غير متطابقين.");
-      return;
-    }
-    if(!/^\d{4}$/.test(pin)){
-      alert("أدخلي PIN القديم المكوّن من 4 أرقام.");
-      return;
-    }
-
-    var user = auth().currentUser;
-    if(!user) return alert("أعيدي تسجيل الدخول ثم تابعي التحديث.");
-
-    var pending = readPendingByUid(user.uid);
-    if(!pending) return alert("لم نجد طلب تحديث قيد الانتظار.");
-
-    var btn = document.getElementById("stepupFinishUpgradeBtn");
-    upgradeBusy = true;
-    if(btn){
-      btn.disabled = true;
-      btn.textContent = "جاري إكمال التحديث...";
-    }
-
+    var btn=document.getElementById("stepupFinishUpgradeBtn");
+    var status=document.getElementById("stepupPasswordSetupStatus");
+    upgradeBusy=true;
+    if(btn){btn.disabled=true;btn.textContent="جاري حفظ كلمة المرور...";}
+    if(status)status.textContent="نتأكد من حسابك الأصلي ونحفظ كلمة المرور...";
     try{
+      // Firebase keeps the original password when a verified email address changes.
+      // Signing into the verified address with the original PIN-derived password
+      // also restores an expired session without creating another user or UID.
+      var oldPassword=legacyPasswordFromCurrentEmail(pending.legacyEmail,pin);
+      var result=await auth().signInWithEmailAndPassword(pending.newEmail,oldPassword);
+      var user=result.user;
+      if(user.uid!==pending.uid){
+        await auth().signOut();
+        throw new Error("الحساب لا يطابق حساب الطالبة الأصلي. لم تُغيّر كلمة المرور.");
+      }
       await user.reload();
-      user = auth().currentUser || user;
-
-      if(String(user.email || "").toLowerCase() !== String(pending.newEmail || "").toLowerCase()){
-        alert("يجب التحقق من البريد أولًا.");
-        return;
+      if(String(user.email||"").toLowerCase()!==String(pending.newEmail).toLowerCase()){
+        throw new Error("يجب تأكيد البريد الجديد أولًا بالضغط على رابط رسالة التحقق الأولى.");
       }
-
-      var oldPassword = legacyPasswordFromCurrentEmail(pending.legacyEmail,pin);
-      var credential = firebase.auth.EmailAuthProvider.credential(pending.newEmail,oldPassword);
-      await user.reauthenticateWithCredential(credential);
       await user.updatePassword(password);
-
       localStorage.setItem(upgradedKey(pending.legacyEmail),"1");
-      sessionStorage.removeItem(skipKey(user.uid));
+      sessionStorage.removeItem(skipKey(pending.uid));
       clearPendingUpgrade(pending);
-
-      var overlay = document.getElementById("stepupAccountUpgradeOverlay");
-      if(overlay) overlay.remove();
-
-      alert(
-        "تم تحديث حسابك بنجاح ✓\n\n" +
-        "• نفس الحساب ونفس التقدم محفوظان.\n" +
-        "• من الآن استخدمي بريدك الإلكتروني وكلمة المرور الجديدة.\n" +
-        "• يمكنك استخدام «نسيت كلمة المرور؟» عند الحاجة."
-      );
+      document.getElementById("stepupAccountUpgradeOverlay")?.remove();
+      alert("تم إعداد كلمة المرور بنجاح ✓\n\nحسابك نفسه وجميع نتائجك وشهاداتك محفوظة.\nاستخدمي البريد وكلمة المرور الجديدة للدخول لاحقًا.");
     }catch(error){
-      console.error("StepUp password upgrade failed",error);
-      alert("لم يتغير تقدمك أو حسابك. " + friendlyError(error,"upgrade"));
+      console.error("StepUp direct password setup failed",error?.code||error?.message||error);
+      var code=error?.code||"";
+      var message=["auth/wrong-password","auth/invalid-credential","auth/invalid-login-credentials"].includes(code)?
+        "PIN القديم غير صحيح، أو سبق تعيين كلمة مرور. تحققي من PIN أو استخدمي استعادة كلمة المرور بالبريد.":
+        ["auth/user-not-found","auth/invalid-email"].includes(code)?
+        "البريد الجديد لم يصبح بريد الدخول بعد. تأكدي من فتح رابط رسالة التحقق الأولى.":
+        friendlyError(error,"upgrade");
+      if(status)status.textContent="لم نتمكن من الحفظ: "+message;
+      else alert("لم يتغير حسابك: "+message);
     }finally{
-      upgradeBusy = false;
-      if(btn && document.body.contains(btn)){
-        btn.disabled = false;
-        btn.textContent = "حفظ كلمة المرور وإكمال التحديث";
-      }
+      upgradeBusy=false;
+      if(btn&&document.body.contains(btn)){btn.disabled=false;btn.textContent="حفظ كلمة المرور ومتابعة STEP UP";}
     }
   }
 
