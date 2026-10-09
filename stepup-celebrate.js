@@ -884,6 +884,11 @@
     }
   }
 
+  // Avoid rewriting the same DOM on each MutationObserver scan.
+  // Rewriting identical text repeatedly can create a self-sustaining render loop
+  // that makes question buttons feel unresponsive on low-memory phones.
+  function putText(el,value){ if(el&&el.textContent!==String(value))el.textContent=String(value); }
+  function putHTML(el,value){ if(el&&el.innerHTML!==value)el.innerHTML=value; }
   function decorateUnit1JourneyHome(view){
     if(!view) return;
     var u=(J.data.units||[]).find(function(x){ return x.id==='u1'; }); if(!u) return;
@@ -894,10 +899,10 @@
     var card=cards.find(function(c){ return (((c.querySelector('h3')||{}).textContent)||'').trim()==='Big Changes'; });
     if(card){
       var pct=Math.round((g.answered/Math.max(1,g.total))*100);
-      var status=card.querySelector('.journey-status'); if(status) status.textContent=g.eligible?'Complete':(g.answered?'In progress':'Ready');
+      var status=card.querySelector('.journey-status'); putText(status,g.eligible?'Complete':(g.answered?'In progress':'Ready'));
       card.classList.toggle('complete',g.eligible);
-      var bar=card.querySelector('.journey-mini-progress i'); if(bar) bar.style.width=pct+'%';
-      var foot=card.querySelector('.journey-unit-foot'); if(foot) foot.innerHTML='<span>'+g.answered+'/'+g.total+(U1()&&U1().getProgress?' review questions':' required stops')+'</span><strong>'+pct+'%</strong>';
+      var bar=card.querySelector('.journey-mini-progress i'); if(bar && bar.style.width!==pct+'%') bar.style.width=pct+'%';
+      var foot=card.querySelector('.journey-unit-foot'); putHTML(foot,'<span>'+g.answered+'/'+g.total+(U1()&&U1().getProgress?' review questions':' required stops')+'</span><strong>'+pct+'%</strong>');
     }
 
     // The home continue card should never make STEP a prerequisite for Final Challenge.
@@ -908,11 +913,11 @@
       if(U1() && U1().getProgress){
         var ug=unit1Progress(u), pfull=cont.querySelector('p');
         if(ug.eligible){
-          if(pfull) pfull.innerHTML='<strong>Unit mastered</strong> — All review questions are complete and your certificate is unlocked.';
-          if(btn){ btn.textContent='Open Unit 1'; btn.onclick=function(){ U1().open(); }; }
+          putHTML(pfull,'<strong>Unit mastered</strong> — All review questions are complete and your certificate is unlocked.');
+          if(btn){ putText(btn,'Open Unit 1'); btn.onclick=function(){ U1().open(); }; }
         }else{
-          if(pfull) pfull.innerHTML='<strong>Continue Unit 1 Review</strong> — '+ug.answered+'/'+ug.total+' approved review questions completed • '+ug.accuracy+'% accuracy.';
-          if(btn){ btn.textContent='Continue Review'; btn.onclick=function(){ U1().open(); }; }
+          putHTML(pfull,'<strong>Continue Unit 1 Review</strong> — '+ug.answered+'/'+ug.total+' approved review questions completed • '+ug.accuracy+'% accuracy.');
+          if(btn){ putText(btn,'Continue Review'); btn.onclick=function(){ U1().open(); }; }
         }
         return;
       }
@@ -921,18 +926,18 @@
       var final=req.find(function(x){ return x.key==='final'; });
       var listening=req.find(function(x){ return x.key==='listening'; });
       if(g.eligible){
-        if(strong) strong.textContent='Unit mastered';
-        if(p) p.innerHTML='<strong>Unit mastered</strong> — Your certificate is unlocked. STEP Practice is still available anytime.';
-        if(btn){ btn.textContent='Open Unit 1'; btn.onclick=function(){ J.openUnit('u1'); }; }
+        putText(strong,'Unit mastered');
+        putHTML(p,'<strong>Unit mastered</strong> — Your certificate is unlocked. STEP Practice is still available anytime.');
+        if(btn){ putText(btn,'Open Unit 1'); btn.onclick=function(){ J.openUnit('u1'); }; }
       }else if(listening && passedStop(listening) && final && history(final.id).length===0){
-        if(strong) strong.textContent='Final Challenge';
-        if(p) p.innerHTML='<strong>Final Challenge</strong> — Finish the required journey. STEP Practice is extra and can be done anytime.';
-        if(btn){ btn.textContent='Continue'; btn.onclick=function(){ J.startFinal('u1'); }; }
+        putText(strong,'Final Challenge');
+        putHTML(p,'<strong>Final Challenge</strong> — Finish the required journey. STEP Practice is extra and can be done anytime.');
+        if(btn){ putText(btn,'Continue'); btn.onclick=function(){ J.startFinal('u1'); }; }
       }else if(g.answered===g.total && g.accuracy<CERT_MASTERY){
         var weak=req.slice().sort(function(a,b){ return best(a.id)-best(b.id); })[0];
         if(weak){
-          if(p) p.innerHTML='<strong>Raise your mastery</strong> — Current overall accuracy '+g.accuracy+'%. Practice your weakest stop to reach '+CERT_MASTERY+'%.';
-          if(btn){ btn.textContent='Practice '+weak.label; btn.onclick=function(){ weak.go(); }; }
+          putHTML(p,'<strong>Raise your mastery</strong> — Current overall accuracy '+g.accuracy+'%. Practice your weakest stop to reach '+CERT_MASTERY+'%.');
+          if(btn){ putText(btn,'Practice '+weak.label); btn.onclick=function(){ weak.go(); }; }
         }
       }
     }
@@ -947,16 +952,16 @@
     var card=cards.find(function(c){ return (((c.querySelector('h3')||{}).textContent)||'').trim()==='What Will Be, Will Be'; });
     if(card){
       var pct=Math.round((g.answered/Math.max(1,g.total))*100);
-      var status=card.querySelector('.journey-status'); if(status) status.textContent=g.eligible?'Complete':(g.answered?'In progress':'Ready');
+      var status=card.querySelector('.journey-status'); putText(status,g.eligible?'Complete':(g.answered?'In progress':'Ready'));
       card.classList.toggle('complete',g.eligible);
-      var bar=card.querySelector('.journey-mini-progress i'); if(bar) bar.style.width=pct+'%';
-      var foot=card.querySelector('.journey-unit-foot'); if(foot) foot.innerHTML='<span>'+g.answered+'/'+g.total+' review questions</span><strong>'+pct+'%</strong>';
+      var bar=card.querySelector('.journey-mini-progress i'); if(bar && bar.style.width!==pct+'%') bar.style.width=pct+'%';
+      var foot=card.querySelector('.journey-unit-foot'); putHTML(foot,'<span>'+g.answered+'/'+g.total+' review questions</span><strong>'+pct+'%</strong>');
     }
     var cont=view.querySelector('.journey-continue'), h2=cont&&cont.querySelector('h2');
     if(cont && h2 && /Unit 3\s*•\s*What Will Be, Will Be/i.test(h2.textContent||'')){
       var btn=cont.querySelector('.journey-main-btn'), p=cont.querySelector('p');
-      if(g.eligible){ if(p) p.innerHTML='<strong>Unit mastered</strong> — All Unit 3 review questions are complete and your certificate is unlocked.'; if(btn){btn.textContent='Open Unit 3';btn.onclick=function(){U3().open();};} }
-      else { if(p) p.innerHTML='<strong>Continue Unit 3 Review</strong> — '+g.answered+'/'+g.total+' approved review questions completed • '+g.accuracy+'% accuracy.'; if(btn){btn.textContent='Continue Review';btn.onclick=function(){U3().open();};} }
+      if(g.eligible){ putHTML(p,'<strong>Unit mastered</strong> — All Unit 3 review questions are complete and your certificate is unlocked.'); if(btn){putText(btn,'Open Unit 3');btn.onclick=function(){U3().open();};} }
+      else { putHTML(p,'<strong>Continue Unit 3 Review</strong> — '+g.answered+'/'+g.total+' approved review questions completed • '+g.accuracy+'% accuracy.'); if(btn){putText(btn,'Continue Review');btn.onclick=function(){U3().open();};} }
     }
   }
 
