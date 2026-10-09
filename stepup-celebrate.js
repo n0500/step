@@ -239,31 +239,51 @@
     var stop = stopsOf(u).find(function(x){ return x.key === 'step'; });
     if(!stop) return {attempts:0,best:-1,bestScore:0,bestTotal:0,bestTime:0,ready:false};
     var h = history(stop.id);
-    // Unit 2 stores each STEP answer separately before its aggregate result.
-    // If that final aggregate save was interrupted, award the same certificate
-    // stamp from ALL saved STEP question records (never from partial progress).
-    if(!h.length && u && u.id === 'u2' && U2() && typeof U2().getStepProgress === 'function'){
+    var bestAttempt = null, bestPercent = -1, bestScore = 0, bestTotal = 0;
+    var fastest = 0, fastestReady = 0;
+    h.forEach(function(a){
+      var pct = Number(a.bestPercentage != null ? a.bestPercentage : a.percentage || 0);
+      var score = Number(a.bestScore != null ? a.bestScore : a.score || 0);
+      var total = Number(a.bestTotal != null ? a.bestTotal : a.total || 0);
+      // For Unit 2, a summary can include cumulative correct answers across
+      // multiple tries. Use the ACTUAL saved score of a full STEP run instead.
+      if(u && u.id === 'u2' && a.attemptTotal != null){
+        var isFullRun = Number(a.total) > 0 && Number(a.attemptTotal) === Number(a.total);
+        pct = isFullRun ? Number(a.attemptPercentage || 0) : -1;
+        score = isFullRun ? Number(a.attemptScore || 0) : 0;
+        total = Number(a.attemptTotal || 0);
+      }
+      if(Number.isFinite(pct) && pct > bestPercent){
+        bestAttempt = a;
+        bestPercent = pct;
+        bestScore = score;
+        bestTotal = total;
+      }
+      var time = Number(a.elapsedSeconds || 0);
+      if(time > 0 && (!fastest || time < fastest)) fastest = time;
+      if(pct >= STEP_READY && time > 0 && (!fastestReady || time < fastestReady)) fastestReady = time;
+    });
+    // Recover a fully completed, individually scored Unit 2 STEP attempt even
+    // if saving its aggregate summary failed. Partial and cumulative answers
+    // alone never earn a stamp.
+    var completedRuns = 0;
+    if(u && u.id === 'u2' && U2() && typeof U2().getStepProgress === 'function'){
       try{
         var qp = U2().getStepProgress();
-        if(qp && qp.complete && Number(qp.total) > 0){
-          var qa = Number(qp.accuracy||0);
-          return {attempts:1,best:qa,bestScore:Number(qp.correct||0),
-            bestTotal:Number(qp.total||0),bestTime:0,ready:qa>=STEP_READY,
-            recoveredFromQuestions:true};
+        completedRuns = Math.max(0, Number(qp && qp.completeRuns || 0));
+        var recoveredPct = Number(qp && qp.bestRunPercentage);
+        if(completedRuns > 0 && Number.isFinite(recoveredPct) && recoveredPct > bestPercent){
+          bestPercent = recoveredPct;
+          bestScore = Number(qp.bestRunScore || 0);
+          bestTotal = Number(qp.total || 0);
+          bestAttempt = null;
         }
       }catch(_){}
     }
-    var bestAttempt = null, fastest = 0, fastestReady = 0;
-    h.forEach(function(a){
-      var pct = Number(a.bestPercentage != null ? a.bestPercentage : a.percentage || 0);
-      if(!bestAttempt || pct > Number(bestAttempt.bestPercentage != null ? bestAttempt.bestPercentage : bestAttempt.percentage || 0)) bestAttempt = a;
-      var t = Number(a.elapsedSeconds||0);
-      if(t > 0 && (!fastest || t < fastest)) fastest = t;
-      if(pct >= STEP_READY && t > 0 && (!fastestReady || t < fastestReady)) fastestReady = t;
-    });
     if(fastestReady) fastest = fastestReady;
-    var bp = bestAttempt ? Number(bestAttempt.bestPercentage != null ? bestAttempt.bestPercentage : bestAttempt.percentage || 0) : -1;
-    return {attempts:h.length,best:bp,bestScore:Number(bestAttempt && (bestAttempt.bestScore != null ? bestAttempt.bestScore : bestAttempt.score)||0),bestTotal:Number(bestAttempt && (bestAttempt.bestTotal != null ? bestAttempt.bestTotal : bestAttempt.total)||0),bestTime:fastest,ready:bp >= STEP_READY};
+    return {attempts:Math.max(h.length,completedRuns),best:bestPercent,
+      bestScore:bestScore,bestTotal:bestTotal,bestTime:fastest,
+      ready:bestPercent >= STEP_READY};
   }
   function fmtTime(seconds){
     seconds = Math.max(0, Math.round(Number(seconds)||0));
@@ -416,12 +436,17 @@
     var isStep = pl && (String(pl.trainingType||'').toLowerCase() === 'step' || /journey-u\d+-step/.test(String(pl.trainingId||'')));
     if(isStep){
       var ss = u ? stepStats(u) : {attempts:1,best:pct,bestScore:score,bestTotal:total,bestTime:Number(pl && pl.elapsedSeconds||0),ready:pct>=STEP_READY};
-      var readyNow = Math.max(pct, ss.best) >= STEP_READY;
+      var thisTryTotal = u && u.id === 'u2' && pl && pl.attemptTotal != null ? Number(pl.attemptTotal) : total;
+      var thisTryScore = u && u.id === 'u2' && pl && pl.attemptTotal != null ? Number(pl.attemptScore||0) : score;
+      var thisTryPct = thisTryTotal > 0 ? Math.round(thisTryScore/thisTryTotal*100) : 0;
+      // A partial retake does not count as a complete STEP attempt.
+      if(u && u.id === 'u2' && pl && pl.attemptTotal != null && Number(pl.total)!==thisTryTotal) thisTryPct = -1;
+      var readyNow = ss.ready || thisTryPct >= STEP_READY;
       v = readyNow ? 'stepready' : 'stepprogress';
       html = '<div class="sxc-step-badge">'+(readyNow?'STEP READY':'STEP PRACTICE')+'</div><div class="sxc-art">'+(readyNow?ART.rocket:ART.bars)+'</div>'+
         '<h2>'+(readyNow?'STEP Ready! ⚡':'STEP progress! ⚡')+'</h2>'+
         '<p class="sxc-sub">'+(readyNow?'You’re building strong STEP habits.':'Good practice. One more try can raise your best score.')+'</p>'+
-        '<div class="sxc-box three"><span><small>This Try</small><b>'+score+' / '+total+'</b></span><span><small>Best Score</small><b>'+Math.max(pct,ss.best)+'%</b></span><span><small>Best Time</small><b>'+(ss.bestTime?fmtTime(ss.bestTime):'—')+'</b></span></div>'+
+        '<div class="sxc-box three"><span><small>This Try</small><b>'+thisTryScore+' / '+thisTryTotal+'</b></span><span><small>Best Score</small><b>'+Math.max(0,thisTryPct,ss.best)+'%</b></span><span><small>Best Time</small><b>'+(ss.bestTime?fmtTime(ss.bestTime):'—')+'</b></span></div>'+
         '<div class="sxc-tip '+(readyNow?'green':'gold')+'"><span>'+(readyNow?'🏅':'🎯')+'</span><p>'+(readyNow?'STEP Ready badge earned. Keep practicing whenever you want.':'Reach '+STEP_READY+'% to earn your STEP Ready badge. Your best result is always kept.')+'</p></div>';
     }else if(prev && pct > prevPct && pct >= 100){
       v = 'improved';
@@ -680,7 +705,7 @@
      The saved attempt history is the source of truth; STEP never blocks mastery. */
   function drawStepAchievementStamp(x, u){
     var award = stepStats(u);
-    if(!award || award.attempts < 1) return;
+    if(!award || !award.ready) return;
     var cx = 1668, cy = 814, radius = 110;
     x.save();
     x.translate(cx, cy);
@@ -974,7 +999,7 @@
     shelf.innerHTML = '<div class="sxc-shelf-head"><h2>🎓 My Certificates</h2><span>'+done.length+' earned</span></div>'+
       (done.length ? '<div class="sxc-shelf-list">'+done.map(function(u){
           var award = stepStats(u);
-          var achievement = award.attempts ? ' • '+(award.ready ? 'STEP Ready' : 'STEP Challenge Achieved') : '';
+          var achievement = award.ready ? ' • STEP Ready' : '';
           return '<button type="button" class="sxc-cert-item" data-unit="'+u.id+'"><span class="sxc-medal">'+u.number+'</span><span><b>Unit '+u.number+'</b><small>'+esc(u.title)+achievement+'</small></span><span class="sxc-view">View</span></button>';
         }).join('')+'</div>'
         : '<p class="sxc-empty">Complete the unit mastery goal to earn its certificate.'+(next ? ' Next up: <b>Unit '+next.number+'</b>.' : '')+'</p>');
