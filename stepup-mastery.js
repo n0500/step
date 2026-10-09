@@ -63,7 +63,24 @@
   }
   // Rebuild the historic certificate condition using only results already
   // saved by migration time, NEVER including answers from later practice.
+  function futureLegacyStatus(id,records){
+    const u=unitData(id);
+    if(!u)return {earned:false,answered:0,total:0,correct:0,accuracy:0};
+    const count=(u.missions||[]).filter(m=>m.type==='core').length;
+    const names=[...Array.from({length:count},(_,i)=>'core-'+(i+1)),'reading','listening','step','final'];
+    const cutoff=(records||[]).filter(a=>isLegacy(a)&&a.recordKind!=='question');
+    const results=names.map(name=>{
+      const matches=cutoff.filter(a=>a.trainingId==='journey-'+id+'-'+name);
+      return matches.length?Math.max(...matches.map(a=>Number(a.percentage||0))):-1;
+    });
+    const pass=results.every((pct,i)=>pct>= (names[i]==='step'?0:names[i]==='final'?83:67));
+    const scores=results.filter((x,i)=>x>=0 && names[i]!=='step'&& names[i]!=='final');
+    return {earned:pass,answered:results.filter(x=>x>=0).length,total:names.length,
+      correct:results.filter((x,i)=>x>=(names[i]==='step'?0:names[i]==='final'?83:67)).length,
+      accuracy:scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0};
+  }
   function legacyStatus(id,records){
+    if(['u4','u5','u6'].includes(id))return futureLegacyStatus(id,records);
     const req=requirements(id);
     if(!req)return {earned:false,answered:0,total:0,correct:0,accuracy:0};
     const questionIndex=new Map();
@@ -166,6 +183,12 @@
   }
   function infoUnit(id){const u=unitData(id);return 'Unit '+(u?.number||id.replace('u',''))+(u?.title?' · '+u.title:'');}
   function readyToCheck(id){
+    if(['u4','u5','u6'].includes(id)){
+      const u=unitData(id),n=(u?.missions||[]).filter(m=>m.type==='core').length;
+      if(!n)return false;
+      const required=[...Array.from({length:n},(_,i)=>'core-'+(i+1)),'reading','listening'];
+      return required.every(key=>attempts.some(a=>a?.recordKind!=='question'&&a.trainingId==='journey-'+id+'-'+key));
+    }
     try{const p=api(id)?.getProgress?.();return !!p&&Number(p.total)>0&&Number(p.answered)>=Number(p.total);}catch(_){return false;}
   }
   function cardHTML(id){
