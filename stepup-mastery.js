@@ -9,18 +9,39 @@
   // immediately before deployment across CDN/browser caches on 9 October.
   const LEGACY_CUTOFF='2026-10-09T08:45:00.000Z';
   const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const modules={u1:()=>window.STEPUP_U1_REVIEW,u2:()=>window.STEPUP_U2_EXAM,u3:()=>window.STEPUP_U3_REVIEW};
+  const modules={u1:()=>window.STEPUP_U1_REVIEW,u2:()=>window.STEPUP_U2_EXAM,u3:()=>window.STEPUP_U3_REVIEW,u4:()=>window.STEPUP_JOURNEY,u5:()=>window.STEPUP_JOURNEY,u6:()=>window.STEPUP_JOURNEY};
   const unitData=id=>(window.STEPUP_JOURNEY?.data?.units||[]).find(u=>u.id===id);
   const api=id=>modules[id]?.()||null;
   const trainingId=id=>'journey-'+id+'-mastery-check';
+  function futureBank(id){
+    const u=unitData(id),all=window.STEPUP_JOURNEY?.data?.questions||[];
+    if(!u)return [];
+    const missions=u.missions||[],result=[];
+    for(const q of all){
+      if(q.unit_id!=='MG1_U'+u.number || q.review_status==='مستبعد')continue;
+      const i=missions.findIndex(m=>m.source===q.mission);
+      if(i<0)continue;
+      const mission=missions[i];
+      if(q.stage!==(mission.type==='final'?'Final Challenge':'Mastery'))continue;
+      const coreNumber=missions.slice(0,i+1).filter(m=>m.type==='core').length;
+      const section=mission.type==='core'?'core-'+coreNumber:mission.type;
+      const answer=['option_a_id','option_b_id','option_c_id','option_d_id'].findIndex(k=>q[k]===q.correct_option_id);
+      result.push({section,sectionTitle:mission.title||section,id:q.question_id,prompt:q.prompt,
+        choices:[q.option_a_text,q.option_b_text,q.option_c_text,q.option_d_text],answer,
+        context:section==='reading'?String(u.reading||''):'',
+        audio:section==='listening'?String(u.listening||''):''});
+    }
+    return result;
+  }
   const requirements=id=>{
     try{
+      if(['u4','u5','u6'].includes(id))return futureBank(id).map(q=>({section:q.section,questionId:q.id,trainingId:'journey-'+id+'-'+q.section}));
       const r=api(id)?.getCertificateRequirements?.();
       return Array.isArray(r)&&r.length?r:null;
     }catch(_){return null;}
   };
   function bank(id){
-    try{const b=api(id)?.getMasteryBank?.();return Array.isArray(b)?b:null;}catch(_){return null;}
+    try{if(['u4','u5','u6'].includes(id))return futureBank(id);const b=api(id)?.getMasteryBank?.();return Array.isArray(b)?b:null;}catch(_){return null;}
   }
   function validBank(id){
     const r=requirements(id),b=bank(id);
@@ -278,6 +299,6 @@
   function retrySubmit(){if(!saving)finish();}
   function openUnit(id){session=null;api(id)?.open?.();}
   css();
-  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,bestCheck,bank,validBank,
+  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,bestCheck,bank,requirements,validBank,
     studentStatus,readyToCheck,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
