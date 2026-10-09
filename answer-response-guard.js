@@ -58,6 +58,11 @@
   }
   function submit({session,questionId,position,selected,persist,isActive,onStart,onSlow,onSaved,onError}){
     if(!session||typeof session!=='object')return;
+    // A save can finish after the student has opened another page. Only the
+    // original question may receive its feedback; do not replace the new view.
+    const questionHost=opts();
+    if(!questionHost||!isActive())return;
+    const isCurrent=()=>questionHost.isConnected && opts()===questionHost && isActive();
     css();
     const prev=active.get(session);
     if(prev && prev.position===position && prev.questionId===questionId){
@@ -73,18 +78,18 @@
     show('Saving your answer… Please keep this question open.');
     onStart?.();
     job.timer=setTimeout(()=>{
-      if(!job.running||active.get(session)!==job||!isActive())return;
+      if(!job.running||active.get(session)!==job||!isCurrent())return;
       show('Connection is slow. Your choice is selected; we are still saving it securely. Please check your connection.','slow');
       onSlow?.();
     },4200);
     Promise.resolve().then(persist).then(record=>{
       clearTimeout(job.timer);job.running=false;
       if(active.get(session)===job)active.delete(session);
-      if(isActive())onSaved(record);
+      if(isCurrent())onSaved(record);
     },error=>{
       clearTimeout(job.timer);job.running=false;
       if(active.get(session)===job)active.delete(session);
-      if(!isActive())return;
+      if(!isCurrent())return;
       try{onError(error);}finally{showError(error,selected,isActive);}
     });
   }

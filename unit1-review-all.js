@@ -246,6 +246,7 @@
   function startSection(sectionKey){
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit1();
+    saving = false;
     session = {
       sectionKey,
       sec,
@@ -466,3 +467,4 @@
     sectionProgress:key => sections[key] ? ({answered:answeredCount(key), total:sections[key].questions.length, correct:correctCount(key), done:sectionDone(key)}) : null
   };
 })();
+

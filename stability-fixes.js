@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '20260927-stability-pin4';
+  const VERSION = '20261009-stability-idle';
   let uiTimer = null;
   let motivationBusy = false;
   let motivationCache = { uid: null, at: 0, attempts: [] };
@@ -166,7 +166,7 @@
       pin.maxLength = 4;
       const field = pin.closest('.field');
       const label = field?.querySelector('label');
-      if(label) label.textContent = 'PIN (4 digits)';
+      if(label && label.textContent !== 'PIN (4 digits)') label.textContent = 'PIN (4 digits)';
       if(field && !field.querySelector('.stepup-pin-note')){
         const note = document.createElement('small');
         note.className = 'muted stepup-pin-note';
@@ -304,7 +304,7 @@
         const latest = sorted[0];
         const prior = sorted.slice(1).filter(a => a.trainingId === latest.trainingId);
         const previousBest = prior.reduce((m,a) => Math.max(m,Number(a.percentage || 0)),-1);
-        toast.textContent = Number(latest.percentage || 0) > previousBest ? `+${pointsForAttempt(latest)} XP • new best` : 'Practice saved • keep going';
+        put(toast, Number(latest.percentage || 0) > previousBest ? `+${pointsForAttempt(latest)} XP • new best` : 'Practice saved • keep going');
       }
     }catch(e){
       console.warn('StepUp XP correction unavailable',e);
@@ -343,3 +343,4 @@
   setTimeout(refreshUI,900);
   window.STEPUP_STABILITY_FIXES = {version:VERSION,stableJourneyAttempts,refresh:refreshUI};
 })();
+

@@ -705,6 +705,7 @@
     stopReadingTimer();
     const sec=sections.reading;
     if(!sec)return;
+    saving=false;
     session={
       sectionKey:"reading",
       sec,
@@ -1334,6 +1335,7 @@
     const sec=sections[sectionKey];
     if(!sec)return;
     const queue=pendingQuestions(sectionKey);
+    saving=false;
     session={
       sectionKey,sec,queue,pos:0,
       started:Date.now(),
@@ -1358,6 +1360,7 @@
     let queue=sec.questions.filter(item=>item.skill===skill);
     if(!queue.length)queue=[...sec.questions];
 
+    saving=false;
     session={
       sectionKey,
       sec,
@@ -2033,3 +2036,4 @@
     })
   };
 })();
+

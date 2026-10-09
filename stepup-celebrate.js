@@ -864,8 +864,8 @@
       if(finalBtn && listenStop && passedStop(listenStop) && finalStop && !passedStop(finalStop)){
         finalBtn.classList.remove('locked');
         finalBtn.setAttribute('onclick',"STEPUP_JOURNEY.startFinal('u1')");
-        var ar = finalBtn.querySelector('.journey-stop-arrow'); if(ar) ar.textContent='›';
-        var sm = finalBtn.querySelector('small'); if(sm) sm.textContent='Finish the unit with confidence.';
+        putText(finalBtn.querySelector('.journey-stop-arrow'),'›');
+        putText(finalBtn.querySelector('small'),'Finish the unit with confidence.');
       }
 
       if(stepBtn){
@@ -1047,7 +1047,7 @@
         addShelf(view);
       }
     }catch(e){ console.warn('StepUp celebrations:', e); }
-    busy = false;
+    finally{ busy = false; }
   }
   // Debounce, but never wait more than 300 ms: animations elsewhere change the page
   // every frame and would otherwise postpone the scan indefinitely.
@@ -1063,3 +1063,4 @@
   window.STEPUP_CELEBRATE = {showCertificate:showCertificate, showUnitComplete:showUnitComplete, drawCertificate:drawCertificate,
     completedUnits:function(){ return (J.data.units||[]).filter(unitComplete); }, certificateMastery:CERT_MASTERY, stepReady:STEP_READY};
 })();
+
