@@ -191,7 +191,7 @@
     if(!u) return false;
     // New policy: existing legacy certificates stay earned; otherwise only
     // a full Unit Mastery Check with >=80% can unlock the certificate.
-    if(['u1','u2','u3'].includes(u.id)){
+    if(['u1','u2','u3','u4','u5','u6'].includes(u.id)){
       return !!window.STEPUP_MASTERY?.status?.(u.id,attempts)?.earned;
     }
     if(usesExam(u)){
@@ -503,7 +503,7 @@
     if(!unitComplete(u)){
       var locked = unitStats(u);
       var need = Math.max(0, CERT_MASTERY - Number(locked.accuracy||0));
-      var oldMode=['u1','u2','u3'].includes(u.id);
+      var oldMode=['u1','u2','u3','u4','u5','u6'].includes(u.id);
       var goal=oldMode
         ? 'Complete the unit review, then score <b>'+CERT_MASTERY+'% or higher in one full Unit Mastery Check</b> to earn your certificate. You can retry.'
         : 'Finish the required Unit '+u.number+' review and reach <b>'+CERT_MASTERY+'% overall accuracy</b> to unlock your certificate.';
