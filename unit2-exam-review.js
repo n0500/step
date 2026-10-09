@@ -1038,6 +1038,10 @@
     if(!window.firebase?.auth || !window.firebase?.firestore) throw new Error("Firebase is not available.");
     const user=firebase.auth().currentUser;
     if(!user) throw new Error("Student is not signed in.");
+    // Reuse the signed-in student's known profile instead of a remote read per answer.
+    if(profile?.role==='student' && (profile.id===user.uid || profile.uid===user.uid)){
+      return {user,p:profile};
+    }
     const snap=await firebase.firestore().collection("users").doc(user.uid).get();
     if(!snap.exists) throw new Error("Student profile was not found.");
     const p=snap.data()||{};
@@ -1432,25 +1436,31 @@
       </section>`;
   }
 
-  async function answer(selected){
-    if(!session||saving)return;
-    const item=session.queue[session.pos];
-    if(session.sectionKey==="reading"){
+
+  function answer(selected){
+    if(!session)return;
+    const ticket=session,position=ticket.pos,item=ticket.queue[position],choice=Number(selected);
+    if(ticket.sectionKey==='reading'){
       pauseReadingQuestionTimer();
       stopReadingAudio();
     }
-    saving=true;
-    try{
-      const record=await saveQuestion(session.sectionKey,item,Number(selected));
-      session.runAnswers.push(record);
-      renderFeedback(item,Number(selected),record);
-    }catch(e){
-      console.error("Unit 2 answer save failed",e);
-      alert("This answer was not saved. Please tap your answer again.");
-      renderQuestion();
-    }finally{
-      saving=false;
-    }
+    return window.STEPUP_ANSWER_RESPONSE.submit({
+      session:ticket,questionId:String(item.id),position,selected:choice,
+      persist:()=>saveQuestion(ticket.sectionKey,item,choice),
+      isActive:()=>session===ticket && session.pos===position,
+      onStart:()=>{saving=true;},
+      onSlow:()=>{saving=false;},
+      onSaved:(record)=>{
+        saving=false;
+        ticket.runAnswers.push(record);
+        renderFeedback(item,choice,record);
+      },
+      onError:(err)=>{
+        saving=false;
+        console.error('U2 answer save failed',err);
+        renderQuestion();
+      }
+    });
   }
 
   async function next(){
