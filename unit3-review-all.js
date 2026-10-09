@@ -254,7 +254,7 @@
         <p>Every approved review question is included. Questions you already answered are kept, so you only need to complete what you have not seen yet.</p>
         <div class="journey-mini-progress"><i style="width:${progressPct()}%"></i></div>
         ${progressStatsHTML()}
-        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Unit Mastery Check: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
+        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Certificate goal: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
       </section>
       <section class="journey-master-card">
         <div class="journey-stage-title"><span>✓</span><div><h2>Review Path</h2><p>Complete every approved question once. After that, each section becomes optional practice.</p></div><b>${progressPct()}%</b></div>
@@ -268,7 +268,7 @@
         <div class="journey-stage-title"><span>🏁</span><div><h2>Final Challenge</h2><p>Complete the final mixed review after you have worked through the unit. STEP is recommended, but it is not a prerequisite.</p></div></div>
         <div class="journey-stops">${sectionCard('final')}</div>
       </section>
-      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All review questions seen • Take the full Unit Mastery Check above, or revisit a weak skill →</button>`}`;
+      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All questions seen • Practice your weakest section until you reach ${CERT_MASTERY}% cumulative mastery →</button>`}`;
   }
 
   function startSection(sectionKey){
