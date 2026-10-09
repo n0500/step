@@ -529,6 +529,12 @@
     getCertificateRequirements:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
       section:key, questionId:q.question_id, trainingId:sections[key].trainingId
     }))),
+    getMasteryBank:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
+      section:key, sectionTitle:sections[key].title, id:q.question_id,
+      prompt:q.prompt, choices:qChoices(q), answer:qAnswer(q),
+      context:key==='reading'?String(UNIT.reading||''):'',
+      audio:key==='listening'?String(UNIT.listening||''):''
+    }))),
     sectionProgress:key => sections[key] ? ({answered:answeredCount(key), total:sections[key].questions.length, correct:correctCount(key), done:sectionDone(key)}) : null
   };
 })();
