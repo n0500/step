@@ -41,12 +41,19 @@
       b.setAttribute('aria-pressed',i===selected?'true':'false');
     });
   }
-  function showError(error){
-    const e=show('Your answer could not be saved. Check your connection, then choose the answer again.','error');
+  function showError(error,selected,isActive){
+    const e=show('This answer was not saved. Check your connection and try again.','error');
     if(!e)return;
     const btn=document.createElement('button');btn.type='button';btn.className='sar-retry';
-    btn.textContent='Try the answer again';
-    btn.addEventListener('click',()=>{e.remove();const x=opts();if(x)[...x.querySelectorAll('button')].forEach(b=>b.disabled=false);});
+    btn.textContent='Retry saving my answer';
+    btn.addEventListener('click',()=>{
+      if(!isActive())return;
+      e.remove();
+      const x=opts();if(!x)return;
+      const choices=[...x.querySelectorAll('button')];
+      choices.forEach(button=>button.disabled=false);
+      choices[selected]?.click();
+    });
     e.appendChild(btn);
   }
   function submit({session,questionId,position,selected,persist,isActive,onStart,onSlow,onSaved,onError}){
@@ -78,7 +85,7 @@
       clearTimeout(job.timer);job.running=false;
       if(active.get(session)===job)active.delete(session);
       if(!isActive())return;
-      try{onError(error);}finally{showError(error);}
+      try{onError(error);}finally{showError(error,selected,isActive);}
     });
   }
   window.STEPUP_ANSWER_RESPONSE={submit,css};
