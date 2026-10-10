@@ -6,7 +6,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J?.data) return;
 
-  const VERSION = 'u3-shared-reading-lesson-20261010-2';
+  const VERSION = 'u3-review-accuracy-20261010-4';
   const UNIT_ID = 'u3';
   const UNIT_NUMBER = 3;
   const UNIT = (J.data.units || []).find(u => u.id === UNIT_ID || Number(u.number) === UNIT_NUMBER);
@@ -139,9 +139,33 @@
     return questionRecords(sectionKey, questionId)[0] || null;
   }
 
+  function reviewQuestion(sectionKey, questionId){
+    return attempts.filter(a => a.recordKind === 'question' && a.examUnit === 'u3' &&
+      a.examSection === sectionKey && a.questionId === questionId)
+      .sort((a,b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')))[0]
+      || latestQuestion(sectionKey, questionId);
+  }
+
+  function sectionProgress(key){
+    const sec=sections[key];if(!sec)return null;
+    const answered=answeredCount(key),total=sec.questions.length,correct=correctCount(key);
+    const reviewCorrect=sec.questions.filter(q=>reviewQuestion(key,q.question_id)?.correct===true).length;
+    return {answered,total,correct,done:total>0&&answered===total,reviewCorrect,missed:answered-reviewCorrect,
+      reviewAccuracy:Math.min(reviewCorrect<total?99:100,Math.round(reviewCorrect/Math.max(1,total)*100)),mastered:total>0&&reviewCorrect===total};
+  }
+
+  function reviewAccuracyPct(){
+    const correct=requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0);
+    return Math.min(correct<TOTAL_REQUIRED?99:100,Math.round(correct/Math.max(1,TOTAL_REQUIRED)*100));
+  }
+
+  function nextReviewSection(){
+    return nextMissingSection() || requiredKeys.find(key=>sectionProgress(key).missed>0) || null;
+  }
+
   function bestQuestion(sectionKey, questionId){
     const list = questionRecords(sectionKey, questionId);
-    return list.find(a => a.correct === true || a.bestCorrect === true) || list[0] || null;
+    return list.find(a => a.correct === true) || list.find(a => a.bestCorrect === true) || list[0] || null;
   }
 
   function answeredCount(sectionKey){
@@ -212,7 +236,8 @@
   function pendingQuestions(sectionKey){
     const sec = sections[sectionKey];
     const missing = sec.questions.filter(q => !latestQuestion(sectionKey, q.question_id));
-    return missing.length ? missing : [...sec.questions];
+    const missed=sec.questions.filter(q=>reviewQuestion(sectionKey,q.question_id)?.correct!==true);
+    return missing.length ? missing : missed.length ? missed : [...sec.questions];
   }
 
   function nextMissingSection(){
@@ -223,12 +248,10 @@
     const sec = sections[key];
     const answered = answeredCount(key);
     const total = sec.questions.length;
-    const done = total > 0 && answered >= total;
-    const correct = correctCount(key);
-    const pct = answered ? Math.round(correct / answered * 100) : 0;
-    const label = done ? `All ${total} review questions seen • Best accuracy ${pct}%` : `${answered}/${total} review questions seen`;
-    return `<button class="journey-stop ${done?'done':''}" onclick="STEPUP_U3_REVIEW.start('${key}')">
-      <span class="journey-stop-icon">${done?'✓':sec.icon}</span>
+    const state=sectionProgress(key),done=state.mastered;
+    const label=`${state.missed?'Needs review • ':done?'All answers correct • ':''}${answered}/${total} answered • ${state.reviewCorrect}/${total} correct`;
+    return `<button class="journey-stop ${done?'done':''} ${state.missed?'needs-review':''} ${nextReviewSection()===key?'current':''}" data-review-unit="u3" data-review-section="${key}" data-needs-review="${state.missed>0?1:0}" data-answered="${answered}" data-total="${total}" onclick="STEPUP_U3_REVIEW.start('${key}')">
+      <span class="journey-stop-icon">${done?'✓':state.missed?'↻':sec.icon}</span>
       <span class="journey-stop-copy"><b>${esc(sec.title)}</b><small>${esc(label)}</small></span>
       <span class="journey-stop-arrow">›</span>
     </button>`;
@@ -236,10 +259,10 @@
 
   function progressStatsHTML(){
     const answered = requiredAnswered();
-    const correct = requiredCorrect();
+    const correct = requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0);
     return `<div class="u3-review-stats">
-      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Review Questions • ${progressPct()}%</small></span>
-      <span><b>${answered ? `${correct}/${answered}` : '—'}</b><small>Best Accuracy${answered ? ` • ${accuracyPct()}%` : ''}</small></span>
+      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Questions answered</small></span>
+      <span><b>${correct}/${TOTAL_REQUIRED}</b><small>Review accuracy • ${reviewAccuracyPct()}%</small></span>
     </div>`;
   }
 
@@ -248,23 +271,23 @@
     if (!unitOpen()) return old.openUnit('u3');
     const h = document.querySelector('.student-view');
     if (!h) return;
-    const answered = requiredAnswered();
-    const next = nextMissingSection();
+    const next = nextReviewSection();
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit 3</b></div>
-      <section class="journey-unit-hero">
+      <section class="journey-unit-hero" data-review-unit="u3" data-ring-pct="${reviewAccuracyPct()}" data-ring-label="review accuracy">
         <span class="journey-kicker">Unit 3 • Full Review</span>
         <h1>What Will Be, Will Be</h1>
         <p>Every approved review question is included. Questions you already answered are kept, so you only need to complete what you have not seen yet.</p>
-        <div class="journey-mini-progress"><i style="width:${progressPct()}%"></i></div>
+        <div class="journey-mini-progress"><i style="width:${reviewAccuracyPct()}%"></i></div>
         ${progressStatsHTML()}
-        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Certificate goal: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
+        <small class="journey-review-skill-count">${requiredKeys.filter(key=>sectionProgress(key).mastered).length} of ${requiredKeys.length} skills mastered • Review any missed answers</small>
+        <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Cumulative accuracy • ${accuracyPct()}%</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Certificate goal: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% cumulative accuracy</small></div>`}</div>
       </section>
       <section class="u3-reading-lesson-entry">
         <div><span>Unit 3 • Reading Lesson</span><h2>The Tulsa Time Capsule</h2><p>Learn the same way as in class: read and listen to each paragraph, check your understanding, then practise reading strategies.</p></div>
         <div class="u3-reading-entry-actions"><button type="button" class="journey-main-btn" onclick="STEPUP_U3_REVIEW.readingLesson()">Open Reading Lesson</button><button type="button" class="journey-link-btn" onclick="STEPUP_U3_REVIEW.practiceReading()">Practice questions</button></div>
       </section>
       <section class="journey-master-card">
-        <div class="journey-stage-title"><span>✓</span><div><h2>Review Path</h2><p>Complete every approved question once. After that, each section becomes optional practice.</p></div><b>${progressPct()}%</b></div>
+        <div class="journey-stage-title"><span>📚</span><div><h2>Review Path</h2><p>Finish the questions, then review your missed answers. A check means every answer is correct.</p></div><b>${reviewAccuracyPct()}% accuracy</b></div>
         <div class="journey-stops">${requiredKeys.filter(k=>k!=='final').map(sectionCard).join('')}</div>
       </section>
       <section class="journey-master-card u3-step-extra">
@@ -275,7 +298,7 @@
         <div class="journey-stage-title"><span>🏁</span><div><h2>Final Challenge</h2><p>Complete the final mixed review after you have worked through the unit. STEP is recommended, but it is not a prerequisite.</p></div></div>
         <div class="journey-stops">${sectionCard('final')}</div>
       </section>
-      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All questions seen • Practice your weakest section until you reach ${CERT_MASTERY}% cumulative mastery →</button>`}`;
+      ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">${nextMissingSection()?'Continue missing review questions':'Review missed answers'} →</button>` : certificateEligible() ? `<div class="u3-review-done">🏆 Your unit certificate is unlocked. You can practise any skill again.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">Practise your weakest section →</button>`}`;
   }
 
   function readingLesson(){
@@ -513,6 +536,8 @@
 
     const key = session.sectionKey;
     const sec = session.sec;
+    const runScore=session.runAnswers.filter(a=>a.correct).length,runTotal=session.runAnswers.length;
+    const runPercentage=Math.round(runScore/Math.max(1,runTotal)*100);
     let result;
     try{
       result = await saveSectionSummary(key);
@@ -524,12 +549,14 @@
     const h = document.querySelector('.student-view');
     session = null;
     if (!h) return;
-    const nextKey = nextMissingSection();
+    const nextKey = nextReviewSection();
     const improveKey = !nextKey && !certificateEligible() ? weakestSection() : null;
-    h.innerHTML = `<section class="journey-result ${result.percentage>=67?'good':'review'}">
-      <div class="journey-result-score">${result.score}<span>/${result.total}</span></div>
-      <h2>${allSeen?'Review section complete ✨':'Practice complete'}</h2>
+    h.innerHTML = `<section class="journey-result ${runPercentage>=67?'good':'review'}" data-review-run-result="1">
+      <div class="journey-result-score">${runScore}<span>/${runTotal}</span></div>
+      <h2>Your score this time: ${runPercentage}%</h2>
       <p>${allSeen ? `All ${result.total} approved questions in ${esc(sec.title)} have now been shown.` : `Your answers were saved.`}</p>
+      <p>${runTotal-runScore?`${runTotal-runScore} answers to review. Check the corrections and try again.`:'Every answer in this attempt was correct.'}</p>
+      <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
       <div class="journey-result-actions">
         ${nextKey ? `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.start('${nextKey}')">Continue Review</button>` : improveKey ? `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.start('${improveKey}')">Practice to reach ${CERT_MASTERY}%</button>` : `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.open()">Back to Unit 3</button>`}
         <button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>
@@ -590,7 +617,8 @@
     getProgress:() => ({
       answered:requiredAnswered(), total:TOTAL_REQUIRED, percentage:progressPct(),
       correct:requiredCorrect(), accuracy:accuracyPct(), complete:TOTAL_REQUIRED>0 && requiredAnswered()>=TOTAL_REQUIRED,
-      nextSection:nextMissingSection(), eligible:certificateEligible()
+      reviewCorrect:requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0), reviewAccuracy:reviewAccuracyPct(),
+      nextSection:nextReviewSection(), eligible:certificateEligible()
     }),
     getCertificateRequirements:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
       section:key, questionId:q.question_id, trainingId:sections[key].trainingId
@@ -601,7 +629,7 @@
       context:key==='reading'?String(UNIT.reading||''):'',
       audio:key==='listening'?String(UNIT.listening||''):''
     }))),
-    sectionProgress:key => sections[key] ? ({answered:answeredCount(key), total:sections[key].questions.length, correct:correctCount(key), done:sectionDone(key)}) : null
+    sectionProgress
   };
 })();
 

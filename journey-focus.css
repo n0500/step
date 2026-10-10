@@ -18,6 +18,20 @@
 .journey-focus-stage.done{color:#59806f}
 .journey-focus-stage.current .journey-focus-dot{background:#5b4df5;border-color:#5b4df5;color:#fff;box-shadow:0 0 0 4px #efedff}
 .journey-focus-stage.current{color:#4f46e5}
+.journey-focus-stage.needs-review .journey-focus-dot,
+html.sx body.sx .journey-focus-roadmap .journey-focus-stage.needs-review .journey-focus-dot{background:#fff3df!important;border-color:#e6a22b!important;color:#945e00!important;font-size:16px!important}
+.journey-focus-stage.needs-review .journey-focus-dot::after{content:none!important;display:none!important}
+.journey-focus-stage.needs-review small,
+html.sx body.sx .journey-focus-roadmap .journey-focus-stage.needs-review small{color:#945e00!important}
+.journey-focus-roadmap[data-review-unit] .journey-focus-stage{background:transparent;border:0;padding:0 2px;font:inherit;cursor:pointer;text-align:center}
+.journey-focus-roadmap[data-review-unit] .journey-focus-stage:focus-visible{outline:2px solid #1d5fd6;outline-offset:4px;border-radius:8px}
+.journey-review-status{font-style:normal;font-size:10px;line-height:1.25;font-weight:700;white-space:normal}
+.journey-focus-stage.needs-review .journey-review-status{color:#945e00}
+.journey-focus-stage.done .journey-review-status{color:#14835d}
+.journey-review-score{font-size:11px;line-height:1.1;font-variant-numeric:tabular-nums;color:#526278}
+.journey-review-skill-count{display:block;margin-top:12px;font-size:12px;line-height:1.5}
+html.sx body.sx .journey-focus-head[data-review-unit] :is(.u1-review-stats,.u2-progress-stats,.u3-review-stats) b{color:#172033!important}
+html.sx body.sx .journey-focus-head[data-review-unit] :is(.u1-review-stats,.u2-progress-stats,.u3-review-stats) small{color:#526278!important}
 
 .journey-focus-task{background:#fff;border:1px solid #e5e9f0;border-radius:22px;padding:20px;box-shadow:0 10px 28px rgba(15,23,42,.06)}
 .journey-focus-task-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
@@ -42,3 +56,4 @@
   .journey-focus-task{padding:18px;border-radius:19px}
   .student-app-shell .student-nav{bottom:max(10px,env(safe-area-inset-bottom))!important}
 }
+

@@ -124,3 +124,23 @@ its pixels are unchanged. The student activity retains its original four
 scenarios, saved answer identifiers and first-try scoring. Class Mode must not
 write student records. The tests use DOM and audio doubles; no live accounts
 or browser screenshots are involved.
+
+## Journey skill status checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/journey-skill-status.test.cjs
+```
+
+These checks load the real question banks and the full decorated student view.
+They distinguish question coverage from latest-answer accuracy in Units 1–3,
+including a single wrong answer above 80%, partial mistakes, revisiting skills,
+newer cumulative summaries after an incorrect retake, and corrected retries.
+Retake summaries and their celebration layer must show the actual current score,
+while saved cumulative scores and timed STEP question counts stay unchanged.
+Checks appear only for all-correct skills. Home, Journey cards and Progress must
+use the same accuracy while earlier credits, certificate requirements, earned
+certificates and STEP Ready badges remain intact. They also check future-unit
+roadmap statuses and idle rendering. Firebase is an isolated test double; real
+student accounts and production records are never accessed.

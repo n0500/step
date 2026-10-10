@@ -6,7 +6,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J?.data) return;
 
-  const VERSION = 'u1-full-review-20261009-2';
+  const VERSION = 'u1-review-accuracy-20261010-4';
   const MASTERY = 80;
   const UNIT_ID = 'u1';
   const UNIT_NUMBER = 1;
@@ -138,6 +138,24 @@
     return questionRecords(sectionKey, questionId)[0] || null;
   }
 
+  // Full-review summaries carry cumulative credits. The actual saved answer
+  // takes precedence when showing which questions currently need review.
+  function reviewQuestion(sectionKey, questionId){
+    return attempts.filter(a => a.recordKind === 'question' && a.examUnit === 'u1' &&
+      a.examSection === sectionKey && a.questionId === questionId)
+      .sort((a,b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')))[0]
+      || latestQuestion(sectionKey, questionId);
+  }
+
+  function reviewCorrectCount(key){
+    return sections[key].questions.filter(q => reviewQuestion(key,q.question_id)?.correct === true).length;
+  }
+
+  function reviewAccuracyPct(){
+    const correct=requiredKeys.reduce((n,key)=>n+reviewCorrectCount(key),0);
+    return Math.min(correct<TOTAL_REQUIRED?99:100,Math.round(correct/Math.max(1,TOTAL_REQUIRED)*100));
+  }
+
   function bestQuestion(sectionKey, questionId){
     const list = questionRecords(sectionKey, questionId);
     return list.find(a => a.correct === true) || list.find(a => a.bestCorrect === true) || list[0] || null;
@@ -189,7 +207,7 @@
   function pendingQuestions(sectionKey){
     const sec = sections[sectionKey];
     const missing = sec.questions.filter(q => !latestQuestion(sectionKey, q.question_id));
-    const missed = sec.questions.filter(q => !bestQuestion(sectionKey, q.question_id)?.bestCorrect && !bestQuestion(sectionKey, q.question_id)?.correct);
+    const missed = sec.questions.filter(q => reviewQuestion(sectionKey, q.question_id)?.correct !== true);
     return missing.length ? missing : missed.length ? missed : [...sec.questions];
   }
 
@@ -198,7 +216,7 @@
   }
 
   function nextReviewSection(){
-    return nextMissingSection() || requiredKeys.find(k => correctCount(k) < sections[k].questions.length) || null;
+    return nextMissingSection() || requiredKeys.find(k => sectionProgress(k).missed > 0) || null;
   }
 
   function sectionProgress(key){
@@ -207,7 +225,9 @@
     const answered = answeredCount(key), correct = correctCount(key), total = sec.questions.length;
     const accuracy = total ? Math.round(correct / total * 100) : 0;
     const done = total > 0 && answered === total;
-    return {answered,total,correct,accuracy,done,mastered:done && correct * 100 >= MASTERY * total};
+    const reviewCorrect=reviewCorrectCount(key),missed=answered-reviewCorrect;
+    return {answered,total,correct,accuracy,done,reviewCorrect,missed,
+      reviewAccuracy:Math.min(reviewCorrect<total?99:100,Math.round(reviewCorrect/Math.max(1,total)*100)),mastered:done && reviewCorrect===total};
   }
 
   function readingText(){
@@ -263,11 +283,10 @@
     const sec = sections[key];
     const answered = answeredCount(key);
     const total = sec.questions.length;
-    const done = sectionProgress(key).mastered;
-    const correct = correctCount(key);
-    const label = `${answered}/${total} answered • ${correct}/${total} correct across attempts`;
-    return `<button class="journey-stop ${done?'done':''} ${nextReviewSection()===key?'current':''}" data-review-section="${key}" data-accuracy="${sectionProgress(key).accuracy}" data-answered="${answered}" data-total="${total}" onclick="STEPUP_U1_REVIEW.start('${key}')">
-      <span class="journey-stop-icon">${correct===total?'✓':sec.icon}</span>
+    const state = sectionProgress(key),done=state.mastered;
+    const label = `${state.missed?'Needs review • ':done?'All answers correct • ':''}${answered}/${total} answered • ${state.reviewCorrect}/${total} correct`;
+    return `<button class="journey-stop ${done?'done':''} ${state.missed?'needs-review':''} ${nextReviewSection()===key?'current':''}" data-review-unit="u1" data-review-section="${key}" data-accuracy="${state.reviewAccuracy}" data-needs-review="${state.missed>0?1:0}" data-answered="${answered}" data-total="${total}" onclick="STEPUP_U1_REVIEW.start('${key}')">
+      <span class="journey-stop-icon">${done?'✓':state.missed?'↻':sec.icon}</span>
       <span class="journey-stop-copy"><b>${esc(sec.title)}</b><small>${esc(label)}</small></span>
       <span class="journey-stop-arrow">›</span>
     </button>`;
@@ -275,10 +294,10 @@
 
   function progressStatsHTML(){
     const answered = requiredAnswered();
-    const correct = requiredCorrect();
+    const correct = requiredKeys.reduce((n,key)=>n+reviewCorrectCount(key),0);
     return `<div class="u1-review-stats">
-      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Questions answered • ${progressPct()}%</small></span>
-      <span><b>${correct}/${TOTAL_REQUIRED}</b><small>Cumulative accuracy • ${Math.round(correct/Math.max(1,TOTAL_REQUIRED)*100)}%</small></span>
+      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Questions answered</small></span>
+      <span><b>${correct}/${TOTAL_REQUIRED}</b><small>Review accuracy • ${reviewAccuracyPct()}%</small></span>
     </div>`;
   }
 
@@ -288,15 +307,15 @@
     const h = document.querySelector('.student-view');
     if (!h) return;
     const next = nextReviewSection();
-    const accuracy = Math.round(requiredCorrect()/Math.max(1,TOTAL_REQUIRED)*100);
+    const accuracy = reviewAccuracyPct();
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit 1</b></div>
-      <section class="journey-unit-hero" data-review-unit="u1" data-ring-pct="${accuracy}" data-ring-label="cumulative accuracy">
+      <section class="journey-unit-hero" data-review-unit="u1" data-ring-pct="${accuracy}" data-ring-label="review accuracy">
         <span class="journey-kicker">Unit 1 • Full Review</span>
         <h1>Big Changes</h1>
         <p>Your correct answers stay credited. Complete the remaining questions, then review missed answers to improve your accuracy.</p>
-        <div class="journey-mini-progress"><i style="width:${progressPct()}%"></i></div>
+        <div class="journey-mini-progress"><i style="width:${accuracy}%"></i></div>
         ${progressStatsHTML()}
-        <small class="u1-review-skill-count">${requiredKeys.filter(k=>sectionProgress(k).mastered).length} of ${requiredKeys.length} skills mastered • 80%+ accuracy</small>
+        <small class="u1-review-skill-count journey-review-skill-count">${requiredKeys.filter(k=>sectionProgress(k).mastered).length} of ${requiredKeys.length} skills mastered • Review any missed answers</small>
       </section>
       <section class="journey-master-card">
         <div class="journey-stage-title"><span>📚</span><div><h2>Review Path</h2><p>Answering every question completes the review. Correct answers measure mastery.</p></div><b>${accuracy}% accuracy</b></div>
@@ -565,6 +584,7 @@
     getProgress:() => ({
       answered:requiredAnswered(), total:TOTAL_REQUIRED, percentage:progressPct(),
       correct:requiredCorrect(), accuracy:accuracyPct(), complete:TOTAL_REQUIRED>0 && requiredAnswered()>=TOTAL_REQUIRED,
+      reviewCorrect:requiredKeys.reduce((n,key)=>n+reviewCorrectCount(key),0), reviewAccuracy:reviewAccuracyPct(),
       nextSection:nextReviewSection()
     }),
     getCertificateRequirements:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({

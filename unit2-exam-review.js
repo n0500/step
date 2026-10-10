@@ -13,7 +13,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-reading-listening-context-20261009-1";
+  const VERSION = "u2-review-accuracy-20261010-4";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -852,7 +852,9 @@
 
   function bestQuestion(sectionKey,questionId){
     const list=questionAttempts(sectionKey,questionId);
-    return list.find(a=>a.correct===true || a.bestCorrect===true) || list[0] || null;
+    // Prefer the actual earlier correct answer over a wrong retake that carries
+    // its preserved bestCorrect credit.
+    return list.find(a=>a.correct===true) || list.find(a=>a.bestCorrect===true) || list[0] || null;
   }
 
   function answeredCount(sectionKey){
@@ -868,6 +870,23 @@
   function sectionDone(sectionKey){
     const sec=sections[sectionKey];
     return answeredCount(sectionKey)===sec.questions.length;
+  }
+
+  function sectionProgress(key){
+    const sec=sections[key];if(!sec)return null;
+    const answered=answeredCount(key),total=sec.questions.length,correct=correctCount(key);
+    const reviewCorrect=sec.questions.filter(q=>latestQuestion(key,q.id)?.correct===true).length;
+    return {answered,total,correct,done:total>0&&answered===total,reviewCorrect,missed:answered-reviewCorrect,
+      reviewAccuracy:Math.min(reviewCorrect<total?99:100,Math.round(reviewCorrect/Math.max(1,total)*100)),mastered:total>0&&reviewCorrect===total};
+  }
+
+  function reviewAccuracyPct(){
+    const correct=requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0);
+    return Math.min(correct<TOTAL_REQUIRED?99:100,Math.round(correct/Math.max(1,TOTAL_REQUIRED)*100));
+  }
+
+  function nextReviewSection(){
+    return requiredKeys.find(key=>!sectionDone(key)) || requiredKeys.find(key=>sectionProgress(key).missed>0) || null;
   }
 
   function requiredAnswered(){
@@ -889,10 +908,10 @@
 
   function progressStatsHTML(){
     const answered=requiredAnswered();
-    const correct=requiredCorrect();
+    const correct=requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0);
     return `<div class="u2-progress-stats">
-      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Progress • ${reviewPct()}%</small></span>
-      <span><b>${answered?`${correct}/${answered}`:"—"}</b><small>Accuracy${answered?` • ${accuracyPct()}%`:""}</small></span>
+      <span><b>${answered}/${TOTAL_REQUIRED}</b><small>Questions answered</small></span>
+      <span><b>${correct}/${TOTAL_REQUIRED}</b><small>Review accuracy • ${reviewAccuracyPct()}%</small></span>
     </div>`;
   }
 
@@ -1111,7 +1130,7 @@
         skill:item.skill,
         selected:Number(a?.selected ?? -1),
         correctAnswer:item.answer,
-        correct:!!a?.correct,
+        correct:!!(a?.correct || a?.bestCorrect),
         selectedText:a?.selectedText||"",
         correctText:item.choices[item.answer]||"",
         explanation:item.explanation||"",
@@ -1172,12 +1191,7 @@
   function sectionCard(key){
     const sec=sections[key];
     const answered=answeredCount(key);
-    const done=answered===sec.questions.length;
-    const stage=bestStage(sec.trainingId);
-    const score=stage?`${stage.bestScore ?? stage.score}/${stage.bestTotal ?? stage.total}`:"";
-    const attemptsCount=stageAttemptCount(sec.trainingId);
-    const practiceCount=Math.max(0,attemptsCount-1);
-    const reviewCount=sec.questions.filter(q=>q.review).length;
+    const state=sectionProgress(key),done=state.mastered;
 
     const action = key==="reading"
       ? "STEPUP_U2_EXAM.readingLesson()"
@@ -1191,11 +1205,11 @@
         ? `${STEP_SKILLS.length} skills • timer • ${answered}/${sec.questions.length} answered`
         : "";
 
-    return `<button class="journey-stop ${done?'done':''} ${key==='step'?'u2-step-card':''}" onclick="${action}">
-      <span class="journey-stop-icon ${key==='step'&&!done?'u2-step-icon':''}">${done?'✓':sec.icon}</span>
+    return `<button class="journey-stop ${done?'done':''} ${state.missed?'needs-review':''} ${nextReviewSection()===key?'current':''} ${key==='step'?'u2-step-card':''}" data-review-unit="u2" data-review-section="${key}" data-needs-review="${state.missed>0?1:0}" data-answered="${answered}" data-total="${sec.questions.length}" onclick="${action}">
+      <span class="journey-stop-icon ${key==='step'&&!done?'u2-step-icon':''}">${done?'✓':state.missed?'↻':sec.icon}</span>
       <span class="journey-stop-copy">
         <b>${esc(sec.title)}</b>
-        <small>${extra || (done?`Completed ${score?`• ${score}`:''} • Practice again${practiceCount?` • ${practiceCount}× practiced`:''}`:`${answered}/${sec.questions.length} answered${reviewCount?` • ${reviewCount} review questions`:''}`)}</small>
+        <small>${state.missed?'Needs review • ':done?'All answers correct • ':''}${state.reviewCorrect}/${sec.questions.length} correct • ${answered}/${sec.questions.length} answered${extra?' • '+extra:''}</small>
       </span>
       <span class="journey-stop-arrow">›</span>
     </button>`;
@@ -1232,29 +1246,30 @@
     const h=studentView();
     if(!h)return;
 
-    const pct=reviewPct();
+    const pct=reviewAccuracyPct();
     const answered=requiredAnswered();
 
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit 2</b></div>
 
-      <section class="journey-unit-hero">
+      <section class="journey-unit-hero" data-review-unit="u2" data-ring-pct="${pct}" data-ring-label="review accuracy">
         <span class="journey-kicker">Unit 2 • Review</span>
         <h1>Careers</h1>
         <p>Every required review question is included for every student. Nothing is randomly skipped.</p>
         <div class="journey-mini-progress"><i style="width:${pct}%"></i></div>
         ${progressStatsHTML()}
+        <small class="journey-review-skill-count">${requiredKeys.filter(key=>sectionProgress(key).mastered).length} of ${requiredKeys.length} skills mastered • Review any missed answers</small>
       </section>
 
       ${needsPracticeHTML()}
 
       <section class="journey-master-card">
         <div class="journey-stage-title">
-          <span>✓</span>
+          <span>📚</span>
           <div>
             <h2>Review Path</h2>
-            <p>Answer in any order. Every answer is saved before you continue.</p>
+            <p>A check means every answer is correct. Review any missed answers.</p>
           </div>
-          <b>${pct}%</b>
+          <b>${pct}% accuracy</b>
         </div>
         <div class="journey-stops">
           ${requiredKeys.map(sectionCard).join("")}
@@ -1324,8 +1339,10 @@
   function pendingQuestions(sectionKey){
     const sec=sections[sectionKey];
     const remaining=sec.questions.filter(item=>!latestQuestion(sectionKey,item.id));
-    // If the section was already completed, a manual revisit starts all questions again.
-    return remaining.length?remaining:[...sec.questions];
+    // Keep completed timed STEP retakes as full runs for comparable scores/times.
+    if(sectionKey==='step')return remaining.length?remaining:[...sec.questions];
+    const missed=sec.questions.filter(item=>latestQuestion(sectionKey,item.id)?.correct!==true);
+    return remaining.length?remaining:missed.length?missed:[...sec.questions];
   }
 
   function startSection(sectionKey){
@@ -1534,9 +1551,9 @@
     const stepElapsed=sectionKey==="step"?stepElapsedSeconds():0;
     if(sectionKey==="step")stopStepTimer();
     const passNeeded=sec.pass||Math.ceil(sec.questions.length*0.67);
-    const currentDisplayScore=sectionKey==="reading"?(result.attemptScore||0):result.score;
-    const currentDisplayTotal=sectionKey==="reading"?(result.attemptTotal||result.total):result.total;
-    const passed=currentDisplayScore>=passNeeded;
+    const currentDisplayScore=result.attemptScore||0;
+    const currentDisplayTotal=result.attemptTotal||result.total;
+    const passed=currentDisplayScore>=(sectionKey==='reading'?passNeeded:Math.ceil(currentDisplayTotal*0.67));
     const h=studentView();
     stopReadingTimer();
     stopReadingAudio();
@@ -1546,7 +1563,7 @@
       if(sectionKey==="reading"){
         const acc=currentDisplayTotal?Math.round(currentDisplayScore/currentDisplayTotal*100):0;
         const bestTime=result.bestReadingTimeSeconds;
-        h.innerHTML=`<section class="journey-result ${passed?'good':'review'} u2-reading-result">
+        h.innerHTML=`<section class="journey-result ${passed?'good':'review'} u2-reading-result" data-review-run-result="1">
           <div class="journey-result-score">${currentDisplayScore}<span>/${currentDisplayTotal}</span></div>
           <h2>${passed?'Reading practice complete ✨':'Reading practice complete'}</h2>
           <div class="u2-reading-result-grid">
@@ -1565,10 +1582,11 @@
         return;
       }
 
-      h.innerHTML=`<section class="journey-result ${passed?'good':'review'}">
-        <div class="journey-result-score">${result.score}<span>/${result.total}</span></div>
-        <h2>${focused?'Focused practice complete ✨':(passed?'Review stop complete ✨':'Review complete — check the missed answers')}</h2>
-        <p>${focused?`You practiced ${esc(focusSkill)}. Your best result has been updated.`:`All ${result.total} questions in ${esc(sec.title)} were shown and saved.`}</p>
+      h.innerHTML=`<section class="journey-result ${passed?'good':'review'}" data-review-run-result="1">
+        <div class="journey-result-score">${currentDisplayScore}<span>/${currentDisplayTotal}</span></div>
+        <h2>Your score this time: ${Math.round(currentDisplayScore/Math.max(1,currentDisplayTotal)*100)}%</h2>
+        <p>${focused?`You practiced ${esc(focusSkill)}.`:`Your ${currentDisplayTotal} answers in this attempt were saved.`} ${currentDisplayTotal-currentDisplayScore?'Review the missed answers and try again.':'Every answer in this attempt was correct.'}</p>
+        <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
         ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
         <div class="journey-result-actions">
           <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
@@ -1952,9 +1970,9 @@
     const base=old.progressHTML(a,o,p);
     if(!unit2IsOpen())return base;
     return base+`<section class="journey-progress-card">
-      <div class="journey-progress-head"><div><span class="journey-kicker">Unit 2 Review</span><h2>${reviewPct()}% complete</h2></div></div>
+      <div class="journey-progress-head"><div><span class="journey-kicker">Unit 2 Review</span><h2>${reviewAccuracyPct()}% review accuracy</h2></div></div>
       ${progressStatsHTML()}
-      <p>Your accuracy keeps your best result when you practice again and improve.</p>
+      <p>Review accuracy shows your latest answers. Earlier correct answers still count toward your certificate.</p>
     </section>
     ${needsPracticeHTML()}`;
   };
@@ -2048,8 +2066,11 @@
       total:TOTAL_REQUIRED,
       percentage:reviewPct(),
       correct:requiredCorrect(),
-      accuracy:accuracyPct()
-    })
+      accuracy:accuracyPct(),
+      reviewCorrect:requiredKeys.reduce((n,key)=>n+sectionProgress(key).reviewCorrect,0),
+      reviewAccuracy:reviewAccuracyPct(),nextSection:nextReviewSection()
+    }),
+    sectionProgress
   };
 })();
 

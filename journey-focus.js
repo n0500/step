@@ -2,28 +2,41 @@
   'use strict';
 
   function text(el){ return (el?.textContent || '').trim(); }
+  function reviewApi(unitId){
+    return {u1:window.STEPUP_U1_REVIEW,u2:window.STEPUP_U2_EXAM,u3:window.STEPUP_U3_REVIEW}[unitId];
+  }
 
   function makeRoadmap(masterCard, stops){
-    if (stops.some(s => s.hasAttribute('data-review-section'))) {
+    const unitId=stops.find(s=>s.dataset.reviewUnit)?.dataset.reviewUnit;
+    const api=reviewApi(unitId);
+    if (api?.sectionProgress && stops.some(s => s.hasAttribute('data-review-section'))) {
       const wrap = document.createElement('div');
       wrap.className = 'journey-focus-roadmap';
-      wrap.dataset.reviewUnit = 'u1';
-      wrap.setAttribute('aria-label','Unit 1 skill accuracy');
+      wrap.dataset.reviewUnit = unitId;
+      wrap.style.gridTemplateColumns=`repeat(${stops.length},minmax(0,1fr))`;
+      wrap.setAttribute('aria-label',`Unit ${unitId.slice(1)} skill accuracy`);
       stops.forEach(stop => {
         const key = stop.dataset.reviewSection;
         if (!key) return;
-        const state = window.STEPUP_U1_REVIEW.sectionProgress(key);
+        const state = api.sectionProgress(key);
+        if (!state) return;
         const stage = document.createElement('button');
         stage.type = 'button';
-        stage.className = `journey-focus-stage ${state.mastered?'done':''} ${state.done&&!state.mastered?'needs-review':''} ${stop.classList.contains('current')?'current':''}`;
+        stage.className = `journey-focus-stage ${state.mastered?'done':''} ${state.missed?'needs-review':''} ${stop.classList.contains('current')?'current':''}`;
         stage.dataset.reviewSection = key;
-        stage.setAttribute('aria-label',`${text(stop.querySelector('b'))}: ${state.correct} of ${state.total} correct across attempts`);
+        stage.dataset.needsReview = state.missed>0?'1':'0';
+        stage.setAttribute('aria-label',`${text(stop.querySelector('b'))}: ${state.reviewCorrect} of ${state.total} answers correct. ${state.missed?'Needs review':state.mastered?'All answers correct':`${state.answered} answered`}`);
         const dot = document.createElement('span'); dot.className = 'journey-focus-dot';
-        dot.textContent = state.correct===state.total ? '✓' : state.done ? '↻' : String(wrap.children.length+1);
+        dot.textContent = state.mastered ? '✓' : state.missed ? '↻' : String(wrap.children.length+1);
         const label = document.createElement('small'); label.textContent = text(stop.querySelector('b')).replace('Final Challenge','Final');
-        const accuracy = document.createElement('em'); accuracy.textContent = state.answered ? `${state.accuracy}%` : 'Ready';
-        stage.append(dot,label,accuracy);
-        stage.addEventListener('click',()=>window.STEPUP_U1_REVIEW.start(key));
+        const status = document.createElement('em'); status.className='journey-review-status';
+        status.textContent = state.missed ? 'Needs review' : state.mastered ? 'Correct' : state.answered ? 'In progress' : 'Ready';
+        const score = document.createElement('span'); score.className='journey-review-score';score.textContent=`${state.reviewCorrect}/${state.total}`;
+        stage.append(dot,label,status,score);
+        const action=stop.getAttribute('onclick');
+        stage.addEventListener('click',()=>{
+          try{ if(action) Function(action)(); else api.start(key); }catch(e){ console.error('StepUp review action failed',e); }
+        });
         wrap.appendChild(stage);
       });
       return wrap;
@@ -84,7 +97,7 @@
       meta:durations[title] || '2–4 min',
       detail,
       action,
-      button:current.dataset.reviewSection && Number(current.dataset.answered)>=Number(current.dataset.total)?'Review missed answers':title==='Final Challenge'?'Start challenge':'Start'
+      button:current.dataset.needsReview==='1'?'Review missed answers':title==='Final Challenge'?'Start challenge':'Start'
     };
   }
 
@@ -125,16 +138,19 @@
     const master=host?.querySelector('.journey-master-card');
     if(!host||!hero||!master||host.querySelector('.journey-focus-shell')) return;
 
-    const unit1Review=hero.dataset.reviewUnit==='u1';
-    const stops=unit1Review ? [...master.querySelectorAll('.journey-stop')] : [...host.querySelectorAll('.journey-stops .journey-stop')];
-    const complete=!!host.querySelector('.journey-celebrate');
-    const task=currentMasterTask(master) || currentJourneyStop(stops);
+    const unitId=hero.dataset.reviewUnit;
+    const api=reviewApi(unitId);
+    const review=!!api?.sectionProgress;
+    const stops=review ? [...host.querySelectorAll('.journey-stop[data-review-section]')] : [...host.querySelectorAll('.journey-stops .journey-stop')];
+    const complete=!review && !!host.querySelector('.journey-celebrate');
+    const task=(review?null:currentMasterTask(master)) || currentJourneyStop(stops);
 
     const kicker=text(hero.querySelector('.journey-kicker'));
     const title=text(hero.querySelector('h1'));
     const objective=text(hero.querySelector('p'));
     const progress=hero.querySelector('.journey-mini-progress i')?.style.width || '0%';
-    const progressText=unit1Review ? `${window.STEPUP_U1_REVIEW.getProgress().answered}/${window.STEPUP_U1_REVIEW.getProgress().total} questions answered` : text(hero.querySelector('small')) || '0/5 stops complete';
+    const g=review?api.getProgress():null;
+    const progressText=review ? `${g.answered}/${g.total} questions answered` : text(hero.querySelector('small')) || '0/5 stops complete';
 
     const shell=document.createElement('div');
     shell.className='journey-focus-shell';
@@ -151,16 +167,16 @@
         </div>
       </section>`;
 
-    if (unit1Review) {
+    if (review) {
       const head = shell.querySelector('.journey-focus-head');
-      head.dataset.reviewUnit = 'u1';
+      head.dataset.reviewUnit = unitId;
       head.dataset.ringPct = hero.dataset.ringPct;
       head.dataset.ringLabel = hero.dataset.ringLabel;
-      hero.querySelectorAll('.u1-review-stats,.u1-review-skill-count,.sxc-u1-award').forEach(el => head.appendChild(el));
+      hero.querySelectorAll('.u1-review-stats,.u2-progress-stats,.u3-review-stats,.journey-review-skill-count,.sxc-u2-award,.u3-cert-goal').forEach(el => head.appendChild(el));
     }
 
     shell.appendChild(makeRoadmap(master,stops));
-    shell.appendChild(complete?completeCard():taskCard(task||(unit1Review ? {title:'All answers correct',meta:'Review complete',detail:'Your previous correct answers are kept. You can revisit any skill above.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
+    shell.appendChild(complete?completeCard():taskCard(task||(review ? {title:'All answers correct',meta:'Review complete',detail:'You can revisit any skill above. Your saved answers and certificates are kept.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
 
     const breadcrumb=host.querySelector('.journey-breadcrumb');
     if(breadcrumb) breadcrumb.remove();

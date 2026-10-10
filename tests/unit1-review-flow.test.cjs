@@ -125,7 +125,8 @@ test('the full visual stack distinguishes 100% coverage from lower accuracy with
     f.api.open();await until(()=>f.w.document.querySelector('.journey-focus-head .sx-ring'));
     const expected=Math.round(old.filter(a=>a.correct).length/old.length*100);
     const ring=f.w.document.querySelector('.journey-focus-head .sx-ring');assert.equal(ring.dataset.pct,String(expected));assert.match(ring.getAttribute('aria-label'),/accuracy/);
-    assert.match(f.w.document.querySelector('.u1-review-stats').textContent,/Questions answered • 100%/);
+    assert.match(f.w.document.querySelector('.u1-review-stats').textContent,/Questions answered/);
+    assert.equal(f.w.document.querySelector('.u1-review-stats b').textContent,`${old.length}/${old.length}`);
     const road=f.w.document.querySelector('.journey-focus-roadmap');assert.equal(road.querySelectorAll('.journey-focus-stage').length,7);
     const stage=road.querySelector('[data-review-section="core-2"]');assert.equal(stage.classList.contains('done'),false);assert.notEqual(stage.querySelector('.journey-focus-dot').textContent,'✓');
     assert.notEqual(f.w.document.querySelector('.journey-focus-task h2').textContent,'Continue your journey');

@@ -18,6 +18,7 @@
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var attempts = [];
+  var openReviewUnits = [];
   var profile = null;
   var lastResult = null;   // {payload, prev, at}
   var CERT_MASTERY = 80;   // Unit certificate: meaningful mastery, not completion alone.
@@ -32,8 +33,20 @@
       var orig = J[name];
       if(typeof orig !== 'function' || orig.__sxCelebrate) return;
       var w = function(list){
-        if(depth === 0 && Array.isArray(list)) attempts = list;
-        depth++; try{ return orig.apply(this, arguments); } finally{ depth--; }
+        if(depth === 0 && Array.isArray(list)){
+          attempts = list;
+          openReviewUnits = Array.isArray(arguments[1]) ? arguments[1].map(function(u){return typeof u==='string'?u:u.id;}) : [];
+        }
+        depth++;
+        try{
+          var result=orig.apply(this, arguments);
+          if(depth===1 && typeof result==='string'){
+            var template=document.createElement('template');template.innerHTML=result;
+            decorateReviewProgress(template.content);
+            result=template.innerHTML;
+          }
+          return result;
+        }finally{ depth--; }
       };
       w.__sxCelebrate = true; J[name] = w;
     });
@@ -186,6 +199,13 @@
     return 'completed';
   }
   function passedStop(stop){ var s = statusOf(stop); return s === 'mastered' || s === 'improved' || s === 'completed'; }
+  // Roadmap checks describe the latest result; certificate credits keep using
+  // cumulative mastery. A passed or improved attempt can still need review.
+  function reviewStatusOf(stop){
+    var h=history(stop.id),last=h[h.length-1];
+    if(!last)return 'todo';
+    return Number(last.attemptPercentage ?? last.percentage ?? 0)>=100?'mastered':'needs-review';
+  }
   function unitOf(id){ var m = String(id||'').match(/^journey-(u\d+)-/); return m ? J.data.units.find(function(u){ return u.id === m[1]; }) : null; }
   function unitComplete(u){
     if(!u) return false;
@@ -226,20 +246,12 @@
       var vals = s.map(function(x){ return best(x.id); }).filter(function(v){ return v>=0; });
       acc = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
     }
-    // 80% is the mastery line used by the certificate and by Needs Practice.
-    if(usesUnit1Mastery(u) && U1() && U1().sectionProgress){
-      var keys=s.map(function(x){ return x.key; });
-      var stats=keys.map(function(k){ try{return U1().sectionProgress(k);}catch(_){return null;} }).filter(Boolean);
-      var masteredU1=stats.filter(function(g){ return g.done && g.total>0 && Math.round((g.correct||0)/g.total*100)>=CERT_MASTERY; }).length;
-      var needsU1=stats.filter(function(g){ return g.answered>0 && Math.round((g.correct||0)/Math.max(1,g.answered)*100)<CERT_MASTERY; }).length;
-      return {mastered:masteredU1,total:stats.length,accuracy:acc,needs:needsU1};
-    }
-    if(usesUnit3Mastery(u) && U3() && U3().sectionProgress){
-      var keys3=s.map(function(x){ return x.key; });
-      var stats3=keys3.map(function(k){ try{return U3().sectionProgress(k);}catch(_){return null;} }).filter(Boolean);
-      var masteredU3=stats3.filter(function(g){ return g.done && g.total>0 && Math.round((g.correct||0)/g.total*100)>=CERT_MASTERY; }).length;
-      var needsU3=stats3.filter(function(g){ return g.answered>0 && Math.round((g.correct||0)/Math.max(1,g.answered)*100)<CERT_MASTERY; }).length;
-      return {mastered:masteredU3,total:stats3.length,accuracy:acc,needs:needsU3};
+    var api={u1:U1(),u2:U2(),u3:U3()}[u.id];
+    if(api && api.sectionProgress){
+      var keys=Array.from(new Set(api.getCertificateRequirements().map(function(q){return q.section;})));
+      var stats=keys.map(function(k){return api.sectionProgress(k);}).filter(Boolean);
+      return {mastered:stats.filter(function(g){return g.mastered;}).length,total:stats.length,accuracy:acc,
+        needs:stats.filter(function(g){return g.missed>0;}).length};
     }
     var mastered = s.filter(function(x){ return best(x.id) >= CERT_MASTERY; }).length;
     var needs = s.filter(function(x){ var b = best(x.id); return b >= 0 && b < CERT_MASTERY; }).length;
@@ -418,9 +430,9 @@
     var m = ((node.querySelector('.journey-result-score')||{}).textContent||'').match(/(\d+)\s*\/\s*(\d+)/);
     var lr = lastResult && Date.now() - lastResult.at < 20000 ? lastResult : null;
     var pl = lr ? lr.payload : null;
-    var unit1Run = node.hasAttribute('data-u1-run-result');
-    var score = pl && !unit1Run ? Number(pl.score||0) : (m ? +m[1] : 0);
-    var total = pl && !unit1Run ? Number(pl.total||0) : (m ? +m[2] : 0);
+    var reviewRun = node.hasAttribute('data-u1-run-result') || node.hasAttribute('data-review-run-result');
+    var score = pl && !reviewRun ? Number(pl.score||0) : (m ? +m[1] : 0);
+    var total = pl && !reviewRun ? Number(pl.total||0) : (m ? +m[2] : 0);
     var pct = total ? Math.round(score/total*100) : 0;
     var name = firstName();
 
@@ -434,8 +446,8 @@
 
     var prevList = lr ? lr.prev : [];
     var prev = prevList.length ? prevList[prevList.length-1] : null;
-    if(unit1Run && prev && prev.attemptTotal == null) prev=null;
-    var prevPct = prev ? Number(unit1Run ? prev.attemptPercentage||0 : prev.percentage||0) : null;
+    if(reviewRun && prev && prev.attemptTotal == null) prev=null;
+    var prevPct = prev ? Number(reviewRun ? prev.attemptPercentage||0 : prev.percentage||0) : null;
     var u = pl ? unitOf(pl.trainingId) : null;
     var stopName = (function(){
       if(!pl) return 'your';
@@ -463,7 +475,7 @@
     }else if(prev && pct > prevPct && pct >= 100){
       v = 'improved';
       html = '<div class="sxc-art">'+ART.rocket+'</div><h2>Amazing progress! 🚀</h2><p class="sxc-sub">Your score improved.</p>'+
-        '<div class="sxc-box sxc-cmp"><span><b>'+Number(unit1Run ? prev.attemptScore||0 : prev.score||0)+' / '+Number(unit1Run ? prev.attemptTotal||total : prev.total||total)+'</b><small>Previous</small></span><i>→</i><span class="now"><b>'+score+' / '+total+'</b><small>Now</small></span></div>'+
+        '<div class="sxc-box sxc-cmp"><span><b>'+Number(reviewRun ? prev.attemptScore||0 : prev.score||0)+' / '+Number(reviewRun ? prev.attemptTotal||total : prev.total||total)+'</b><small>Previous</small></span><i>→</i><span class="now"><b>'+score+' / '+total+'</b><small>Now</small></span></div>'+
         '<div class="sxc-tip green"><span>📊</span><p>You improved by '+(pct-prevPct)+'%.<br>That’s great progress!</p></div>';
     }else if(prev && pct > prevPct){
       v = 'big';
@@ -472,7 +484,7 @@
         '<div class="sxc-tip green"><span>📈</span><p>You’re getting better!<br>Keep going!</p></div>';
     }else if(pct >= 100){
       v = 'mastered';
-      html = '<div class="sxc-art">'+ART.star+'</div><h2>Excellent! ⭐</h2><p class="sxc-sub">'+(name ? 'Well done, <bdi>'+esc(name)+'</bdi>! ' : '')+'You mastered this skill.</p>'+
+      html = '<div class="sxc-art">'+ART.star+'</div><h2>Excellent! ⭐</h2><p class="sxc-sub">'+(name ? 'Well done, <bdi>'+esc(name)+'</bdi>! ' : '')+(reviewRun?'Every answer in this attempt was correct.':'You mastered this skill.')+'</p>'+
         '<div class="sxc-box"><span><b>'+score+' / '+total+'</b><small>Correct Answers</small></span><span><b>'+pct+'%</b><small>Accuracy</small></span></div>'+
         '<div class="sxc-tip gold"><span>👑</span><p>'+esc(pick(PRAISE_TIP))+'</p></div>';
     }else{
@@ -792,19 +804,19 @@
   /* ---------- 5: unit map statuses ---------- */
   var LABEL_TO_KEY = {master:'master', vocab:'vocab', vocabulary:'vocab', grammar:'grammar', functions:'functions', read:'reading', reading:'reading',
     listen:'listening', listening:'listening', step:'step', final:'final', form:'functions'};
-  var STATUS_TEXT = {mastered:'Mastered', improved:'Improved', completed:'Completed'};
+  var STATUS_TEXT = {mastered:'Correct', 'needs-review':'Needs review'};
   function decorateUnitMap(view){
     var road = view.querySelector('.journey-focus-roadmap');
     var head = view.querySelector('.journey-focus-head');
     if(!road || !head) return;
-    // The Unit 1 review owns its accuracy labels; coverage is not mastery.
-    if(road.getAttribute('data-review-unit') === 'u1') return;
+    // Full reviews own their per-question accuracy and unresolved-error labels.
+    if(['u1','u2','u3'].includes(road.getAttribute('data-review-unit'))) return;
     var t = ((head.querySelector('h1')||{}).textContent||'').trim();
     var u = J.data.units.find(function(x){ return x.title === t; });
     if(!u) return;
     var stops = stopsOf(u), byKey = {};
     stops.forEach(function(s){ byKey[s.key] = s; });
-    var sig = stops.map(function(s){ return statusOf(s); }).join(',');
+    var sig = stops.map(reviewStatusOf).join(',');
     if(road.getAttribute('data-sxc-sig') === sig && head.querySelector('.sxc-mastery')) return;
     road.setAttribute('data-sxc-sig', sig);
     road.querySelectorAll('.journey-focus-stage').forEach(function(stage){
@@ -813,20 +825,23 @@
       var key = LABEL_TO_KEY[label], status = null;
       if(key === 'master'){
         if(usesExam(u)) return;
-        var cores = stops.filter(function(s){ return s.core; }), cs = cores.map(statusOf);
+        var cores = stops.filter(function(s){ return s.core; }), cs = cores.map(reviewStatusOf);
         if(cs.length && cs.every(function(s){ return s==='mastered'; })) status = 'mastered';
-        else if(cs.length && cs.every(function(s){ return s!=='todo' && s!=='tried'; })) status = cs.some(function(s){ return s==='improved'; }) ? 'improved' : 'completed';
-      }else if(byKey[key]) status = statusOf(byKey[key]);
+        else if(cs.includes('needs-review')) status = 'needs-review';
+      }else if(byKey[key]) status = reviewStatusOf(byKey[key]);
       stage.classList.remove('sxc-mastered','sxc-improved','sxc-completed');
+      stage.classList.toggle('done',status==='mastered');
+      stage.classList.toggle('needs-review',status==='needs-review');
+      putText(stage.querySelector('.journey-focus-dot'),status==='mastered'?'✓':status==='needs-review'?'↻':Array.prototype.indexOf.call(road.children,stage)+1);
       var old = stage.querySelector('.sxc-stage-status'); if(old) old.remove();
       if(status && STATUS_TEXT[status]){
-        stage.classList.add('sxc-'+status);
+        if(status!=='mastered')stage.classList.add('sxc-'+status);
         var e = document.createElement('em'); e.className = 'sxc-stage-status'; e.textContent = STATUS_TEXT[status];
         stage.appendChild(e);
       }
     });
     var counted = stops.filter(function(s){ return s.key !== 'step'; });
-    var mastered = counted.filter(function(s){ return usesFullReview(u) ? best(s.id) >= CERT_MASTERY : statusOf(s) === 'mastered'; }).length;
+    var mastered = counted.filter(function(s){ return reviewStatusOf(s) === 'mastered'; }).length;
     var bar = head.querySelector('.sxc-mastery');
     if(!bar){ bar = document.createElement('div'); bar.className = 'sxc-mastery'; head.appendChild(bar); }
     bar.innerHTML = '<span><b>'+mastered+' of '+counted.length+'</b> skills mastered</span><i><em style="width:'+Math.round(mastered/Math.max(1,counted.length)*100)+'%"></em></i>';
@@ -847,9 +862,9 @@
       if(award.getAttribute('data-sig') !== sig){
         award.setAttribute('data-sig',sig); award.className = 'sxc-u2-award sxc-u1-award '+(g.eligible?'unlocked':'');
         if(g.eligible){
-          award.innerHTML = '<span class="sxc-u2-award-icon">🏆</span><div><b>Certificate unlocked</b><small>Unit 1 mastered • '+g.accuracy+'% overall accuracy</small></div>';
+          award.innerHTML = '<span class="sxc-u2-award-icon">🏆</span><div><b>Certificate unlocked</b><small>Cumulative accuracy • '+g.accuracy+'%</small></div>';
         }else if(g.total && g.answered >= g.total){
-          award.innerHTML = '<span class="sxc-u2-award-icon">🎯</span><div><b>Certificate goal: '+CERT_MASTERY+'%</b><small>Current accuracy '+g.accuracy+'% • Practice your weakest skill to unlock it.</small></div>';
+          award.innerHTML = '<span class="sxc-u2-award-icon">🎯</span><div><b>Certificate goal: '+CERT_MASTERY+'%</b><small>Cumulative accuracy '+g.accuracy+'% • Practice your weakest skill to unlock it.</small></div>';
         }else{
           award.innerHTML = '<span class="sxc-u2-award-icon">🎓</span><div><b>Certificate goal</b><small>Complete all required Unit 1 stops and reach '+CERT_MASTERY+'% overall accuracy.</small></div>';
         }
@@ -893,79 +908,67 @@
   // that makes question buttons feel unresponsive on low-memory phones.
   function putText(el,value){ if(el&&el.textContent!==String(value))el.textContent=String(value); }
   function putHTML(el,value){ if(el&&el.innerHTML!==value)el.innerHTML=value; }
-  function decorateUnit1JourneyHome(view){
-    if(!view) return;
-    var u=(J.data.units||[]).find(function(x){ return x.id==='u1'; }); if(!u) return;
-    var g=unit1Progress(u), req=unit1RequiredStops(u);
-
-    // Correct the Unit 1 card so old STEP-gated state does not make a mastered unit look incomplete.
-    var cards=Array.prototype.slice.call(view.querySelectorAll('.journey-unit-card'));
-    var card=cards.find(function(c){ return (((c.querySelector('h3')||{}).textContent)||'').trim()==='Big Changes'; });
-    if(card){
-      var pct=Math.round((g.answered/Math.max(1,g.total))*100);
-      var status=card.querySelector('.journey-status'); putText(status,g.eligible?'Complete':(g.answered?'In progress':'Ready'));
-      card.classList.toggle('complete',g.eligible);
-      var bar=card.querySelector('.journey-mini-progress i'); if(bar && bar.style.width!==pct+'%') bar.style.width=pct+'%';
-      var foot=card.querySelector('.journey-unit-foot'); putHTML(foot,'<span>'+g.answered+'/'+g.total+(U1()&&U1().getProgress?' review questions':' required stops')+'</span><strong>'+pct+'%</strong>');
-    }
-
-    // The home continue card should never make STEP a prerequisite for Final Challenge.
-    var cont=view.querySelector('.journey-continue');
-    var h2=cont && cont.querySelector('h2');
-    if(cont && h2 && /Unit 1\s*•\s*Big Changes/i.test(h2.textContent||'')){
-      var btn=cont.querySelector('.journey-main-btn');
-      if(U1() && U1().getProgress){
-        var ug=unit1Progress(u), pfull=cont.querySelector('p');
-        if(ug.eligible){
-          putHTML(pfull,'<strong>Unit mastered</strong> — All review questions are complete and your certificate is unlocked.');
-          if(btn){ putText(btn,'Open Unit 1'); btn.onclick=function(){ U1().open(); }; }
-        }else{
-          putHTML(pfull,'<strong>Continue Unit 1 Review</strong> — '+ug.answered+'/'+ug.total+' approved review questions completed • '+ug.accuracy+'% accuracy.');
-          if(btn){ putText(btn,'Continue Review'); btn.onclick=function(){ U1().open(); }; }
-        }
-        return;
+  // Update the generated markup before the design layer reads its percentage,
+  // then keep the visible cards consistent without touching saved attempts.
+  function decorateReviewProgress(view){
+    if(!view)return;
+    var apis={u1:U1(),u2:U2(),u3:U3()}, states={};
+    Object.keys(apis).forEach(function(id){
+      var api=apis[id];if(!api || !api.getProgress)return;
+      var g=api.getProgress(),u=(J.data.units||[]).find(function(x){return x.id===id;});
+      if(!u || !Number.isFinite(g.reviewAccuracy))return;
+      states[id]={api:api,g:g,u:u};
+      var pct=g.reviewAccuracy,missed=g.answered-g.reviewCorrect;
+      var cards=Array.prototype.slice.call(view.querySelectorAll('.journey-unit-card:not(.locked)'));
+      var card=cards.find(function(c){return ((c.querySelector('h3')||{}).textContent||'').trim()===u.title;});
+      if(card){
+        putText(card.querySelector('.journey-status'),missed>0?'Needs review':pct===100?'All correct':g.answered?'In progress':'Ready');
+        card.classList.toggle('complete',pct===100);
+        var bar=card.querySelector('.journey-mini-progress i');if(bar && bar.style.width!==pct+'%')bar.style.width=pct+'%';
+        putHTML(card.querySelector('.journey-unit-foot'),'<span>'+g.reviewCorrect+'/'+g.total+' answers correct</span><strong>'+pct+'% accuracy</strong>');
       }
-      var strong=cont.querySelector('p strong');
-      var p=cont.querySelector('p');
-      var final=req.find(function(x){ return x.key==='final'; });
-      var listening=req.find(function(x){ return x.key==='listening'; });
-      if(g.eligible){
-        putText(strong,'Unit mastered');
-        putHTML(p,'<strong>Unit mastered</strong> — Your certificate is unlocked. STEP Practice is still available anytime.');
-        if(btn){ putText(btn,'Open Unit 1'); btn.onclick=function(){ J.openUnit('u1'); }; }
-      }else if(listening && passedStop(listening) && final && history(final.id).length===0){
-        putText(strong,'Final Challenge');
-        putHTML(p,'<strong>Final Challenge</strong> — Finish the required journey. STEP Practice is extra and can be done anytime.');
-        if(btn){ putText(btn,'Continue'); btn.onclick=function(){ J.startFinal('u1'); }; }
-      }else if(g.answered===g.total && g.accuracy<CERT_MASTERY){
-        var weak=req.slice().sort(function(a,b){ return best(a.id)-best(b.id); })[0];
-        if(weak){
-          putHTML(p,'<strong>Raise your mastery</strong> — Current overall accuracy '+g.accuracy+'%. Practice your weakest stop to reach '+CERT_MASTERY+'%.');
-          if(btn){ putText(btn,'Practice '+weak.label); btn.onclick=function(){ weak.go(); }; }
-        }
+      view.querySelectorAll('.journey-progress-units > div').forEach(function(row){
+        if(((row.querySelector('span')||{}).textContent||'').trim()!=='Unit '+u.number)return;
+        putText(row.querySelector('b'),pct+'% accuracy');
+        var fill=row.querySelector('i em');if(fill && fill.style.width!==pct+'%')fill.style.width=pct+'%';
+      });
+    });
+    var cont=view.querySelector('.journey-continue'),h2=cont&&cont.querySelector('h2');
+    var current=Object.keys(states).map(function(id){return states[id];}).find(function(state){
+      return (h2?.textContent||'').trim()==='Unit '+state.u.number+' • '+state.u.title;
+    });
+    if(cont && cont.classList.contains('celebration')){
+      current=Object.keys(states).map(function(id){return states[id];}).find(function(state){return openReviewUnits.includes(state.u.id) && state.g.nextSection;});
+      if(current){
+        cont.classList.remove('celebration');
+        putText(cont.querySelector('.journey-kicker'),'Review your answers');
+        putText(h2,'Unit '+current.u.number+' • '+current.u.title);
       }
     }
-  }
-
-  /* ---------- Unit 3: full-review card correction ---------- */
-  function decorateUnit3JourneyHome(view){
-    if(!view || !U3() || !U3().getProgress) return;
-    var u=(J.data.units||[]).find(function(x){ return x.id==='u3'; }); if(!u) return;
-    var g=unit3Progress(u);
-    var cards=Array.prototype.slice.call(view.querySelectorAll('.journey-unit-card'));
-    var card=cards.find(function(c){ return (((c.querySelector('h3')||{}).textContent)||'').trim()==='What Will Be, Will Be'; });
-    if(card){
-      var pct=Math.round((g.answered/Math.max(1,g.total))*100);
-      var status=card.querySelector('.journey-status'); putText(status,g.eligible?'Complete':(g.answered?'In progress':'Ready'));
-      card.classList.toggle('complete',g.eligible);
-      var bar=card.querySelector('.journey-mini-progress i'); if(bar && bar.style.width!==pct+'%') bar.style.width=pct+'%';
-      var foot=card.querySelector('.journey-unit-foot'); putHTML(foot,'<span>'+g.answered+'/'+g.total+' review questions</span><strong>'+pct+'%</strong>');
+    if(current && cont){
+      var g=current.g,pct=g.reviewAccuracy;
+      cont.dataset.reviewUnit=current.u.id;
+      cont.dataset.ringPct=pct;
+      cont.dataset.ringLabel='review accuracy';
+      var keys=Array.from(new Set(current.api.getCertificateRequirements().map(function(q){return q.section;})));
+      cont.dataset.masteredSkills=keys.filter(function(key){return current.api.sectionProgress(key).mastered;}).length;
+      cont.dataset.totalSkills=keys.length;
+      putHTML(cont.querySelector('p'),'<strong>'+(g.answered>g.reviewCorrect?'Review missed answers':pct===100?'All answers correct':'Continue review')+'</strong> — '+g.reviewCorrect+'/'+g.total+' answers correct • '+pct+'% review accuracy.');
+      var bar=cont.querySelector('.journey-mini-progress i');if(bar && bar.style.width!==pct+'%')bar.style.width=pct+'%';
+      var small=cont.querySelector('.journey-continue-copy > small');putText(small,pct+'% review accuracy');
+      var button=cont.querySelector('.journey-main-btn');
+      if(button){
+        putText(button,g.answered>g.reviewCorrect?'Review Unit '+current.u.number:'Open Unit '+current.u.number);
+        var action={u1:'STEPUP_U1_REVIEW',u2:'STEPUP_U2_EXAM',u3:'STEPUP_U3_REVIEW'}[current.u.id]+'.open()';
+        if(button.getAttribute('onclick')!==action)button.setAttribute('onclick',action);
+      }
     }
-    var cont=view.querySelector('.journey-continue'), h2=cont&&cont.querySelector('h2');
-    if(cont && h2 && /Unit 3\s*•\s*What Will Be, Will Be/i.test(h2.textContent||'')){
-      var btn=cont.querySelector('.journey-main-btn'), p=cont.querySelector('p');
-      if(g.eligible){ putHTML(p,'<strong>Unit mastered</strong> — All Unit 3 review questions are complete and your certificate is unlocked.'); if(btn){putText(btn,'Open Unit 3');btn.onclick=function(){U3().open();};} }
-      else { putHTML(p,'<strong>Continue Unit 3 Review</strong> — '+g.answered+'/'+g.total+' approved review questions completed • '+g.accuracy+'% accuracy.'); if(btn){putText(btn,'Continue Review');btn.onclick=function(){U3().open();};} }
+    var open=openReviewUnits.length?openReviewUnits:['u1'];
+    if(open.every(function(id){return states[id];})){
+      var average=Math.round(open.reduce(function(n,id){return n+states[id].g.reviewAccuracy;},0)/open.length);
+      if(open.some(function(id){return states[id].g.reviewAccuracy<100;}))average=Math.min(99,average);
+      putText(view.querySelector('.journey-overall > span'),'Review accuracy');
+      putText(view.querySelector('.journey-overall > strong'),average+'%');
     }
   }
 
@@ -985,7 +988,7 @@
       if(box.getAttribute('data-sig') !== heroSig){
         box.setAttribute('data-sig', heroSig); box.className = 'sxc-u2-award '+(eligible?'unlocked':'');
         if(eligible){
-          box.innerHTML = '<span class="sxc-u2-award-icon">🏆</span><div><b>Certificate unlocked</b><small>Unit 2 mastered • '+acc+'% overall accuracy</small></div>';
+          box.innerHTML = '<span class="sxc-u2-award-icon">🏆</span><div><b>Certificate unlocked</b><small>Cumulative accuracy • '+acc+'%</small></div>';
         }else if(total && answered >= total){
           box.innerHTML = '<span class="sxc-u2-award-icon">🎯</span><div><b>Certificate goal · '+CERT_MASTERY+'%</b><small>Review your missed answers. Your previous correct answers still count.</small></div>';
         }else{
@@ -1045,8 +1048,7 @@
         if(r){ r.setAttribute('data-sxc','1'); getProfile().then(function(){ celebrateResult(r); }); }
         decorateUnitMap(view);
         decorateUnit1(view);
-        decorateUnit1JourneyHome(view);
-        decorateUnit3JourneyHome(view);
+        decorateReviewProgress(view);
         decorateUnit2Exam(view);
         addShelf(view);
       }

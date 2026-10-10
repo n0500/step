@@ -138,6 +138,8 @@
     if(hero && once(hero,'hero')){
       var copy=hero.querySelector('.journey-continue-copy');
       var pct=pctFrom(txt(hero.querySelector('small')));
+      var review=hero.hasAttribute('data-review-unit');
+      if(review)pct=Number(hero.dataset.ringPct)||0;
       var h2=txt(hero.querySelector('h2'));
       var m=h2.match(/^Unit\s*(\d+)\s*[•·-]\s*(.+)$/i);
       var unitNo=m?m[1]:'', unitTitle=m?m[2]:h2;
@@ -152,9 +154,9 @@
         built.innerHTML='<span class="sx-h-pill"><i class="sx-dot"></i>'+(unitNo?'Unit '+escHtml(unitNo)+' · ':'')+'Your next step</span>'+
           '<div class="sx-hero-top"><div><h2 class="sx-h-title">'+escHtml(unitTitle)+'</h2>'+
           (stopName?'<p class="sx-h-stop">'+glyph('flag')+'<b>'+escHtml(stopName)+'</b></p>':'')+
-          (stopDesc?'<p class="sx-h-desc">'+escHtml(stopDesc)+'</p>':'')+'</div>'+ring(pct,'of unit')+'</div>'+
+          (stopDesc?'<p class="sx-h-desc">'+escHtml(stopDesc)+'</p>':'')+'</div>'+ring(pct,review?'review accuracy':'of unit')+'</div>'+
           '<div class="sx-h-chips"><span class="sx-chip">'+glyph('clock')+'<span><b>2–4 min</b><small>Session</small></span></span>'+
-          '<span class="sx-chip">'+glyph('check')+'<span><b>'+stops+' of 5</b><small>Stops done</small></span></span></div>';
+          '<span class="sx-chip">'+glyph('check')+'<span><b>'+(review?hero.dataset.masteredSkills+' of '+hero.dataset.totalSkills:stops+' of 5')+'</b><small>'+(review?'Skills mastered':'Stops done')+'</small></span></span></div>';
       }
       hero.insertBefore(built, hero.firstChild);
       if(copy) copy.classList.add('sx-hidden');
@@ -277,6 +279,7 @@
     if(pc && ph && /progress/i.test(txt(ph.querySelector('h1'))) && once(ph,'hero')){
       var vals=[].map.call(pc.querySelectorAll('.journey-progress-units b'),function(b){return pctFrom(b.textContent);});
       var avg=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length):0;
+      if(vals.some(function(pct){return pct<100;}))avg=Math.min(99,avg);
       var done=vals.filter(function(v){return v>=100;}).length;
       var h=el('section','sx-progress-hero',
         '<span class="sx-h-pill">'+glyph('spark')+'My Progress</span>'+
