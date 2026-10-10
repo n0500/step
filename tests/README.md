@@ -88,3 +88,22 @@ refresh, PIN access, certificate preservation for closed units, and compatibilit
 with the existing assistant, dictionary, teaching hub and class archive modules.
 Browsing must not create, overwrite or delete student records. These are source
 and DOM checks; they do not inspect a signed-in teacher account or browser layout.
+
+## Unit 3 shared student reading lesson checks
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/unit3-student-reading-lesson.test.cjs
+```
+
+These checks compare student and teacher lesson content, including all five
+original paragraphs, vocabulary, comprehension questions, reading strategies,
+and After Reading task numbers and page. They verify the student entry points,
+audio replay and failure feedback, navigation after answer checking, progress
+saved on the device for each student, reload and storage failures, unit access,
+sign-out, existing practice resumption, and an answer still saving when the
+lesson opens. The decorated student screen must retain historical answers,
+certificate requirements and earned certificates. Learning the lesson itself
+must never query or write production records or award unit mastery. Firebase
+and speech synthesis are isolated test doubles; no real accounts are used.

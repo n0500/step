@@ -6,7 +6,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J?.data) return;
 
-  const VERSION = 'u3-reading-listening-context-20261010-1';
+  const VERSION = 'u3-shared-reading-lesson-20261010-2';
   const UNIT_ID = 'u3';
   const UNIT_NUMBER = 3;
   const UNIT = (J.data.units || []).find(u => u.id === UNIT_ID || Number(u.number) === UNIT_NUMBER);
@@ -259,6 +259,10 @@
         ${progressStatsHTML()}
         <div class="u3-cert-goal ${certificateEligible()?'unlocked':''}">${certificateEligible()?`<span>🏆</span><div><b>Certificate unlocked</b><small>Unit 3 mastered • ${accuracyPct()}% overall accuracy</small></div><button onclick="STEPUP_CELEBRATE?.showCertificate?.(STEPUP_JOURNEY.data.units.find(u=>u.id==='u3'))">View</button>`:`<span>🎯</span><div><b>Certificate goal: ${CERT_MASTERY}%</b><small>${requiredAnswered()}/${TOTAL_REQUIRED} questions • ${accuracyPct()}% current accuracy</small></div>`}</div>
       </section>
+      <section class="u3-reading-lesson-entry">
+        <div><span>Unit 3 • Reading Lesson</span><h2>The Tulsa Time Capsule</h2><p>Learn the same way as in class: read and listen to each paragraph, check your understanding, then practise reading strategies.</p></div>
+        <div class="u3-reading-entry-actions"><button type="button" class="journey-main-btn" onclick="STEPUP_U3_REVIEW.readingLesson()">Open Reading Lesson</button><button type="button" class="journey-link-btn" onclick="STEPUP_U3_REVIEW.practiceReading()">Practice questions</button></div>
+      </section>
       <section class="journey-master-card">
         <div class="journey-stage-title"><span>✓</span><div><h2>Review Path</h2><p>Complete every approved question once. After that, each section becomes optional practice.</p></div><b>${progressPct()}%</b></div>
         <div class="journey-stops">${requiredKeys.filter(k=>k!=='final').map(sectionCard).join('')}</div>
@@ -273,6 +277,14 @@
       </section>
       ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">Continue missing review questions →</button>` : certificateEligible() ? `<div class="u3-review-done">✓ All Unit 3 review questions are complete and your certificate is unlocked.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">All questions seen • Practice your weakest section until you reach ${CERT_MASTERY}% cumulative mastery →</button>`}`;
   }
+
+  function readingLesson(){
+    stopListening();
+    if(!unitOpen())return openUnit3();
+    if(window.STEPUP_U3_TEACH_READING?.startStudent){session=null;saving=false;return window.STEPUP_U3_TEACH_READING.startStudent();}
+    return startSection('reading');
+  }
+  function startReview(sectionKey){return sectionKey==='reading'?readingLesson():startSection(sectionKey);}
 
   function startSection(sectionKey){
     stopListening();
@@ -536,6 +548,7 @@
       .u3-step-extra{margin-top:14px}.u3-review-source{display:block;margin-top:14px;color:#78879a;font-size:12px}
       .u3-review-correct,.u3-review-hint{margin:10px 0;padding:11px 13px;border-radius:13px;background:#f3f6fb;color:#24354c}
       .u3-review-saved{display:inline-block;margin:8px 0;padding:7px 11px;border-radius:999px;background:#e7f7ee;color:#176b4a;font-weight:900}
+      .u3-reading-lesson-entry{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:18px 0;padding:20px;border:1px solid #dce5f0;border-radius:20px;background:linear-gradient(135deg,#f3f7ff,#fff7fc)}.u3-reading-lesson-entry span{font-size:12px;font-weight:900;color:#6750d8}.u3-reading-lesson-entry h2{margin:6px 0;font-size:23px;color:#173b63}.u3-reading-lesson-entry p{margin:0;font-size:14px;line-height:1.7;color:#596a7c}.u3-reading-entry-actions{display:flex;flex-direction:column;gap:8px;flex:0 0 210px}.u3-reading-entry-actions button{min-height:46px}.u3-reading-entry-actions .journey-link-btn{width:100%;text-align:center}
       .u3-feedback-context{text-align:left;margin:18px 0}
       .u3-feedback-context .u3-reading-passage{max-height:420px;overflow-y:auto}
       .u3-review-continue{width:100%;margin-top:14px;min-height:52px;border:0;border-radius:16px;background:#284f88;color:#fff;font-weight:900;cursor:pointer}
@@ -543,7 +556,7 @@
       .u3-cert-goal{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 13px;border-radius:15px;background:#fff8e8;border:1px solid #f0dfb7;color:#624b13}.u3-cert-goal.unlocked{background:#eaf7ef;border-color:#c9ead8;color:#24623f}.u3-cert-goal span{font-size:24px}.u3-cert-goal div{flex:1}.u3-cert-goal b,.u3-cert-goal small{display:block}.u3-cert-goal small{margin-top:2px;font-size:11px;opacity:.8}.u3-cert-goal button{border:0;border-radius:999px;padding:8px 12px;background:#244e86;color:#fff;font-weight:900;cursor:pointer}
       .u3-reading-passage{margin:12px 0 16px;padding:12px 14px;border:1px solid #dfe7ef;border-radius:16px;background:#fbfcfe}.u3-reading-passage summary{cursor:pointer;font-weight:900;color:#173b63}.u3-reading-passage p{font-size:13.5px;line-height:1.72;color:#33425a}.u3-reading-passage small{display:block;margin-top:8px;color:#5d6e84;font-weight:700}
       .u3-listening-player{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0 16px;padding:12px;border:1px solid #d9e4ef;border-radius:16px;background:#f8fbff}.u3-listening-player>span{font-size:24px}.u3-listening-player>div{flex:1;min-width:180px}.u3-listening-player b,.u3-listening-player small{display:block}.u3-listening-player small{margin-top:2px;color:#6a778c}.u3-listening-player button{border:1px solid #cad7e7;border-radius:11px;padding:8px 10px;background:#fff;color:#173b63;font-weight:800;cursor:pointer}.u3-step-time{display:block;margin-top:13px;color:#6a778c}.u3-step-result{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:6px 10px;align-items:center;max-width:320px;margin:12px auto}.u3-step-result b{font-size:18px}.u3-step-result small{color:#6a778c}
-      @media(max-width:520px){.u3-review-stats{grid-template-columns:1fr 1fr}.u3-review-stats b{font-size:15px}}
+      @media(max-width:520px){.u3-review-stats{grid-template-columns:1fr 1fr}.u3-review-stats b{font-size:15px}.u3-reading-lesson-entry{flex-direction:column;align-items:stretch;padding:18px}.u3-reading-entry-actions{flex:auto}}
     `;
     document.head.appendChild(s);
   }
@@ -552,10 +565,10 @@
   J.html = function(a,o,p){ hydrate(a,o,p); return old.html(a,o,p); };
   J.progressHTML = function(a,o,p){ hydrate(a,o,p); return old.progressHTML(a,o,p); };
   J.openUnit = function(uid){ if(uid==='u3') return openUnit3(); return old.openUnit(uid); };
-  J.go = function(uid,key){ if(uid!=='u3') return old.go(uid,key); if(key==='step') return startStep(); if(sections[key]) return startSection(key); return openUnit3(); };
+  J.go = function(uid,key){ if(uid!=='u3') return old.go(uid,key); if(key==='step') return startStep(); if(sections[key]) return startReview(key); return openUnit3(); };
 
-  // Direct links use the same full-text and replayable-audio review as the journey.
-  J.startReading = function(uid){ return uid==='u3'?startSection('reading'):old.startReading(uid); };
+  // Reading opens the shared class lesson; practice retains its saved question IDs.
+  J.startReading = function(uid){ return uid==='u3'?readingLesson():old.startReading(uid); };
   J.startListening = function(uid){ return uid==='u3'?startSection('listening'):old.startListening(uid); };
 
   addStyles();
@@ -563,7 +576,10 @@
   window.STEPUP_U3_REVIEW = {
     version:VERSION,
     open:openUnit3,
-    start:startSection,
+    start:startReview,
+    readingLesson,
+    practiceReading:()=>startSection('reading'),
+    getReadingLessonContext:()=>unitOpen()&&profile?.role==='student'?{studentId:String(profile.id||profile.uid||''),classId:String(profile.classId||'')}:null,
     answer,
     next,
     startStep,
