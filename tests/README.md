@@ -107,3 +107,20 @@ lesson opens. The decorated student screen must retain historical answers,
 certificate requirements and earned certificates. Learning the lesson itself
 must never query or write production records or award unit mastery. Firebase
 and speech synthesis are isolated test doubles; no real accounts are used.
+
+## Unit 3 Class Mode grammar questions
+
+With `jsdom` on `NODE_PATH`, run:
+
+```
+node --test tests/unit3-class-grammar-questions.test.cjs
+```
+
+These checks cover the two teacher-provided picture questions with complete
+sentence choices, discussion before revealing correctness, explanations and
+picture evidence, navigation, replay, the two-clue summary, and devices without
+audio support. The uploaded source image is displayed through CSS viewports;
+its pixels are unchanged. The student activity retains its original four
+scenarios, saved answer identifiers and first-try scoring. Class Mode must not
+write student records. The tests use DOM and audio doubles; no live accounts
+or browser screenshots are involved.
