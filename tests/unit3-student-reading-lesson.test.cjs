@@ -24,7 +24,7 @@ function fixture(options={}){
   w.requestIdleCallback=()=>0;
   w.document.addEventListener('click',event=>{const button=event.target.closest('button[onclick]');if(button&&!button.disabled)w.eval(button.getAttribute('onclick'));});
   const load=file=>w.eval(fs.readFileSync(path.join(root,file),'utf8'));
-  ['data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js','unit1-cleanup.js','unit1-review-all.js',
+  ['speech-voices.js','data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js','unit1-cleanup.js','unit1-review-all.js',
     'unit3-content.js','unit3-review-all.js','unit2-source-override.js','unit2-exam-review.js','unit3-classmode-reading.js','mg1-kb.js'].forEach(load);
   const review=w.STEPUP_U3_REVIEW,lesson=w.STEPUP_U3_TEACH_READING,bank=review.getMasteryBank(),unit=w.STEPUP_JOURNEY.data.units.find(u=>u.id==='u3');
   const records=typeof options.records==='function'?options.records(bank,profile):options.records||[];
@@ -159,5 +159,17 @@ test('teacher Class Mode keeps its own navigation, free discussion and paragraph
     f.lesson.next();f.lesson.next();f.lesson.readParagraph(0);assert.equal(f.spoken.at(-1).text,f.unit.reading.split(/\n\s*\n/)[0]);
     assert.equal(f.w.document.querySelector('[onclick="STEPUP_U3_TEACH_READING.next()"]')?.disabled,false);f.lesson.next();assert.equal(f.w.document.querySelector('.u3tr-head h1').textContent,'Paragraph 2');
     f.lesson.choose(0);f.lesson.check();assert.match(f.w.document.querySelector('.u3tr-feedback').textContent,/Correct/);f.lesson.exit();assert.deepEqual(f.teacherTabs,['classmode']);assert.equal(f.w.localStorage.length,0);f.unchanged();
+  }finally{f.dom.window.close();}
+});
+
+test('student and class paragraph audio skip device effect voices and use the chosen voice language',()=>{
+  const f=fixture();try{
+    const ordinary={name:'Daniel',lang:'en-GB'};
+    f.w.speechSynthesis.getVoices=()=>[{name:'Bad News',lang:'en-US'},ordinary];
+    f.review.readingLesson();f.toParagraph();f.lesson.readParagraph(0);
+    assert.equal(f.spoken.at(-1).voice,ordinary);assert.equal(f.spoken.at(-1).lang,'en-GB');
+    f.w.document.getElementById('app').innerHTML='<section class="teacher-classmode-v2"></section>';
+    f.lesson.start();f.lesson.next();f.lesson.next();f.lesson.readParagraph(0);
+    assert.equal(f.spoken.at(-1).voice,ordinary);assert.equal(f.spoken.at(-1).lang,'en-GB');f.unchanged();
   }finally{f.dom.window.close();}
 });

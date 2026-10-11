@@ -341,8 +341,8 @@
     try{
       const speech=new SpeechSynthesisUtterance(String(UNIT.listening||''));
       speech.lang='en-US';speech.rate=.88;
-      const voice=(window.speechSynthesis.getVoices?.()||[]).find(v=>String(v.lang||'').toLowerCase().startsWith('en'));
-      if(voice)speech.voice=voice;
+      const voice=window.STEPUP_SPEECH?.pickEnglish()[0];
+      if(voice){speech.voice=voice;speech.lang=voice.lang||'en-US';}
       speech.onstart=()=>status('Playing…');
       speech.onend=()=>status('Finished. Replay anytime.');
       speech.onerror=()=>status('Audio stopped. Tap Play to try again.');

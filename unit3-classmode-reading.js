@@ -67,9 +67,7 @@
   function scrollToLesson(){if(state.context==='student')state.host?.querySelector('.u3tr-shell')?.scrollIntoView?.({block:'start',behavior:'auto'});}
 
   function preferredVoice(){
-    if(!('speechSynthesis' in window))return null;
-    const vs=speechSynthesis.getVoices()||[];
-    return vs.find(v=>/^en-US/i.test(v.lang))||vs.find(v=>/^en-GB/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null;
+    return window.STEPUP_SPEECH?.pickEnglish()[0]||null;
   }
   function audioStatus(message){const element=state.host?.querySelector('#u3trAudioStatus');if(element)element.textContent=message;}
   function stopSpeech(){state.speechToken++;if('speechSynthesis' in window)try{speechSynthesis.cancel();}catch(_){}audioStatus('Stopped. Replay anytime.');}
@@ -78,7 +76,7 @@
     if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==='undefined'){audioStatus('Audio is not available on this device. You can still read the paragraph.');return;}
     stopSpeech();const token=state.speechToken,status=message=>{if(token===state.speechToken&&activeLesson())audioStatus(message);};
     try{
-      const u=new SpeechSynthesisUtterance(String(text));u.lang='en-US';u.rate=rate;const v=preferredVoice();if(v)u.voice=v;
+      const u=new SpeechSynthesisUtterance(String(text));u.lang='en-US';u.rate=rate;const v=preferredVoice();if(v){u.voice=v;u.lang=v.lang||'en-US';}
       u.onstart=()=>status('Playing…');u.onend=()=>status('Finished. Replay anytime.');u.onerror=()=>status('Audio stopped. Tap Read Paragraph to try again.');
       status('Playing…');speechSynthesis.speak(u);
     }catch(_){status('Audio stopped. Tap Read Paragraph to try again.');}

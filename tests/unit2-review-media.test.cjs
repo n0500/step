@@ -27,7 +27,7 @@ function fixture(){
     const baseline=process.env.STEP_U2_BASELINE && path.join(process.env.STEP_U2_BASELINE,file);
     w.eval(fs.readFileSync(baseline && fs.existsSync(baseline)?baseline:path.join(root,file),'utf8'));
   }
-  ['data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js',
+  ['speech-voices.js','data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js',
     'unit1-cleanup.js','unit1-review-all.js','unit3-content.js','unit3-review-all.js','unit2-source-override.js','unit2-exam-review.js','mg1-kb.js'].forEach(load);
   const api=w.STEPUP_U2_EXAM,bank=api.getMasteryBank();
   function hydrate(records){w.STEPUP_JOURNEY.html(records,['u1','u2','u3'],profile);}
@@ -81,7 +81,7 @@ test('listening plays and replays the complete dialogue with every question',asy
     for(let i=0;i<questions.length;i++){
       f.player();const before=f.spoken.length;f.w.document.querySelector('[onclick="STEPUP_U2_EXAM.listen()"]').click();
       const speech=f.spoken.slice(before);assert.equal(speech.length,7);assert.match(speech[0].text,/job at the TV station/);assert.match(speech[6].text,/organized, reliable, hardworking/);
-      assert.ok(speech.every(s=>s.lang==='en-US'&&s.rate>0));assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Playing/);
+      assert.ok(speech.every(s=>s.lang===s.voice.lang&&s.rate>0));assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Playing/);
       f.api.listen();assert.equal(f.spoken.length,before+14);f.api.stopAudio();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Stopped/);
       await f.answer(questions[i].answer);if(i<questions.length-1)await f.api.next();
     }
@@ -113,5 +113,59 @@ test('the decorated journey preserves the reading and listening media and histor
     assert.equal(f.writes.length,0);assert.equal(f.summaries.length,0);assert.equal(f.errors.length,0);
     f.w.STEPUP_JOURNEY.startReading('u1');assert.ok(f.w.document.querySelector('.journey-passage'));
     f.w.STEPUP_JOURNEY.startListening('u1');assert.ok(f.w.document.querySelector('[onclick*="playAudio"]'));
+  }finally{f.dom.window.close();}
+});
+
+test('the Unit 2 conversation uses consistent ordinary voices rather than the first device effects',()=>{
+  const f=fixture();try{
+    const alex={name:'Alex',lang:'en-US'},daniel={name:'Daniel',lang:'en-GB'};
+    f.w.speechSynthesis.getVoices=()=>[{name:'Albert',lang:'en-US'},{name:'Bad News',lang:'en-US'},alex,daniel];
+    f.api.start('listening');f.api.listen();
+    assert.equal(f.spoken.length,7);
+    for(let i=0;i<7;i++){
+      const expected=i%2===0?daniel:alex;
+      assert.equal(f.spoken[i].voice,expected);assert.equal(f.spoken[i].lang,expected.lang);assert.equal(f.spoken[i].pitch,1);
+    }
+    assert.equal(f.writes.length,0);assert.equal(f.summaries.length,0);
+  }finally{f.dom.window.close();}
+});
+
+test('the same device voice filter protects Unit 1, Unit 3, and the Unit 2 reading',()=>{
+  const f=fixture();try{
+    const ordinary={name:'Samantha',lang:'en-US'};
+    f.w.speechSynthesis.getVoices=()=>[{name:'Albert',lang:'en-US'},{name:'Bad News',lang:'en-US'},ordinary];
+    f.w.STEPUP_U1_REVIEW.start('listening');f.w.STEPUP_U1_REVIEW.playAudio();assert.equal(f.spoken.at(-1).voice,ordinary);
+    f.w.STEPUP_U3_REVIEW.start('listening');f.w.STEPUP_U3_REVIEW.listen();assert.equal(f.spoken.at(-1).voice,ordinary);
+    f.api.start('reading');f.api.listenReading();assert.equal(f.spoken.at(-1).voice,ordinary);
+    assert.match(f.spoken.at(-1).text,/JobPool/);
+  }finally{f.dom.window.close();}
+});
+
+test('a conversation with only one ordinary speaker does not select an effect for the other role',()=>{
+  const f=fixture();try{
+    const ordinary={name:'Samantha',lang:'en-US'};
+    f.w.speechSynthesis.getVoices=()=>[{name:'Bad News',lang:'en-US'},ordinary];
+    f.api.start('listening');f.api.listen();assert.equal(f.spoken.length,7);
+    assert.ok(f.spoken.every(s=>s.voice===ordinary));
+  }finally{f.dom.window.close();}
+});
+
+test('stale conversation callbacks cannot overwrite Stop or a newer replay',()=>{
+  const f=fixture();try{
+    f.api.start('listening');f.api.listen();
+    const ended=f.spoken.at(-1).onend,failed=f.spoken[0].onerror;
+    f.api.stopAudio();ended();failed();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Stopped/);
+    f.api.listen();ended();failed();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Playing/);
+    f.spoken.at(-1).onend();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Finished/);
+  }finally{f.dom.window.close();}
+});
+
+test('an error on the first conversation line stops the queue and offers replay',()=>{
+  const f=fixture();try{
+    f.api.start('listening');f.api.listen();const before=f.canceled;
+    f.spoken[0].onerror();assert.ok(f.canceled>before);assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Audio stopped/);
+    f.api.listen();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Playing/);
+    f.w.speechSynthesis.speak=()=>{throw new Error('playback failed');};
+    f.api.listen();assert.match(f.w.document.querySelector('#u2ListeningStatus').textContent,/Audio stopped/);
   }finally{f.dom.window.close();}
 });

@@ -28,7 +28,7 @@ function fixture(){
     summaries.push(JSON.parse(JSON.stringify(p)));return {...p,id:'summary-'+summaries.length};
   }};
   w.document.addEventListener('click',e=>{const b=e.target.closest('button[onclick]');if(b&&!b.disabled)w.eval(b.getAttribute('onclick'));});
-  ['data.js','journey-engine.js','unit1-cleanup.js','answer-response-guard.js','unit1-review-all.js','mg1-kb.js'].forEach(file=>load(w,file));
+  ['speech-voices.js','data.js','journey-engine.js','unit1-cleanup.js','answer-response-guard.js','unit1-review-all.js','mg1-kb.js'].forEach(file=>load(w,file));
   const api=w.STEPUP_U1_REVIEW,bank=api.getMasteryBank();
   let attempts=[];
   function hydrate(items){attempts=JSON.parse(JSON.stringify(items));w.STEPUP_JOURNEY.html(attempts,['u1'],profile);return attempts;}
@@ -64,7 +64,7 @@ test('listening has replayable audio for the original script on questions and fe
     f.w.SpeechSynthesisUtterance=function(text){this.text=text;};
     f.w.speechSynthesis={cancel(){canceled++;},getVoices:()=>[{lang:'en-GB'}],speak(s){spoken.push(s);s.onstart();}};
     f.api.start('listening');assert.ok(f.w.document.querySelector('[onclick*="playAudio"]'));
-    f.api.playAudio();assert.equal(spoken[0].text,f.w.STEPUP_JOURNEY.data.units[0].listening);assert.equal(spoken[0].lang,'en-US');
+    f.api.playAudio();assert.equal(spoken[0].text,f.w.STEPUP_JOURNEY.data.units[0].listening);assert.equal(spoken[0].lang,'en-GB');
     assert.match(f.w.document.querySelector('.u1-audio-status').textContent,/Playing/);
     const q=f.bank.find(q=>q.section==='listening');await f.answer(q.answer);f.api.playAudio();assert.equal(spoken.length,2);
     await f.api.next();assert.ok(f.w.document.querySelector('[onclick*="playAudio"]'));f.api.playAudio();assert.equal(spoken.length,3);

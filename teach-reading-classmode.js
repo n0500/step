@@ -823,11 +823,7 @@
   }
 
   function preferredVoice() {
-    if (!("speechSynthesis" in window)) return null;
-    const voices = speechSynthesis.getVoices() || [];
-    return voices.find(v => /^en-US/i.test(v.lang)) ||
-           voices.find(v => /^en-GB/i.test(v.lang)) ||
-           voices.find(v => /^en/i.test(v.lang)) || null;
+    return window.STEPUP_SPEECH?.pickEnglish()[0] || null;
   }
 
   function setAudioStatus(t){
@@ -893,7 +889,7 @@
     u.lang="en-US";
     u.rate=state.rate;
     const voice=preferredVoice();
-    if(voice)u.voice=voice;
+    if(voice){u.voice=voice;u.lang=voice.lang||"en-US";}
 
     highlightSentence(state.speechMode,state.speechIndex);
 
@@ -1002,7 +998,7 @@
     }
   }
 
-  function readWord(word){if(!("speechSynthesis" in window))return;stopSpeech();const u=new SpeechSynthesisUtterance(String(word||""));u.lang="en-US";u.rate=.82;const voice=preferredVoice();if(voice)u.voice=voice;speechSynthesis.speak(u)}
+  function readWord(word){if(!("speechSynthesis" in window))return;stopSpeech();const u=new SpeechSynthesisUtterance(String(word||""));u.lang="en-US";u.rate=.82;const voice=preferredVoice();if(voice){u.voice=voice;u.lang=voice.lang||"en-US";}speechSynthesis.speak(u)}
   function toggleMeaning(btn){const card=btn.closest(".tr-vocab-card");if(!card)return;const open=card.classList.toggle("show-meaning");btn.textContent=open?"Hide meaning":"Show meaning"}
   function toggleWord(btn){btn.classList.toggle("open")}
   function selectAnswer(index){

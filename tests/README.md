@@ -1,3 +1,14 @@
+# English speech voice checks
+
+Run `node --test tests/speech-voices.test.cjs` to check ordinary English voice
+selection when device lists include sound effects, reordered voices, duplicate
+quality variants, a single speaker, or voices loaded after the first play.
+The Unit 2 media checks also exercise consistent conversation speakers, early
+playback errors, replay, and callbacks from stopped audio. The Unit 3 lesson
+checks cover the shared voice selection in student and teacher paragraph audio.
+These use device voice fixtures; audible voice quality still depends on the
+voices available on the actual device.
+
 # Teacher PIN recovery checks
 
 Run the core checks with Node.js 22 or later:

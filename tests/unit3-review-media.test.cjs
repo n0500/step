@@ -27,7 +27,7 @@ function fixture(){
     const baseline=process.env.STEP_U3_BASELINE && path.join(process.env.STEP_U3_BASELINE,file);
     w.eval(fs.readFileSync(baseline && fs.existsSync(baseline)?baseline:path.join(root,file),'utf8'));
   }
-  ['data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js',
+  ['speech-voices.js','data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js',
     'unit1-cleanup.js','unit1-review-all.js','unit3-content.js','unit3-review-all.js','unit2-source-override.js','unit2-exam-review.js','mg1-kb.js'].forEach(load);
   const api=w.STEPUP_U3_REVIEW,bank=api.getMasteryBank(),unit=w.STEPUP_JOURNEY.data.units.find(u=>u.id==='u3');
   function hydrate(records){w.STEPUP_JOURNEY.html(records,['u1','u2','u3'],profile);}

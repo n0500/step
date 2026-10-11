@@ -25,6 +25,8 @@
   let stepTimerHandle = null;
   let readingTimerHandle = null;
   let readingAudioToken = 0;
+  let listeningAudioToken = 0;
+  let listeningUtterances = [];
 
   const old = {
     html: J.html,
@@ -381,6 +383,9 @@
   }
 
   function stopListening(){
+    listeningAudioToken++;
+    listeningUtterances.forEach(u=>{u.onstart=u.onend=u.onerror=null;});
+    listeningUtterances=[];
     try{
       if("speechSynthesis" in window) window.speechSynthesis.cancel();
     }catch(_){}
@@ -392,26 +397,39 @@
       setListeningStatus("Audio playback is not supported on this device.");
       return;
     }
-    window.speechSynthesis.cancel();
-
-    const voices=(window.speechSynthesis.getVoices?.()||[]).filter(v=>String(v.lang||"").toLowerCase().startsWith("en"));
+    stopReadingAudio();
+    stopListening();
+    const token=listeningAudioToken;
+    const voices=window.STEPUP_SPEECH?.pickEnglish(2)||[];
     const voiceA=voices[0]||null;
-    const voiceB=voices.find(v=>!voiceA || v.name!==voiceA.name)||voiceA||null;
+    const voiceB=voices[1]||voiceA;
+    const failed=()=>{
+      if(token!==listeningAudioToken)return;
+      stopListening();
+      setListeningStatus("Audio stopped. Tap Listen to try again.");
+    };
 
     setListeningStatus("Playing…");
-    LISTENING_DIALOGUE.forEach((line,index)=>{
+    try{for(let index=0;index<LISTENING_DIALOGUE.length;index++){
+      if(token!==listeningAudioToken)break;
+      const line=LISTENING_DIALOGUE[index];
       const u=new SpeechSynthesisUtterance(line.text);
-      u.lang="en-US";
+      const voice=line.speaker==="Khaled"?voiceA:voiceB;
+      u.lang=voice?.lang||"en-US";
       u.rate=.90;
-      u.pitch=line.speaker==="Khaled" ? .96 : 1.02;
-      if(line.speaker==="Khaled" && voiceA)u.voice=voiceA;
-      if(line.speaker==="Yousef" && voiceB)u.voice=voiceB;
+      u.pitch=1;
+      if(voice)u.voice=voice;
       if(index===LISTENING_DIALOGUE.length-1){
-        u.onend=()=>setListeningStatus("Finished. Replay anytime.");
-        u.onerror=()=>setListeningStatus("Audio stopped. Tap Listen to try again.");
+        u.onend=()=>{
+          if(token!==listeningAudioToken)return;
+          listeningUtterances=[];
+          setListeningStatus("Finished. Replay anytime.");
+        };
       }
+      u.onerror=failed;
+      listeningUtterances.push(u);
       window.speechSynthesis.speak(u);
-    });
+    }}catch(_){failed();}
   }
 
   const listening = [
@@ -546,6 +564,7 @@
   }
 
   function playReadingAudio(){
+    stopListening();
     stopReadingAudio();
     if(!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance==="undefined")return;
     const token=readingAudioToken;
@@ -553,9 +572,8 @@
     u.lang="en-US";
     u.rate=.92;
     u.pitch=1;
-    const voices=(window.speechSynthesis.getVoices?.()||[])
-      .filter(v=>String(v.lang||"").toLowerCase().startsWith("en"));
-    if(voices[0])u.voice=voices[0];
+    const voice=window.STEPUP_SPEECH?.pickEnglish()[0];
+    if(voice){u.voice=voice;u.lang=voice.lang||"en-US";}
     u.onend=()=>{ if(token===readingAudioToken){} };
     window.speechSynthesis.speak(u);
   }

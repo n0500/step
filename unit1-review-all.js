@@ -269,8 +269,8 @@
     try {
       const speech = new window.SpeechSynthesisUtterance(script);
       audio = speech; speech.lang = 'en-US'; speech.rate = 0.88;
-      const voice = window.speechSynthesis.getVoices?.().find(v => /^en[-_]/i.test(v.lang));
-      if (voice) speech.voice = voice;
+      const voice = window.STEPUP_SPEECH?.pickEnglish()[0];
+      if (voice) { speech.voice = voice; speech.lang = voice.lang || 'en-US'; }
       speech.onstart = () => say('Playing audio…');
       speech.onend = () => { if (audio === speech) audio = null; say('Audio finished. Replay whenever you need.'); };
       speech.onerror = () => { if (audio === speech) audio = null; say('Audio could not play. Try replaying or use the transcript for practice.'); };
