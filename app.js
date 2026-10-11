@@ -499,6 +499,8 @@
     return local.classes().filter(c=>!filterTeacher||c.teacherId===filterTeacher).map(c=>({...c,openUnits:c.openUnits||["u1"]}));
   }
   async function getAttempts(filters={}){
+    // Teacher reads must carry the same ownership constraint as Firestore rules.
+    if(state.profile?.role==="teacher")filters={...filters,teacherId:state.profile.id};
     let arr;
     if(state.fb){
       arr=await teacherCached("attempts|"+(filters.studentId||"")+"|"+(filters.teacherId||"")+"|"+(filters.classId||""),async()=>{

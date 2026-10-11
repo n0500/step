@@ -21,7 +21,14 @@ async function fixture(options={}){
   const tables={users:[teacher,...students],classes,attempts,archivedClasses:options.archived?[{id:'qa-archived',teacherId:teacher.id,name:'الفصل السابق',code:'QA-OLD'}]:[]};
   function collection(name,filters=[]){return{
     where(field,op,value){assert.equal(op,'==');return collection(name,[...filters,[field,value]]);},
-    async get(){reads.push(name);return snapshot((tables[name]||[]).filter(record=>filters.every(([field,value])=>record[field]===value)));},
+    async get(){
+      reads.push(name);
+      if(name==='attempts'&&!filters.some(([field,value])=>field==='teacherId'&&value===teacher.id)){
+        const error=new Error('Missing or insufficient permissions: teacher queries must include teacherId.');
+        error.code='permission-denied';throw error;
+      }
+      return snapshot((tables[name]||[]).filter(record=>filters.every(([field,value])=>record[field]===value)));
+    },
     doc(id){return{async get(){reads.push(name+'|'+id);const record=(tables[name]||[]).find(record=>record.id===id);return{exists:!!record,id,data:()=>({...record})};},
       set(){assert.fail('Reorganizing the dashboard must not write data');},update(){assert.fail('Saved data must not be overwritten');},delete(){assert.fail('Saved data must not be deleted');}};},
     add(){assert.fail('Browsing the workspace must not add records');}
@@ -147,6 +154,23 @@ test('the actual student profile includes incomplete unit answers and returns to
     f.w.document.querySelector('[data-tw-tab="reports"]').click();await until(()=>f.w.document.querySelector('.tw-results'));
     assert.deepEqual(f.visible().sort(),['qa-amal','qa-noura','qa-sara']);
     assert.equal(f.w.document.getElementById('teacherClassSelect').value,'qa-a');f.unchanged();
+  }finally{f.dom.window.close();}
+});
+
+test('both student name and profile buttons open the actual profile under teacher read rules',async()=>{
+  const f=await fixture();try{
+    await f.tab('reports');
+    f.w.document.querySelector('[data-tw-row="qa-amal"] .btn[data-tw-student]').click();
+    await until(()=>f.w.document.querySelector('.tw-student-summary'));
+    assert.equal(f.w.document.querySelector('.tw-heading h1').textContent,'أمل المطيري');
+    assert.equal(f.w.document.querySelector('.tw-student-summary tbody tr').children[2].textContent,'50%');
+    f.w.document.querySelector('[data-tw-tab="reports"]').click();
+    await until(()=>f.w.document.querySelector('.tw-results'));
+    f.w.document.querySelector('[data-tw-row="qa-sara"] .teacher-student-link').click();
+    await until(()=>f.w.document.querySelector('.tw-student-summary'));
+    assert.equal(f.w.document.querySelector('.tw-heading h1').textContent,'سارة العتيبي');
+    assert.equal(f.w.document.querySelector('.tw-student-summary tbody tr').children[1].textContent,'0 / '+f.req.length);
+    f.unchanged();
   }finally{f.dom.window.close();}
 });
 
