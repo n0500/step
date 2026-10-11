@@ -57,9 +57,9 @@ test('teacher PINs page exposes the new action for saved PINs and disables it fo
     const saved=f.w.document.querySelector('.teacher-pin-reset[data-student-id="student-1"]');
     const missing=f.w.document.querySelector('.teacher-pin-reset[data-student-id="missing-1"]');
     assert.ok(saved);assert.equal(saved.disabled,false);assert.equal(missing.disabled,true);
-    saved.click();await until(()=>f.status().includes('اختاري الرمز الجديد'));
+    saved.click();await until(()=>f.status().includes('Choose a new PIN'));
     assert.equal(f.w.document.querySelector('.teacher-pin-target').textContent,'QA Student');
-    f.submit('0057');await until(()=>f.status().includes('تم تعيين الرمز'));
+    f.submit('0057');await until(()=>f.status().includes('PIN set to'));
     assert.equal(f.student.pin,'0057');
     assert.equal(f.w.document.querySelector('.teacher-pin-code').textContent,'0057','teacher list refreshes after success');
     assert.equal(f.auth.currentUser.uid,f.teacher.id);assert.equal(f.changes,1);
@@ -71,16 +71,16 @@ test('the dialog never shows success early and blocks repeated submissions',asyn
   try{
     await f.open();f.submit('0057');f.submit('0057');
     await until(()=>f.changes===1);
-    assert.ok(!f.status().includes('تم تعيين'));assert.equal(f.w.document.querySelector('.teacher-pin-close').disabled,true);
-    release();await until(()=>f.status().includes('تم تعيين الرمز'));assert.equal(f.changes,1);
+    assert.ok(!f.status().includes('PIN set'));assert.equal(f.w.document.querySelector('.teacher-pin-close').disabled,true);
+    release();await until(()=>f.status().includes('PIN set to'));assert.equal(f.changes,1);
   }finally{release();f.dom.window.close();}
 });
 
 test('the partial-write dialog gives the actual new PIN and repairs only the profile',async()=>{
   const f=fixture({failWrites:1});try{
-    await f.open();f.submit('0057');await until(()=>f.status().includes('لكن تعذر حفظه'));
-    assert.ok(f.status().includes('0057'));assert.equal(f.w.document.querySelector('.teacher-pin-submit').textContent,'إعادة حفظ الرمز');
-    assert.equal(f.student.pin,'1234');f.submit();await until(()=>f.status().includes('تم تعيين الرمز'));
+    await f.open();f.submit('0057');await until(()=>f.status().includes('but could not be saved'));
+    assert.ok(f.status().includes('0057'));assert.equal(f.w.document.querySelector('.teacher-pin-submit').textContent,'Save PIN Again');
+    assert.equal(f.student.pin,'1234');f.submit();await until(()=>f.status().includes('PIN set to'));
     assert.equal(f.student.pin,'0057');assert.equal(f.changes,1);assert.equal(f.writes,2);
   }finally{f.dom.window.close();}
 });
@@ -89,13 +89,13 @@ test('renders student names as text and rejects an invalid PIN without contactin
   const name='<img src=x onerror=alert(1)>';const f=fixture({name});try{
     await f.open();assert.equal(f.w.document.querySelector('.teacher-pin-target').textContent,name);
     assert.equal(f.w.document.querySelector('.teacher-pin-dialog img'),null);
-    f.submit('abcd');assert.equal(f.changes,0);assert.ok(f.status().includes('4 أرقام'));
+    f.submit('abcd');assert.equal(f.changes,0);assert.ok(f.status().includes('4-digit PIN'));
   }finally{f.dom.window.close();}
 });
 
 test('an exhausted daily quota explains the limit without attempting a password change',async()=>{
   const f=fixture({quotaError:true});try{
-    await f.open();assert.ok(f.status().includes('حد الاستخدام اليومي المجاني'));
+    await f.open();assert.ok(f.status().includes('free daily usage limit'));
     assert.equal(f.w.document.querySelector('.teacher-pin-submit').disabled,true);assert.equal(f.changes,0);
   }finally{f.dom.window.close();}
 });

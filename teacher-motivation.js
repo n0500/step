@@ -96,7 +96,7 @@
       available.forEach(u=>{
         if(!/^u\d+$/.test(u.id))return;
         evaluateUnit(mine,u.id).forEach(award=>{
-          rows.push({studentId:student.id,studentName:student.displayName||'طالبة',
+          rows.push({studentId:student.id,studentName:student.displayName||'Student',
             classId,unitId:u.id,unitNumber:u.number,unitTitle:u.title,
             type:award.type,evidence:award.evidence});
         });
@@ -111,7 +111,7 @@
     if(document.getElementById('stepupEncouragementStyles'))return;
     const s=document.createElement('style');s.id='stepupEncouragementStyles';
     s.textContent=[
-      '.smc-view{max-width:1230px;margin:0 auto;text-align:right}',
+      '.smc-view{max-width:1230px;margin:0 auto;text-align:left}',
       '.smc-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px}',
       '.smc-head h1{margin:4px 0;font-size:clamp(23px,2.4vw,31px)}',
       '.smc-head p{color:#58657a;line-height:1.8;margin:5px 0;max-width:800px}',
@@ -122,7 +122,7 @@
       '.smc-stat strong{display:block;font-size:30px;color:#203b54;margin-top:6px}',
       '.smc-view .teacher-report-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}',
       '.smc-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;background:#fff4db;color:#8b5e12;border:1px solid #f2d8a8;border-radius:999px;font-weight:750;white-space:nowrap}',
-      '.smc-view table th,.smc-view table td{text-align:right;vertical-align:middle;padding:12px 10px}',
+      '.smc-view table th,.smc-view table td{text-align:left;vertical-align:middle;padding:12px 10px}',
       '.smc-empty{text-align:center;padding:32px 12px;color:#64748b;line-height:1.9}',
       '.smc-note{color:#64748b;font-size:13px;line-height:1.8;margin:12px 0}',
       '.smc-tile{min-height:600px;max-width:740px;margin:auto;border:5px solid var(--smc-color);border-radius:27px;padding:38px;background:linear-gradient(155deg,#fff,var(--smc-bg));display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;color:#24354d;box-sizing:border-box}',
@@ -170,10 +170,13 @@
     window.addEventListener('afterprint',cleanup);
     window.print();
   }
+  function englishEvidence(value){
+    return String(value||'').replace(/نقطة مئوية/g,'percentage points').replace(/محاولات:/g,'Attempts:').replace(/أيام التدريب:/g,'Practice days:').replace(/3 محاولات متتالية/g,'3 consecutive attempts').replace(/أنشطة متنوعة:/g,'Different activities:');
+  }
   function exportCSV(){
     if(!current.cls)return;
-    const cells=[['الفصل','اسم الطالبة','الوحدة','البطاقة التشجيعية','سبب الاستحقاق']];
-    current.rows.forEach(r=>cells.push([current.cls.name,r.studentName,r.unitNumber,cardById(r.type).ar,r.evidence]));
+    const cells=[['Class','Student Name','Unit','Encouragement Card','Award Reason']];
+    current.rows.forEach(r=>cells.push([current.cls.name,r.studentName,r.unitNumber,cardById(r.type).en,englishEvidence(r.evidence)]));
     const output=cells.map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const link=document.createElement('a');
     const href=URL.createObjectURL(new Blob(['\uFEFF'+output],{type:'text/csv;charset=utf-8'}));
@@ -183,35 +186,35 @@
   }
   function render({students,attempts,cls,classSelectHTML}){
     css();
-    if(!cls)return '<section class="card" dir="rtl">يرجى إنشاء فصل لعرض البطاقات التشجيعية.</section>';
+    if(!cls)return '<section class="card" dir="ltr">Create a class to view encouragement cards.</section>';
     const roster=(students||[]).filter(s=>s.role==='student'&&s.classId===cls.id);
     const rows=buildRows(roster,attempts,cls.id);
     current={rows,cls};
     const unique=new Set(rows.map(r=>r.studentId));
     const names=rows.map((r,i)=>{
       const c=cardById(r.type);
-      return '<tr><td>'+esc(r.studentName)+'</td><td>الوحدة '+esc(r.unitNumber)+'</td>'+
-        '<td><span class="smc-chip">'+c.icon+' '+esc(c.ar)+'</span></td>'+
-        '<td>'+esc(r.evidence)+'</td>'+
-        '<td><button type="button" class="btn btn-secondary" onclick="STEPUP_MOTIVATION.printCard('+i+')">طباعة البطاقة</button></td></tr>';
+      return '<tr><td>'+esc(r.studentName)+'</td><td>Unit '+esc(r.unitNumber)+'</td>'+
+        '<td><span class="smc-chip">'+c.icon+' '+esc(c.en)+'</span></td>'+
+        '<td>'+esc(englishEvidence(r.evidence))+'</td>'+
+        '<td><button type="button" class="btn btn-secondary" onclick="STEPUP_MOTIVATION.printCard('+i+')">Print Card</button></td></tr>';
     }).join('');
-    return '<section class="teacher-reports-v2 smc-view" dir="rtl">'+
+    return '<section class="teacher-reports-v2 smc-view" dir="ltr">'+
       '<div class="smc-head"><div><div class="eyebrow">StepUp · Encouragement</div>'+
-      '<h1>البطاقات التشجيعية</h1>'+
-      '<p>تقدير التحسن والمثابرة والاستكشاف من نتائج التدريب المحفوظة، دون اشتراط اجتياز الوحدة أو إصدار شهادة إتقان.</p></div>'+
-      '<div class="smc-actions"><button class="btn btn-secondary" onclick="PROVE.setTeacherTab(\'motivation\')">تحديث القائمة</button>'+
-      '<button class="btn btn-primary" onclick="STEPUP_MOTIVATION.exportCSV()">تصدير القائمة</button></div></div>'+
-      '<div class="teacher-report-toolbar card" dir="rtl">'+classSelectHTML+
-      '<div class="teacher-report-code"><span>رمز الفصل</span><strong dir="ltr">'+esc(cls.code||'')+'</strong></div></div>'+
-      '<div class="smc-stats"><div class="smc-stat"><span>طالبات الفصل</span><strong>'+roster.length+'</strong></div>'+
-      '<div class="smc-stat"><span>الطالبات المستحقات للتشجيع</span><strong>'+unique.size+'</strong></div>'+
-      '<div class="smc-stat"><span>البطاقات المكتسبة</span><strong>'+rows.length+'</strong></div></div>'+
-      '<div class="card teacher-students-table"><div class="teacher-card-head"><h2>سجل البطاقات — '+esc(cls.name)+'</h2>'+
-      '<span class="teacher-code-pill">'+rows.length+' بطاقة</span></div>'+
-      '<div class="table-wrap"><table><thead><tr><th>الطالبة</th><th>الوحدة</th><th>البطاقة</th><th>دليل الاستحقاق</th><th>الإجراء</th></tr></thead>'+
-      '<tbody>'+ (names||'<tr><td colspan="5" class="smc-empty">لا توجد بطاقات مستحقة حتى الآن. ستظهر عند استيفاء معايير التشجيع.</td></tr>') +
+      '<h1>Encouragement Cards</h1>'+
+      '<p>Recognize improvement, persistence, and exploration through saved practice results. Completing a unit or earning a mastery certificate is not required.</p></div>'+
+      '<div class="smc-actions"><button class="btn btn-secondary" onclick="PROVE.setTeacherTab(\'motivation\')">Refresh List</button>'+
+      '<button class="btn btn-primary" onclick="STEPUP_MOTIVATION.exportCSV()">Export List</button></div></div>'+
+      '<div class="teacher-report-toolbar card" dir="ltr">'+classSelectHTML+
+      '<div class="teacher-report-code"><span>Class Code</span><strong dir="ltr">'+esc(cls.code||'')+'</strong></div></div>'+
+      '<div class="smc-stats"><div class="smc-stat"><span>Class Students</span><strong>'+roster.length+'</strong></div>'+
+      '<div class="smc-stat"><span>Students Earning Encouragement</span><strong>'+unique.size+'</strong></div>'+
+      '<div class="smc-stat"><span>Earned Cards</span><strong>'+rows.length+'</strong></div></div>'+
+      '<div class="card teacher-students-table"><div class="teacher-card-head"><h2>Card History — '+esc(cls.name)+'</h2>'+
+      '<span class="teacher-code-pill">'+rows.length+' cards</span></div>'+
+      '<div class="table-wrap"><table><thead><tr><th>Student</th><th>Unit</th><th>Card</th><th>Award Evidence</th><th>Action</th></tr></thead>'+
+      '<tbody>'+ (names||'<tr><td colspan="5" class="smc-empty">No cards have been earned yet. They appear when the award criteria are met.</td></tr>') +
       '</tbody></table></div></div>'+
-      '<p class="smc-note">تظهر بطاقة واحدة من كل نوع للطالبة في الوحدة نفسها، وتُحتسب من نتائج التدريب المحفوظة دون التأثير في شهادات إتقان الوحدات.</p>'+
+      '<p class="smc-note">Each student can earn one card of each type per unit. Cards use saved practice results and do not affect unit mastery certificates.</p>'+
     '</section>';
   }
   // Reuse the exact approved award definitions in students' own card gallery.

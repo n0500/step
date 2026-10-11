@@ -751,7 +751,7 @@ function renderAssistant(){
     <div class="mg1-chat">
       <div class="mg1-messages" id="mg1Messages"></div>
       <div class="mg1-compose">
-        <textarea id="mg1Input" dir="auto" maxlength="700" placeholder="Ask about MegaGoal 1... / اسألي عن المنهج"></textarea>
+        <textarea id="mg1Input" dir="auto" maxlength="700" placeholder="${document.querySelector('.role-tabs[data-role="teacher"]')?"Ask about MegaGoal 1...":"Ask about MegaGoal 1... / اسألي عن المنهج"}"></textarea>
         <button class="mg1-send" id="mg1Send">Send</button>
       </div>
     </div>`;
@@ -788,7 +788,7 @@ function renderWritingCoach(){
       <div class="mg1-writing-note">Paste the writing task, your outline, or your draft. The coach will guide you one step at a time.</div>
       <div class="mg1-messages" id="writingMessages"></div>
       <div class="mg1-compose">
-        <textarea id="writingInput" dir="auto" maxlength="2200" placeholder="Paste your topic or draft... / اكتبي الموضوع أو الصقي مسودتك"></textarea>
+        <textarea id="writingInput" dir="auto" maxlength="2200" placeholder="${document.querySelector('.role-tabs[data-role="teacher"]')?"Paste your topic or draft...":"Paste your topic or draft... / اكتبي الموضوع أو الصقي مسودتك"}"></textarea>
         <button class="mg1-send" id="writingSend">Send</button>
       </div>
     </div>`;
@@ -947,7 +947,7 @@ function renderDictionary(){
       <h1>Dictionary</h1>
       <p class="mg1-assistant-sub">Meaning, learner-friendly definition, IPA, example, and pronunciation — inside StepUp.</p>
       <div class="mg1-dict-search">
-        <input id="mg1DictInput" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Type an English word... / اكتبي كلمة إنجليزية">
+        <input id="mg1DictInput" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="${document.querySelector('.role-tabs[data-role="teacher"]')?"Type an English word...":"Type an English word... / اكتبي كلمة إنجليزية"}">
         <button id="mg1DictSearch">Search</button>
       </div>
     </div>
@@ -969,8 +969,9 @@ function renderDictionary(){
 
 function dictionaryResultHTML(entry){
   const tag=entry.mg1Tag||mg1WordTag(entry.word);
-  const arabicMeaning=entry.arabicMeaning || (entry.enriching?"جار إضافة المعنى العربي...":"—");
-  const exampleArabic=entry.exampleArabic || (entry.enriching?"جار إضافة ترجمة المثال...":"—");
+  const teacherView=!!document.querySelector('.role-tabs[data-role="teacher"]');
+  const arabicMeaning=entry.arabicMeaning || (entry.enriching?(teacherView?"Adding the Arabic meaning...":"جار إضافة المعنى العربي..."):"—");
+  const exampleArabic=entry.exampleArabic || (entry.enriching?(teacherView?"Adding the example translation...":"جار إضافة ترجمة المثال..."):"—");
   return `<div class="mg1-dict-result">
     <div class="mg1-dict-head">
       <div>
@@ -989,9 +990,9 @@ function dictionaryResultHTML(entry){
     </div>
     <div class="mg1-dict-grid">
       <div class="mg1-dict-box"><strong>English definition</strong><p>${esc(entry.englishDefinition||"—")}</p></div>
-      <div class="mg1-dict-box" dir="rtl"><strong>المعنى العربي</strong><p>${esc(arabicMeaning)}</p></div>
+      <div class="mg1-dict-box" dir="${teacherView?'ltr':'rtl'}"><strong>${teacherView?"Arabic meaning":"المعنى العربي"}</strong><p dir="auto">${esc(arabicMeaning)}</p></div>
       <div class="mg1-dict-box"><strong>Example</strong><p>${esc(entry.example||"—")}</p></div>
-      <div class="mg1-dict-box" dir="rtl"><strong>ترجمة المثال</strong><p>${esc(exampleArabic)}</p></div>
+      <div class="mg1-dict-box" dir="${teacherView?'ltr':'rtl'}"><strong>${teacherView?"Example translation":"ترجمة المثال"}</strong><p dir="auto">${esc(exampleArabic)}</p></div>
       ${entry.forms?`<div class="mg1-dict-box"><strong>Useful forms</strong><p>${esc(entry.forms)}</p></div>`:""}
     </div>
   </div>`;

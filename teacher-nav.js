@@ -5,7 +5,7 @@
 (function(){
   "use strict";
   var TOOL_IDS = ["mg1AssistantTab","mg1WritingTab","mg1DictionaryTab","stepupTeachingHubTab"];
-  var TOOL_LABELS={mg1AssistantTab:"المساعد الذكي",mg1WritingTab:"تدريب الكتابة",mg1DictionaryTab:"القاموس",stepupTeachingHubTab:"مركز التدريس"};
+  var TOOL_LABELS={mg1AssistantTab:"AI Assistant",mg1WritingTab:"Writing Coach",mg1DictionaryTab:"Dictionary",stepupTeachingHubTab:"Teaching Hub"};
   var queued = false;
 
   function navs(){ return document.querySelectorAll('.role-tabs[data-role="teacher"]'); }

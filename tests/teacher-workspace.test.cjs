@@ -60,10 +60,10 @@ async function fixture(options={}){
   return{dom,w,teacher,students,attempts,classes,reads,errors,original,load,input,visible,req,async tab(id){await w.PROVE.setTeacherTab(id);},unchanged(){assert.equal(JSON.stringify({students,attempts,classes}),original);assert.deepEqual(errors,[]);}};
 }
 
-test('the home page has direct Arabic destinations and counts for the selected class',async()=>{
+test('the home page has direct English destinations and counts for the selected class',async()=>{
   const f=await fixture();try{
-    assert.equal(f.w.document.querySelector('main').dir,'rtl');
-    const nav=f.w.document.querySelector('.teacher-nav-main');assert.ok(nav.querySelector('[data-tab="pins"]'));assert.match(nav.textContent,/حسابات الدخول/);assert.match(nav.textContent,/الطالبات والنتائج/);
+    assert.equal(f.w.document.querySelector('main').dir,'ltr');assert.equal(f.w.document.querySelector('main').lang,'en');
+    const nav=f.w.document.querySelector('.teacher-nav-main');assert.ok(nav.querySelector('[data-tab="pins"]'));assert.match(nav.textContent,/Student Access/);assert.match(nav.textContent,/Students and Results/);
     assert.deepEqual(Array.from(f.w.document.querySelectorAll('.tw-metric strong')).map(el=>el.textContent),['3','2','1','1']);
     assert.equal(f.w.document.querySelectorAll('.tw-route').length,4);
     f.w.document.querySelector('[data-tw-filter="idle"]').click();await until(()=>f.w.document.querySelector('.tw-results'));
@@ -105,17 +105,17 @@ test('certificate filters match the established certificate policy and preserve 
   const f=await fixture();try{
     await f.tab('reports');f.w.document.querySelector('[data-tw-status="earned"]').click();assert.deepEqual(f.visible(),['qa-noura']);
     const results=Array.from(f.w.document.querySelectorAll('[data-tw-row="qa-noura"] [data-tw-cell="certificates"]'));assert.equal(results[0].textContent,'1');
-    await f.tab('certificates');assert.match(f.w.document.querySelector('.sct-wrap').textContent,/نورة/);assert.equal(f.w.document.querySelector('.sct-wrap .teacher-report-toolbar').dir,'rtl');f.unchanged();
+    await f.tab('certificates');assert.match(f.w.document.querySelector('.sct-wrap').textContent,/نورة/);assert.equal(f.w.document.querySelector('.sct-wrap .teacher-report-toolbar').dir,'ltr');f.unchanged();
   }finally{f.dom.window.close();}
 });
 
 test('PIN recovery remains directly reachable and class unit settings remain available',async()=>{
   const f=await fixture();try{
-    await f.tab('pins');assert.match(f.w.document.querySelector('h1').textContent,/حسابات الدخول/);
+    await f.tab('pins');assert.match(f.w.document.querySelector('h1').textContent,/Student Access/);
     assert.equal(f.w.document.querySelector('[data-student-id="qa-amal"]').disabled,false);assert.equal(f.w.document.querySelector('[data-student-id="qa-noura"]').disabled,true);
     assert.equal(f.w.document.querySelector('[data-group="students"].active'),null);
     await f.tab('classes');assert.equal(f.w.document.querySelectorAll('.teacher-class-card').length,2);assert.equal(f.w.document.querySelectorAll('.teacher-unit-access[open]').length,1);
-    assert.ok(f.w.document.querySelector('[onclick*="toggleUnit"]'));assert.match(f.w.document.querySelector('.teacher-class-list').textContent,/متاحة للطالبات/);f.unchanged();
+    assert.ok(f.w.document.querySelector('[onclick*="toggleUnit"]'));assert.match(f.w.document.querySelector('.teacher-class-list').textContent,/Available to students/);f.unchanged();
   }finally{f.dom.window.close();}
 });
 
@@ -123,7 +123,7 @@ test('tool modules keep their handlers while moving into the labeled tools menu'
   const f=await fixture();try{
     const nav=f.w.document.querySelector('.teacher-nav'),button=f.w.document.createElement('button');
     button.id='mg1AssistantTab';button.className='role-tab';button.textContent='MG1 Assistant';let clicked=0;button.addEventListener('click',()=>clicked++);nav.appendChild(button);
-    f.w.STEPUP_TEACHER_NAV.organize();assert.equal(button.parentElement.dataset.group,'tools');assert.equal(button.textContent,'المساعد الذكي');
+    f.w.STEPUP_TEACHER_NAV.organize();assert.equal(button.parentElement.dataset.group,'tools');assert.equal(button.textContent,'AI Assistant');
     f.w.document.querySelector('[data-group="tools"].teacher-group-btn').click();assert.equal(button.parentElement.hidden,false);assert.equal(f.w.document.querySelector('[data-group="tools"].teacher-group-btn').getAttribute('aria-expanded'),'true');
     button.click();assert.equal(clicked,1);button.classList.add('active');f.w.STEPUP_TEACHER_NAV.organize();assert.equal(f.w.document.querySelectorAll('.teacher-nav-main .active').length,1);f.unchanged();
   }finally{f.dom.window.close();}
@@ -138,15 +138,15 @@ test('home search opens a student profile and share actions retain their actual 
 });
 
 test('the empty teacher workspace gives a clear create-class action',async()=>{
-  const f=await fixture({empty:true});try{assert.match(f.w.document.querySelector('.tw-empty').textContent,/إنشاء فصل/);assert.ok(f.w.document.querySelector('[onclick="PROVE.createClass()"]'));await f.tab('reports');assert.match(f.w.document.querySelector('main').textContent,/أنشئي فصلا/);f.unchanged();}finally{f.dom.window.close();}
+  const f=await fixture({empty:true});try{assert.match(f.w.document.querySelector('.tw-empty').textContent,/Create Class/);assert.ok(f.w.document.querySelector('[onclick="PROVE.createClass()"]'));await f.tab('reports');assert.match(f.w.document.querySelector('main').textContent,/Create a class first/);f.unchanged();}finally{f.dom.window.close();}
 });
 
 test('the actual student profile includes incomplete unit answers and returns to the chosen class',async()=>{
   const f=await fixture();try{
     await f.w.PROVE.openStudent('qa-amal');
-    assert.equal(f.w.document.querySelector('main').dir,'rtl');
+    assert.equal(f.w.document.querySelector('main').dir,'ltr');
     const rows=f.w.document.querySelectorAll('.tw-student-summary tbody tr');
-    assert.equal(rows.length,6);assert.match(rows[0].textContent,/الوحدة 1/);
+    assert.equal(rows.length,6);assert.match(rows[0].textContent,/Unit 1/);
     assert.equal(rows[0].children[1].textContent,'2 / '+f.req.length);assert.equal(rows[0].children[2].textContent,'50%');
     assert.equal(rows[1].children[2].textContent,'100%');assert.equal(rows[2].children[2].textContent,'—');
     assert.equal(f.w.document.querySelector('.tw-details').open,false);
@@ -182,7 +182,7 @@ test('export uses the currently displayed student and unit filters with the save
     await f.tab('reports');f.input('twUnitFilter','u1');f.input('twStudentSearch','امل');const reads=f.reads.length;
     f.w.document.querySelector('[data-tw-export]').click();assert.deepEqual(downloads,['StepUp-Results-QA-A.csv']);
     const csv=await blobs[0].text();const lines=csv.trim().split('\r\n');assert.equal(lines.length,2);
-    assert.match(lines[0],/الدقة التراكمية/);assert.match(lines[1],/أمل المطيري/);assert.match(lines[1],/"الوحدة 1","بدأت","2","\d+","50","0"/);
+    assert.match(lines[0],/Cumulative Accuracy/);assert.match(lines[1],/أمل المطيري/);assert.match(lines[1],/"Unit 1","Started","2","\d+","50","0"/);
     assert.equal(f.reads.length,reads);f.unchanged();
   }finally{f.dom.window.close();}
 });
@@ -211,21 +211,21 @@ test('mastery assessment answers appear in the roster and profile with their ear
     const row=f.w.document.querySelector('[data-tw-row="qa-sara"]');
     assert.equal(row.querySelector('[data-tw-cell="progress"]').textContent,f.req.length+' / '+f.req.length);
     assert.equal(row.querySelector('[data-tw-cell="accuracy"]').textContent,'100%');assert.equal(row.querySelector('[data-tw-cell="certificates"]').textContent,'1');
-    await f.w.PROVE.openStudent('qa-sara');assert.equal(f.w.document.querySelector('.tw-student-summary tbody tr').children[3].textContent,'مستحقة');f.unchanged();
+    await f.w.PROVE.openStudent('qa-sara');assert.equal(f.w.document.querySelector('.tw-student-summary tbody tr').children[3].textContent,'Earned');f.unchanged();
   }finally{f.dom.window.close();}
 });
 
-test('the real tool and class modules remain connected to Arabic navigation',async()=>{
+test('the real tool and class modules remain connected to English navigation',async()=>{
   const f=await fixture({archived:true});try{
     ['mg1-kb.js','mg1-assistant.js','advanced-features.js','class-manager.js','nav-cleanup.js','stepup-athari.js'].forEach(f.load);
     await until(()=>f.w.document.querySelector('#stepupTeachingHubTab')&&f.w.document.querySelector('#mg1DictionaryTab'));
     f.w.STEPUP_TEACHER_NAV.organize();
-    assert.equal(f.w.document.querySelector('#mg1AssistantTab').textContent,'المساعد الذكي');
+    assert.equal(f.w.document.querySelector('#mg1AssistantTab').textContent,'AI Assistant');
     f.w.document.querySelector('[data-group="tools"].teacher-group-btn').click();
-    f.w.document.querySelector('#mg1DictionaryTab').click();await until(()=>f.w.document.querySelector('#mg1DictInput'));
+    f.w.document.querySelector('#mg1DictionaryTab').click();await until(()=>f.w.document.querySelector('#mg1DictInput'));assert.equal(f.w.document.querySelector('#mg1DictInput').placeholder,'Type an English word...');
     await f.tab('classes');await until(()=>f.w.document.querySelector('[data-manage-class="qa-a"]')&&f.w.document.querySelector('#stepupArchivedClasses'));
     assert.equal(f.w.document.querySelectorAll('[data-manage-class]').length,2);
-    assert.equal(f.w.document.querySelector('[data-manage-class="qa-a"]').textContent,'إدارة الفصل');
+    assert.equal(f.w.document.querySelector('[data-manage-class="qa-a"]').textContent,'Manage Class');
     assert.match(f.w.document.querySelector('#stepupArchivedClasses').textContent,/الفصل السابق/);
     await f.tab('home');assert.equal(f.w.document.querySelector('#stepupArchivedClasses'),null);f.unchanged();
   }finally{f.dom.window.close();}

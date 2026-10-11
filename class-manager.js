@@ -312,7 +312,7 @@
       const panel=document.createElement("div");
       panel.id=PANEL_ID;
       panel.className="card cm-archive-panel";
-      panel.innerHTML=`<div class="eyebrow">الأرشيف</div><h2>الفصول المؤرشفة</h2><p class="muted">الفصول المؤرشفة مخفية وروابط دخولها معطلة، وتبقى بياناتها محفوظة.</p>${archived.map(c=>`<div class="cm-archive-row"><div><strong>${esc(c.name||"فصل")}</strong><div class="mini-stat">رمز الفصل: <span dir="ltr">${esc(c.code||"")}</span> • ${students.filter(s=>s.classId===c.id).length} طالبة</div></div><div class="cm-archive-actions"><button class="btn btn-secondary" data-restore="${c.id}">استعادة الفصل</button><button class="btn btn-danger" data-delete-archived="${c.id}">حذف البيانات</button></div></div>`).join("")}`;
+      panel.innerHTML=`<div class="eyebrow">Archive</div><h2>Archived Classes</h2><p class="muted">Archived classes are hidden and their access links are disabled. Their data is preserved.</p>${archived.map(c=>`<div class="cm-archive-row"><div><strong>${esc(c.name||"Class")}</strong><div class="mini-stat">Class code: <span dir="ltr">${esc(c.code||"")}</span> • ${students.filter(s=>s.classId===c.id).length} students</div></div><div class="cm-archive-actions"><button class="btn btn-secondary" data-restore="${c.id}">Restore Class</button><button class="btn btn-danger" data-delete-archived="${c.id}">Delete Data</button></div></div>`).join("")}`;
       if(!classesPage.isConnected) return;
       classesPage.appendChild(panel);
       panel.querySelectorAll("[data-restore]").forEach(b=>b.addEventListener("click",()=>restoreClass(b.dataset.restore)));
@@ -388,7 +388,7 @@
       manage.type="button";
       manage.className="btn class-manage-btn";
       manage.dataset.manageClass=classId;
-      manage.textContent="إدارة الفصل";
+      manage.textContent="Manage Class";
       manage.addEventListener("click",()=>openManager(classId));
       wrap.appendChild(manage);
     });

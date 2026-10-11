@@ -78,7 +78,7 @@
             earned:!!result?.earned,accuracy:result?.accuracy||0,mode:result?.mode||'pending'};
         })
         .filter(u=>u.earned);
-      return {id:s.id,name:s.displayName||'طالبة',units};
+      return {id:s.id,name:s.displayName||'Student',units};
     }).filter(row=>row.units.length)
       .sort((a,b)=>a.name.localeCompare(b.name,'ar',{sensitivity:'base'}));
   }
@@ -88,7 +88,7 @@
     if(document.getElementById('stepupTeacherCertificatesCSS'))return;
     const style=document.createElement('style');style.id='stepupTeacherCertificatesCSS';
     style.textContent=`
-      .sct-wrap{max-width:1220px;margin:0 auto;text-align:right}
+      .sct-wrap{max-width:1220px;margin:0 auto;text-align:left}
       .sct-heading{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px;margin-bottom:18px}
       .sct-heading h1{font-size:clamp(23px,2.4vw,32px);margin:4px 0}
       .sct-heading p{max-width:820px;line-height:1.8;margin:5px 0;color:#566276}
@@ -99,7 +99,7 @@
       .sct-row-units{display:flex;flex-wrap:wrap;gap:7px}
       .sct-unit{display:inline-flex;align-items:center;gap:7px;border-radius:999px;background:#eaf6f4;color:#185f60;padding:8px 13px;font-weight:750;font-size:14px;border:1px solid #bfe5df}
       .sct-unit b{font-variant-numeric:tabular-nums;font-size:12px;color:#496476}
-      .sct-wrap .sct-table th,.sct-wrap .sct-table td{text-align:right;vertical-align:middle;line-height:1.7}
+      .sct-wrap .sct-table th,.sct-wrap .sct-table td{text-align:left;vertical-align:middle;line-height:1.7}
       .sct-wrap .sct-table th{white-space:nowrap}
       .sct-note{font-size:13px;color:#586777;line-height:1.8;margin-top:10px}
       .sct-empty{text-align:center;color:#64748b;padding:35px 12px;line-height:1.9}
@@ -114,7 +114,7 @@
 
   function render({students,attempts,classes,cls,classSelectHTML}){
     ensureCSS();
-    if(!cls)return '<section class="card" dir="rtl">أنشئي فصلًا أولًا لعرض شهادات الطالبات.</section>';
+    if(!cls)return '<section class="card" dir="ltr">Create a class first to view student certificates.</section>';
     const sources=requirements();
     const unavailable=sources.filter(s=>!s.questions?.length);
     const roster=(students||[]).filter(s=>s.role==='student'&&s.classId===cls.id);
@@ -126,47 +126,47 @@
         <td>${i+1}</td>
         <td><strong>${esc(row.name)}</strong></td>
         <td><div class="sct-row-units">${row.units.map(u=>`
-          <span class="sct-unit" title="${esc(u.title)}">الوحدة ${Number(u.number)}
+          <span class="sct-unit" title="${esc(u.title)}">Unit ${Number(u.number)}
           <b>${u.accuracy}%</b></span>`).join('')}</div></td>
         <td><strong>${row.units.length}</strong></td>
       </tr>`).join('');
     const message=unavailable.length
-      ? '<div class="notice">تعذر التحقق من متطلبات بعض الوحدات. لن تُدرج شهادة إلا بعد التحقق من جميع أسئلتها.</div>'
+      ? '<div class="notice">Some unit requirements could not be verified. Certificates appear only after all required questions are verified.</div>'
       : '';
-    return `<section class="teacher-reports-v2 sct-wrap" dir="rtl">
+    return `<section class="teacher-reports-v2 sct-wrap" dir="ltr">
       <div class="sct-heading">
         <div><div class="eyebrow">StepUp · Certificates</div>
-          <h1>شهادات إتقان الوحدات</h1>
-          <p>أسماء الطالبات المستحقات لشهادات إتقان الوحدات، وفق الإتقان التراكمي بنسبة 80% فأكثر، مع استمرار صلاحية جميع الشهادات المكتسبة سابقا.</p></div>
+          <h1>Unit Mastery Certificates</h1>
+          <p>Students who earned unit mastery certificates through cumulative mastery of 80% or higher. Previously earned certificates remain valid.</p></div>
         <div class="sct-actions">
-          <button type="button" class="btn btn-secondary" onclick="PROVE.setTeacherTab('certificates')">تحديث القائمة</button>
-          <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">تصدير القائمة (CSV)</button>
+          <button type="button" class="btn btn-secondary" onclick="PROVE.setTeacherTab('certificates')">Refresh List</button>
+          <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">Export List (CSV)</button>
         </div>
       </div>
-      <div class="teacher-report-toolbar card" dir="rtl">
+      <div class="teacher-report-toolbar card" dir="ltr">
         ${classSelectHTML}
-        <div class="teacher-report-code"><span>رمز الفصل</span><strong dir="ltr">${esc(cls.code||'')}</strong></div>
+        <div class="teacher-report-code"><span>Class Code</span><strong dir="ltr">${esc(cls.code||'')}</strong></div>
       </div>
       ${message}
       <div class="sct-stats">
-        <div class="sct-stat"><span>طالبات الفصل</span><strong>${roster.length}</strong></div>
-        <div class="sct-stat"><span>الطالبات الحاصلات على شهادة</span><strong>${rows.length}</strong></div>
-        <div class="sct-stat"><span>إجمالي شهادات الوحدات المكتسبة</span><strong>${certificates}</strong></div>
+        <div class="sct-stat"><span>Class Students</span><strong>${roster.length}</strong></div>
+        <div class="sct-stat"><span>Students with Certificates</span><strong>${rows.length}</strong></div>
+        <div class="sct-stat"><span>Total Earned Unit Certificates</span><strong>${certificates}</strong></div>
       </div>
       <div class="card teacher-students-table">
-        <div class="teacher-card-head"><div><h2>قائمة الشهادات — ${esc(cls.name)}</h2></div><span class="teacher-code-pill">${rows.length} طالبة</span></div>
+        <div class="teacher-card-head"><div><h2>Certificate Roster — ${esc(cls.name)}</h2></div><span class="teacher-code-pill">${rows.length} students</span></div>
         <div class="table-wrap"><table class="sct-table">
-          <thead><tr><th>م</th><th>اسم الطالبة</th><th>الوحدات التي أتقنتها</th><th>عدد الشهادات</th></tr></thead>
-          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">لا توجد شهادات إتقان مستحقة لهذا الفصل حتى الآن.</td></tr>'}</tbody>
+          <thead><tr><th>No.</th><th>Student Name</th><th>Mastered Units</th><th>Certificate Count</th></tr></thead>
+          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">No students in this class have earned unit mastery certificates yet.</td></tr>'}</tbody>
         </table></div>
       </div>
-      <p class="sct-note">تعتمد الشهادات على حفظ أفضل إجابة صحيحة لكل سؤال خلال محاولات التدريب، بعد إكمال متطلبات الوحدة وتحقيق 80% فأكثر. تبقى الشهادات المستحقة سابقا سارية، ولا يعني الاستحقاق بالضرورة تنزيل ملف الشهادة.</p>
+      <p class="sct-note">Certificates use the best saved answer for each question after completing the unit requirements with at least 80% mastery. Previously earned certificates remain valid. Earning a certificate does not mean its file has been downloaded.</p>
     </section>`;
   }
   function exportCSV(){
     const {rows,cls}=lastExport;
     if(!cls)return;
-    const cells=[['الفصل','اسم الطالبة','الوحدة','عنوان الوحدة','الإتقان %']];
+    const cells=[['Class','Student Name','Unit','Unit Title','Mastery %']];
     rows.forEach(row=>row.units.forEach(u=>cells.push([cls.name,row.name,u.number,u.title,u.accuracy])));
     const value=cells.map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const link=document.createElement('a');
