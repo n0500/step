@@ -1455,7 +1455,7 @@
     const cards=ctx.openUnits.map(u=>{const done=u.trainings.filter(t=>ctx.attempts.some(a=>a.trainingId===t.id)).length,p=u.trainings.length?Math.round(done/u.trainings.length*100):0;return `<div class="card progress-card"><div class="progress-head"><div><strong>Unit ${u.number}: ${esc(u.title)}</strong><div class="mini-stat">${done}/${u.trainings.length} core practices completed</div></div><strong>${p}%</strong></div><div class="progress-track"><div class="progress-value" style="width:${p}%"></div></div></div>`}).join("");
     const latest=latestPerTraining(ctx.attempts.filter(a=>a.trainingType!=="remedial"));
     const rows=ctx.attempts.slice(0,12).map(a=>{
-      const fullReview=a.studyMethod==="u1-full-review";
+      const fullReview=a.studyMethod==="u1-full-review" || a.studyMethod==="u2-exam-review";
       const current=fullReview && Number(a.attemptTotal)>0 && Number.isFinite(Number(a.attemptPercentage));
       const pct=current?Number(a.attemptPercentage):a.percentage,l=resultLevel(pct);
       const detail=fullReview?`<small class="muted" style="display:block">${current?`This attempt • cumulative accuracy ${a.percentage}%`:"Cumulative accuracy"}</small>`:"";
@@ -1501,10 +1501,18 @@
       trainingId:payload.trainingId,trainingTitle:payload.trainingTitle,trainingType:payload.trainingType,unitId:payload.unitId,unitNumber:payload.unitNumber,
       score:Number(payload.score||0),total:Number(payload.total||0),percentage:Number(payload.percentage||0),elapsedSeconds:Number(payload.elapsedSeconds||0),
       // Keep actual retry scores separate from cumulative question mastery.
-      ...(payload.trainingId==="journey-u2-step" || payload.studyMethod==="u1-full-review"?{
+      ...(payload.trainingId==="journey-u2-step" || payload.studyMethod==="u1-full-review" || payload.studyMethod==="u2-exam-review"?{
         attemptScore:Number(payload.attemptScore||0),
         attemptTotal:Number(payload.attemptTotal||0),
         attemptPercentage:Number(payload.attemptPercentage||0)
+      }:{}),
+      ...(payload.studyMethod==="u2-exam-review"?{
+        attemptNumber:Number(payload.attemptNumber||1),
+        bestScore:Number(payload.bestScore||0),bestTotal:Number(payload.bestTotal||0),bestPercentage:Number(payload.bestPercentage||0),
+        ...(payload.trainingType==="reading"?{
+          readingTimeSeconds:Number(payload.readingTimeSeconds||0),readingQualifies:payload.readingQualifies===true,
+          bestReadingTimeSeconds:payload.bestReadingTimeSeconds==null?null:Number(payload.bestReadingTimeSeconds)
+        }:{})
       }:{}),
       autoSubmitted:false,answers:Array.isArray(payload.answers)?payload.answers:[],studyMethod:payload.studyMethod||"journey",submittedAt:nowISO()
     };

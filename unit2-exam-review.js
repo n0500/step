@@ -13,7 +13,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J || !J.data) return;
 
-  const VERSION = "u2-review-accuracy-20261010-4";
+  const VERSION = "u2-review-progress-20261013-1";
   const UNIT_ID = "u2";
   const UNIT_NUMBER = 2;
 
@@ -109,7 +109,7 @@
 
   let helpMode=null;
   function toggleHelp(mode){
-    if(!session)return;
+    if(!session || session.phase!=="question")return;
     helpMode = helpMode===mode ? null : mode;
     renderQuestion();
   }
@@ -709,7 +709,7 @@
   }
 
   function beginReadingQuestion(){
-    if(!session || session.sectionKey!=="reading")return;
+    if(!session || session.sectionKey!=="reading" || session.phase!=="strategy")return;
     stopReadingAudio();
     session.readingQuestionActive=true;
     session.readingQuestionStartedAt=Date.now();
@@ -729,7 +729,7 @@
     session={
       sectionKey:"reading",
       sec,
-      queue:[...sec.questions],
+      queue:pendingQuestions("reading"),
       pos:0,
       started:Date.now(),
       runAnswers:[],
@@ -750,6 +750,7 @@
     const item=session.queue[session.pos];
 
     if(!session.readingQuestionActive){
+      session.phase="strategy";
       h.innerHTML=`<div class="journey-breadcrumb">
           <button onclick="STEPUP_U2_EXAM.open()">Unit 2</button><span>›</span><b>Reading</b>
         </div>
@@ -856,16 +857,40 @@
   }
 
   function questionAttempts(sectionKey,questionId){
-    return attempts
+    const sec=sections[sectionKey];
+    const direct=attempts
       .filter(a=>a.recordKind==="question" &&
         a.examUnit==="u2" &&
         a.examSection===sectionKey &&
-        a.questionId===questionId)
+        a.questionId===questionId);
+    const saved=[];
+    // Restore only matching question answers, never infer them from a percentage.
+    // Old section results and certificate checks can hold the student's only
+    // saved evidence of an answer or an improvement.
+    attempts.forEach(a=>{
+      if(a.recordKind==="question" || !Array.isArray(a.answers))return;
+      const assessment=a.trainingId==="journey-u2-mastery-check";
+      if(!assessment && a.trainingId!==sec.trainingId)return;
+      const cumulative=!assessment && ["u2-exam-review","u2-full-review"].includes(a.studyMethod);
+      a.answers.forEach(ans=>{
+        if((ans?.question_id||ans?.questionId)!==questionId || (assessment && ans.section!==sectionKey))return;
+        saved.push({questionId,correct:ans.correct===true,bestCorrect:ans.correct===true || ans.bestCorrect===true,
+          selected:ans.selected,selectedText:ans.selectedText||"",submittedAt:a.submittedAt||"",cumulativeSummary:cumulative});
+      });
+    });
+    return direct.concat(saved)
       .sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
   }
 
   function latestQuestion(sectionKey, questionId){
     return questionAttempts(sectionKey,questionId)[0] || null;
+  }
+
+  function reviewQuestion(sectionKey,questionId){
+    const list=questionAttempts(sectionKey,questionId);
+    // A cumulative summary preserves credits but cannot turn a latest wrong
+    // answer into a check. A later actual assessment answer can update it.
+    return list.find(a=>!a.cumulativeSummary) || list[0] || null;
   }
 
   function bestQuestion(sectionKey,questionId){
@@ -893,7 +918,7 @@
   function sectionProgress(key){
     const sec=sections[key];if(!sec)return null;
     const answered=answeredCount(key),total=sec.questions.length,correct=correctCount(key);
-    const reviewCorrect=sec.questions.filter(q=>latestQuestion(key,q.id)?.correct===true).length;
+    const reviewCorrect=sec.questions.filter(q=>reviewQuestion(key,q.id)?.correct===true).length;
     return {answered,total,correct,done:total>0&&answered===total,reviewCorrect,missed:answered-reviewCorrect,
       reviewAccuracy:Math.min(reviewCorrect<total?99:100,Math.round(reviewCorrect/Math.max(1,total)*100)),mastered:total>0&&reviewCorrect===total};
   }
@@ -943,7 +968,7 @@
         const list=questionAttempts(sectionKey,item.id);
         if(!list.length)return;
 
-        const mastered=list.some(a=>a.correct===true || a.bestCorrect===true);
+        const mastered=reviewQuestion(sectionKey,item.id)?.correct===true;
         if(mastered)return;
 
         const mapKey=`${sectionKey}::${item.skill}`;
@@ -986,7 +1011,8 @@
         if(list.length<2)return;
 
         const hasWrong=list.some(a=>a.correct===false);
-        const correctAttempts=list.filter(a=>a.correct===true || a.bestCorrect===true);
+        const correctAttempts=list.filter(a=>!a.cumulativeSummary && a.correct===true &&
+          list.some(w=>!w.cumulativeSummary && w.correct===false && String(w.submittedAt||"")<String(a.submittedAt||"")));
         if(!hasWrong || !correctAttempts.length)return;
 
         const latestCorrect=correctAttempts
@@ -1089,7 +1115,7 @@
     return {user,p};
   }
 
-  async function saveQuestion(sectionKey,item,selected){
+  async function saveQuestion(sectionKey,item,selected,ticket){
     const {user,p}=await currentStudent();
     const correct=selected===item.answer;
     const previous=questionAttempts(sectionKey,item.id);
@@ -1121,13 +1147,13 @@
       percentage:correct?100:0,
       attemptNumber:previous.length+1,
       // Group saved STEP answers by the actual timed run (including retakes).
-      ...(sectionKey==="step"?{stepRunId:String(session?.started||"")}:{}),
+      ...(sectionKey==="step"?{stepRunId:String(ticket.started)}:{}),
       bestCorrect:priorBestCorrect || correct,
       bestScore:(priorBestCorrect || correct)?1:0,
       bestPercentage:(priorBestCorrect || correct)?100:0,
       ...(sectionKey==="reading"?{
-        readingStrategy:readingStrategyForItem(item,session?.pos||0).name,
-        readingQuestionSeconds:Number(session?.lastReadingQuestionSeconds||0)
+        readingStrategy:readingStrategyForItem(item,ticket.pos).name,
+        readingQuestionSeconds:Number(ticket.lastReadingQuestionSeconds||0)
       }:{}),
       source:item.source,
       studyMethod:"u2-exam-review-question",
@@ -1138,7 +1164,7 @@
     return record;
   }
 
-  async function saveSection(sectionKey){
+  async function saveSection(sectionKey,ticket){
     const sec=sections[sectionKey];
     const answers=sec.questions.map(item=>{
       const a=bestQuestion(sectionKey,item.id);
@@ -1160,8 +1186,8 @@
     const percentage=Math.round(score/total*100);
     const priorStages=stageAttempts(sec.trainingId);
     const priorBest=priorStages.reduce((m,a)=>Math.max(m,Number(a.bestPercentage ?? a.percentage ?? 0)),0);
-    const currentRunScore=(session?.runAnswers||[]).filter(a=>a.correct).length;
-    const currentRunTotal=(session?.runAnswers||[]).length;
+    const currentRunScore=ticket.runAnswers.filter(a=>a.correct).length;
+    const currentRunTotal=ticket.runAnswers.length;
     const readingTimeSeconds=sectionKey==="reading"?readingElapsedSeconds():null;
     const previousBestReadingTime=sectionKey==="reading"?priorBestReadingTime():null;
     const readingQualifies=sectionKey==="reading" && currentRunTotal===sec.questions.length && currentRunScore>=3;
@@ -1189,7 +1215,7 @@
         readingQualifies,
         bestReadingTimeSeconds
       }:{}),
-      elapsedSeconds:Math.max(1,Math.round((Date.now()-(session?.started||Date.now()))/1000)),
+      elapsedSeconds:Math.max(1,Math.round((Date.now()-ticket.started)/1000)),
       answers,
       studyMethod:"u2-exam-review"
     };
@@ -1257,9 +1283,12 @@
   }
 
   function openUnit2(){
+    stopListening();
     stopStepTimer();
     stopReadingTimer();
     stopReadingAudio();
+    session=null;
+    saving=false;
     if(!unit2IsOpen()) return old.openUnit("u2");
     const h=studentView();
     if(!h)return;
@@ -1359,7 +1388,7 @@
     const remaining=sec.questions.filter(item=>!latestQuestion(sectionKey,item.id));
     // Keep completed timed STEP retakes as full runs for comparable scores/times.
     if(sectionKey==='step')return remaining.length?remaining:[...sec.questions];
-    const missed=sec.questions.filter(item=>latestQuestion(sectionKey,item.id)?.correct!==true);
+    const missed=sec.questions.filter(item=>reviewQuestion(sectionKey,item.id)?.correct!==true);
     return remaining.length?remaining:missed.length?missed:[...sec.questions];
   }
 
@@ -1394,7 +1423,7 @@
     const sec=sections[sectionKey];
     if(!sec)return;
 
-    let queue=sec.questions.filter(item=>item.skill===skill);
+    let queue=sec.questions.filter(item=>item.skill===skill && reviewQuestion(sectionKey,item.id)?.correct!==true);
     if(!queue.length)queue=[...sec.questions];
 
     saving=false;
@@ -1414,6 +1443,7 @@
 
   function renderQuestion(){
     if(!session)return;
+    session.phase="question";
     if(session.sectionKey==="reading")return renderReadingQuestion();
     const h=studentView();
     if(!h)return;
@@ -1481,8 +1511,9 @@
 
 
   function answer(selected){
-    if(!session)return;
+    if(!session || session.phase!=="question")return;
     const ticket=session,position=ticket.pos,item=ticket.queue[position],choice=Number(selected);
+    if(!item || !Number.isInteger(choice) || choice<0 || choice>=item.choices.length)return;
     if(ticket.sectionKey==='listening')stopListening();
     if(ticket.sectionKey==='reading'){
       pauseReadingQuestionTimer();
@@ -1490,26 +1521,31 @@
     }
     return window.STEPUP_ANSWER_RESPONSE.submit({
       session:ticket,questionId:String(item.id),position,selected:choice,
-      persist:()=>saveQuestion(ticket.sectionKey,item,choice),
+      persist:()=>saveQuestion(ticket.sectionKey,item,choice,ticket),
       isActive:()=>session===ticket && session.pos===position,
-      onStart:()=>{saving=true;},
+      onStart:()=>{saving=true;ticket.phase="saving";},
       onSlow:()=>{saving=false;},
       onSaved:(record)=>{
         saving=false;
+        ticket.phase="feedback";
         ticket.runAnswers.push(record);
         renderFeedback(item,choice,record);
       },
       onError:(err)=>{
         saving=false;
         console.error('U2 answer save failed',err);
+        if(ticket.sectionKey==="reading"){
+          ticket.readingQuestionActive=true;
+          ticket.readingQuestionStartedAt=Date.now();
+        }
         renderQuestion();
       }
     });
   }
 
   async function next(){
+    if(!session || session.phase!=="feedback")return;
     stopListening();
-    if(!session)return;
     if(session.pos<session.queue.length-1){
       session.pos++;
       helpMode=null;
@@ -1551,31 +1587,43 @@
       return renderQuestion();
     }
 
-    let result;
+    return finishSection();
+  }
+
+  async function finishSection(){
+    const ticket=session;
+    if(!ticket || !["feedback","summary-error"].includes(ticket.phase))return;
+    const h=studentView();
+    const marker=h?.querySelector(".journey-feedback,.journey-result");
+    ticket.phase="finishing";
+    marker?.querySelectorAll("button").forEach(b=>b.disabled=true);
+    let result,summarySaved=true;
     try{
-      result=await saveSection(session.sectionKey);
+      result=await saveSection(ticket.sectionKey,ticket);
     }catch(e){
       console.error("Unit 2 section save failed",e);
-      alert("Your answers are saved, but the section summary could not be saved yet. Open the section again to retry.");
-      if(session?.sectionKey==="step")stopStepTimer();
-      session=null;
-      return openUnit2();
+      summarySaved=false;
+      const sec=ticket.sec,score=correctCount(ticket.sectionKey),total=sec.questions.length;
+      result={score,total,percentage:Math.round(score/total*100),
+        attemptScore:ticket.runAnswers.filter(a=>a.correct).length,attemptTotal:ticket.runAnswers.length,
+        readingTimeSeconds:ticket.sectionKey==="reading"?readingElapsedSeconds():0,
+        readingQualifies:false,bestReadingTimeSeconds:priorBestReadingTime()};
     }
+    ticket.phase=summarySaved?"finished":"summary-error";
+    if(session!==ticket || !h || !marker?.isConnected || marker.parentElement!==h)return;
 
-    const sec=session.sec;
-    const sectionKey=session.sectionKey;
-    const focused=!!session.focusOnly;
-    const focusSkill=session.focusSkill||"";
+    const sec=ticket.sec;
+    const sectionKey=ticket.sectionKey;
+    const focused=!!ticket.focusOnly;
+    const focusSkill=ticket.focusSkill||"";
     const stepElapsed=sectionKey==="step"?stepElapsedSeconds():0;
     if(sectionKey==="step")stopStepTimer();
-    const passNeeded=sec.pass||Math.ceil(sec.questions.length*0.67);
     const currentDisplayScore=result.attemptScore||0;
     const currentDisplayTotal=result.attemptTotal||result.total;
-    const passed=currentDisplayScore>=(sectionKey==='reading'?passNeeded:Math.ceil(currentDisplayTotal*0.67));
-    const h=studentView();
+    const passed=currentDisplayScore>=Math.ceil(currentDisplayTotal*0.67);
     stopReadingTimer();
     stopReadingAudio();
-    session=null;
+    const saveNotice=!summarySaved?`<p role="status">Your answers and improvement are saved. Only the section summary is waiting.</p><button class="journey-link-btn" onclick="STEPUP_U2_EXAM.retrySummary()">Retry saving section summary</button>`:"";
 
     if(h){
       if(sectionKey==="reading"){
@@ -1591,7 +1639,9 @@
           </div>
           <p>${result.readingQualifies
             ? "Your time qualifies because you scored at least 3/4."
-            : "Score 3/4 or 4/4 to save a new Best Time."}</p>
+            : "Complete a full 4-question practice with at least 3 correct to save a new Best Time."}</p>
+          <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
+          ${saveNotice}
           <div class="journey-result-actions">
             <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
             <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.readingLesson()">Practice again</button>
@@ -1605,6 +1655,7 @@
         <h2>Your score this time: ${Math.round(currentDisplayScore/Math.max(1,currentDisplayTotal)*100)}%</h2>
         <p>${focused?`You practiced ${esc(focusSkill)}.`:`Your ${currentDisplayTotal} answers in this attempt were saved.`} ${currentDisplayTotal-currentDisplayScore?'Review the missed answers and try again.':'Every answer in this attempt was correct.'}</p>
         <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
+        ${saveNotice}
         ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
         <div class="journey-result-actions">
           <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
@@ -2036,6 +2087,7 @@
     start:startSection,
     answer,
     next,
+    retrySummary:finishSection,
     help:toggleHelp,
     listen:playListening,
     stopAudio:stopListening,

@@ -19,6 +19,8 @@ function fixture(unit){
   };}})};
   w.PROVE={setStudentTab(){w.document.querySelector('.student-view').innerHTML='';},async recordJourneyAttempt(record){summaries.push(JSON.parse(JSON.stringify(record)));return{...record,submittedAt:new Date().toISOString()};}};
   w.HTMLElement.prototype.scrollIntoView=function(){};
+  // These status checks do not need canvas animation, which jsdom omits.
+  w.matchMedia=()=>({matches:true});
   w.document.addEventListener('click',e=>{const b=e.target.closest('button[onclick]');if(b&&!b.disabled)w.eval(b.getAttribute('onclick'));});
   function load(file){w.eval(fs.readFileSync(path.join(root,file),'utf8'));}
   ['data.js','unit2-grammar.js','unit2-classmode-reading.js','journey-engine.js','answer-response-guard.js','unit1-cleanup.js',
@@ -96,9 +98,11 @@ for(const unit of ['u1','u2','u3']){
       const source=f.records((q,i)=>i%2===0);f.hydrate(source);const pct=f.api.getProgress().reviewAccuracy;
       f.view().innerHTML=f.w.STEPUP_JOURNEY.html(source,[unit],{id:'status-qa',role:'student'});await wait(200);
       const card=f.view().querySelector('.journey-unit-card:not(.locked)');assert.match(card.querySelector('.journey-status').textContent,/Needs review/);assert.equal(card.classList.contains('complete'),false);assert.equal(card.querySelector('.journey-mini-progress i').style.width,pct+'%');assert.match(card.querySelector('strong').textContent,new RegExp('^'+pct+'%'));
-      f.view().innerHTML='<section class="student-home-clean">'+f.w.STEPUP_JOURNEY.homeHTML(source,[unit],{id:'status-qa',role:'student'})+'</section>';await wait(200);
+      f.view().innerHTML='<section class="student-home-clean">'+f.w.STEPUP_JOURNEY.homeHTML(source,[unit],{id:'status-qa',role:'student'})+'</section>';
+      await until(()=>f.view().querySelector('.journey-continue .sx-ring'));
       assert.equal(f.view().querySelector('.journey-continue .sx-ring').dataset.pct,String(pct));assert.match(f.view().querySelector('.journey-continue .sx-ring').getAttribute('aria-label'),/review accuracy/);assert.match(f.view().querySelector('.sx-h-chips').textContent,/Skills mastered/);
-      f.view().innerHTML='<div class="student-page-head"><h1>My Progress</h1></div>'+f.w.STEPUP_JOURNEY.progressHTML(source,[unit],{id:'status-qa',role:'student'});await wait(200);
+      f.view().innerHTML='<div class="student-page-head"><h1>My Progress</h1></div>'+f.w.STEPUP_JOURNEY.progressHTML(source,[unit],{id:'status-qa',role:'student'});
+      await until(()=>f.view().querySelector('.sx-progress-hero .sx-ring'));
       assert.equal(f.view().querySelector('.journey-progress-units b').textContent,pct+'% accuracy');assert.equal(f.view().querySelector('.sx-progress-hero .sx-ring').dataset.pct,String(pct));
       assert.equal(f.writes.length,0);assert.equal(f.summaries.length,0);assert.deepEqual(f.errors,[]);
     }finally{f.dom.window.close();}
@@ -136,6 +140,7 @@ test('Unit 2 STEP practice can retain its earned badge while incorrect answers h
     f.hydrate(source);f.api.start('step');const prompt=f.view().querySelector('.journey-question-card h2').textContent;
     const q=f.api.getMasteryBank().find(q=>q.prompt===prompt);assert.ok(!q,'STEP is extra practice, outside certificate questions');
     await f.answer(0);assert.match(f.view().querySelector('.journey-feedback').textContent,/Not quite/);await f.open();f.assertReview('step');
+    await until(()=>f.view().querySelector('.sxc-step-summary'));
     assert.match(f.view().querySelector('.sxc-step-summary').textContent,/STEP READY/);assert.equal(f.w.STEPUP_MASTERY.status('u2',source).earned,true);
   }finally{f.dom.window.close();}
 });

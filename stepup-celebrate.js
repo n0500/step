@@ -975,11 +975,11 @@
   /* ---------- Unit 2: certificate goal + STEP Ready badge ---------- */
   function decorateUnit2Exam(view){
     if(!U2() || !U2().getProgress || !view) return;
-    var unitTitle = ((view.querySelector('.journey-unit-hero h1')||{}).textContent||'').trim();
+    var unitTitle = ((view.querySelector('.journey-unit-hero h1, .journey-focus-head h1')||{}).textContent||'').trim();
     if(unitTitle !== 'Careers') return;
     var u = (J.data.units||[]).find(function(x){ return x.id === 'u2'; }); if(!u) return;
     var g; try{ g = U2().getProgress(); }catch(_){ return; }
-    var hero = view.querySelector('.journey-unit-hero');
+    var hero = view.querySelector('.journey-unit-hero, .journey-focus-head');
     if(hero){
       var eligible = unitComplete(u), answered = Number(g.answered||0), total = Number(g.total||0), acc = Number(g.accuracy||0);
       var heroSig = [eligible?1:0,answered,total,acc].join('|');
