@@ -65,7 +65,7 @@
     var label=eligible?'Practice Again':'Continue Review';
     var description=eligible?'Revisit all '+b.length+' original questions. Your certificate and past results stay safe.':'Your answers continue counting towards your unit certificate.';
     return '<section class="smart-unit-panel" data-smart-banner="'+el(unit)+'"><div><strong>'+el(label)+'</strong><p>'+el(description)+'</p></div>'+
-      (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\')">Continue Review →</button>')+
+      (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\',false,true)">Continue Review →</button>')+
       (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+'</section>';
   }
   function beginFull(unit){
