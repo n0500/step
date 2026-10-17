@@ -134,3 +134,21 @@ test('Skill mapping supports U1, U2, U3 including grammar, reading and listening
  assert.doesNotMatch(fixScript,/fetch\s*\(|AI Tutor|openai/i,'Error explanations must not invoke AI');
  }finally{f.dispose();}
 });
+test('Completing Continue Review without a certificate enables mistake repair without making a graded run',()=>{
+ const f=fixture();try{
+   f.w.STEPUP_MASTERY.studentStatus=()=>({earned:false});
+   let t=Date.now();
+   bank.forEach((q,i)=>f.smart.onSaved({recordKind:'question',examUnit:'u1',examSection:q.section,questionId:q.id,
+     correct:i===1,selectedText:q.choices[0],correctText:q.choices[q.answer],submittedAt:new Date(t+i).toISOString()}));
+   const a=f.smart.recoverySource('u1');
+   assert.equal(a.recordKind,'smart-recovery-source');
+   assert.equal(a.answers.length,2);
+   assert.equal(a.answers.filter(q=>!q.correct).length,1);
+   assert.match(f.smart.banner('u1'),/Fix My Mistakes/);
+   assert.equal(f.calls.length,0,'No certificate or grading result is created');
+   f.fix.start('u1');
+   assert.match(f.text(),/Understand Your Mistake/);
+   f.click('begin-check');
+   assert.match(f.text(),/Check My Understanding/);
+ }finally{f.dispose();}
+});
