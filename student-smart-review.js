@@ -264,7 +264,9 @@
     opts.querySelectorAll('button').forEach(function(b){b.classList.remove('smart-selected');b.setAttribute('aria-pressed','false');});
     btn.classList.add('smart-selected');btn.setAttribute('aria-pressed','true');confirm.disabled=false;confirm.textContent='Confirm Answer';
   },true);
+  var installed=false;
   function setup(){
+    if(installed)return;installed=true;
     if(window.STEPUP_ANSWER_RESPONSE&&!window.STEPUP_ANSWER_RESPONSE.__smart){
       var oldSubmit=STEPUP_ANSWER_RESPONSE.submit;
       STEPUP_ANSWER_RESPONSE.submit=function(args){
