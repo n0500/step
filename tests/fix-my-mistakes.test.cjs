@@ -100,8 +100,9 @@ test('Recovery progress is saved separately by account and exact full-review run
    f.fix.exit();f.fix.start('u1');
    assert.equal(f.fix.getActive().pos,1,'Resume the latest recovery at the next mistake');
    f.student('student-two');f.fix.start('u1');
-   assert.equal(f.fix.getActive().uid,'student-one'); // prior session is inert, not rendered for another account
-   f.click('begin-check');assert.equal(f.fix.getActive(),null,'Invalid active session is discarded');
+   assert.equal(f.fix.getActive(),null,'Other accounts cannot reuse this full review');
+   assert.doesNotMatch(f.text(),/Where is the concert\?|They ___ for hours/,'Another student must not see the previous questions');
+   assert.equal(f.smart.latestResult('u1'),null,'Old full review data is cleared from memory');
  }finally{f.dispose();}
 });
 test('Perfect review hides recovery; full review is the only source of recovery mistakes',async()=>{
