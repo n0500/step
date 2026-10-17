@@ -309,7 +309,7 @@
   }
   function startReview(sectionKey,forceAll=false){return sectionKey==='reading' && !forceAll ? readingLesson() : startSection(sectionKey,forceAll);}
 
-  function startSection(sectionKey,forceAll=false){
+  function startSection(sectionKey,forceAll=false,continuePath=false){
     stopListening();
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit3();
@@ -323,6 +323,7 @@
       started:Date.now(),
       runAnswers:[],
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       reviewRun: !sectionDone(sectionKey)
     };
     renderQuestion();
@@ -558,9 +559,9 @@
         window.STEPUP_SMART.advance('u3');
         return;
       }
-      if(!fullReview && nextUnfinished && nextUnfinished!==key){
+      if(ticket.continuePath && !fullReview && nextUnfinished && nextUnfinished!==key){
         session=null;
-        startSection(nextUnfinished);
+        startSection(nextUnfinished,false,true);
         return;
       }
     }
