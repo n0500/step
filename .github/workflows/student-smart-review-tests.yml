@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'student-smart-review.js'
+      - 'answer-response-guard.js'
       - 'unit1-review-all.js'
       - 'unit2-exam-review.js'
       - 'unit3-review-all.js'
@@ -26,6 +27,7 @@ jobs:
         run: npm install --no-save --ignore-scripts jsdom@26
       - name: Syntax checks
         run: |
+          node --check answer-response-guard.js
           node --check student-smart-review.js
           node --check unit1-review-all.js
           node --check unit2-exam-review.js
