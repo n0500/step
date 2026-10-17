@@ -718,7 +718,7 @@
     renderQuestion();
   }
 
-  function startReadingFlow(){
+  function startReadingFlow(forceAll=false){
     stopListening();
     stopStepTimer();
     stopReadingAudio();
@@ -729,8 +729,9 @@
     session={
       sectionKey:"reading",
       sec,
-      queue:pendingQuestions("reading"),
-      pos:0,
+      queue:forceAll ? [...sec.questions] : pendingQuestions("reading"),
+      pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2","reading",sec.questions.map(q=>q.id)) || 0) : 0,
+      smartFull:!!forceAll,
       started:Date.now(),
       runAnswers:[],
       readingFlow:true,
@@ -1392,18 +1393,19 @@
     return remaining.length?remaining:missed.length?missed:[...sec.questions];
   }
 
-  function startSection(sectionKey){
-    if(sectionKey==="reading")return startReadingFlow();
+  function startSection(sectionKey,forceAll=false){
+    if(sectionKey==="reading")return startReadingFlow(forceAll);
     stopListening();
     stopReadingAudio();
     stopReadingTimer();
     if(sectionKey!=="step")stopStepTimer();
     const sec=sections[sectionKey];
     if(!sec)return;
-    const queue=pendingQuestions(sectionKey);
+    const queue=forceAll ? [...sec.questions] : pendingQuestions(sectionKey);
     saving=false;
     session={
-      sectionKey,sec,queue,pos:0,
+      sectionKey,sec,queue,pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2",sectionKey,queue.map(q=>q.id)) || 0) : 0,
+      smartFull:!!forceAll,
       started:Date.now(),
       runAnswers:[]
     };
@@ -1581,7 +1583,7 @@
     }
 
     // If this was a resumed section, make sure all required questions now exist.
-    if(!sectionDone(session.sectionKey)){
+    if(!session.smartFull && !sectionDone(session.sectionKey)){
       session.queue=pendingQuestions(session.sectionKey);
       session.pos=0;
       return renderQuestion();
@@ -2097,6 +2099,7 @@
     getMasteryBank:()=>requiredKeys.flatMap(key=>sections[key].questions.map(q=>({
       section:key, sectionTitle:sections[key].title, id:q.id,
       prompt:q.prompt, choices:[...q.choices], answer:q.answer,
+      skill:q.skill || sections[key].title, explanation:q.explanation || '',
       context:key==='reading'?READING_PASSAGE.flatMap(p=>[p.title,...p.paragraphs]).join('\n\n'):'',
       audio:key==='listening'?LISTENING_DIALOGUE.map(p=>p.speaker+': '+p.text).join(' '):''
     }))),
