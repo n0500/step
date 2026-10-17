@@ -307,9 +307,9 @@
     if(window.STEPUP_U3_TEACH_READING?.startStudent){session=null;saving=false;return window.STEPUP_U3_TEACH_READING.startStudent();}
     return startSection('reading');
   }
-  function startReview(sectionKey){return sectionKey==='reading'?readingLesson():startSection(sectionKey);}
+  function startReview(sectionKey,forceAll=false){return sectionKey==='reading' && !forceAll ? readingLesson() : startSection(sectionKey,forceAll);}
 
-  function startSection(sectionKey){
+  function startSection(sectionKey,forceAll=false){
     stopListening();
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit3();
@@ -317,8 +317,8 @@
     session = {
       sectionKey,
       sec,
-      queue: pendingQuestions(sectionKey),
-      pos:0,
+      queue: forceAll ? [...sec.questions] : pendingQuestions(sectionKey),
+      pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.('u3',sectionKey,sec.questions.map(q=>q.question_id)) || 0) : 0,
       correct:0,
       started:Date.now(),
       runAnswers:[],
@@ -625,7 +625,8 @@
     }))),
     getMasteryBank:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
       section:key, sectionTitle:sections[key].title, id:q.question_id,
-      prompt:q.prompt, choices:qChoices(q), answer:qAnswer(q),
+      prompt:q.prompt, choices:qChoices(q), answer:qAnswer(q), skill:q.skill || sections[key].title,
+      hint:q.hint || '', explanation:q.explanation || '',
       context:key==='reading'?String(UNIT.reading||''):'',
       audio:key==='listening'?String(UNIT.listening||''):''
     }))),
