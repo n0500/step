@@ -253,7 +253,7 @@ test('Unit 2 ordinary review goes directly from a finished skill to the next ski
   const f=fixture();
   try{
     const questions=f.bank.filter(q=>q.section==='vocab');
-    f.api.start('vocab');
+    f.api.start('vocab',false,true);
     for(const q of questions){await f.answer(q.answer);await f.api.next();}
     // No intermediate Continue/Back action: the next skill opens immediately.
     await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
