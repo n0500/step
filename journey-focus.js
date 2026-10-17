@@ -176,11 +176,39 @@
     }
 
     shell.appendChild(makeRoadmap(master,stops));
-    shell.appendChild(complete?completeCard():taskCard(task||(review ? {title:'All answers correct',meta:'Review complete',detail:'You can revisit any skill above. Your saved answers and certificates are kept.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
+    // Put the next useful action where the student reads her result.
+    // When the entire approved bank is correct, Practice Again should be the
+    // single primary CTA; the old card buried it below the 150px spacer.
+    const fullyMastered=review && g && Number(g.total)>0 &&
+      Number(g.answered)===Number(g.total) && Number(g.reviewCorrect)===Number(g.total);
+    const replayReady=fullyMastered && !!window.STEPUP_SMART?.canPracticeAgain?.(unitId);
+    if(replayReady){
+      shell.classList.add('journey-focus-replay-ready');
+      const card=taskCard({
+        title:'All answers correct',meta:'Review complete · 100%',
+        detail:'Great work! Review all '+g.total+' original questions again to check your current level. Your certificate and saved achievements stay safe.',
+        action:"STEPUP_SMART.beginFull('"+unitId+"')",button:'Practice Again'
+      });
+      card.classList.add('complete');
+      const back=document.createElement('button');
+      back.type='button';
+      back.className='journey-focus-back-secondary';
+      back.textContent='Back to units';
+      back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));
+      card.appendChild(back);
+      shell.appendChild(card);
+    } else {
+      shell.appendChild(complete?completeCard():taskCard(task||(review ? {title:'All answers correct',meta:'Review complete',detail:'You can revisit any skill above. Your saved answers and certificates are kept.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
+    }
 
     const breadcrumb=host.querySelector('.journey-breadcrumb');
     if(breadcrumb) breadcrumb.remove();
     hero.replaceWith(shell);
+    if(replayReady){
+      // Remove the duplicate standalone review action, including the large
+      // visual gap it created beneath the finished result card.
+      host.querySelector('.smart-unit-panel[data-smart-banner="'+unitId+'"]')?.remove();
+    }
     master.remove();
     host.querySelector('.journey-stops')?.remove();
     host.querySelector('.journey-celebrate')?.remove();

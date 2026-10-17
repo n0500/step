@@ -57,3 +57,18 @@ html.sx body.sx .journey-focus-head[data-review-unit] :is(.u1-review-stats,.u2-p
   .student-app-shell .student-nav{bottom:max(10px,env(safe-area-inset-bottom))!important}
 }
 
+
+/* Completed reviews: no blank spacer between the result and next actions. */
+.journey-focus-shell.journey-focus-replay-ready{padding-bottom:18px!important}
+.journey-focus-replay-ready .journey-focus-task.complete .journey-focus-start{
+  background:#2563eb;color:#fff;box-shadow:0 8px 18px rgba(37,99,235,.15);
+}
+.journey-focus-back-secondary{
+  border:1px solid #d5e0ee;background:#fff;color:#52657b;
+  display:block;min-height:43px;width:100%;margin-top:12px;
+  border-radius:13px;font-size:14px;font-weight:750;cursor:pointer;
+}
+.journey-focus-replay-ready .journey-focus-task.complete p{margin-bottom:18px}
+@media(max-width:700px){
+  .journey-focus-shell.journey-focus-replay-ready{padding-bottom:14px!important}
+}
