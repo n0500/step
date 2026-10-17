@@ -229,7 +229,7 @@
     audioMain:'ركزي على موضوع المقطع كاملًا، ولا تختاري تفصيلا صغيرا بدل الفكرة الرئيسة.',
     audioSequence:'انتبهي لترتيب الأحداث والكلمات الدالة على البداية وما حدث بعدها.'
   };
-  function source(){return window.STEPUP_SMART&&window.STEPUP_SMART.latestResult;}
+  function source(){return window.STEPUP_SMART&&(window.STEPUP_SMART.recoverySource||window.STEPUP_SMART.latestResult);}
   function mistakesOf(a){return (a.answers||[]).filter(function(x){return x&&x.correct===false;});}
   function activeOK(){return active&&uid()===active.uid&&source()&&source()(active.unit)&&String(source()(active.unit).reviewRunId)===String(active.runId);}
   function start(unit){
@@ -239,7 +239,7 @@
       if(previous&&previous.querySelector('.fix-recovery'))previous.innerHTML='<section class="fix-recovery"><p>This review belongs to a different session. Open your own unit to continue.</p></section>';
     }
     if(!/^u[123]$/.test(unit)||!uid()||!source())return;
-    var a=source()(unit);if(!a||a.recordKind!=='smart-full-review')return;
+    var a=source()(unit);if(!a||!['smart-full-review','smart-recovery-source'].includes(a.recordKind))return;
     var errors=mistakesOf(a);if(!errors.length)return;
     var id=String(a.reviewRunId||'');if(!id)return;
     var prev=read(unit+'-'+id)||{},pos=Number(prev.pos);
