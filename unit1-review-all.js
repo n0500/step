@@ -328,7 +328,7 @@
       ${next ? `<button class="u1-review-continue" onclick="STEPUP_U1_REVIEW.start('${next}')">${nextMissingSection()?'Continue remaining questions':'Review missed answers'} →</button>` : `<div class="u1-review-done">All Unit 1 review questions are answered correctly.</div>`}`;
   }
 
-  function startSection(sectionKey){
+  function startSection(sectionKey,forceAll=false){
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit1();
     stopAudio();
@@ -336,8 +336,8 @@
     session = {
       sectionKey,
       sec,
-      queue: pendingQuestions(sectionKey),
-      pos:0,
+      queue: forceAll ? [...sec.questions] : pendingQuestions(sectionKey),
+      pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.('u1',sectionKey,sec.questions.map(q=>q.question_id)) || 0) : 0,
       correct:0,
       started:Date.now(),
       runAnswers:[],
@@ -592,7 +592,8 @@
     }))),
     getMasteryBank:() => requiredKeys.flatMap(key => sections[key].questions.map(q => ({
       section:key, sectionTitle:sections[key].title, id:q.question_id,
-      prompt:q.prompt, choices:qChoices(q), answer:qAnswer(q),
+      prompt:q.prompt, choices:qChoices(q), answer:qAnswer(q), skill:q.skill || sections[key].title,
+      hint:q.hint || '', explanation:q.explanation || '',
       ...questionContext(key, q)
     }))),
     sectionProgress
