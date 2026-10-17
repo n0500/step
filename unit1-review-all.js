@@ -328,7 +328,7 @@
       ${next ? `<button class="u1-review-continue" onclick="STEPUP_U1_REVIEW.start('${next}')">${nextMissingSection()?'Continue remaining questions':'Review missed answers'} →</button>` : `<div class="u1-review-done">All Unit 1 review questions are answered correctly.</div>`}`;
   }
 
-  function startSection(sectionKey,forceAll=false){
+  function startSection(sectionKey,forceAll=false,continuePath=false){
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit1();
     stopAudio();
@@ -342,6 +342,7 @@
       started:Date.now(),
       runAnswers:[],
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       phase:'question',
       reviewRun: !sectionDone(sectionKey)
     };
@@ -522,8 +523,8 @@
         return;
       }
       const nextUnfinished=nextMissingSection();
-      if(!fullReview && nextUnfinished && nextUnfinished!==key){
-        startSection(nextUnfinished);
+      if(ticket.continuePath && !fullReview && nextUnfinished && nextUnfinished!==key){
+        startSection(nextUnfinished,false,true);
         return;
       }
     }
