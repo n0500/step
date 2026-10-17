@@ -1,7 +1,7 @@
 /* STEP UP student review upgrade: safe overlay; no changes to certificate logic. */
 (function () {
   'use strict';
-  var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[];
+  var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[], recentUid=null;
   var challenge=null;
   var Q={
     u1:[
@@ -37,11 +37,36 @@
   function sections(unit){return Array.from(new Set(bank(unit).map(function(q){return q.section;})));}
   function run(unit){var r=load('run-'+unit);return r&&r.uid===userId()&&Array.isArray(r.keys)?r:null;}
   function result(unit){
+    // Never use a previously signed-in student's in-memory answers after an account change.
+    if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
     var all=recentAttempts.filter(function(a){return a.recordKind==='smart-full-review'&&a.unitId===unit;});
     var saved=load('last-'+unit);
     if(saved&&saved.recordKind==='smart-full-review')all.push(saved);
     all.sort(function(a,b){return Date.parse(b.submittedAt||0)-Date.parse(a.submittedAt||0);});
     return all[0]||null;
+  }
+  // A first complete Continue Review path also qualifies for mistake repair.
+  // Its latest per-question answers are NOT described as a single graded full-review run.
+  function recoverySource(unit){
+    var full=result(unit),b=bank(unit),items=recentAttempts.filter(function(a){return a.recordKind==='question'&&a.examUnit===unit;});
+    if(!b.length||!items.length)return full;
+    var latest=[],stamps=[];
+    b.forEach(function(q){
+      var found=items.filter(function(a){return a.examSection===q.section&&String(a.questionId)===String(q.id);})
+        .sort(function(a,c){return Date.parse(c.submittedAt||0)-Date.parse(a.submittedAt||0);})[0];
+      if(!found)return;
+      stamps.push(String(found.submittedAt||'')+'|'+String(found.questionId)+'|'+String(found.selected ?? found.selectedText ?? ''));
+      latest.push({section:q.section,skill:q.skill||q.sectionTitle||'Review',stem:q.prompt,correct:found.correct===true,
+        selectedText:found.selectedText||'',correctText:q.choices[q.answer]||'',explanation:q.explanation||''});
+    });
+    if(latest.length!==b.length)return full;
+    var newer=Math.max.apply(null,items.map(function(a){return Date.parse(a.submittedAt||0)||0;}));
+    if(full&&Number.isFinite(newer)&&newer<=(Date.parse(full.submittedAt||0)||0))return full;
+    var fingerprint=stamps.join('||'),hash=5381;
+    for(var i=0;i<fingerprint.length;i++)hash=((hash<<5)+hash+fingerprint.charCodeAt(i))|0;
+    return {recordKind:'smart-recovery-source',unitId:unit,reviewRunId:'path-'+(hash>>>0).toString(36),
+      answers:latest,score:latest.filter(function(a){return a.correct;}).length,total:latest.length,
+      submittedAt:new Date(newer||Date.now()).toISOString()};
   }
   // The mastery badge is hydrated when the Journey page loads. An answer saved
   // seconds ago can complete the unit before that badge refreshes. Read the live
@@ -61,12 +86,12 @@
     var r=run(unit),b=bank(unit);
     if(!b.length)return '';
     var eligible=canPracticeAgain(unit);
-    var latest=result(unit);
+    var latest=result(unit),repair=recoverySource(unit);
     var label=eligible?'Practice Again':'Continue Review';
     var description=eligible?'Revisit all '+b.length+' original questions. Your certificate and past results stay safe.':'Your answers continue counting towards your unit certificate.';
     return '<section class="smart-unit-panel" data-smart-banner="'+el(unit)+'"><div><strong>'+el(label)+'</strong><p>'+el(description)+'</p></div>'+
       (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\',false,true)">Continue Review →</button>')+
-      (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+'</section>';
+      (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+(repair&&(repair.answers||[]).some(function(q){return q.correct===false;})?'<button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button>':'')+'</section>';
   }
   function beginFull(unit){
     var b=bank(unit), uid=userId();
@@ -123,7 +148,11 @@
   }
   function onSaved(record){
     if(!record||record.recordKind!=='question'||!/^u[123]$/.test(record.examUnit||''))return;
-    var unit=record.examUnit,r=run(unit);
+    var unit=record.examUnit;
+    if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
+    // Keep in-session Continue Review answers available before reopening My Progress.
+    recentAttempts.push(record);
+    var r=run(unit);
     if(!r)return;
     var key=record.examSection+'|'+record.questionId;
     if(r.keys.indexOf(key)<0||r.answers[key])return;
@@ -145,7 +174,7 @@
       if(!window.PROVE||typeof PROVE.recordJourneyAttempt!=='function')throw new Error('Student save service unavailable');
       await PROVE.recordJourneyAttempt(payload);
       remove('run-'+unit);store('last-'+unit,payload);
-      recentAttempts.push(payload);
+      recentUid=userId();recentAttempts.push(payload);
       h.innerHTML=reportHTML(payload)+ '<div class="smart-footer-action"><button type="button" onclick="STEPUP_SMART.openUnit(\''+unit+'\')">Back to Unit '+unit.slice(1)+'</button></div>';
     }catch(e){console.error('Full review save failed',e);h.innerHTML='<section class="smart-results" role="alert"><h2>Result not saved yet</h2><p>Your confirmed question answers are safe. Please check your connection, then retry saving.</p><button type="button" onclick="STEPUP_SMART.advance(\''+unit+'\')">Retry saving result</button></section>';}
   }
@@ -167,7 +196,7 @@
     var mis=mistakes.map(function(q,i){return '<details class="smart-mistake"><summary>'+el((i+1)+'. '+q.skill)+' — '+el(q.stem)+'</summary><p><b>Your answer:</b> '+el(q.selectedText)+'</p><p><b>Correct:</b> '+el(q.correctText)+'</p><p>'+el(q.explanation||'Review the lesson and check the clue in the question.')+'</p></details>';}).join('');
     var unlocked=a.percentage===100&&Q[unit]&&Q[unit].length===5;
     return '<section class="smart-results"><small>STEP UP · Unit '+el(unit&&unit.slice(1))+' · Full review</small><h2>My Learning Level</h2><div class="smart-score">'+a.percentage+'% <small>'+a.score+'/'+a.total+' correct</small></div><p>'+compare+'</p><h3>My Skills</h3>'+rows+
-      (mistakes.length?'<h3>Review My Mistakes ('+mistakes.length+')</h3>'+mis+'<h3>Lessons to Review</h3><ul>'+focus+'</ul>':
+      (mistakes.length?'<div class="smart-fix-prompt"><h3>Review My Mistakes ('+mistakes.length+')</h3><p>Understand each mistake, then try one new Check question. Your original score stays unchanged.</p><button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button></div>':
         '<p class="smart-success">You answered every original review question correctly.</p>')+
       (unit==='u1'?'<p class="smart-writing">Writing · The Internet: review your writing task separately. Multiple-choice results do not assess your writing.</p>':'')+
       (unlocked?'<aside class="smart-challenge-entry"><b>Extra Challenge unlocked ✨</b><p>5 new questions · entirely optional · no effect on certificates.</p><button type="button" onclick="STEPUP_SMART.startChallenge(\''+unit+'\')">Try 5 new questions</button></aside>':'')+'</section>';
@@ -190,11 +219,14 @@
     if(groups.some(function(g){return g.errors.length;})){
       msg+='<h4>Lessons to Review</h4><ul>'+groups.filter(function(g){return g.errors.length;}).map(function(g){return '<li>'+el(g.name)+' — '+g.errors.length+' incorrect answer(s)</li>';}).join('')+'</ul>';
     }
-    if(errors.length)msg+='<details class="smart-mistake"><summary>Review My Mistakes · '+errors.length+'</summary>'+errors.map(function(e){return '<p><b>'+el(e.skill)+'</b>: '+el(e.stem)+'<br>Your answer: '+el(e.selectedText)+'<br>Correct: '+el(e.correctText)+'</p>';}).join('')+'</details>';
+    var recovered=recoverySource(unit);
+    if(recovered&&recovered.recordKind==='smart-recovery-source'&&errors.length){
+      msg+='<div class="smart-fix-prompt"><h4>Review My Mistakes ('+errors.length+')</h4><p>Understand each mistake and Check your understanding.</p><button class="smart-fix-entry" type="button" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button></div>';
+    }else if(errors.length)msg+='<details class="smart-mistake"><summary>Review My Mistakes · '+errors.length+'</summary>'+errors.map(function(e){return '<p><b>'+el(e.skill)+'</b>: '+el(e.stem)+'<br>Your answer: '+el(e.selectedText)+'<br>Correct: '+el(e.correctText)+'</p>';}).join('')+'</details>';
     return msg;
   }
   function progressHTML(attempts){
-    recentAttempts=Array.isArray(attempts)?attempts.slice():[];
+    recentUid=userId();recentAttempts=Array.isArray(attempts)?attempts.slice():[];
     var reports=['u1','u2','u3'].map(function(unit){
       var a=result(unit);
       return a?'<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+' · Latest full review</h3>'+reportHTML(a)+'</div>':
@@ -338,8 +370,9 @@
   }
   var style=document.createElement('style');style.id='stepupSmartStyles';
   style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-auto-next-note{margin:12px 0;padding:10px 12px;border-radius:12px;background:#edf4ff;color:#345579;font-size:13px;line-height:1.5}.smart-focus-action{padding:4px 9px!important;margin-left:7px!important;font-size:12px!important;background:#e8f0fb!important;color:#254f82!important}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
+  style.textContent+='.smart-fix-prompt{padding:14px;margin:16px 0;border:1px solid #d6e5e8;border-radius:14px;background:#f4f9fa}.smart-fix-prompt h3{margin:0 0 8px}.smart-fix-prompt p{font-size:14px;color:#526477}.smart-fix-entry{background:#267b85!important;color:#fff!important;border-radius:12px!important;padding:12px 16px!important;font-size:15px!important;font-weight:800!important;margin:8px 0!important}';
   document.head.appendChild(style);
   window.STEPUP_SMART={version:VERSION,banner:banner,canPracticeAgain:canPracticeAgain,beginFull:beginFull,nextSection:nextSection,scheduleResultAdvance:scheduleResultAdvance,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
-    progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
+    progressHTML:progressHTML,reportHTML:reportHTML,latestResult:result,recoverySource:recoverySource,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
