@@ -45,6 +45,29 @@
     all.sort(function(a,b){return Date.parse(b.submittedAt||0)-Date.parse(a.submittedAt||0);});
     return all[0]||null;
   }
+  // A first complete Continue Review path also qualifies for mistake repair.
+  // Its latest per-question answers are NOT described as a single graded full-review run.
+  function recoverySource(unit){
+    var full=result(unit),b=bank(unit),items=recentAttempts.filter(function(a){return a.recordKind==='question'&&a.examUnit===unit;});
+    if(!b.length||!items.length)return full;
+    var latest=[],stamps=[];
+    b.forEach(function(q){
+      var found=items.filter(function(a){return a.examSection===q.section&&String(a.questionId)===String(q.id);})
+        .sort(function(a,c){return Date.parse(c.submittedAt||0)-Date.parse(a.submittedAt||0);})[0];
+      if(!found)return;
+      stamps.push(String(found.submittedAt||'')+'|'+String(found.questionId)+'|'+String(found.selected??found.selectedText||''));
+      latest.push({section:q.section,skill:q.skill||q.sectionTitle||'Review',stem:q.prompt,correct:found.correct===true,
+        selectedText:found.selectedText||'',correctText:q.choices[q.answer]||'',explanation:q.explanation||''});
+    });
+    if(latest.length!==b.length)return full;
+    var newer=Math.max.apply(null,items.map(function(a){return Date.parse(a.submittedAt||0)||0;}));
+    if(full&&Number.isFinite(newer)&&newer<=(Date.parse(full.submittedAt||0)||0))return full;
+    var fingerprint=stamps.join('||'),hash=5381;
+    for(var i=0;i<fingerprint.length;i++)hash=((hash<<5)+hash+fingerprint.charCodeAt(i))|0;
+    return {recordKind:'smart-recovery-source',unitId:unit,reviewRunId:'path-'+(hash>>>0).toString(36),
+      answers:latest,score:latest.filter(function(a){return a.correct;}).length,total:latest.length,
+      submittedAt:new Date(newer||Date.now()).toISOString()};
+  }
   // The mastery badge is hydrated when the Journey page loads. An answer saved
   // seconds ago can complete the unit before that badge refreshes. Read the live
   // review engine as well, so 100% students never lose access to Practice Again.
@@ -63,12 +86,12 @@
     var r=run(unit),b=bank(unit);
     if(!b.length)return '';
     var eligible=canPracticeAgain(unit);
-    var latest=result(unit);
+    var latest=result(unit),repair=recoverySource(unit);
     var label=eligible?'Practice Again':'Continue Review';
     var description=eligible?'Revisit all '+b.length+' original questions. Your certificate and past results stay safe.':'Your answers continue counting towards your unit certificate.';
     return '<section class="smart-unit-panel" data-smart-banner="'+el(unit)+'"><div><strong>'+el(label)+'</strong><p>'+el(description)+'</p></div>'+
       (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\',false,true)">Continue Review →</button>')+
-      (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+(latest&&(latest.answers||[]).some(function(q){return q.correct===false;})?'<button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button>':'')+'</section>';
+      (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+(repair&&(repair.answers||[]).some(function(q){return q.correct===false;})?'<button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button>':'')+'</section>';
   }
   function beginFull(unit){
     var b=bank(unit), uid=userId();
@@ -125,7 +148,11 @@
   }
   function onSaved(record){
     if(!record||record.recordKind!=='question'||!/^u[123]$/.test(record.examUnit||''))return;
-    var unit=record.examUnit,r=run(unit);
+    var unit=record.examUnit;
+    if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
+    // Keep in-session Continue Review answers available before reopening My Progress.
+    recentAttempts.push(record);
+    var r=run(unit);
     if(!r)return;
     var key=record.examSection+'|'+record.questionId;
     if(r.keys.indexOf(key)<0||r.answers[key])return;
@@ -192,7 +219,10 @@
     if(groups.some(function(g){return g.errors.length;})){
       msg+='<h4>Lessons to Review</h4><ul>'+groups.filter(function(g){return g.errors.length;}).map(function(g){return '<li>'+el(g.name)+' — '+g.errors.length+' incorrect answer(s)</li>';}).join('')+'</ul>';
     }
-    if(errors.length)msg+='<details class="smart-mistake"><summary>Review My Mistakes · '+errors.length+'</summary>'+errors.map(function(e){return '<p><b>'+el(e.skill)+'</b>: '+el(e.stem)+'<br>Your answer: '+el(e.selectedText)+'<br>Correct: '+el(e.correctText)+'</p>';}).join('')+'</details>';
+    var recovered=recoverySource(unit);
+    if(recovered&&recovered.recordKind==='smart-recovery-source'&&errors.length){
+      msg+='<div class="smart-fix-prompt"><h4>Review My Mistakes ('+errors.length+')</h4><p>Understand each mistake and Check your understanding.</p><button class="smart-fix-entry" type="button" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button></div>';
+    }else if(errors.length)msg+='<details class="smart-mistake"><summary>Review My Mistakes · '+errors.length+'</summary>'+errors.map(function(e){return '<p><b>'+el(e.skill)+'</b>: '+el(e.stem)+'<br>Your answer: '+el(e.selectedText)+'<br>Correct: '+el(e.correctText)+'</p>';}).join('')+'</details>';
     return msg;
   }
   function progressHTML(attempts){
@@ -343,6 +373,6 @@
   style.textContent+='.smart-fix-prompt{padding:14px;margin:16px 0;border:1px solid #d6e5e8;border-radius:14px;background:#f4f9fa}.smart-fix-prompt h3{margin:0 0 8px}.smart-fix-prompt p{font-size:14px;color:#526477}.smart-fix-entry{background:#267b85!important;color:#fff!important;border-radius:12px!important;padding:12px 16px!important;font-size:15px!important;font-weight:800!important;margin:8px 0!important}';
   document.head.appendChild(style);
   window.STEPUP_SMART={version:VERSION,banner:banner,canPracticeAgain:canPracticeAgain,beginFull:beginFull,nextSection:nextSection,scheduleResultAdvance:scheduleResultAdvance,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
-    progressHTML:progressHTML,reportHTML:reportHTML,latestResult:result,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
+    progressHTML:progressHTML,reportHTML:reportHTML,latestResult:result,recoverySource:recoverySource,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
