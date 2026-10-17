@@ -718,7 +718,7 @@
     renderQuestion();
   }
 
-  function startReadingFlow(forceAll=false){
+  function startReadingFlow(forceAll=false,continuePath=false){
     stopListening();
     stopStepTimer();
     stopReadingAudio();
@@ -732,6 +732,7 @@
       queue:forceAll ? [...sec.questions] : pendingQuestions("reading"),
       pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2","reading",sec.questions.map(q=>q.id)) || 0) : 0,
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       started:Date.now(),
       runAnswers:[],
       readingFlow:true,
@@ -1393,8 +1394,8 @@
     return remaining.length?remaining:missed.length?missed:[...sec.questions];
   }
 
-  function startSection(sectionKey,forceAll=false){
-    if(sectionKey==="reading")return startReadingFlow(forceAll);
+  function startSection(sectionKey,forceAll=false,continuePath=false){
+    if(sectionKey==="reading")return startReadingFlow(forceAll,continuePath);
     stopListening();
     stopReadingAudio();
     stopReadingTimer();
@@ -1406,6 +1407,7 @@
     session={
       sectionKey,sec,queue,pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2",sectionKey,queue.map(q=>q.id)) || 0) : 0,
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       started:Date.now(),
       runAnswers:[]
     };
@@ -1635,8 +1637,8 @@
         return;
       }
       const nextUnfinished=requiredKeys.find(key=>!sectionDone(key));
-      if(!ticket.smartFull && nextUnfinished && nextUnfinished!==sectionKey){
-        startSection(nextUnfinished);
+      if(ticket.continuePath && !ticket.smartFull && nextUnfinished && nextUnfinished!==sectionKey){
+        startSection(nextUnfinished,false,true);
         return;
       }
     }
