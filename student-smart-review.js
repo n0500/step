@@ -239,8 +239,10 @@
     }
     var fullUnit=host.querySelector('.journey-result');
     if(fullUnit&&!fullUnit.querySelector('[data-smart-next]')){
-      var r=['u1','u2','u3'].map(function(u){return run(u);}).find(function(x){return x&&Object.keys(x.answers).length;});
-      if(r){
+      var actions=fullUnit.querySelector('.journey-result-actions');
+      var unit=actions&&actions.querySelector('[onclick*="STEPUP_U1_REVIEW"]')?'u1':actions&&actions.querySelector('[onclick*="STEPUP_U2_EXAM"]')?'u2':actions&&actions.querySelector('[onclick*="STEPUP_U3_REVIEW"]')?'u3':null;
+      var r=unit&&run(unit);
+      if(r&&Object.keys(r.answers).length){
         var bankItems=bank(r.unit),remaining=bankItems.filter(function(q){return !r.answers[q.section+'|'+q.id];}).length;
         var footer=fullUnit.querySelector('.journey-result-actions')||fullUnit;
         var b=document.createElement('button');b.type='button';b.className='smart-next';b.dataset.smartNext='1';
