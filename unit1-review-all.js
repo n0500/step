@@ -514,6 +514,19 @@
     const pct = total ? Math.round(score / total * 100) : 0;
     const cumulative = sectionProgress(key);
     const fullReview=!!ticket.smartFull;
+    // Saved skill -> open the next unfinished skill immediately. No extra result
+    // button, trip to My Journey, or repeat of a previously mastered skill.
+    if(summarySaved){
+      if(fullReview && window.STEPUP_SMART?.advance){
+        window.STEPUP_SMART.advance('u1');
+        return;
+      }
+      const nextUnfinished=nextMissingSection();
+      if(!fullReview && nextUnfinished && nextUnfinished!==key){
+        startSection(nextUnfinished);
+        return;
+      }
+    }
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u1') : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u1')" :
       nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"')" : "STEPUP_U1_REVIEW.open()";
