@@ -118,8 +118,8 @@
     var compare=previous?'<span>Change from previous: '+(a.percentage-previous.percentage>0?'+':'')+(a.percentage-previous.percentage)+' percentage points</span>':'<span>First recorded full review</span>';
     var rows=groups.map(function(g){var p=Math.round(g.correct*100/g.total);return '<div class="smart-skill"><span>'+el(g.name)+'</span><b>'+p+'% ('+g.correct+'/'+g.total+')</b><div class="smart-track"><i style="width:'+p+'%"></i></div></div>';}).join('');
     var focus=groups.filter(function(g){return g.errors.length;}).map(function(g){
-      var strong=g.errors.length>1&&g.total>=2;
-      return '<li><b>'+el(g.name)+'</b> — '+(strong?'Prioritize this lesson':'Review this point')+' ('+g.errors.length+' missed)</li>';
+      var strong=g.errors.length>1&&g.total>=2,first=g.errors[0];
+      return '<li><b>'+el(g.name)+'</b> — '+(strong?'Prioritize this lesson':'Review this point')+' ('+g.errors.length+' missed) <button type="button" class="smart-focus-action" data-unit="'+el(unit)+'" data-section="'+encodeURIComponent(first.section)+'" data-skill="'+encodeURIComponent(g.name)+'" onclick="STEPUP_SMART.reviewSkill(this.dataset.unit,this.dataset.section,this.dataset.skill)">Review Lesson →</button></li>';
     }).join('');
     var mis=mistakes.map(function(q,i){return '<details class="smart-mistake"><summary>'+el((i+1)+'. '+q.skill)+' — '+el(q.stem)+'</summary><p><b>Your answer:</b> '+el(q.selectedText)+'</p><p><b>Correct:</b> '+el(q.correctText)+'</p><p>'+el(q.explanation||'Review the lesson and check the clue in the question.')+'</p></details>';}).join('');
     var unlocked=a.percentage===100&&Q[unit]&&Q[unit].length===5;
@@ -129,10 +129,41 @@
       (unit==='u1'?'<p class="smart-writing">Writing · The Internet: review your writing task separately. Multiple-choice results do not assess your writing.</p>':'')+
       (unlocked?'<aside class="smart-challenge-entry"><b>Extra Challenge unlocked ✨</b><p>5 new questions · entirely optional · no effect on certificates.</p><button type="button" onclick="STEPUP_SMART.startChallenge(\''+unit+'\')">Try 5 new questions</button></aside>':'')+'</section>';
   }
+  function partialReport(unit){
+    var b=bank(unit),items=recentAttempts.filter(function(a){return a.recordKind==='question'&&a.examUnit===unit;});
+    if(!b.length)return '<p>Lesson data not available yet.</p>';
+    var answers=[];
+    b.forEach(function(q){
+      var rows=items.filter(function(a){return a.examSection===q.section&&a.questionId===q.id;});
+      rows.sort(function(a,c){return Date.parse(c.submittedAt||0)-Date.parse(a.submittedAt||0);});
+      var rec=rows[0];if(rec)answers.push({section:q.section,skill:q.skill||q.sectionTitle||'Review',correct:rec.correct===true,
+        stem:q.prompt,selectedText:rec.selectedText||'',correctText:q.choices[q.answer],explanation:q.explanation||''});
+    });
+    if(!answers.length)return '<p>No answers recorded yet. Start your Review Path to measure your skills.</p>';
+    var errors=answers.filter(function(a){return !a.correct;});
+    var groups=scoreGroups({answers:answers});
+    var msg='<p><b>Partial check:</b> '+answers.length+'/'+b.length+' original questions attempted. This is not a complete level or exam readiness score.</p>';
+    msg+='<p>Latest answers on covered questions: '+Math.round(answers.filter(function(a){return a.correct;}).length*100/answers.length)+'%. Reattempted questions may change this figure.</p>';
+    if(groups.some(function(g){return g.errors.length;})){
+      msg+='<h4>Lessons to Review</h4><ul>'+groups.filter(function(g){return g.errors.length;}).map(function(g){return '<li>'+el(g.name)+' — '+g.errors.length+' incorrect answer(s)</li>';}).join('')+'</ul>';
+    }
+    if(errors.length)msg+='<details class="smart-mistake"><summary>Review My Mistakes · '+errors.length+'</summary>'+errors.map(function(e){return '<p><b>'+el(e.skill)+'</b>: '+el(e.stem)+'<br>Your answer: '+el(e.selectedText)+'<br>Correct: '+el(e.correctText)+'</p>';}).join('')+'</details>';
+    return msg;
+  }
   function progressHTML(attempts){
     recentAttempts=Array.isArray(attempts)?attempts.slice():[];
-    var reports=['u1','u2','u3'].map(function(unit){var a=result(unit);return a?'<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+' · Latest full review</h3>'+reportHTML(a)+'</div>':'<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+'</h3><p>Complete Practice Again to see an evidence-based level and lesson recommendations.</p></div>';});
-    return '<section class="smart-progress-dashboard"><h2>My Learning Level</h2><p>Current level comes from your latest completed full review, not from an older certificate or your lifetime best answers.</p>'+reports.join('')+'</section>';
+    var reports=['u1','u2','u3'].map(function(unit){
+      var a=result(unit);
+      return a?'<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+' · Latest full review</h3>'+reportHTML(a)+'</div>':
+        '<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+' · Review in progress</h3>'+partialReport(unit)+'</div>';
+    });
+    return '<section class="smart-progress-dashboard"><h2>My Learning Level</h2><p>A full-review score shows your current result. Partial reviews are labeled clearly; previous certificates stay separate.</p>'+reports.join('')+'</section>';
+  }
+  function reviewSkill(unit,sectionEncoded,skillEncoded){
+    var a=api(unit),section=decodeURIComponent(sectionEncoded),skill=decodeURIComponent(skillEncoded);
+    if(!a||!bank(unit).some(function(q){return q.section===section;}))return;
+    if(unit==='u2'&&typeof a.practiceWeakness==='function')a.practiceWeakness(encodeURIComponent(section),encodeURIComponent(skill));
+    else a.start(section);
   }
   function startChallenge(unit){
     var latest=result(unit);
@@ -233,9 +264,9 @@
     enrich();
   }
   var style=document.createElement('style');style.id='stepupSmartStyles';
-  style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
+  style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-focus-action{padding:4px 9px!important;margin-left:7px!important;font-size:12px!important;background:#e8f0fb!important;color:#254f82!important}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
   document.head.appendChild(style);
   window.STEPUP_SMART={version:VERSION,banner:banner,beginFull:beginFull,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
-    progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeNext:challengeNext};
+    progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
