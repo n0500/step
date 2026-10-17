@@ -247,3 +247,86 @@ test('Unit 2 complete 100% shows a primary functional Practice Again beside the 
     assert.deepEqual(f.errors,[]);
   }finally{f.dom.window.close();}
 });
+
+
+test('Unit 2 ordinary review goes directly from a finished skill to the next skill',async()=>{
+  const f=fixture();
+  try{
+    const questions=f.bank.filter(q=>q.section==='vocab');
+    f.api.start('vocab');
+    for(const q of questions){await f.answer(q.answer);await f.api.next();}
+    const primary=f.view().querySelector('[data-unit-review-continue]');
+    assert.ok(primary,'next-skill button missing after section finish');
+    assert.match(primary.textContent,/Continue to Grammar/);
+    assert.doesNotMatch(primary.getAttribute('onclick'),/open\(\)/);
+    primary.click();
+    await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.match(f.view().querySelector('.journey-breadcrumb').textContent,/Grammar/);
+    assert.equal(f.writes.length,questions.length);
+  }finally{f.dom.window.close();}
+});
+
+test('Unit 2 full Practice Again moves from one completed skill to the next without visiting units',async()=>{
+  const f=fixture();
+  try{
+    f.w.eval(fs.readFileSync(path.join(root,'student-smart-review.js'),'utf8'));
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    f.w.STEPUP_SMART.beginFull('u2');
+    const questions=f.bank.filter(q=>q.section==='vocab');
+    assert.equal(f.prompt(),questions[0].prompt);
+    for(const q of questions){
+      const choices=f.view().querySelectorAll('.journey-options button');
+      choices[q.answer].click();
+      const confirm=f.view().querySelector('.smart-confirm');
+      assert.ok(confirm,'Confirm Answer missing from full review');
+      assert.equal(f.writes.length,questions.indexOf(q),'answer must not save on choice tap');
+      confirm.click();
+      await until(()=>f.view().querySelector('.journey-feedback'));
+      await f.api.next();
+    }
+    const next=f.view().querySelector('[data-unit-review-continue]');
+    assert.ok(next,'full review must provide a next-skill action');
+    assert.match(next.textContent,/Continue to Grammar/);
+    assert.match(next.getAttribute('onclick'),/STEPUP_SMART.advance/);
+    next.click();
+    await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.equal(f.view().querySelector('.journey-unit-hero'),null);
+    assert.equal(f.writes.length,questions.length);
+  }finally{f.dom.window.close();}
+});
+
+test('Unit 2 final full-review skill offers My Learning Level and saves the overall result',async()=>{
+  const f=fixture();
+  try{
+    f.w.eval(fs.readFileSync(path.join(root,'student-smart-review.js'),'utf8'));
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    const b=f.bank,last=b.at(-1);
+    assert.equal(last.section,'listening');
+    const key='stepup-smart-20261017-1-'+f.profile.id+'-run-u2';
+    const answers={};
+    for(const q of b.slice(0,-1))answers[q.section+'|'+q.id]={
+      section:q.section,question_id:q.id,correct:true,skill:q.skill,
+      stem:q.prompt,selectedText:q.choices[q.answer],correctText:q.choices[q.answer]
+    };
+    f.w.localStorage.setItem(key,JSON.stringify({
+      uid:f.profile.id,unit:'u2',runId:'final-test-u2',
+      startedAt:'2026-10-17T01:00:00Z',keys:b.map(q=>q.section+'|'+q.id),answers
+    }));
+    f.w.STEPUP_SMART.beginFull('u2');
+    assert.equal(f.prompt(),last.prompt);
+    f.api.answer(last.answer);
+    await until(()=>f.view().querySelector('.journey-feedback'));
+    await f.api.next();
+    const btn=f.view().querySelector('[data-unit-review-continue]');
+    assert.ok(btn);
+    assert.match(btn.textContent,/See My Learning Level/);
+    btn.click();
+    await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.match(f.view().textContent,/My Learning Level/);
+    assert.match(f.view().textContent,/100%/);
+    const result=f.summaries.find(a=>a.recordKind==='smart-full-review');
+    assert.ok(result,'full review result must save');
+    assert.equal(result.total,b.length);
+    assert.equal(result.percentage,100);
+  }finally{f.dom.window.close();}
+});
