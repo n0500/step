@@ -1,7 +1,7 @@
 /* STEP UP student review upgrade: safe overlay; no changes to certificate logic. */
 (function () {
   'use strict';
-  var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[];
+  var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[], recentUid=null;
   var challenge=null;
   var Q={
     u1:[
@@ -37,6 +37,8 @@
   function sections(unit){return Array.from(new Set(bank(unit).map(function(q){return q.section;})));}
   function run(unit){var r=load('run-'+unit);return r&&r.uid===userId()&&Array.isArray(r.keys)?r:null;}
   function result(unit){
+    // Never use a previously signed-in student's in-memory answers after an account change.
+    if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
     var all=recentAttempts.filter(function(a){return a.recordKind==='smart-full-review'&&a.unitId===unit;});
     var saved=load('last-'+unit);
     if(saved&&saved.recordKind==='smart-full-review')all.push(saved);
@@ -145,7 +147,7 @@
       if(!window.PROVE||typeof PROVE.recordJourneyAttempt!=='function')throw new Error('Student save service unavailable');
       await PROVE.recordJourneyAttempt(payload);
       remove('run-'+unit);store('last-'+unit,payload);
-      recentAttempts.push(payload);
+      recentUid=userId();recentAttempts.push(payload);
       h.innerHTML=reportHTML(payload)+ '<div class="smart-footer-action"><button type="button" onclick="STEPUP_SMART.openUnit(\''+unit+'\')">Back to Unit '+unit.slice(1)+'</button></div>';
     }catch(e){console.error('Full review save failed',e);h.innerHTML='<section class="smart-results" role="alert"><h2>Result not saved yet</h2><p>Your confirmed question answers are safe. Please check your connection, then retry saving.</p><button type="button" onclick="STEPUP_SMART.advance(\''+unit+'\')">Retry saving result</button></section>';}
   }
@@ -194,7 +196,7 @@
     return msg;
   }
   function progressHTML(attempts){
-    recentAttempts=Array.isArray(attempts)?attempts.slice():[];
+    recentUid=userId();recentAttempts=Array.isArray(attempts)?attempts.slice():[];
     var reports=['u1','u2','u3'].map(function(unit){
       var a=result(unit);
       return a?'<div class="smart-progress-entry"><h3>Unit '+unit.slice(1)+' · Latest full review</h3>'+reportHTML(a)+'</div>':
