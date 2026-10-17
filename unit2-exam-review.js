@@ -1626,6 +1626,18 @@
     stopReadingTimer();
     stopReadingAudio();
     const saveNotice=!summarySaved?`<p role="status">Your answers and improvement are saved. Only the section summary is waiting.</p><button class="journey-link-btn" onclick="STEPUP_U2_EXAM.retrySummary()">Retry saving section summary</button>`:"";
+    // A full-unit retake must continue to the next skill, never default to the units page.
+    const fullReview=!!ticket.smartFull;
+    const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") : nextReviewSection();
+    const nextAction=fullReview ? "STEPUP_SMART.advance('u2')" :
+      nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"')" : "STEPUP_U2_EXAM.open()";
+    const nextLabel=fullReview
+      ? (nextKey ? "Continue to "+esc(sections[nextKey].title) : "See My Learning Level")
+      : (nextKey ? (nextKey===sectionKey ? "Review missed answers" : "Continue to "+esc(sections[nextKey].title)) : "Back to Unit 2");
+    const actionsHTML=`<div class="journey-result-actions">
+      <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
+      <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.open()">Exit to Unit 2</button>
+    </div>`;
 
     if(h){
       if(sectionKey==="reading"){
@@ -1644,10 +1656,7 @@
             : "Complete a full 4-question practice with at least 3 correct to save a new Best Time."}</p>
           <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
           ${saveNotice}
-          <div class="journey-result-actions">
-            <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
-            <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.readingLesson()">Practice again</button>
-          </div>
+          ${actionsHTML}
         </section>`;
         return;
       }
@@ -1659,10 +1668,7 @@
         <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
         ${saveNotice}
         ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
-        <div class="journey-result-actions">
-          <button class="journey-main-btn" onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button>
-          <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.start('${sectionKey}')">Practice again</button>
-        </div>
+        ${actionsHTML}
       </section>`;
     }
   }

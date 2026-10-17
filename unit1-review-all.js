@@ -341,6 +341,7 @@
       correct:0,
       started:Date.now(),
       runAnswers:[],
+      smartFull:!!forceAll,
       phase:'question',
       reviewRun: !sectionDone(sectionKey)
     };
@@ -512,7 +513,13 @@
     const score = ticket.runAnswers.filter(a => a.correct).length, total = ticket.runAnswers.length;
     const pct = total ? Math.round(score / total * 100) : 0;
     const cumulative = sectionProgress(key);
-    const nextKey = nextMissingSection();
+    const fullReview=!!ticket.smartFull;
+    const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u1') : nextReviewSection();
+    const nextAction=fullReview ? "STEPUP_SMART.advance('u1')" :
+      nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"')" : "STEPUP_U1_REVIEW.open()";
+    const nextLabel=fullReview
+      ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
+      : (nextKey ? (nextKey===key ? 'Review missed answers' : 'Continue to '+esc(sections[nextKey].title)) : 'Back to Unit 1');
     h.innerHTML = `<section class="journey-result ${pct>=sec.pass?'good':'review'}" data-u1-run-result="1">
       <div class="journey-result-score">${score}<span>/${total}</span></div>
       <h2>Your score this time: ${pct}%</h2>
@@ -520,8 +527,9 @@
       <p>Cumulative accuracy: ${cumulative.correct}/${cumulative.total} • ${cumulative.accuracy}%. Your previous correct answers stay credited.</p>
       ${!summarySaved ? '<p role="status">Your individual answers are saved. The section summary could not be saved yet.</p><button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.retrySummary()">Retry saving section summary</button>' : ''}
       <div class="journey-result-actions">
-        ${nextKey ? `<button class="journey-main-btn" onclick="STEPUP_U1_REVIEW.start('${nextKey}')">Continue Review</button>` : `<button class="journey-main-btn" onclick="STEPUP_U1_REVIEW.open()">Back to Unit 1</button>`}
-        <button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.start('${key}')">${cumulative.correct<cumulative.total?'Review missed answers':'Practice again'}</button>
+        <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
+        ${fullReview ? '<button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.open()">Exit to Unit 1</button>' :
+          `<button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.start('${key}')">${cumulative.correct<cumulative.total?'Review missed answers':'Practice again'}</button>`}
       </div>
     </section>`;
   }
