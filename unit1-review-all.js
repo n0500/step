@@ -515,22 +515,9 @@
     const pct = total ? Math.round(score / total * 100) : 0;
     const cumulative = sectionProgress(key);
     const fullReview=!!ticket.smartFull;
-    // Saved skill -> open the next unfinished skill immediately. No extra result
-    // button, trip to My Journey, or repeat of a previously mastered skill.
-    if(summarySaved){
-      if(fullReview && window.STEPUP_SMART?.advance){
-        window.STEPUP_SMART.advance('u1');
-        return;
-      }
-      const nextUnfinished=nextMissingSection();
-      if(ticket.continuePath && !fullReview && nextUnfinished && nextUnfinished!==key){
-        startSection(nextUnfinished,false,true);
-        return;
-      }
-    }
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u1') : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u1')" :
-      nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"')" : "STEPUP_U1_REVIEW.open()";
+      nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" : "STEPUP_U1_REVIEW.open()";
     const nextLabel=fullReview
       ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
       : (nextKey ? (nextKey===key ? 'Review missed answers' : 'Continue to '+esc(sections[nextKey].title)) : 'Back to Unit 1');
@@ -546,6 +533,14 @@
           `<button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.start('${key}')">${cumulative.correct<cumulative.total?'Review missed answers':'Practice again'}</button>`}
       </div>
     </section>`;
+    if(summarySaved && (fullReview || (ticket.continuePath && nextKey && nextKey!==key))){
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u1',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u1');
+          else startSection(nextKey,false,true);
+        });
+    }
   }
 
   function addStyles(){
