@@ -233,6 +233,11 @@
   function mistakesOf(a){return (a.answers||[]).filter(function(x){return x&&x.correct===false;});}
   function activeOK(){return active&&uid()===active.uid&&source()&&source()(active.unit)&&String(source()(active.unit).reviewRunId)===String(active.runId);}
   function start(unit){
+    // Discard a prior student's recovery screen as soon as the auth identity changes.
+    if(active&&active.uid!==uid()){
+      active=null;var previous=host();
+      if(previous&&previous.querySelector('.fix-recovery'))previous.innerHTML='<section class="fix-recovery"><p>This review belongs to a different session. Open your own unit to continue.</p></section>';
+    }
     if(!/^u[123]$/.test(unit)||!uid()||!source())return;
     var a=source()(unit);if(!a||a.recordKind!=='smart-full-review')return;
     var errors=mistakesOf(a);if(!errors.length)return;
@@ -261,7 +266,7 @@
       '<div lang="ar" dir="rtl"><b>بالعربية</b>'+whyAR(q)+'</div></section>';
   }
   function render(){
-    if(!activeOK()){active=null;return;}
+    if(!activeOK()){active=null;var old=host();if(old&&old.querySelector('.fix-recovery'))old.innerHTML='';return;}
     var h=host();if(!h)return;
     if(active.pos>=active.mistakes.length||active.phase==='done'){active.phase='done';save();return renderDone();}
     var s='<section class="fix-recovery" data-fix-unit="'+esc(active.unit)+'">'+intro();
