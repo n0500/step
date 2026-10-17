@@ -1,0 +1,37 @@
+name: STEP UP Student Review Checks
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'student-smart-review.js'
+      - 'unit1-review-all.js'
+      - 'unit2-exam-review.js'
+      - 'unit3-review-all.js'
+      - 'app.js'
+      - 'index.html'
+      - 'tests/student-smart-review.test.cjs'
+      - '.github/workflows/student-smart-review-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install DOM test dependency
+        run: npm install --no-save --ignore-scripts jsdom@26
+      - name: Syntax checks
+        run: |
+          node --check student-smart-review.js
+          node --check unit1-review-all.js
+          node --check unit2-exam-review.js
+          node --check unit3-review-all.js
+          node --check app.js
+      - name: Student flows and review regression tests
+        run: |
+          node --test tests/student-smart-review.test.cjs
+          node --test tests/unit1-review-flow.test.cjs tests/unit2-review-progress.test.cjs tests/unit2-review-media.test.cjs tests/unit3-review-media.test.cjs
