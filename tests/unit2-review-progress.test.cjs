@@ -275,10 +275,11 @@ test('Unit 2 full Practice Again moves from one completed skill to the next with
     const questions=f.bank.filter(q=>q.section==='vocab');
     assert.equal(f.prompt(),questions[0].prompt);
     for(const q of questions){
+      await until(()=>!!f.view().querySelector('.smart-confirm'));
       const choices=f.view().querySelectorAll('.journey-options button');
-      choices[q.answer].click();
       const confirm=f.view().querySelector('.smart-confirm');
       assert.ok(confirm,'Confirm Answer missing from full review');
+      choices[q.answer].click();
       assert.equal(f.writes.length,questions.indexOf(q),'answer must not save on choice tap');
       confirm.click();
       await until(()=>f.view().querySelector('.journey-feedback'));
