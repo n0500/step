@@ -454,7 +454,38 @@ html.sx body.sx .journey-options button{
   background:#f6f9fd !important;border:1.5px solid #e3eaf3 !important;color:var(--sx-ink) !important;box-shadow:none !important;cursor:pointer;
   transition:transform .15s var(--sx-ease), border-color .2s ease, background .2s ease !important;
 }
-html.sx body.sx .journey-options button:hover{ border-color:#9fbdf0 !important;background:#eef4fd !important }
+/* Hover feedback is for mouse/trackpad users only. Mobile Safari can keep
+   :hover attached to the same option index across successive questions. */
+@media (hover:hover) and (pointer:fine){
+  html.sx body.sx .journey-options button:hover:not(.smart-selected):not(.sar-picked){
+    border-color:#9fbdf0 !important;background:#eef4fd !important;
+  }
+}
+
+/* A selected answer is visibly selected only after the student's own tap.
+   This rule must outrank the original .sx question-option skin. */
+html.sx body.sx .journey-options button.smart-selected,
+html.sx body.sx .journey-options button.smart-selected:hover{
+  background:#e9f2ff !important;
+  border:2px solid #2761a8 !important;
+  box-shadow:0 0 0 2px #d0e1fb !important;
+}
+html.sx body.sx .journey-options button.sar-picked,
+html.sx body.sx .journey-options button.sar-picked:hover{
+  background:#eaf5ff !important;
+  border:2px solid #2274be !important;
+}
+
+/* Touch screens should never show the browser's sticky hover as a choice.
+   Previous answers and certificates aren't represented by option styling. */
+@media (hover:none), (pointer:coarse){
+  html.sx body.sx .journey-options button:not(.smart-selected):not(.sar-picked):hover{
+    border-color:#e3eaf3 !important;
+    border-width:1.5px !important;
+    background:#f6f9fd !important;
+    box-shadow:none !important;
+  }
+}
 html.sx body.sx .journey-options button > span{
   width:34px !important;height:34px !important;border-radius:11px !important;display:grid !important;place-items:center !important;flex:none !important;
   background:#fff !important;color:var(--sx-blue) !important;font-weight:800 !important;border:1.5px solid #d6e1ef !important;

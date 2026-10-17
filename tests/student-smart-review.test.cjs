@@ -161,3 +161,39 @@ test('incomplete Unit 2 review never exposes full-review button prematurely',()=
     assert.doesNotMatch(f.smart.banner('u2'),/Practice Again/);
   }finally{f.dispose();}
 });
+
+
+test('new questions begin with no selected answer; confirm enables only after intentional tap',async()=>{
+  const f=fixture();
+  try{
+    f.w.STEPUP_U1_REVIEW.answer=()=>{};
+    question(f);
+    await sleep(20);
+    let buttons=f.w.document.querySelectorAll('.journey-options button');
+    let confirm=f.w.document.querySelector('.smart-confirm');
+    assert.ok(confirm);
+    assert.equal(confirm.disabled,true);
+    assert.equal([...buttons].filter(x=>x.classList.contains('smart-selected')).length,0);
+    buttons[0].click();
+    assert.equal(confirm.disabled,false);
+    assert.equal(buttons[0].getAttribute('aria-pressed'),'true');
+    question(f); // When the next question is rendered, no prior choice is carried over.
+    await sleep(20);
+    buttons=f.w.document.querySelectorAll('.journey-options button');
+    confirm=f.w.document.querySelector('.smart-confirm');
+    assert.ok(confirm);
+    assert.equal(confirm.disabled,true);
+    assert.ok([...buttons].every(x=>!x.classList.contains('smart-selected') && x.getAttribute('aria-pressed')!=='true'));
+  }finally{f.dispose();}
+});
+
+test('touch-screen styles suppress sticky hover, but preserve deliberate selected-answer feedback',()=>{
+  const css=fs.readFileSync(path.join(__dirname,'..','stepup-athari.css'),'utf8');
+  assert.match(css,/@media\s*\(hover:hover\)\s*and\s*\(pointer:fine\)/);
+  assert.match(css,/@media\s*\(hover:none\),\s*\(pointer:coarse\)/);
+  assert.match(css,/button:not\(\.smart-selected\):not\(\.sar-picked\):hover\s*\{/);
+  assert.match(css,/html\.sx body\.sx \.journey-options button\.smart-selected/);
+  assert.match(css,/html\.sx body\.sx \.journey-options button\.sar-picked/);
+  assert.ok(!css.includes('html.sx body.sx .journey-options button:hover{ border-color:#9fbdf0'),
+    'never use unconditional blue hover for touchscreen answers');
+});

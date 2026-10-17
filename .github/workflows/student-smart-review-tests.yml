@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'student-smart-review.js'
+      - 'stepup-athari.css'
       - 'journey-focus.js'
       - 'journey-focus.css'
       - 'tests/unit2-review-progress.test.cjs'
