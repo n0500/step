@@ -529,23 +529,40 @@
 
   async function next(){
     stopListening();
-    if (!session) return;
+    if (!session || session.phase==='finishing') return;
     if (session.pos < session.queue.length - 1){
       session.pos++;
       return renderQuestion();
     }
 
-    const key = session.sectionKey;
-    const sec = session.sec;
-    const fullReview=!!session.smartFull;
+    const ticket=session;
+    ticket.phase='finishing';
+    const key = ticket.sectionKey;
+    const sec = ticket.sec;
+    const fullReview=!!ticket.smartFull;
     const runScore=session.runAnswers.filter(a=>a.correct).length,runTotal=session.runAnswers.length;
     const runPercentage=Math.round(runScore/Math.max(1,runTotal)*100);
-    let result;
+    let result,summarySaved=true;
     try{
       result = await saveSectionSummary(key);
     } catch (e){
       console.warn('Unit 3 section summary save failed', e);
+      summarySaved=false;
       result = {score:correctCount(key), total:sec.questions.length, percentage:Math.round(correctCount(key)/Math.max(1,sec.questions.length)*100)};
+    }
+    if(session!==ticket)return;
+    const nextUnfinished=nextMissingSection();
+    if(summarySaved){
+      if(fullReview && window.STEPUP_SMART?.advance){
+        session=null;
+        window.STEPUP_SMART.advance('u3');
+        return;
+      }
+      if(!fullReview && nextUnfinished && nextUnfinished!==key){
+        session=null;
+        startSection(nextUnfinished);
+        return;
+      }
     }
     const allSeen = sectionDone(key);
     const h = document.querySelector('.student-view');
