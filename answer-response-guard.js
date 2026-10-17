@@ -52,7 +52,8 @@
       const x=opts();if(!x)return;
       const choices=[...x.querySelectorAll('button')];
       choices.forEach(button=>button.disabled=false);
-      choices[selected]?.click();
+      if(window.STEPUP_SMART?.retryChoice)window.STEPUP_SMART.retryChoice(choices[selected]);
+      else choices[selected]?.click();
     });
     e.appendChild(btn);
   }
