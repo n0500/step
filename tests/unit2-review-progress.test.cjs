@@ -209,3 +209,41 @@ test('Unit 2 grammar improvement survives returning through the actual applicati
     assert.deepEqual(f.errors,[]);
   }finally{f.dom.window.close();}
 });
+
+
+test('Unit 2 complete 100% shows a primary functional Practice Again beside the result without duplicate lower panel',async()=>{
+  const f=fixture({decorated:true});
+  try{
+    f.hydrate(f.records(()=>true));
+    f.api.open();
+    // Load the same student overlay and focused-journey modules as the live page.
+    const loadSmart=file=>f.w.eval(fs.readFileSync(path.join(root,file),'utf8'));
+    loadSmart('student-smart-review.js');
+    loadSmart('journey-focus.js');
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    await until(()=>f.view().querySelector('.journey-focus-shell.journey-focus-replay-ready'));
+    const card=f.view().querySelector('.journey-focus-replay-ready .journey-focus-task.complete');
+    assert.ok(card,'completed unit needs a clear result card');
+    assert.match(card.textContent,/All answers correct/);
+    assert.match(card.textContent,/Practice Again/);
+    assert.ok(card.querySelector('.journey-focus-back-secondary'),'Back to units should stay secondary');
+    assert.equal(f.view().querySelector('.smart-unit-panel'),null,'lower duplicate replay card removed');
+    const replay=card.querySelector('.journey-focus-start');
+    replay.click();
+    await until(()=>f.view().querySelector('.journey-question-card h2'));
+    const questions=f.bank.filter(q=>q.section==='vocab');
+    assert.equal(f.prompt(),questions[0].prompt,'replay must start at the first original question, not skip correct answers');
+    const options=f.view().querySelectorAll('.journey-options button');
+    options[questions[0].answer].click();
+    assert.equal(f.writes.length,0,'choice tap must not save before confirmation');
+    const confirm=f.view().querySelector('.smart-confirm');
+    assert.ok(confirm,'confirmation button required');
+    assert.equal(confirm.disabled,false);
+    confirm.click();
+    await until(()=>f.view().querySelector('.journey-feedback'));
+    assert.equal(f.writes.length,1,'confirm should save exactly one replay answer');
+    await f.api.next();
+    assert.equal(f.prompt(),questions[1].prompt,'next original question must be reachable');
+    assert.deepEqual(f.errors,[]);
+  }finally{f.dom.window.close();}
+});
