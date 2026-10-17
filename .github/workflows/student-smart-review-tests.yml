@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'student-smart-review.js'
+      - 'journey-focus.js'
+      - 'journey-focus.css'
+      - 'tests/unit2-review-progress.test.cjs'
       - 'answer-response-guard.js'
       - 'unit1-review-all.js'
       - 'unit2-exam-review.js'
@@ -28,6 +31,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check answer-response-guard.js
+          node --check journey-focus.js
           node --check student-smart-review.js
           node --check unit1-review-all.js
           node --check unit2-exam-review.js
