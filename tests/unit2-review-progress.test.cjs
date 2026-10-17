@@ -255,12 +255,9 @@ test('Unit 2 ordinary review goes directly from a finished skill to the next ski
     const questions=f.bank.filter(q=>q.section==='vocab');
     f.api.start('vocab');
     for(const q of questions){await f.answer(q.answer);await f.api.next();}
-    const primary=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(primary,'next-skill button missing after section finish');
-    assert.match(primary.textContent,/Continue to Grammar/);
-    assert.doesNotMatch(primary.getAttribute('onclick'),/open\(\)/);
-    primary.click();
+    // No intermediate Continue/Back action: the next skill opens immediately.
     await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.equal(f.view().querySelector('[data-unit-review-continue]'),null);
     assert.match(f.view().querySelector('.journey-breadcrumb').textContent,/Grammar/);
     assert.equal(f.writes.length,questions.length);
   }finally{f.dom.window.close();}
@@ -285,12 +282,8 @@ test('Unit 2 full Practice Again moves from one completed skill to the next with
       await until(()=>f.view().querySelector('.journey-feedback'));
       await f.api.next();
     }
-    const next=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(next,'full review must provide a next-skill action');
-    assert.match(next.textContent,/Continue to Grammar/);
-    assert.match(next.getAttribute('onclick'),/STEPUP_SMART.advance/);
-    next.click();
     await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.equal(f.view().querySelector('[data-unit-review-continue]'),null,'no manual next-skill tap');
     assert.equal(f.view().querySelector('.journey-unit-hero'),null);
     assert.equal(f.writes.length,questions.length);
   }finally{f.dom.window.close();}
@@ -318,11 +311,8 @@ test('Unit 2 final full-review skill offers My Learning Level and saves the over
     f.api.answer(last.answer);
     await until(()=>f.view().querySelector('.journey-feedback'));
     await f.api.next();
-    const btn=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(btn);
-    assert.match(btn.textContent,/See My Learning Level/);
-    btn.click();
     await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.equal(f.view().querySelector('[data-unit-review-continue]'),null,'final report opens automatically');
     assert.match(f.view().textContent,/My Learning Level/);
     assert.match(f.view().textContent,/100%/);
     const result=f.summaries.find(a=>a.recordKind==='smart-full-review');
