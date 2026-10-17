@@ -43,16 +43,29 @@
     all.sort(function(a,b){return Date.parse(b.submittedAt||0)-Date.parse(a.submittedAt||0);});
     return all[0]||null;
   }
+  // The mastery badge is hydrated when the Journey page loads. An answer saved
+  // seconds ago can complete the unit before that badge refreshes. Read the live
+  // review engine as well, so 100% students never lose access to Practice Again.
+  function canPracticeAgain(unit){
+    var b=bank(unit);
+    if(!b.length)return false;
+    try{if(window.STEPUP_MASTERY?.studentStatus?.(unit)?.earned)return true;}catch(_){}
+    var p;
+    try{p=api(unit)?.getProgress?.();}catch(_){return false;}
+    if(!p||Number(p.total)!==b.length||Number(p.answered)<b.length)return false;
+    var correct=Number.isFinite(Number(p.reviewCorrect))?Number(p.reviewCorrect):Number(p.correct);
+    var pass=Number(window.STEPUP_MASTERY?.PASS)||80;
+    return Number.isFinite(correct)&&correct*100>=pass*b.length;
+  }
   function banner(unit){
-    var earned=false;try{earned=!!window.STEPUP_MASTERY.studentStatus(unit).earned;}catch(_){}
     var r=run(unit),b=bank(unit);
     if(!b.length)return '';
+    var eligible=canPracticeAgain(unit);
     var latest=result(unit);
-    var label=earned?'Practice Again':'Continue Review';
-    var description=earned?'Revisit all '+b.length+' original questions. Your certificate stays safe.':'Your answers continue counting towards your unit certificate.';
-    // Students can revisit complete review without a certificate only through their regular Review Path.
+    var label=eligible?'Practice Again':'Continue Review';
+    var description=eligible?'Revisit all '+b.length+' original questions. Your certificate and past results stay safe.':'Your answers continue counting towards your unit certificate.';
     return '<section class="smart-unit-panel" data-smart-banner="'+el(unit)+'"><div><strong>'+el(label)+'</strong><p>'+el(description)+'</p></div>'+
-      (earned?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\')">Continue Review →</button>')+
+      (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+(unit==='u1'?'STEPUP_U1_REVIEW':unit==='u2'?'STEPUP_U2_EXAM':'STEPUP_U3_REVIEW')+'.start(\''+(api(unit).getProgress&&api(unit).getProgress().nextSection||b[0].section)+'\')">Continue Review →</button>')+
       (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+'</section>';
   }
   function beginFull(unit){
@@ -216,8 +229,11 @@
   function enrich(){
     var host=document.querySelector('.student-view');if(!host)return;
     var hero=host.querySelector('.journey-unit-hero[data-review-unit]');
-    if(hero&&!hero.querySelector('.smart-unit-panel')){
-      var unit=hero.getAttribute('data-review-unit');if(api(unit))hero.insertAdjacentHTML('beforeend',banner(unit));
+    if(hero){
+      var unit=hero.getAttribute('data-review-unit');
+      // Keep the main action immediately below the hero, never buried inside it.
+      var next=hero.nextElementSibling;
+      if(api(unit)&&!(next?.classList?.contains('smart-unit-panel')))hero.insertAdjacentHTML('afterend',banner(unit));
     }
     var opts=host.querySelector('.journey-question-card .journey-options');
     if(opts&&!opts.parentElement.querySelector('.smart-confirm')){
@@ -248,14 +264,14 @@
       var actions=fullUnit.querySelector('.journey-result-actions');
       var unit=actions&&actions.querySelector('[onclick*="STEPUP_U1_REVIEW"]')?'u1':actions&&actions.querySelector('[onclick*="STEPUP_U2_EXAM"]')?'u2':actions&&actions.querySelector('[onclick*="STEPUP_U3_REVIEW"]')?'u3':null;
       var r=unit&&run(unit);
-      if(r&&Object.keys(r.answers).length){
-        var bankItems=bank(r.unit),remaining=bankItems.filter(function(q){return !r.answers[q.section+'|'+q.id];}).length;
+      if(unit && (r&&Object.keys(r.answers).length || canPracticeAgain(unit))){
+        var active=!!(r&&Object.keys(r.answers).length);
+        var remaining=active?bank(unit).filter(function(q){return !r.answers[q.section+'|'+q.id];}).length:0;
         var footer=fullUnit.querySelector('.journey-result-actions')||fullUnit;
         var b=document.createElement('button');b.type='button';b.className='smart-next';b.dataset.smartNext='1';
-        b.textContent=remaining?'Continue Full Review · '+remaining+' left':'See My Learning Level';
-        b.addEventListener('click',function(){advance(r.unit);});
+        b.textContent=active?(remaining?'Continue Full Review · '+remaining+' left':'See My Learning Level'):'Practice Again · Full Unit';
+        b.addEventListener('click',function(){if(active)advance(unit);else beginFull(unit);});
         footer.insertBefore(b,footer.firstChild);
-        // Keep the full review journey primary instead of the normal section retry.
       }
     }
   }
@@ -293,7 +309,7 @@
   var style=document.createElement('style');style.id='stepupSmartStyles';
   style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-focus-action{padding:4px 9px!important;margin-left:7px!important;font-size:12px!important;background:#e8f0fb!important;color:#254f82!important}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
   document.head.appendChild(style);
-  window.STEPUP_SMART={version:VERSION,banner:banner,beginFull:beginFull,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
+  window.STEPUP_SMART={version:VERSION,banner:banner,canPracticeAgain:canPracticeAgain,beginFull:beginFull,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
     progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();

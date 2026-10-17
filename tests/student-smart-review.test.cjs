@@ -100,3 +100,64 @@ test('local incomplete runs remain scoped to student identity',async()=>{
     assert.equal(f.smart.resumePosition('u1','core-1',['q-1']),0);
   }finally{f.dispose();}
 });
+
+
+test('Unit 2 full mastery shows Practice Again even before certificate hydration updates',async()=>{
+  const f=fixture();
+  try{
+    const unit2Bank=bank.map((q,i)=>({...q,section:i===0?'grammar':'reading'}));
+    f.w.STEPUP_U2_EXAM={
+      getMasteryBank:()=>unit2Bank,
+      getProgress:()=>({answered:unit2Bank.length,total:unit2Bank.length,correct:unit2Bank.length,reviewCorrect:unit2Bank.length,reviewAccuracy:100,nextSection:null}),
+      start:(section,full)=>f.starts.push({section,full}),
+      open:()=>{}
+    };
+    // The student has just achieved 100%, but certificate hydration has not run again.
+    f.w.STEPUP_MASTERY.studentStatus=()=>({earned:false,mode:'pending'});
+    assert.equal(f.smart.canPracticeAgain('u2'),true);
+    f.w.document.querySelector('.student-view').innerHTML=
+      '<section class="journey-unit-hero" data-review-unit="u2"><h1>Careers</h1></section>';
+    await sleep(30);
+    const hero=f.w.document.querySelector('.journey-unit-hero');
+    const card=hero.nextElementSibling;
+    assert.ok(card.classList.contains('smart-unit-panel'),'review action must be directly beneath the unit hero');
+    assert.match(card.textContent,/Practice Again/);
+    const button=card.querySelector('button');
+    assert.match(button.getAttribute('onclick'),/STEPUP_SMART.beginFull/);
+    button.click();
+    assert.deepEqual(f.starts[0],{section:'grammar',full:true});
+  }finally{f.dispose();}
+});
+
+test('Unit 2 perfect section result offers full review immediately without returning to the unit',async()=>{
+  const f=fixture();
+  try{
+    f.w.STEPUP_U2_EXAM={
+      getMasteryBank:()=>bank,
+      getProgress:()=>({answered:2,total:2,correct:2,reviewCorrect:2,reviewAccuracy:100}),
+      start:(section,full)=>f.starts.push({section,full}),
+      open:()=>{}
+    };
+    f.w.STEPUP_MASTERY.studentStatus=()=>({earned:false});
+    f.w.document.querySelector('.student-view').innerHTML=
+      '<section class="journey-result"><h2>100%</h2><div class="journey-result-actions">'+
+      '<button onclick="STEPUP_U2_EXAM.open()">Back to Unit 2</button></div></section>';
+    await sleep(30);
+    const button=f.w.document.querySelector('.smart-next');
+    assert.ok(button,'Practice Again must be accessible directly after the 100% result');
+    assert.match(button.textContent,/Practice Again/);
+    button.click();
+    assert.deepEqual(f.starts[0],{section:'core-1',full:true});
+  }finally{f.dispose();}
+});
+
+test('incomplete Unit 2 review never exposes full-review button prematurely',()=>{
+  const f=fixture();
+  try{
+    f.w.STEPUP_U2_EXAM={getMasteryBank:()=>bank,getProgress:()=>({answered:1,total:2,reviewCorrect:1,correct:1}),start(){}};
+    f.w.STEPUP_MASTERY.studentStatus=()=>({earned:false});
+    assert.equal(f.smart.canPracticeAgain('u2'),false);
+    assert.match(f.smart.banner('u2'),/Continue Review/);
+    assert.doesNotMatch(f.smart.banner('u2'),/Practice Again/);
+  }finally{f.dispose();}
+});
