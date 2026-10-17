@@ -174,19 +174,36 @@
   function renderChallenge(){
     if(!challenge)return;var h=document.querySelector('.student-view');if(!h)return;
     var q=Q[challenge.unit][challenge.pos];
-    h.innerHTML='<section class="smart-results"><small>Extra Challenge · optional · '+(challenge.pos+1)+'/5</small><h2>'+el(q.p)+'</h2><div class="smart-challenge-options">'+q.c.map(function(x,i){return '<button type="button" onclick="STEPUP_SMART.challengeChoose('+i+')">'+String.fromCharCode(65+i)+'. '+el(x)+'</button>';}).join('')+'</div><p>No effect on your certificate.</p><button type="button" class="smart-skip" onclick="STEPUP_SMART.openUnit(\''+challenge.unit+'\')">Exit challenge</button></section>';
+    h.innerHTML='<section class="smart-results"><small>Extra Challenge · optional · '+(challenge.pos+1)+'/5</small><h2>'+el(q.p)+'</h2><div class="smart-challenge-options">'+q.c.map(function(x,i){return '<button type="button" aria-pressed="false" onclick="STEPUP_SMART.challengeSelect('+i+')">'+String.fromCharCode(65+i)+'. '+el(x)+'</button>';}).join('')+'</div><button type="button" class="smart-confirm" disabled onclick="STEPUP_SMART.challengeConfirm()">Confirm Answer</button><p>No effect on your certificate.</p><button type="button" class="smart-skip" onclick="STEPUP_SMART.openUnit(\''+challenge.unit+'\')">Exit challenge</button></section>';
+  }
+  function challengeSelect(i){
+    if(!challenge)return;
+    var h=document.querySelector('.student-view');if(!h)return;
+    var buttons=h.querySelectorAll('.smart-challenge-options button');
+    Array.prototype.forEach.call(buttons,function(b,n){b.classList.toggle('smart-selected',n===i);b.setAttribute('aria-pressed',n===i?'true':'false');});
+    var confirm=h.querySelector('.smart-confirm');if(confirm)confirm.disabled=false;
+    challenge.selected=i;
+  }
+  function challengeConfirm(){
+    if(!challenge||!Number.isInteger(challenge.selected))return;
+    challengeChoose(challenge.selected);
   }
   function challengeChoose(i){
     if(!challenge)return;var q=Q[challenge.unit][challenge.pos],h=document.querySelector('.student-view');
     if(!Number.isInteger(i)||i<0||i>=q.c.length||!h)return;
-    challenge.answers.push({skill:q.skill,correct:i===q.a});
+    challenge.answers.push({skill:q.skill,correct:i===q.a});challenge.selected=null;
     h.innerHTML='<section class="smart-results"><h2>'+(i===q.a?'Correct!':'Keep learning')+'</h2><p><b>Correct answer:</b> '+el(q.c[q.a])+'</p><p>'+el(q.e)+'</p><button type="button" onclick="STEPUP_SMART.challengeNext()">Continue →</button></section>';
   }
   function challengeNext(){
     if(!challenge)return;challenge.pos++;
     if(challenge.pos<5)return renderChallenge();
     var h=document.querySelector('.student-view'),c=challenge,score=c.answers.filter(function(a){return a.correct;}).length;challenge=null;
-    if(h)h.innerHTML='<section class="smart-results"><h2>Extra Challenge complete</h2><div class="smart-score">'+score+'/5</div><p>New examples help check understanding beyond the original question bank. Your certificate was not changed.</p><button type="button" onclick="STEPUP_SMART.openUnit(\''+c.unit+'\')">Back to Unit</button></section>';
+    if(h)h.innerHTML='<section class="smart-results"><h2>Extra Challenge complete</h2><div class="smart-score">'+score+'/5</div><p>New examples check understanding beyond the original question bank. Your certificate was not changed.</p><button type="button" onclick="STEPUP_SMART.openUnit(\''+c.unit+'\')">Back to Unit</button></section>';
+    if(window.PROVE&&typeof PROVE.recordJourneyAttempt==='function'){
+      PROVE.recordJourneyAttempt({recordKind:'smart-extra-challenge',trainingId:'smart-extra-'+c.unit,trainingTitle:'Unit '+c.unit.slice(1)+' Extra Challenge',
+        trainingType:'challenge',unitId:c.unit,unitNumber:Number(c.unit.slice(1)),score:score,total:5,percentage:score*20,answers:c.answers,studyMethod:'optional-new-examples'})
+        .catch(function(e){console.warn('Optional challenge result not saved',e);if(h){var p=document.createElement('p');p.textContent='Challenge result could not be saved online. Your certificate is unchanged.';h.querySelector('.smart-results')?.appendChild(p);}});
+    }
   }
   function openUnit(unit){var a=api(unit);if(a)a.open();}
   function enHint(q){var s=String(q.skill||'').toLowerCase();if(s.includes('reading'))return 'Find evidence in the passage before choosing.';if(s.includes('listening'))return 'Listen for the key detail, not just a familiar word.';if(s.includes('present'))return 'Look for time expressions and decide whether the action is habitual, ongoing, or connected to now.';if(s.includes('past'))return 'Notice the order of past events and which action was in progress.';if(s.includes('vocab')||s.includes('talk'))return 'Use the sentence context and eliminate choices that do not fit.';return 'Read the time clue or meaning carefully, then eliminate unlikely choices.';}
@@ -267,6 +284,6 @@
   style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-focus-action{padding:4px 9px!important;margin-left:7px!important;font-size:12px!important;background:#e8f0fb!important;color:#254f82!important}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
   document.head.appendChild(style);
   window.STEPUP_SMART={version:VERSION,banner:banner,beginFull:beginFull,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,
-    progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeNext:challengeNext};
+    progressHTML:progressHTML,reportHTML:reportHTML,openUnit:openUnit,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();
