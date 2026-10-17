@@ -55,7 +55,7 @@
       var found=items.filter(function(a){return a.examSection===q.section&&String(a.questionId)===String(q.id);})
         .sort(function(a,c){return Date.parse(c.submittedAt||0)-Date.parse(a.submittedAt||0);})[0];
       if(!found)return;
-      stamps.push(String(found.submittedAt||'')+'|'+String(found.questionId)+'|'+String(found.selected??found.selectedText||''));
+      stamps.push(String(found.submittedAt||'')+'|'+String(found.questionId)+'|'+String(found.selected ?? found.selectedText ?? ''));
       latest.push({section:q.section,skill:q.skill||q.sectionTitle||'Review',stem:q.prompt,correct:found.correct===true,
         selectedText:found.selectedText||'',correctText:q.choices[q.answer]||'',explanation:q.explanation||''});
     });
