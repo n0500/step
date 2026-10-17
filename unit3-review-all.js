@@ -322,6 +322,7 @@
       correct:0,
       started:Date.now(),
       runAnswers:[],
+      smartFull:!!forceAll,
       reviewRun: !sectionDone(sectionKey)
     };
     renderQuestion();
@@ -536,6 +537,7 @@
 
     const key = session.sectionKey;
     const sec = session.sec;
+    const fullReview=!!session.smartFull;
     const runScore=session.runAnswers.filter(a=>a.correct).length,runTotal=session.runAnswers.length;
     const runPercentage=Math.round(runScore/Math.max(1,runTotal)*100);
     let result;
@@ -549,8 +551,15 @@
     const h = document.querySelector('.student-view');
     session = null;
     if (!h) return;
-    const nextKey = nextReviewSection();
-    const improveKey = !nextKey && !certificateEligible() ? weakestSection() : null;
+    const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextReviewSection();
+    const improveKey = !fullReview && !nextKey && !certificateEligible() ? weakestSection() : null;
+    const nextAction=fullReview ? "STEPUP_SMART.advance('u3')" :
+      nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"')" :
+      improveKey ? "STEPUP_U3_REVIEW.start('"+improveKey+"')" : "STEPUP_U3_REVIEW.open()";
+    const nextLabel=fullReview
+      ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
+      : (nextKey ? (nextKey===key ? 'Review missed answers' : 'Continue to '+esc(sections[nextKey].title)) :
+        improveKey ? 'Practice to reach '+CERT_MASTERY+'%' : 'Back to Unit 3');
     h.innerHTML = `<section class="journey-result ${runPercentage>=67?'good':'review'}" data-review-run-result="1">
       <div class="journey-result-score">${runScore}<span>/${runTotal}</span></div>
       <h2>Your score this time: ${runPercentage}%</h2>
@@ -558,8 +567,9 @@
       <p>${runTotal-runScore?`${runTotal-runScore} answers to review. Check the corrections and try again.`:'Every answer in this attempt was correct.'}</p>
       <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
       <div class="journey-result-actions">
-        ${nextKey ? `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.start('${nextKey}')">Continue Review</button>` : improveKey ? `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.start('${improveKey}')">Practice to reach ${CERT_MASTERY}%</button>` : `<button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.open()">Back to Unit 3</button>`}
-        <button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>
+        <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
+        ${fullReview ? '<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.open()">Exit to Unit 3</button>' :
+          `<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>`}
       </div>
     </section>`;
   }
