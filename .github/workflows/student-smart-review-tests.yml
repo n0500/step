@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'student-smart-review.js'
+      - 'fix-my-mistakes.js'
+      - 'tests/fix-my-mistakes.test.cjs'
       - 'stepup-athari.css'
       - 'journey-focus.js'
       - 'journey-focus.css'
@@ -34,6 +36,7 @@ jobs:
           node --check answer-response-guard.js
           node --check journey-focus.js
           node --check student-smart-review.js
+          node --check fix-my-mistakes.js
           node --check unit1-review-all.js
           node --check unit2-exam-review.js
           node --check unit3-review-all.js
@@ -41,4 +44,5 @@ jobs:
       - name: Student flows and review regression tests
         run: |
           node --test tests/student-smart-review.test.cjs
+          node --test tests/fix-my-mistakes.test.cjs
           node --test tests/unit1-review-flow.test.cjs tests/unit2-review-progress.test.cjs tests/unit2-review-media.test.cjs tests/unit3-review-media.test.cjs
