@@ -718,7 +718,7 @@
     renderQuestion();
   }
 
-  function startReadingFlow(forceAll=false){
+  function startReadingFlow(forceAll=false,continuePath=false){
     stopListening();
     stopStepTimer();
     stopReadingAudio();
@@ -732,6 +732,7 @@
       queue:forceAll ? [...sec.questions] : pendingQuestions("reading"),
       pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2","reading",sec.questions.map(q=>q.id)) || 0) : 0,
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       started:Date.now(),
       runAnswers:[],
       readingFlow:true,
@@ -1393,8 +1394,8 @@
     return remaining.length?remaining:missed.length?missed:[...sec.questions];
   }
 
-  function startSection(sectionKey,forceAll=false){
-    if(sectionKey==="reading")return startReadingFlow(forceAll);
+  function startSection(sectionKey,forceAll=false,continuePath=false){
+    if(sectionKey==="reading")return startReadingFlow(forceAll,continuePath);
     stopListening();
     stopReadingAudio();
     stopReadingTimer();
@@ -1406,6 +1407,7 @@
     session={
       sectionKey,sec,queue,pos:forceAll ? (window.STEPUP_SMART?.resumePosition?.("u2",sectionKey,queue.map(q=>q.id)) || 0) : 0,
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       started:Date.now(),
       runAnswers:[]
     };
@@ -1630,7 +1632,7 @@
     const fullReview=!!ticket.smartFull;
     const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u2')" :
-      nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"')" : "STEPUP_U2_EXAM.open()";
+      nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" : "STEPUP_U2_EXAM.open()";
     const nextLabel=fullReview
       ? (nextKey ? "Continue to "+esc(sections[nextKey].title) : "See My Learning Level")
       : (nextKey ? (nextKey===sectionKey ? "Review missed answers" : "Continue to "+esc(sections[nextKey].title)) : "Back to Unit 2");
@@ -1638,6 +1640,16 @@
       <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
       <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.open()">Exit to Unit 2</button>
     </div>`;
+    const queueNextSkill=function(){
+      if(!summarySaved||focused||sectionKey==='step')return;
+      if(!fullReview && !(ticket.continuePath && nextKey && nextKey!==sectionKey))return;
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u2',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u2');
+          else startSection(nextKey,false,true);
+        });
+    };
 
     if(h){
       if(sectionKey==="reading"){
@@ -1658,6 +1670,7 @@
           ${saveNotice}
           ${actionsHTML}
         </section>`;
+        queueNextSkill();
         return;
       }
 
@@ -1670,6 +1683,7 @@
         ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
         ${actionsHTML}
       </section>`;
+      queueNextSkill();
     }
   }
 

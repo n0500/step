@@ -249,18 +249,19 @@ test('Unit 2 complete 100% shows a primary functional Practice Again beside the 
 });
 
 
-test('Unit 2 ordinary review goes directly from a finished skill to the next skill',async()=>{
+test('Unit 2 shows the saved skill result and then automatically proceeds to the next skill',async()=>{
   const f=fixture();
   try{
+    f.w.eval(fs.readFileSync(path.join(root,'student-smart-review.js'),'utf8'));
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=110;
     const questions=f.bank.filter(q=>q.section==='vocab');
-    f.api.start('vocab');
+    f.api.start('vocab',false,true);
     for(const q of questions){await f.answer(q.answer);await f.api.next();}
-    const primary=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(primary,'next-skill button missing after section finish');
-    assert.match(primary.textContent,/Continue to Grammar/);
-    assert.doesNotMatch(primary.getAttribute('onclick'),/open\(\)/);
-    primary.click();
+    assert.match(f.view().querySelector('.journey-result h2')?.textContent||'',/Your score this time/);
+    assert.match(f.view().querySelector('[data-unit-review-continue]')?.textContent||'',/Continue to Grammar/);
     await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.equal(f.view().querySelector('.journey-result'),null);
     assert.match(f.view().querySelector('.journey-breadcrumb').textContent,/Grammar/);
     assert.equal(f.writes.length,questions.length);
   }finally{f.dom.window.close();}
@@ -271,6 +272,7 @@ test('Unit 2 full Practice Again moves from one completed skill to the next with
   try{
     f.w.eval(fs.readFileSync(path.join(root,'student-smart-review.js'),'utf8'));
     f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=110;
     f.w.STEPUP_SMART.beginFull('u2');
     const questions=f.bank.filter(q=>q.section==='vocab');
     assert.equal(f.prompt(),questions[0].prompt);
@@ -285,12 +287,10 @@ test('Unit 2 full Practice Again moves from one completed skill to the next with
       await until(()=>f.view().querySelector('.journey-feedback'));
       await f.api.next();
     }
-    const next=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(next,'full review must provide a next-skill action');
-    assert.match(next.textContent,/Continue to Grammar/);
-    assert.match(next.getAttribute('onclick'),/STEPUP_SMART.advance/);
-    next.click();
+    assert.match(f.view().querySelector('.journey-result h2')?.textContent||'',/Your score this time/);
+    assert.match(f.view().querySelector('[data-unit-review-continue]')?.textContent||'',/Continue to Grammar/);
     await until(()=>f.prompt()===f.bank.find(q=>q.section==='grammar').prompt);
+    assert.equal(f.view().querySelector('.journey-result'),null,'no intermediate unit page');
     assert.equal(f.view().querySelector('.journey-unit-hero'),null);
     assert.equal(f.writes.length,questions.length);
   }finally{f.dom.window.close();}
@@ -313,21 +313,37 @@ test('Unit 2 final full-review skill offers My Learning Level and saves the over
       uid:f.profile.id,unit:'u2',runId:'final-test-u2',
       startedAt:'2026-10-17T01:00:00Z',keys:b.map(q=>q.section+'|'+q.id),answers
     }));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=110;
     f.w.STEPUP_SMART.beginFull('u2');
     assert.equal(f.prompt(),last.prompt);
     f.api.answer(last.answer);
     await until(()=>f.view().querySelector('.journey-feedback'));
     await f.api.next();
-    const btn=f.view().querySelector('[data-unit-review-continue]');
-    assert.ok(btn);
-    assert.match(btn.textContent,/See My Learning Level/);
-    btn.click();
+    assert.match(f.view().querySelector('.journey-result h2')?.textContent||'',/Your score this time/);
+    assert.match(f.view().querySelector('[data-unit-review-continue]')?.textContent||'',/See My Learning Level/);
     await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.equal(f.view().querySelector('[data-unit-review-continue]'),null,'final report opens after visible section result');
     assert.match(f.view().textContent,/My Learning Level/);
     assert.match(f.view().textContent,/100%/);
     const result=f.summaries.find(a=>a.recordKind==='smart-full-review');
     assert.ok(result,'full review result must save');
     assert.equal(result.total,b.length);
     assert.equal(result.percentage,100);
+  }finally{f.dom.window.close();}
+});
+
+
+test('standalone Unit 2 skill still lets the student read the result without forced navigation',async()=>{
+  const f=fixture();
+  try{
+    f.w.eval(fs.readFileSync(path.join(root,'student-smart-review.js'),'utf8'));
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=75;
+    const questions=f.bank.filter(q=>q.section==='vocab');
+    f.api.start('vocab'); // not the continuous Review Path
+    for(const q of questions){await f.answer(q.answer);await f.api.next();}
+    assert.match(f.view().querySelector('.journey-result h2')?.textContent||'',/Your score this time/);
+    await new Promise(resolve=>setTimeout(resolve,120));
+    assert.ok(f.view().querySelector('.journey-result'),'single-skill practice must not auto-navigate');
   }finally{f.dom.window.close();}
 });

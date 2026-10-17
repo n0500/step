@@ -328,7 +328,7 @@
       ${next ? `<button class="u1-review-continue" onclick="STEPUP_U1_REVIEW.start('${next}')">${nextMissingSection()?'Continue remaining questions':'Review missed answers'} →</button>` : `<div class="u1-review-done">All Unit 1 review questions are answered correctly.</div>`}`;
   }
 
-  function startSection(sectionKey,forceAll=false){
+  function startSection(sectionKey,forceAll=false,continuePath=false){
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit1();
     stopAudio();
@@ -342,6 +342,7 @@
       started:Date.now(),
       runAnswers:[],
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       phase:'question',
       reviewRun: !sectionDone(sectionKey)
     };
@@ -516,7 +517,7 @@
     const fullReview=!!ticket.smartFull;
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u1') : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u1')" :
-      nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"')" : "STEPUP_U1_REVIEW.open()";
+      nextKey ? "STEPUP_U1_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" : "STEPUP_U1_REVIEW.open()";
     const nextLabel=fullReview
       ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
       : (nextKey ? (nextKey===key ? 'Review missed answers' : 'Continue to '+esc(sections[nextKey].title)) : 'Back to Unit 1');
@@ -532,6 +533,14 @@
           `<button class="journey-link-btn" onclick="STEPUP_U1_REVIEW.start('${key}')">${cumulative.correct<cumulative.total?'Review missed answers':'Practice again'}</button>`}
       </div>
     </section>`;
+    if(summarySaved && (fullReview || (ticket.continuePath && nextKey && nextKey!==key))){
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u1',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u1');
+          else startSection(nextKey,false,true);
+        });
+    }
   }
 
   function addStyles(){

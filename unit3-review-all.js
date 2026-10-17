@@ -309,7 +309,7 @@
   }
   function startReview(sectionKey,forceAll=false){return sectionKey==='reading' && !forceAll ? readingLesson() : startSection(sectionKey,forceAll);}
 
-  function startSection(sectionKey,forceAll=false){
+  function startSection(sectionKey,forceAll=false,continuePath=false){
     stopListening();
     const sec = sections[sectionKey];
     if (!sec || !sec.questions.length) return openUnit3();
@@ -323,6 +323,7 @@
       started:Date.now(),
       runAnswers:[],
       smartFull:!!forceAll,
+      continuePath:!!continuePath,
       reviewRun: !sectionDone(sectionKey)
     };
     renderQuestion();
@@ -529,24 +530,28 @@
 
   async function next(){
     stopListening();
-    if (!session) return;
+    if (!session || session.phase==='finishing') return;
     if (session.pos < session.queue.length - 1){
       session.pos++;
       return renderQuestion();
     }
 
-    const key = session.sectionKey;
-    const sec = session.sec;
-    const fullReview=!!session.smartFull;
+    const ticket=session;
+    ticket.phase='finishing';
+    const key = ticket.sectionKey;
+    const sec = ticket.sec;
+    const fullReview=!!ticket.smartFull;
     const runScore=session.runAnswers.filter(a=>a.correct).length,runTotal=session.runAnswers.length;
     const runPercentage=Math.round(runScore/Math.max(1,runTotal)*100);
-    let result;
+    let result,summarySaved=true;
     try{
       result = await saveSectionSummary(key);
     } catch (e){
       console.warn('Unit 3 section summary save failed', e);
+      summarySaved=false;
       result = {score:correctCount(key), total:sec.questions.length, percentage:Math.round(correctCount(key)/Math.max(1,sec.questions.length)*100)};
     }
+    if(session!==ticket)return;
     const allSeen = sectionDone(key);
     const h = document.querySelector('.student-view');
     session = null;
@@ -554,7 +559,7 @@
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextReviewSection();
     const improveKey = !fullReview && !nextKey && !certificateEligible() ? weakestSection() : null;
     const nextAction=fullReview ? "STEPUP_SMART.advance('u3')" :
-      nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"')" :
+      nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" :
       improveKey ? "STEPUP_U3_REVIEW.start('"+improveKey+"')" : "STEPUP_U3_REVIEW.open()";
     const nextLabel=fullReview
       ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
@@ -572,6 +577,14 @@
           `<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>`}
       </div>
     </section>`;
+    if(summarySaved && (fullReview || (ticket.continuePath && nextKey && nextKey!==key))){
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u3',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u3');
+          else startSection(nextKey,false,true);
+        });
+    }
   }
 
   function addStyles(){
