@@ -1626,6 +1626,20 @@
     stopReadingTimer();
     stopReadingAudio();
     const saveNotice=!summarySaved?`<p role="status">Your answers and improvement are saved. Only the section summary is waiting.</p><button class="journey-link-btn" onclick="STEPUP_U2_EXAM.retrySummary()">Retry saving section summary</button>`:"";
+    // Do not stop on a section result: save, then move directly to the next
+    // skill of this unit. On the last skill of Practice Again, save the full
+    // result and show My Learning Level instead. Keep failures on retry screen.
+    if(summarySaved && !focused && sectionKey!=="step"){
+      if(ticket.smartFull && window.STEPUP_SMART?.advance){
+        window.STEPUP_SMART.advance("u2");
+        return;
+      }
+      const nextUnfinished=requiredKeys.find(key=>!sectionDone(key));
+      if(!ticket.smartFull && nextUnfinished && nextUnfinished!==sectionKey){
+        startSection(nextUnfinished);
+        return;
+      }
+    }
     // A full-unit retake must continue to the next skill, never default to the units page.
     const fullReview=!!ticket.smartFull;
     const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") : nextReviewSection();
