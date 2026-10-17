@@ -1628,25 +1628,11 @@
     stopReadingTimer();
     stopReadingAudio();
     const saveNotice=!summarySaved?`<p role="status">Your answers and improvement are saved. Only the section summary is waiting.</p><button class="journey-link-btn" onclick="STEPUP_U2_EXAM.retrySummary()">Retry saving section summary</button>`:"";
-    // Do not stop on a section result: save, then move directly to the next
-    // skill of this unit. On the last skill of Practice Again, save the full
-    // result and show My Learning Level instead. Keep failures on retry screen.
-    if(summarySaved && !focused && sectionKey!=="step"){
-      if(ticket.smartFull && window.STEPUP_SMART?.advance){
-        window.STEPUP_SMART.advance("u2");
-        return;
-      }
-      const nextUnfinished=requiredKeys.find(key=>!sectionDone(key));
-      if(ticket.continuePath && !ticket.smartFull && nextUnfinished && nextUnfinished!==sectionKey){
-        startSection(nextUnfinished,false,true);
-        return;
-      }
-    }
     // A full-unit retake must continue to the next skill, never default to the units page.
     const fullReview=!!ticket.smartFull;
     const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u2')" :
-      nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"')" : "STEPUP_U2_EXAM.open()";
+      nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" : "STEPUP_U2_EXAM.open()";
     const nextLabel=fullReview
       ? (nextKey ? "Continue to "+esc(sections[nextKey].title) : "See My Learning Level")
       : (nextKey ? (nextKey===sectionKey ? "Review missed answers" : "Continue to "+esc(sections[nextKey].title)) : "Back to Unit 2");
@@ -1654,6 +1640,16 @@
       <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
       <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.open()">Exit to Unit 2</button>
     </div>`;
+    const queueNextSkill=function(){
+      if(!summarySaved||focused||sectionKey==='step')return;
+      if(!fullReview && !(ticket.continuePath && nextKey && nextKey!==sectionKey))return;
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u2',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u2');
+          else startSection(nextKey,false,true);
+        });
+    };
 
     if(h){
       if(sectionKey==="reading"){
@@ -1674,6 +1670,7 @@
           ${saveNotice}
           ${actionsHTML}
         </section>`;
+        queueNextSkill();
         return;
       }
 
@@ -1686,6 +1683,7 @@
         ${sectionKey==="step"?`<div class="u2-step-result-time"><b>⏱ ${formatElapsed(stepElapsed)}</b><small>Total practice time</small></div>`:""}
         ${actionsHTML}
       </section>`;
+      queueNextSkill();
     }
   }
 
