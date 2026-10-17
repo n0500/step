@@ -552,19 +552,6 @@
       result = {score:correctCount(key), total:sec.questions.length, percentage:Math.round(correctCount(key)/Math.max(1,sec.questions.length)*100)};
     }
     if(session!==ticket)return;
-    const nextUnfinished=nextMissingSection();
-    if(summarySaved){
-      if(fullReview && window.STEPUP_SMART?.advance){
-        session=null;
-        window.STEPUP_SMART.advance('u3');
-        return;
-      }
-      if(ticket.continuePath && !fullReview && nextUnfinished && nextUnfinished!==key){
-        session=null;
-        startSection(nextUnfinished,false,true);
-        return;
-      }
-    }
     const allSeen = sectionDone(key);
     const h = document.querySelector('.student-view');
     session = null;
@@ -572,7 +559,7 @@
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextReviewSection();
     const improveKey = !fullReview && !nextKey && !certificateEligible() ? weakestSection() : null;
     const nextAction=fullReview ? "STEPUP_SMART.advance('u3')" :
-      nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"')" :
+      nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" :
       improveKey ? "STEPUP_U3_REVIEW.start('"+improveKey+"')" : "STEPUP_U3_REVIEW.open()";
     const nextLabel=fullReview
       ? (nextKey ? 'Continue to '+esc(sections[nextKey].title) : 'See My Learning Level')
@@ -590,6 +577,14 @@
           `<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>`}
       </div>
     </section>`;
+    if(summarySaved && (fullReview || (ticket.continuePath && nextKey && nextKey!==key))){
+      window.STEPUP_SMART?.scheduleResultAdvance?.('u3',
+        nextKey ? sections[nextKey].title : 'My Learning Level',
+        function(){
+          if(fullReview)window.STEPUP_SMART?.advance?.('u3');
+          else startSection(nextKey,false,true);
+        });
+    }
   }
 
   function addStyles(){
