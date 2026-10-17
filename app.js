@@ -1514,6 +1514,13 @@
           bestReadingTimeSeconds:payload.bestReadingTimeSeconds==null?null:Number(payload.bestReadingTimeSeconds)
         }:{})
       }:{}),
+      // Preserve full-review diagnostics across devices without changing certificate rules.
+      ...(payload.studyMethod==="full-original-bank"||payload.studyMethod==="optional-new-examples"?{
+        recordKind:payload.recordKind,reviewRunId:payload.reviewRunId||null,
+        attemptScore:Number(payload.attemptScore??payload.score??0),
+        attemptTotal:Number(payload.attemptTotal??payload.total??0),
+        attemptPercentage:Number(payload.attemptPercentage??payload.percentage??0)
+      }:{}),
       autoSubmitted:false,answers:Array.isArray(payload.answers)?payload.answers:[],studyMethod:payload.studyMethod||"journey",submittedAt:nowISO()
     };
     if(!state.fb){attempt.id=uid();local.saveAttempt(attempt);return attempt;}
