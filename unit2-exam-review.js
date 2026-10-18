@@ -719,6 +719,7 @@
   }
 
   function startReadingFlow(forceAll=false,continuePath=false){
+    if(!forceAll&&window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     stopListening();
     stopStepTimer();
     stopReadingAudio();
@@ -937,11 +938,13 @@
   // The primary review journey follows coverage, not correctness. Mistakes are
   // collected for the final report instead of restarting an earlier skill.
   function continueReview(){
+    if(window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     const nextKey=requiredKeys.find(key=>!sectionDone(key));
     return nextKey ? startSection(nextKey,false,true) : finishReviewPath();
   }
 
   function finishReviewPath(){
+    if(window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     const user=window.firebase?.auth?.().currentUser;
     if(!user || !profile || (profile.id!==user.uid && profile.uid!==user.uid))return;
     const records=requiredKeys.flatMap(key=>sections[key].questions.map(item=>{
@@ -1424,6 +1427,7 @@
   }
 
   function startSection(sectionKey,forceAll=false,continuePath=false){
+    if(!forceAll&&window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     if(sectionKey==="reading")return startReadingFlow(forceAll,continuePath);
     stopListening();
     stopReadingAudio();
@@ -1670,7 +1674,7 @@
       : (nextKey ? (nextKey===sectionKey ? "Review missed answers" : "Continue to "+esc(sections[nextKey].title)) : "Back to Unit 2");
     const actionsHTML=`<div class="journey-result-actions">
       <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
-      <button class="journey-link-btn" onclick="STEPUP_U2_EXAM.open()">Exit to Unit 2</button>
+      ${fullReview?'':`<button class="journey-link-btn" onclick="STEPUP_U2_EXAM.open()">Exit to Unit 2</button>`}
     </div>`;
     const queueNextSkill=function(){
       if(!summarySaved||focused||sectionKey==='step')return;

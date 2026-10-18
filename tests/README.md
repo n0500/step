@@ -70,6 +70,10 @@ resuming two saved answers, a completed low score, report recovery and student
 isolation, the all-correct optional challenge, and delayed background-result
 sync during an active question. The actual application and presentation scripts
 use an isolated Firestore test store, never production student records.
+Practice Again resumes an unfinished full review after reload, preserving its
+answers and moving across skill boundaries. A completed review starts a new
+30-question attempt; historical progress must never interrupt an active review.
+The checks also cover two consecutive retakes and delayed summary saves.
 They also click the visible roadmap and result buttons for every required skill,
 including an already-mastered student whose certificate reward has or has not
 been seen. Continuous result screens must not open a celebration dialog that

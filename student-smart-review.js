@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[], recentUid=null;
-  var challenge=null;
+  var challenge=null,activeFullReview=null,fullSaveJobs=new Set();
   var Q={
     u1:[
       {skill:'Simple Present vs Present Progressive',p:'Listen! The children ___ outside right now.',c:['play','are playing','played','have played'],a:1,e:'Right now describes an action happening at the moment.'},
@@ -35,7 +35,11 @@
   function api(unit){return ({u1:window.STEPUP_U1_REVIEW,u2:window.STEPUP_U2_EXAM,u3:window.STEPUP_U3_REVIEW})[unit]||null;}
   function bank(unit){try{return (api(unit)&&api(unit).getMasteryBank&&api(unit).getMasteryBank())||[];}catch(_){return [];}}
   function sections(unit){return Array.from(new Set(bank(unit).map(function(q){return q.section;})));}
-  function run(unit){var r=load('run-'+unit);return r&&r.uid===userId()&&Array.isArray(r.keys)?r:null;}
+  function run(unit){var r=load('run-'+unit);return r&&r.uid===userId()&&Array.isArray(r.keys)&&r.answers&&typeof r.answers==='object'?r:null;}
+  function isFullActive(unit){
+    var r=run(unit);
+    return !!(r&&activeFullReview&&activeFullReview.uid===userId()&&activeFullReview.unit===unit&&activeFullReview.runId===r.runId);
+  }
   function result(unit){
     // Never use a previously signed-in student's in-memory answers after an account change.
     if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
@@ -78,6 +82,7 @@
   // Continue Review is a completed path across saved sessions, not a new graded
   // retake. Display its latest answers without fabricating another unit attempt.
   function completePath(unit,records){
+    if(isFullActive(unit))return advance(unit);
     var current=userId(),b=bank(unit),h=document.querySelector('.student-view');
     if(unit!=='u2'||!current||!h||!b.length||!Array.isArray(records)||records.length!==b.length)return;
     var keys=new Set(records.map(function(r){return r.examSection+'|'+r.questionId;}));
@@ -108,6 +113,7 @@
     var r=run(unit),b=bank(unit);
     if(!b.length)return '';
     var eligible=canPracticeAgain(unit);
+    var resumable=!!(r&&b.some(function(q){return !r.answers[q.section+'|'+q.id];}));
     var latest=result(unit),repair=recoverySource(unit);
     var continueAction=unit==='u2'&&typeof api(unit)?.continueReview==='function'
       ? "STEPUP_U2_EXAM.continueReview()"
@@ -115,18 +121,26 @@
     var label=eligible?'Practice Again':'Continue Review';
     var description=eligible?'Revisit all '+b.length+' original questions. Your certificate and past results stay safe.':'Your answers continue counting towards your unit certificate.';
     return '<section class="smart-unit-panel" data-smart-banner="'+el(unit)+'"><div><strong>'+el(label)+'</strong><p>'+el(description)+'</p></div>'+
-      (eligible?'<button type="button" onclick="STEPUP_SMART.beginFull(\''+unit+'\')">'+(r?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+el(continueAction)+'">Continue Review →</button>')+
+      (eligible?'<button type="button" onclick="STEPUP_SMART.'+(resumable?'resumeFull':'beginFull')+'(\''+unit+'\')">'+(resumable?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+el(continueAction)+'">Continue Review →</button>')+
       (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+(repair&&(repair.answers||[]).some(function(q){return q.correct===false;})?'<button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button>':'')+'</section>';
   }
   function beginFull(unit){
     var b=bank(unit), uid=userId();
     if(!uid||!b.length)return;
-    var r=run(unit);
-    if(!r||r.keys.length!==b.length||r.keys.some(function(k,i){return k!==b[i].section+'|'+b[i].id;})){
-      r={uid:uid,unit:unit,startedAt:new Date().toISOString(),keys:b.map(function(q){return q.section+'|'+q.id;}),answers:{},runId:Date.now()+'-'+Math.random().toString(36).slice(2)};
-      store('run-'+unit,r);
-    }
-    advance(unit);
+    // Resume this student's unfinished full review. A completed run starts a
+    // new attempt; historical mastery never supplies answers for a new run.
+    var previous=run(unit);
+    if(previous&&previous.keys.length===b.length&&previous.keys.every(function(k,i){return k===b[i].section+'|'+b[i].id;})&&b.some(function(q){return !previous.answers[q.section+'|'+q.id];}))return resumeFull(unit);
+    var r={uid:uid,unit:unit,startedAt:new Date().toISOString(),keys:b.map(function(q){return q.section+'|'+q.id;}),answers:{},runId:Date.now()+'-'+Math.random().toString(36).slice(2)};
+    store('run-'+unit,r);
+    activeFullReview={uid:uid,unit:unit,runId:r.runId};
+    return advance(unit);
+  }
+  function resumeFull(unit){
+    var b=bank(unit),r=run(unit),uid=userId();
+    if(!r||!uid||r.keys.length!==b.length||r.keys.some(function(k,i){return k!==b[i].section+'|'+b[i].id;}))return beginFull(unit);
+    activeFullReview={uid:uid,unit:unit,runId:r.runId};
+    return advance(unit);
   }
   function resumePosition(unit,section,queue){
     var r=run(unit);if(!r)return 0;
@@ -168,17 +182,21 @@
     var r=run(unit),b=bank(unit),a=api(unit);
     if(!r||!a)return;
     var remaining=b.find(function(q){return !r.answers[q.section+'|'+q.id];});
-    if(remaining){a.start(remaining.section,true);return;}
-    finishFull(unit);
+    if(remaining)return a.start(remaining.section,true);
+    return finishFull(unit);
   }
-  function onSaved(record){
+  function onSaved(record,ticket){
     if(!record||record.recordKind!=='question'||!/^u[123]$/.test(record.examUnit||''))return;
+    if(record.studentId&&record.studentId!==userId())return;
     var unit=record.examUnit;
     if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
     // Keep in-session Continue Review answers available before reopening My Progress.
     recentAttempts.push(record);
     var r=run(unit);
     if(!r)return;
+    // Standalone practice and delayed answers from an older attempt may update
+    // mastery, but only this session's confirmed answers count in a full retake.
+    if(ticket&&(!ticket.fullReview||ticket.uid!==userId()||ticket.runId!==r.runId))return;
     var key=record.examSection+'|'+record.questionId;
     if(r.keys.indexOf(key)<0||r.answers[key])return;
     var q=bank(unit).find(function(x){return x.section+'|'+x.id===key;});
@@ -189,19 +207,28 @@
   async function finishFull(unit){
     var r=run(unit),b=bank(unit),h=document.querySelector('.student-view');if(!r||!b.length||!h)return;
     if(b.some(function(q){return !r.answers[q.section+'|'+q.id];})){advance(unit);return;}
+    var owner=userId(),runId=r.runId,job=owner+'|'+unit+'|'+runId;
+    if(fullSaveJobs.has(job))return;
+    fullSaveJobs.add(job);
     var all=b.map(function(q){return r.answers[q.section+'|'+q.id];});
     var score=all.filter(function(q){return q.correct;}).length,total=all.length,percentage=Math.round(100*score/total);
     var payload={recordKind:'smart-full-review',trainingId:'smart-full-review-'+unit,trainingTitle:'Unit '+unit.slice(1)+' Complete Review',
       trainingType:'review',studyMethod:'full-original-bank',unitId:unit,unitNumber:Number(unit.slice(1)),score:score,total:total,percentage:percentage,attemptScore:score,attemptTotal:total,attemptPercentage:percentage,
       answers:all,startedAt:r.startedAt,submittedAt:new Date().toISOString(),reviewRunId:r.runId};
     h.innerHTML='<section class="smart-results"><h2>Saving your full review…</h2><p>Your original answers are protected.</p></section>';
+    var savingView=h.firstElementChild;
     try{
       if(!window.PROVE||typeof PROVE.recordJourneyAttempt!=='function')throw new Error('Student save service unavailable');
       await PROVE.recordJourneyAttempt(payload);
+      if(userId()!==owner||run(unit)?.runId!==runId)return;
       remove('run-'+unit);store('last-'+unit,payload);
+      if(activeFullReview?.runId===runId)activeFullReview=null;
       recentUid=userId();recentAttempts.push(payload);
-      h.innerHTML=reportHTML(payload)+ '<div class="smart-footer-action"><button type="button" onclick="STEPUP_SMART.openUnit(\''+unit+'\')">Back to Unit '+unit.slice(1)+'</button></div>';
-    }catch(e){console.error('Full review save failed',e);h.innerHTML='<section class="smart-results" role="alert"><h2>Result not saved yet</h2><p>Your confirmed question answers are safe. Please check your connection, then retry saving.</p><button type="button" onclick="STEPUP_SMART.advance(\''+unit+'\')">Retry saving result</button></section>';}
+      if(savingView.isConnected&&h===document.querySelector('.student-view'))h.innerHTML=reportHTML(payload)+ '<div class="smart-footer-action"><button type="button" onclick="STEPUP_SMART.openUnit(\''+unit+'\')">Back to Unit '+unit.slice(1)+'</button></div>';
+    }catch(e){
+      console.error('Full review save failed',e);
+      if(userId()===owner&&run(unit)?.runId===runId&&savingView.isConnected)h.innerHTML='<section class="smart-results" role="alert"><h2>Result not saved yet</h2><p>Your confirmed question answers are safe. Please check your connection, then retry saving.</p><button type="button" onclick="STEPUP_SMART.advance(\''+unit+'\')">Retry saving result</button></section>';
+    }finally{fullSaveJobs.delete(job);}
   }
   function scoreGroups(a){
     var by={};
@@ -379,7 +406,8 @@
     if(window.STEPUP_ANSWER_RESPONSE&&!window.STEPUP_ANSWER_RESPONSE.__smart){
       var oldSubmit=STEPUP_ANSWER_RESPONSE.submit;
       STEPUP_ANSWER_RESPONSE.submit=function(args){
-        var saved=args.onSaved;args.onSaved=function(record){onSaved(record);return saved&&saved(record);};
+        var scope={uid:userId(),fullReview:args.session?.smartFull===true,runId:activeFullReview?.runId};
+        var saved=args.onSaved;args.onSaved=function(record){onSaved(record,scope);return saved&&saved(record);};
         return oldSubmit.call(STEPUP_ANSWER_RESPONSE,args);
       };
       STEPUP_ANSWER_RESPONSE.__smart=true;
@@ -397,7 +425,7 @@
   style.textContent='.smart-unit-panel{margin:15px 0 0;padding:16px;border:1px solid #dae7ef;border-radius:16px;background:#fff;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}.smart-unit-panel p{margin:5px 0;color:#526477;font-size:13px}.smart-unit-panel small{width:100%;color:#61748b}.smart-unit-panel button,.smart-next,.smart-confirm,.smart-results button,.smart-footer-action button{border:0;border-radius:12px;padding:12px 17px;font-size:15px;font-weight:800;background:#284f88;color:white;cursor:pointer}.smart-confirm{display:block;width:100%;margin:12px 0 5px;min-height:52px}.smart-confirm:disabled{opacity:.45;cursor:not-allowed}.smart-choice-note{display:block;text-align:center;color:#637587;font-size:12px}.journey-options button.smart-selected{border:2px solid #2761a8!important;background:#e9f2ff!important;box-shadow:0 0 0 2px #d0e1fb}.smart-hint-area{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.smart-hint-area button{padding:8px 12px;border:1px solid #becfe1;background:white;border-radius:10px;color:#284f88;font-weight:700}.smart-hint-text{flex-basis:100%;padding:12px;background:#f5f8fd;border-radius:10px;color:#284261;line-height:1.6}.smart-results,.smart-progress-dashboard{margin:15px 0;padding:20px;background:#fff;border-radius:18px;border:1px solid #dce6ee;color:#20334d}.smart-results h2,.smart-progress-dashboard h2{margin:6px 0 12px}.smart-results h3{margin:20px 0 10px}.smart-score{padding:13px;text-align:center;font-size:33px;font-weight:900;background:#eaf6f0;border-radius:14px;color:#23674c}.smart-score small{font-size:13px;display:block}.smart-skill{margin:11px 0;display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.smart-track{grid-column:1/-1;height:8px;border-radius:8px;background:#e5edf5;overflow:hidden}.smart-track i{height:100%;display:block;background:#2e8975}.smart-mistake{margin:10px 0;padding:12px;border:1px solid #e0e7ee;border-radius:12px}.smart-mistake summary{font-weight:700;cursor:pointer}.smart-mistake p{font-size:14px}.smart-success{padding:11px;background:#e7f6eb;border-radius:12px}.smart-challenge-entry{margin-top:20px;padding:16px;border-radius:14px;border:1px solid #d7e0ec}.smart-challenge-entry button{background:#455f90}.smart-progress-entry{margin:16px 0}.smart-progress-entry .smart-results{background:#fbfdff}.smart-challenge-options{display:grid;gap:10px}.smart-challenge-options button{background:#f4f7fb;color:#223a58;border:1px solid #cfdae8;text-align:left}.smart-results .smart-skip{background:transparent;color:#455f90;border:1px solid #ced9e5}.smart-writing{font-size:13px;color:#526477}.smart-next{margin:6px!important;background:#286c63!important;order:-1}.smart-auto-next-note{margin:12px 0;padding:10px 12px;border-radius:12px;background:#edf4ff;color:#345579;font-size:13px;line-height:1.5}.smart-focus-action{padding:4px 9px!important;margin-left:7px!important;font-size:12px!important;background:#e8f0fb!important;color:#254f82!important}.smart-footer-action{margin:14px 0;text-align:center}@media(max-width:520px){.smart-unit-panel{display:block}.smart-unit-panel button{margin-top:10px;width:100%}.smart-results{padding:14px}}';
   style.textContent+='.smart-fix-prompt{padding:14px;margin:16px 0;border:1px solid #d6e5e8;border-radius:14px;background:#f4f9fa}.smart-fix-prompt h3{margin:0 0 8px}.smart-fix-prompt p{font-size:14px;color:#526477}.smart-fix-entry{background:#267b85!important;color:#fff!important;border-radius:12px!important;padding:12px 16px!important;font-size:15px!important;font-weight:800!important;margin:8px 0!important}';
   document.head.appendChild(style);
-  window.STEPUP_SMART={version:VERSION,banner:banner,canPracticeAgain:canPracticeAgain,beginFull:beginFull,nextSection:nextSection,scheduleResultAdvance:scheduleResultAdvance,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,completePath:completePath,
+  window.STEPUP_SMART={version:VERSION,banner:banner,canPracticeAgain:canPracticeAgain,beginFull:beginFull,resumeFull:resumeFull,isFullActive:isFullActive,nextSection:nextSection,scheduleResultAdvance:scheduleResultAdvance,resumePosition:resumePosition,advance:advance,onSaved:onSaved,finishFull:finishFull,completePath:completePath,
     progressHTML:progressHTML,reportHTML:reportHTML,latestResult:result,recoverySource:recoverySource,openUnit:openUnit,retryChoice:retryChoice,reviewSkill:reviewSkill,startChallenge:startChallenge,challengeChoose:challengeChoose,challengeSelect:challengeSelect,challengeConfirm:challengeConfirm,challengeNext:challengeNext};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
 })();

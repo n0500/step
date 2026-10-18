@@ -181,12 +181,12 @@
     // single primary CTA; the old card buried it below the 150px spacer.
     const fullyMastered=review && g && Number(g.total)>0 &&
       Number(g.answered)===Number(g.total) && Number(g.reviewCorrect)===Number(g.total);
-    const replayReady=fullyMastered && !!window.STEPUP_SMART?.canPracticeAgain?.(unitId);
+    const replayReady=review && !!window.STEPUP_SMART?.canPracticeAgain?.(unitId);
     if(replayReady){
       shell.classList.add('journey-focus-replay-ready');
       const card=taskCard({
-        title:'All answers correct',meta:'Review complete · 100%',
-        detail:'Great work! Review all '+g.total+' original questions again to check your current level. Your certificate and saved achievements stay safe.',
+        title:fullyMastered?'All answers correct':'Review the whole unit',meta:'Full Unit Review · '+g.total+' questions',
+        detail:'Review all '+g.total+' original questions. Resume where you stopped; your result appears after the last skill. Your certificate stays safe.',
         action:"STEPUP_SMART.beginFull('"+unitId+"')",button:'Practice Again'
       });
       card.classList.add('complete');
