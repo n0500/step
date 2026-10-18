@@ -1267,10 +1267,10 @@
     const state=sectionProgress(key),done=state.mastered;
 
     const action = key==="reading"
-      ? "STEPUP_U2_EXAM.readingLesson()"
+      ? "STEPUP_U2_EXAM.readingLesson(true)"
       : key==="step"
         ? "STEPUP_U2_EXAM.stepIntro()"
-        : `STEPUP_U2_EXAM.start('${key}')`;
+        : `STEPUP_U2_EXAM.start('${key}',false,true)`;
 
     const extra = key==="reading"
       ? (done ? "3 strategies • 4 timed questions • Practice again" : "3 strategies • learn then apply immediately")
@@ -1688,7 +1688,7 @@
       if(sectionKey==="reading"){
         const acc=currentDisplayTotal?Math.round(currentDisplayScore/currentDisplayTotal*100):0;
         const bestTime=result.bestReadingTimeSeconds;
-        h.innerHTML=`<section class="journey-result ${passed?'good':'review'} u2-reading-result" data-review-run-result="1">
+        h.innerHTML=`<section class="journey-result ${passed?'good':'review'} u2-reading-result" data-review-run-result="1" data-review-continuous="${fullReview||continuousPath?'1':'0'}">
           <div class="journey-result-score">${currentDisplayScore}<span>/${currentDisplayTotal}</span></div>
           <h2>${passed?'Reading practice complete ✨':'Reading practice complete'}</h2>
           <div class="u2-reading-result-grid">
@@ -1707,7 +1707,7 @@
         return;
       }
 
-      h.innerHTML=`<section class="journey-result ${passed?'good':'review'}" data-review-run-result="1">
+      h.innerHTML=`<section class="journey-result ${passed?'good':'review'}" data-review-run-result="1" data-review-continuous="${fullReview||continuousPath?'1':'0'}">
         <div class="journey-result-score">${currentDisplayScore}<span>/${currentDisplayTotal}</span></div>
         <h2>Your score this time: ${Math.round(currentDisplayScore/Math.max(1,currentDisplayTotal)*100)}%</h2>
         <p>${focused?`You practiced ${esc(focusSkill)}.`:`Your ${currentDisplayTotal} answers in this attempt were saved.`} ${currentDisplayTotal-currentDisplayScore?'Review the missed answers and try again.':'Every answer in this attempt was correct.'}</p>

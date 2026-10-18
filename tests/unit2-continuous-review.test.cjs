@@ -97,6 +97,50 @@ async function primary(f){
   f.view().querySelector('.journey-focus-start').click();
 }
 
+for(const section of ['vocab','grammar','functions','reading','listening'])test('the visible '+section+' roadmap action and result Continue stay inside the mastered Unit 2 review',async()=>{
+  const f=await prepared();try{
+    f.stored.push(...f.records(()=>true));
+    f.w.localStorage.setItem('stepup_cert_seen_v1_'+f.profile.id,JSON.stringify(['u2']));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=5000;
+    await f.login();f.api.open();
+    await until(()=>f.view().querySelector('.journey-focus-stage[data-review-section="'+section+'"]'));
+    f.view().querySelector('.journey-focus-stage[data-review-section="'+section+'"]').click();
+    for(const q of f.bank.filter(q=>q.section===section))await confirmedAnswer(f,q,true);
+    await until(()=>f.view().querySelector('.journey-result'));
+    await wait(220); // Allow the production celebration scan and profile read to finish.
+    const modalContinue=f.w.document.querySelector('.sxc-overlay [data-sxc-continue]');
+    if(modalContinue)modalContinue.click();
+    else f.view().querySelector('[data-unit-review-continue]').click();
+    const order=['vocab','grammar','functions','reading','listening'],next=order[order.indexOf(section)+1];
+    if(next==='reading'){
+      await until(()=>f.view().querySelector('.u2-reading-try'));
+      f.view().querySelector('.u2-reading-try').click();
+    }
+    if(next)await until(()=>f.prompt()===f.bank.find(q=>q.section===next).prompt);
+    else await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.equal(f.w.document.querySelector('.sxc-overlay'),null);
+    assert.equal(f.view().querySelector('.journey-unit-grid'),null);
+    assert.equal(f.w.STEPUP_MASTERY.status('u2',f.stored).earned,true);
+  }finally{f.dom.window.close();}
+});
+
+for(const rewardSeen of [true,false])test('automatic Grammar continuation keeps celebration dialogs from covering the next skill; prior reward seen='+rewardSeen,async()=>{
+  const f=await prepared();try{
+    f.stored.push(...f.records(()=>true));
+    if(rewardSeen)f.w.localStorage.setItem('stepup_cert_seen_v1_'+f.profile.id,JSON.stringify(['u2']));
+    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=650;
+    await f.login();f.api.open();
+    await until(()=>f.view().querySelector('.journey-focus-stage[data-review-section="grammar"]'));
+    f.view().querySelector('.journey-focus-stage[data-review-section="grammar"]').click();
+    for(const q of f.bank.filter(q=>q.section==='grammar'))await confirmedAnswer(f,q,true);
+    await until(()=>f.view().querySelector('.journey-result'));
+    await wait(220);
+    assert.equal(f.w.document.querySelector('.sxc-overlay'),null,'a skill celebration must not own navigation during continuous review');
+    await until(()=>f.prompt()===f.bank.find(q=>q.section==='functions').prompt);
+    assert.equal(f.w.document.querySelector('.sxc-overlay'),null);
+  }finally{f.dom.window.close();}
+});
+
 for(const entry of ['primary','home','banner','practice'])test('Unit 2 '+entry+' completes every skill once before reporting mixed-answer mistakes',async()=>{
   const f=await prepared();try{
     await f.login();

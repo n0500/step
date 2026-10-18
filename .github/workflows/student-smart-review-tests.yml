@@ -14,6 +14,7 @@ on:
       - 'answer-response-guard.js'
       - 'unit1-review-all.js'
       - 'unit2-exam-review.js'
+      - 'stepup-celebrate.js'
       - 'unit3-review-all.js'
       - 'app.js'
       - 'index.html'
@@ -40,6 +41,7 @@ jobs:
           node --check fix-my-mistakes.js
           node --check unit1-review-all.js
           node --check unit2-exam-review.js
+          node --check stepup-celebrate.js
           node --check unit3-review-all.js
           node --check app.js
       - name: Student flows and review regression tests

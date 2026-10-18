@@ -426,6 +426,10 @@
   var EFFORT = ['Good effort! Mistakes are how we learn.','You are closer than you think.','Every try makes you stronger.','Review the clue — you have got this.'];
 
   function celebrateResult(node){
+    // The review engine owns result timing and the next-skill action. A modal
+    // with its own Continue Journey/reward action can send an earned-certificate
+    // student back to the units page or remain over the next question.
+    if(!node || !node.isConnected || node.getAttribute('data-review-continuous')==='1')return;
     var good = node.classList.contains('good');
     var m = ((node.querySelector('.journey-result-score')||{}).textContent||'').match(/(\d+)\s*\/\s*(\d+)/);
     var lr = lastResult && Date.now() - lastResult.at < 20000 ? lastResult : null;
@@ -1045,7 +1049,10 @@
         // Avoid CPU-heavy certificate scans during taps and timed practice.
         if(view.querySelector('.journey-options'))return;
         var r = view.querySelector('.journey-result:not([data-sxc])');
-        if(r){ r.setAttribute('data-sxc','1'); getProfile().then(function(){ celebrateResult(r); }); }
+        if(r){
+          r.setAttribute('data-sxc','1');
+          if(r.getAttribute('data-review-continuous')!=='1')getProfile().then(function(){ celebrateResult(r); });
+        }
         decorateUnitMap(view);
         decorateUnit1(view);
         decorateReviewProgress(view);
