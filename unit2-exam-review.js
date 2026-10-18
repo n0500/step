@@ -719,6 +719,7 @@
   }
 
   function startReadingFlow(forceAll=false,continuePath=false){
+    if(!forceAll&&continuePath&&window.STEPUP_SMART?.canPracticeAgain?.('u2'))return window.STEPUP_SMART.beginFull('u2','reading');
     if(!forceAll&&window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     stopListening();
     stopStepTimer();
@@ -939,6 +940,7 @@
   // collected for the final report instead of restarting an earlier skill.
   function continueReview(){
     if(window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
+    if(window.STEPUP_SMART?.canPracticeAgain?.('u2'))return window.STEPUP_SMART.beginFull('u2');
     const nextKey=requiredKeys.find(key=>!sectionDone(key));
     return nextKey ? startSection(nextKey,false,true) : finishReviewPath();
   }
@@ -1427,6 +1429,7 @@
   }
 
   function startSection(sectionKey,forceAll=false,continuePath=false){
+    if(!forceAll&&continuePath&&requiredKeys.includes(sectionKey)&&window.STEPUP_SMART?.canPracticeAgain?.('u2'))return window.STEPUP_SMART.beginFull('u2',sectionKey);
     if(!forceAll&&window.STEPUP_SMART?.isFullActive?.('u2'))return window.STEPUP_SMART.advance('u2');
     if(sectionKey==="reading")return startReadingFlow(forceAll,continuePath);
     stopListening();

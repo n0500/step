@@ -74,6 +74,9 @@ Practice Again resumes an unfinished full review after reload, preserving its
 answers and moving across skill boundaries. A completed review starts a new
 30-question attempt; historical progress must never interrupt an active review.
 The checks also cover two consecutive retakes and delayed summary saves.
+Starting a mastered-unit review from any roadmap skill must answer all 30
+questions, wrapping from Listening to Vocabulary when needed. Reading-entry
+reviews also resume after reload without losing their order or saved answers.
 They also click the visible roadmap and result buttons for every required skill,
 including an already-mastered student whose certificate reward has or has not
 been seen. Continuous result screens must not open a celebration dialog that

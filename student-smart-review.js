@@ -124,14 +124,14 @@
       (eligible?'<button type="button" onclick="STEPUP_SMART.'+(resumable?'resumeFull':'beginFull')+'(\''+unit+'\')">'+(resumable?'Resume Full Review':'Practice Again')+' →</button>':'<button type="button" onclick="'+el(continueAction)+'">Continue Review →</button>')+
       (latest?'<small>Latest full review: '+Number(latest.percentage||0)+'%</small>':'<small>A full review helps you see your current level.</small>')+(repair&&(repair.answers||[]).some(function(q){return q.correct===false;})?'<button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button>':'')+'</section>';
   }
-  function beginFull(unit){
+  function beginFull(unit,startSection){
     var b=bank(unit), uid=userId();
     if(!uid||!b.length)return;
     // Resume this student's unfinished full review. A completed run starts a
     // new attempt; historical mastery never supplies answers for a new run.
     var previous=run(unit);
     if(previous&&previous.keys.length===b.length&&previous.keys.every(function(k,i){return k===b[i].section+'|'+b[i].id;})&&b.some(function(q){return !previous.answers[q.section+'|'+q.id];}))return resumeFull(unit);
-    var r={uid:uid,unit:unit,startedAt:new Date().toISOString(),keys:b.map(function(q){return q.section+'|'+q.id;}),answers:{},runId:Date.now()+'-'+Math.random().toString(36).slice(2)};
+    var r={uid:uid,unit:unit,startSection:startSection||null,startedAt:new Date().toISOString(),keys:b.map(function(q){return q.section+'|'+q.id;}),answers:{},runId:Date.now()+'-'+Math.random().toString(36).slice(2)};
     store('run-'+unit,r);
     activeFullReview={uid:uid,unit:unit,runId:r.runId};
     return advance(unit);
@@ -148,8 +148,14 @@
     while(pos<queue.length&&r.answers[section+'|'+queue[pos]])pos++;
     return pos;
   }
+  // A review may start from any skill, then wrap around to every other skill.
+  // This ordering belongs to the saved run and survives reopening the app.
+  function orderedBank(unit,r){
+    var b=bank(unit),index=r&&b.findIndex(function(q){return q.section===r.startSection;});
+    return index>0?b.slice(index).concat(b.slice(0,index)):b;
+  }
   function nextSection(unit){
-    var r=run(unit),b=bank(unit);
+    var r=run(unit),b=orderedBank(unit,r);
     if(!r)return null;
     var pending=b.find(function(q){return !r.answers[q.section+'|'+q.id];});
     return pending ? pending.section : null;
@@ -179,7 +185,7 @@
     },delay);
   }
   function advance(unit){
-    var r=run(unit),b=bank(unit),a=api(unit);
+    var r=run(unit),b=orderedBank(unit,r),a=api(unit);
     if(!r||!a)return;
     var remaining=b.find(function(q){return !r.answers[q.section+'|'+q.id];});
     if(remaining)return a.start(remaining.section,true);

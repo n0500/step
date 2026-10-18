@@ -123,20 +123,28 @@ for(const oldCount of [2,30])test('Practice Again '+(oldCount===30?'starts a new
 });
 
 
-test('Practice Again resumes saved answers after reload and completes every remaining skill',async()=>{
+for(const entry of ['vocab','reading'])test('Practice Again resumes '+entry+' answers after reload and completes every remaining skill',async()=>{
   const original=await prepared();let resumed;
   try{
-    original.stored.push(...original.records(()=>true));await original.login();await primary(original);
-    await confirmedAnswer(original,original.bank[0],true);
-    await confirmedAnswer(original,original.bank[1],false);
+    original.stored.push(...original.records(()=>true));await original.login();
+    if(entry==='vocab')await primary(original);
+    else{
+      original.api.open();await until(()=>original.view().querySelector('.journey-focus-stage[data-review-section="reading"]'));
+      original.view().querySelector('.journey-focus-stage[data-review-section="reading"]').click();
+    }
+    const index=original.bank.findIndex(q=>q.section===entry);
+    const ordered=original.bank.slice(index).concat(original.bank.slice(0,index));
+    await confirmedAnswer(original,ordered[0],true);
+    await confirmedAnswer(original,ordered[1],false);
     const key='stepup-smart-'+original.w.STEPUP_SMART.version+'-'+original.profile.id+'-run-u2';
     const saved=original.w.localStorage.getItem(key),runId=JSON.parse(saved).runId;
     resumed=await prepared();resumed.stored.push(...original.stored);
     resumed.w.localStorage.setItem(key,saved);await resumed.login();await primary(resumed);
-    await until(()=>resumed.prompt()===resumed.bank[2].prompt);
+    if(entry==='reading')resumed.beginReading();
+    await until(()=>resumed.prompt()===ordered[2].prompt);
     assert.equal(JSON.parse(resumed.w.localStorage.getItem(key)).runId,runId);
     for(let i=2;i<resumed.bank.length;i++){
-      await confirmedAnswer(resumed,resumed.bank[i],true);
+      await confirmedAnswer(resumed,ordered[i],true);
       if(i<resumed.bank.length-1)assert.equal(resumed.view().querySelector('.smart-results'),null);
     }
     await until(()=>resumed.view().querySelector('.smart-results .smart-score'));
@@ -226,29 +234,28 @@ test('a late summary from an older full session cannot remove or replace a newly
   }finally{f.dom.window.close();}
 });
 
-for(const section of ['vocab','grammar','functions','reading','listening'])test('the visible '+section+' roadmap action and result Continue stay inside the mastered Unit 2 review',async()=>{
+for(const section of ['vocab','grammar','functions','reading','listening'])test('entering '+section+' from the roadmap reviews every skill before reporting',async()=>{
   const f=await prepared();try{
     f.stored.push(...f.records(()=>true));
     f.w.localStorage.setItem('stepup_cert_seen_v1_'+f.profile.id,JSON.stringify(['u2']));
-    f.w.STEPUP_AUTO_NEXT_TEST_DELAY_MS=5000;
     await f.login();f.api.open();
     await until(()=>f.view().querySelector('.journey-focus-stage[data-review-section="'+section+'"]'));
     f.view().querySelector('.journey-focus-stage[data-review-section="'+section+'"]').click();
-    for(const q of f.bank.filter(q=>q.section===section))await confirmedAnswer(f,q,true);
-    await until(()=>f.view().querySelector('.journey-result'));
-    await wait(220); // Allow the production celebration scan and profile read to finish.
-    const modalContinue=f.w.document.querySelector('.sxc-overlay [data-sxc-continue]');
-    if(modalContinue)modalContinue.click();
-    else f.view().querySelector('[data-unit-review-continue]').click();
-    const order=['vocab','grammar','functions','reading','listening'],next=order[order.indexOf(section)+1];
-    if(next==='reading'){
-      await until(()=>f.view().querySelector('.u2-reading-try'));
-      f.view().querySelector('.u2-reading-try').click();
+    const order=['vocab','grammar','functions','reading','listening'],start=order.indexOf(section);
+    const rotated=order.slice(start).concat(order.slice(0,start));
+    for(const skill of rotated){
+      for(const q of f.bank.filter(q=>q.section===skill))await confirmedAnswer(f,q,true);
+      if(skill!==rotated.at(-1)){
+        await until(()=>f.view().querySelector('.journey-result'));
+        assert.equal(f.view().querySelector('.smart-results'),null,'past mastery must not finish this review');
+      }
     }
-    if(next)await until(()=>f.prompt()===f.bank.find(q=>q.section===next).prompt);
-    else await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.equal(f.writes.length,30,'each required question must be answered in this review');
+    assert.equal(new Set(f.writes.map(q=>q.examSection+'|'+q.questionId)).size,30);
+    const reports=f.summaries.filter(a=>a.recordKind==='smart-full-review');
+    assert.equal(reports.length,1);assert.equal(reports[0].total,30);
     assert.equal(f.w.document.querySelector('.sxc-overlay'),null);
-    assert.equal(f.view().querySelector('.journey-unit-grid'),null);
     assert.equal(f.w.STEPUP_MASTERY.status('u2',f.stored).earned,true);
   }finally{f.dom.window.close();}
 });
