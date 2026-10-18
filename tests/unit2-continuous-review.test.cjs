@@ -97,11 +97,12 @@ async function primary(f){
   f.view().querySelector('.journey-focus-start').click();
 }
 
-for(const entry of ['primary','home','banner'])test('Unit 2 '+entry+' completes every skill once before reporting mixed-answer mistakes',async()=>{
+for(const entry of ['primary','home','banner','practice'])test('Unit 2 '+entry+' completes every skill once before reporting mixed-answer mistakes',async()=>{
   const f=await prepared();try{
     await f.login();
     if(entry==='primary')await primary(f);
     if(entry==='home')f.w.STEPUP_JOURNEY.go('u2','core-1');
+    if(entry==='practice')f.api.practice();
     if(entry==='banner'){
       f.api.open();await until(()=>f.view().querySelector('.smart-unit-panel button'));
       f.view().querySelector('.smart-unit-panel button').click();

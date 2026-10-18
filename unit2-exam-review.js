@@ -1371,7 +1371,7 @@
         <span class="u2-practice-icon">↻</span>
         <span class="u2-practice-copy">
           <b>Practice</b>
-          <small>Repeat completed skills as many times as you want. Your progress will not reset.</small>
+          <small>Review all Unit 2 skills in one continuous attempt. Your saved progress stays safe.</small>
         </span>
         <span class="journey-stop-arrow">›</span>
       </button>
@@ -1380,6 +1380,8 @@
   }
 
   function openPractice(){
+    // The older Practice entry must use the same complete journey as Practice Again.
+    if(window.STEPUP_SMART?.beginFull)return window.STEPUP_SMART.beginFull('u2');
     stopStepTimer();
     stopReadingTimer();
     stopReadingAudio();
