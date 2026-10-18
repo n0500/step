@@ -56,6 +56,21 @@ are changed.
 
 ## Unit 2 reading and listening checks
 
+The continuous review checks run with:
+
+```
+node --test tests/unit2-continuous-review.test.cjs
+```
+
+They exercise the primary unit action, Home continuation and Continue Review
+banner through every Unit 2 skill with incorrect answers. Each skill result is
+shown before automatic progression; the final report retains the original
+answers and opens Fix My Mistakes without repeating earlier skills. They cover
+resuming two saved answers, a completed low score, report recovery and student
+isolation, the all-correct optional challenge, and delayed background-result
+sync during an active question. The actual application and presentation scripts
+use an isolated Firestore test store, never production student records.
+
 With `jsdom` on `NODE_PATH`, run:
 
 ```

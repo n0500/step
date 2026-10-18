@@ -1572,7 +1572,13 @@
     }
     writeUnsaved(left);flushing=false;
     if(lastErr){showUnsavedBanner(lastErr);if(manual)alert("Still not saved. Please check the internet connection and try again.");}
-    else{document.getElementById("stepupUnsavedBanner")?.remove();if(manual||mine.length){if(state.studentTab)renderStudent();}}
+    else{
+      document.getElementById("stepupUnsavedBanner")?.remove();
+      // Completing an old background save must not replace a live question,
+      // skill result, final report or mistake-repair screen with the dashboard.
+      const activeReview=document.querySelector('.student-view .journey-question-card,.student-view .journey-feedback,.student-view .journey-result,.student-view .smart-results,.student-view .fix-recovery');
+      if((manual||mine.length) && state.studentTab && !activeReview)renderStudent();
+    }
   }
   function retryUnsaved(){return flushUnsaved(true);}
 

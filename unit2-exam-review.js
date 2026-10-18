@@ -934,6 +934,33 @@
     return requiredKeys.find(key=>!sectionDone(key)) || requiredKeys.find(key=>sectionProgress(key).missed>0) || null;
   }
 
+  // The primary review journey follows coverage, not correctness. Mistakes are
+  // collected for the final report instead of restarting an earlier skill.
+  function continueReview(){
+    const nextKey=requiredKeys.find(key=>!sectionDone(key));
+    return nextKey ? startSection(nextKey,false,true) : finishReviewPath();
+  }
+
+  function finishReviewPath(){
+    const user=window.firebase?.auth?.().currentUser;
+    if(!user || !profile || (profile.id!==user.uid && profile.uid!==user.uid))return;
+    const records=requiredKeys.flatMap(key=>sections[key].questions.map(item=>{
+      const record=reviewQuestion(key,item.id);
+      if(!record)return null;
+      return {
+        recordKind:'question',examUnit:'u2',examSection:key,questionId:item.id,
+        studentId:user.uid,correct:record.correct===true,
+        selectedText:record.selectedText || item.choices[Number(record.selected)] || '',
+        correctText:item.choices[item.answer],submittedAt:record.submittedAt || '',
+        stem:item.prompt,skill:item.skill,explanation:item.explanation || ''
+      };
+    }).filter(Boolean));
+    if(records.length!==TOTAL_REQUIRED)return continueReview();
+    stopListening();stopStepTimer();stopReadingTimer();stopReadingAudio();
+    session=null;saving=false;
+    return window.STEPUP_SMART?.completePath?.('u2',records);
+  }
+
   function requiredAnswered(){
     return requiredKeys.reduce((n,k)=>n+answeredCount(k),0);
   }
@@ -1261,8 +1288,8 @@
     </button>`;
   }
 
-  function openReadingLesson(){
-    startReadingFlow();
+  function openReadingLesson(continuePath=false){
+    startReadingFlow(false,continuePath);
   }
 
   function startTimedStep(){
@@ -1630,10 +1657,13 @@
     const saveNotice=!summarySaved?`<p role="status">Your answers and improvement are saved. Only the section summary is waiting.</p><button class="journey-link-btn" onclick="STEPUP_U2_EXAM.retrySummary()">Retry saving section summary</button>`:"";
     // A full-unit retake must continue to the next skill, never default to the units page.
     const fullReview=!!ticket.smartFull;
-    const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") : nextReviewSection();
+    const continuousPath=!!ticket.continuePath && !focused && sectionKey!=='step';
+    const nextKey=fullReview ? window.STEPUP_SMART?.nextSection?.("u2") :
+      continuousPath ? requiredKeys[requiredKeys.indexOf(sectionKey)+1] || null : nextReviewSection();
     const nextAction=fullReview ? "STEPUP_SMART.advance('u2')" :
+      continuousPath && !nextKey ? "STEPUP_U2_EXAM.finishPath()" :
       nextKey ? "STEPUP_U2_EXAM.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" : "STEPUP_U2_EXAM.open()";
-    const nextLabel=fullReview
+    const nextLabel=fullReview || continuousPath
       ? (nextKey ? "Continue to "+esc(sections[nextKey].title) : "See My Learning Level")
       : (nextKey ? (nextKey===sectionKey ? "Review missed answers" : "Continue to "+esc(sections[nextKey].title)) : "Back to Unit 2");
     const actionsHTML=`<div class="journey-result-actions">
@@ -1642,12 +1672,13 @@
     </div>`;
     const queueNextSkill=function(){
       if(!summarySaved||focused||sectionKey==='step')return;
-      if(!fullReview && !(ticket.continuePath && nextKey && nextKey!==sectionKey))return;
+      if(!fullReview && !continuousPath)return;
       window.STEPUP_SMART?.scheduleResultAdvance?.('u2',
         nextKey ? sections[nextKey].title : 'My Learning Level',
         function(){
           if(fullReview)window.STEPUP_SMART?.advance?.('u2');
-          else startSection(nextKey,false,true);
+          else if(nextKey)startSection(nextKey,false,true);
+          else finishReviewPath();
         });
     };
 
@@ -2075,22 +2106,22 @@
 
   J.go=function(uid,key){
     if(uid!=="u2")return old.go(uid,key);
-    if(key==="core-1")return startSection("vocab");
-    if(key==="core-2")return startSection("grammar");
-    if(key==="core-3"||key==="core-4")return startSection("functions");
+    if(key==="core-1")return startSection("vocab",false,true);
+    if(key==="core-2")return startSection("grammar",false,true);
+    if(key==="core-3"||key==="core-4")return startSection("functions",false,true);
     if(key==="step")return openStepIntro();
     if(key==="final")return openUnit2();
-    if(key==="reading")return openReadingLesson();
-    if(key==="listening")return startSection("listening");
+    if(key==="reading")return openReadingLesson(true);
+    if(key==="listening")return startSection("listening",false,true);
     return openUnit2();
   };
 
   // Legacy entry points share the complete media-equipped Unit 2 review.
   J.startReading=function(uid){
-    return uid==="u2"?openReadingLesson():old.startReading(uid);
+    return uid==="u2"?openReadingLesson(true):old.startReading(uid);
   };
   J.startListening=function(uid){
-    return uid==="u2"?startSection("listening"):old.startListening(uid);
+    return uid==="u2"?startSection("listening",false,true):old.startListening(uid);
   };
 
   addStyles();
@@ -2107,6 +2138,8 @@
     stepIntro:openStepIntro,
     startTimedStep,
     start:startSection,
+    continueReview,
+    finishPath:finishReviewPath,
     answer,
     next,
     retrySummary:finishSection,

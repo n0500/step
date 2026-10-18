@@ -198,7 +198,11 @@
       card.appendChild(back);
       shell.appendChild(card);
     } else {
-      shell.appendChild(complete?completeCard():taskCard(task||(review ? {title:'All answers correct',meta:'Review complete',detail:'You can revisit any skill above. Your saved answers and certificates are kept.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
+      const primaryTask=unitId==='u2' && typeof api?.continueReview==='function'
+        ? {...(task || {title:'Review complete',meta:'All skills answered',detail:'See your final result and review your mistakes.'}),
+          action:'STEPUP_U2_EXAM.continueReview()',button:Number(g?.answered)===Number(g?.total)?'See My Learning Level':'Continue Review'}
+        : task;
+      shell.appendChild(complete?completeCard():taskCard(primaryTask||(review ? {title:'All answers correct',meta:'Review complete',detail:'You can revisit any skill above. Your saved answers and certificates are kept.',action:"PROVE.setStudentTab('journey')",button:'Back to units'} : {eyebrow:'Next',title:'Continue your journey',meta:'2–4 min',detail:'One small step at a time.',action:"PROVE.setStudentTab('journey')",button:'Continue'})));
     }
 
     const breadcrumb=host.querySelector('.journey-breadcrumb');
