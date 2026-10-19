@@ -1,5 +1,13 @@
 # English speech voice checks
 
+## Student “What’s left?” checklist
+
+Run `node --test tests/student-whats-left.test.cjs` with `jsdom` on `NODE_PATH`.
+It verifies the login checklist, unit-map summary, exact skill-level remaining
+question counts, the number of corrections needed to reach 80%, direct
+continuation into the right skill, and the earned-certificate state. It uses
+isolated in-memory records and never reads or changes production student data.
+
 ## Practice Again certificates
 
 Run `node --test tests/practice-again-certificates.test.cjs` with `jsdom` on

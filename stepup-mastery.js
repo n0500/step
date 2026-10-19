@@ -168,13 +168,18 @@
 
   // Credits every correct answer once across all saved attempts, by unit.
   // STEP practice is not a certificate requirement.
-  function cumulativeStatus(id,records){
+  function progressDetails(id,records){
     const req=requirements(id);
-    if(!req||!req.length)return {earned:false,answered:0,total:0,correct:0,accuracy:0};
-    const questions=new Map(),stages=new Map();
+    if(!req||!req.length)return {earned:false,answered:0,total:0,correct:0,accuracy:0,remaining:0,incorrect:0,sections:[]};
+    const sourceBank=bank(id)||[],titles=new Map();
+    sourceBank.forEach(q=>{if(q?.section&&!titles.has(String(q.section)))titles.set(String(q.section),String(q.sectionTitle||q.skill||q.section));});
+    const questions=new Map(),stages=new Map(),sectionRows=new Map();
     req.forEach(r=>{
-      questions.set(String(r.section)+'|'+String(r.questionId),{answered:false,correct:false});
-      stages.set(String(r.trainingId),String(r.section));
+      const section=String(r.section),key=section+'|'+String(r.questionId);
+      questions.set(key,{section,answered:false,correct:false});
+      stages.set(String(r.trainingId),section);
+      if(!sectionRows.has(section))sectionRows.set(section,{key:section,title:titles.get(section)||section,answered:0,total:0,correct:0,remaining:0,incorrect:0});
+      sectionRows.get(section).total++;
     });
     for(const a of records||[]){
       if(!a)continue;
@@ -200,10 +205,21 @@
       });
     }
     let answered=0,correct=0;
-    questions.forEach(q=>{if(q.answered)answered++;if(q.correct)correct++;});
+    questions.forEach(q=>{
+      const row=sectionRows.get(q.section);
+      if(q.answered){answered++;row.answered++;}
+      if(q.correct){correct++;row.correct++;}
+    });
+    sectionRows.forEach(row=>{row.remaining=row.total-row.answered;row.incorrect=row.answered-row.correct;});
     const total=req.length;
     return {earned:total>0&&answered===total&&correct*100>=PASS*total,
-      answered,total,correct,accuracy:total?Math.round(correct/total*10000)/100:0};
+      answered,total,correct,accuracy:total?Math.round(correct/total*10000)/100:0,
+      remaining:total-answered,incorrect:answered-correct,sections:Array.from(sectionRows.values())};
+  }
+  function cumulativeStatus(id,records){
+    const details=progressDetails(id,records);
+    return {earned:details.earned,answered:details.answered,total:details.total,
+      correct:details.correct,accuracy:details.accuracy};
   }
   // Teacher-authorized, one-time remedy for the Unit 2 Practice interruption.
   // Only evidence saved before the fix can qualify. This does not manufacture
@@ -243,8 +259,12 @@
     return {earned:false,mode:'pending',accuracy:progress.accuracy,...evidence};
   }
 
-  let attempts=[],student=null,session=null,saving=false;
-  function hydrate(a,p){if(Array.isArray(a))attempts=a;if(p&&p.role==='student')student=p;}
+  let attempts=[],student=null,session=null,saving=false,openUnitIds=new Set();
+  function hydrate(a,p,o){
+    if(Array.isArray(a))attempts=a;
+    if(p&&p.role==='student')student=p;
+    if(Array.isArray(o))openUnitIds=new Set(o.map(x=>typeof x==='string'?x:x?.id).filter(Boolean));
+  }
   function recordSaved(record){
     if(!student||!record||record.studentId!==(student.id||student.uid))return;
     try{if(window.firebase?.auth&&window.firebase.auth().currentUser?.uid!==record.studentId)return;}catch(_){return;}
@@ -256,7 +276,7 @@
     ['html','homeHTML','progressHTML'].forEach(name=>{
       const orig=J[name];
       if(typeof orig!=='function')return;
-      J[name]=function(a,o,p){hydrate(a,p);return orig.apply(this,arguments);};
+      J[name]=function(a,o,p){hydrate(a,p,o);return orig.apply(this,arguments);};
     });
   }
   // Refresh certificate eligibility only after the online save succeeds.
@@ -276,6 +296,25 @@
       '.sum-card p{margin:3px 0;color:#42546b;font-size:15px;line-height:1.7}',
       '.sum-card button,.sum-action{border:0;border-radius:13px;background:#245b8e;color:white;min-height:47px;padding:11px 20px;font-size:16px;font-weight:800;cursor:pointer}',
       '.sum-card button:disabled{background:#a0aec0;cursor:not-allowed}',
+      '.sum-whats-left{display:block;background:#fff;border-color:#cfe0eb;padding:20px}',
+      '.sum-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;flex-wrap:wrap}',
+      '.sum-kicker{display:block;color:#247b70;font-size:12px;font-weight:900;letter-spacing:.11em;margin-bottom:5px}',
+      '.sum-certificate-state{border-radius:999px;background:#eef3f8;color:#38506b;padding:7px 11px;font-size:12px;font-weight:900}',
+      '.sum-certificate-state.earned{background:#e4f5ea;color:#216b48}',
+      '.sum-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:16px 0}',
+      '.sum-stats span{display:flex;flex-direction:column;gap:2px;padding:11px 12px;background:#f3f7fa;border-radius:12px;color:#65758a;font-size:12px}',
+      '.sum-stats b{color:#193b5d;font-size:17px}',
+      '.sum-section-list{display:grid;gap:7px;margin:13px 0 17px}',
+      '.sum-section-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e0e9ef;border-radius:11px;background:#fbfdfe}',
+      '.sum-section-row span{min-width:0}.sum-section-row b{display:block;color:#263f59;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sum-section-row small{color:#6b7b8e}',
+      '.sum-section-row em{font-style:normal;font-size:12px;font-weight:900;color:#8a5c16;white-space:nowrap}.sum-section-row.complete em{color:#23704c}',
+      '.sum-card-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.sum-card-note{color:#66788b;font-size:12px!important;flex:1 1 230px}',
+      '.sum-home-card{margin:0 0 18px;padding:19px;background:#fff;border:1px solid #d8e5ed;border-radius:18px}',
+      '.sum-home-card h2{margin:3px 0 4px;color:#162f50}.sum-home-card>p{margin:0 0 13px;color:#65758a}',
+      '.sum-home-units{display:grid;gap:8px}.sum-home-unit{width:100%;border:1px solid #dce7ee;background:#f8fbfd;border-radius:13px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;color:#203a58;cursor:pointer}',
+      '.sum-home-unit span{display:flex;flex-direction:column;gap:3px}.sum-home-unit small{color:#67798c}.sum-home-unit em{font-style:normal;font-weight:900;color:#285f89;white-space:nowrap}.sum-home-unit.earned em{color:#23704c}',
+      '.sum-map-note{margin-top:10px;padding:9px 10px;border-radius:10px;background:#edf5f8;color:#31556c;font-size:12px;font-weight:800;line-height:1.45}.sum-map-note.earned{background:#e7f5eb;color:#216b48}.sum-map-note small{display:block;margin-top:2px;color:inherit;font-weight:600}',
+      '.journey-unit-hero .sxc-u1-award,.journey-unit-hero .sxc-u2-award{display:none!important}',
       '.sum-test{max-width:1000px;margin:0 auto;padding:12px 0 35px}',
       '.sum-test h1{font-size:clamp(24px,3vw,32px);color:#153859}',
       '.sum-test .sum-summary{background:white;border:1px solid #dce7f0;padding:20px;border-radius:18px;line-height:1.8}',
@@ -290,34 +329,73 @@
       '.sum-test .sum-alt{background:#f3f6fa;color:#255178;border:1px solid #c5d4e3}',
       '.sum-test .sum-context{white-space:pre-wrap;background:#f7f9fc;border-left:4px solid #3b83ad;border-radius:12px;padding:18px;color:#253c55;max-height:310px;overflow:auto;line-height:1.9}',
       '.sum-test .sum-error{padding:15px;border-radius:12px;background:#fff0ef;color:#8a2929;line-height:1.7}',
-      '@media(max-width:650px){.sum-card{padding:14px}.sum-test .sum-question{padding:15px}.sum-test .sum-options button{font-size:16px}}'
+      '@media(max-width:650px){.sum-card{padding:14px}.sum-stats{grid-template-columns:repeat(3,1fr)}.sum-section-row{align-items:flex-start}.sum-home-unit{align-items:flex-start}.sum-test .sum-question{padding:15px}.sum-test .sum-options button{font-size:16px}}'
     ].join('\n');
     document.head.appendChild(style);
   }
   function infoUnit(id){const u=unitData(id);return 'Unit '+(u?.number||id.replace('u',''))+(u?.title?' · '+u.title:'');}
+  function progressSummary(id){
+    const st=studentStatus(id),d=progressDetails(id,attempts),need=Math.max(0,Math.ceil(d.total*PASS/100)-d.correct);
+    if(st.earned)return {tone:'earned',label:'Certificate earned ✓',detail:d.total?d.correct+'/'+d.total+' correct':'Unit mastered',need:0,...d};
+    if(!d.answered)return {tone:'ready',label:'Not started',detail:d.total+' questions to complete',need,...d};
+    if(d.remaining){
+      const parts=d.sections.filter(s=>s.remaining).map(s=>s.title+': '+s.remaining+' left');
+      return {tone:'pending',label:d.remaining+' question'+(d.remaining===1?'':'s')+' left',detail:parts.slice(0,2).join(' • '),need,...d};
+    }
+    return {tone:'fix',label:need+' more correct '+(need===1?'answer':'answers')+' needed',detail:d.correct+'/'+d.total+' correct • '+d.accuracy+'%',need,...d};
+  }
   // Certificates are unlocked by the existing guided review, not a new test.
   function cardHTML(id){
-    const st=studentStatus(id),p=st.progress||{answered:0,total:0,correct:0,accuracy:0};
-    if(st.earned){
-      const description=st.mode==='legacy'||st.mode==='assessment'
-        ? 'Your previously earned certificate remains available.'
-        : st.mode==='teacher-approved'
-          ? 'Your unit certificate is available based on your saved practice results.'
-          : 'You reached the 80% goal through saved practice.';
-      return '<div class="sum-card"><div><strong>🏆 Unit mastered</strong><p>'+description+
-        '</p></div><button type="button" data-mastery-view="'+id+'">View Certificate</button></div>';
-    }
-    const need=Math.max(0,Math.ceil(p.total*PASS/100)-p.correct);
-    return '<div class="sum-card"><div><strong>🎯 Unit Certificate Goal · 80%</strong>'+
-      '<p>Correct answers: '+p.correct+'/'+p.total+' · Questions attempted: '+p.answered+'/'+p.total+'</p>'+
-      '<p>'+(p.answered<p.total?'Complete the remaining review questions.':
-        'Review missed answers. '+need+' more correct '+(need===1?'answer':'answers')+' needed.')+'</p>'+
-      '<p>Each correct answer remains credited after a retry. No separate test.</p></div></div>';
+    const st=studentStatus(id),d=progressDetails(id,attempts),need=Math.max(0,Math.ceil(d.total*PASS/100)-d.correct);
+    const title=st.earned?'Nothing missing — certificate earned':d.remaining
+      ? d.remaining+' question'+(d.remaining===1?'':'s')+' left'
+      : need+' more correct '+(need===1?'answer':'answers')+' needed';
+    const intro=st.earned
+      ? (st.mode==='teacher-approved'?'Your certificate is available from your saved practice results.':'You completed the unit goal and reached at least 80% mastery.')
+      : d.remaining?'Finish the questions below. Your saved correct answers still count.':'You answered every question. Correct the remaining mistakes to reach 80%.';
+    const rows=d.sections.map(s=>{
+      const state=s.remaining?s.remaining+' left':s.incorrect?s.incorrect+' to fix':'✓ Complete';
+      return '<div class="sum-section-row '+(!s.remaining&&!s.incorrect?'complete':'')+'"><span><b>'+esc(s.title)+'</b><small>'+s.correct+'/'+s.total+' correct</small></span><em>'+state+'</em></div>';
+    }).join('');
+    const action=st.earned
+      ? '<button type="button" data-mastery-view="'+id+'">View Certificate</button>'
+      : '<button type="button" data-mastery-continue="'+id+'">'+(d.remaining?'Continue '+d.remaining+' remaining':'Fix '+need+' '+(need===1?'answer':'answers'))+'</button>';
+    return '<div class="sum-card sum-whats-left"><div class="sum-card-head"><div><span class="sum-kicker">WHAT’S LEFT?</span><strong>'+title+'</strong><p>'+intro+'</p></div>'+
+      '<span class="sum-certificate-state '+(st.earned?'earned':'')+'">'+(st.earned?'Certificate earned':'Certificate goal · 80%')+'</span></div>'+
+      '<div class="sum-stats"><span><b>'+d.answered+'/'+d.total+'</b>Answered</span><span><b>'+d.correct+'/'+d.total+'</b>Correct</span><span><b>'+d.accuracy+'%</b>Mastery</span></div>'+
+      '<div class="sum-section-list">'+rows+'</div><div class="sum-card-actions">'+action+
+      '<p class="sum-card-note">Every correct answer stays credited after a retry.</p></div></div>';
+  }
+  function decorateHome(view){
+    const home=view.querySelector('.student-home-clean');if(!home)return;
+    const units=(J.data.units||[]).filter(u=>(openUnitIds.size?openUnitIds.has(u.id):u.id==='u1')&&requirements(u.id)?.length);
+    if(!units.length)return;
+    const summaries=units.map(u=>({u,s:progressSummary(u.id)}));
+    const sig=summaries.map(x=>[x.u.id,x.s.answered,x.s.correct,x.s.label].join(':')).join('|');
+    let card=home.querySelector('.sum-home-card');
+    if(card?.getAttribute('data-sig')===sig)return;
+    if(!card){card=document.createElement('section');card.className='sum-home-card';const welcome=home.querySelector('.student-welcome');welcome?.insertAdjacentElement('afterend',card);if(!welcome)home.prepend(card);}
+    card.setAttribute('data-sig',sig);
+    card.innerHTML='<span class="sum-kicker">YOUR UNIT CHECKLIST</span><h2>What’s left?</h2><p>Open a unit to continue exactly where you need.</p><div class="sum-home-units">'+summaries.map(x=>
+      '<button type="button" class="sum-home-unit '+(x.s.tone==='earned'?'earned':'')+'" data-mastery-open="'+x.u.id+'"><span><b>Unit '+x.u.number+' · '+esc(x.u.title)+'</b><small>'+esc(x.s.detail)+'</small></span><em>'+esc(x.s.label)+'</em></button>'
+    ).join('')+'</div>';
+    card.querySelectorAll('[data-mastery-open]').forEach(b=>b.addEventListener('click',()=>openUnit(b.getAttribute('data-mastery-open'))));
+  }
+  function decorateUnitMap(view){
+    view.querySelectorAll('.journey-unit-card:not(.locked)').forEach(card=>{
+      const title=card.querySelector('h3')?.textContent.trim(),u=(J.data.units||[]).find(x=>x.title===title);if(!u||!requirements(u.id)?.length)return;
+      const s=progressSummary(u.id),sig=[s.answered,s.correct,s.label,s.detail].join('|');
+      let note=card.querySelector('.sum-map-note');if(note?.getAttribute('data-sig')===sig)return;
+      if(!note){note=document.createElement('div');note.className='sum-map-note';card.appendChild(note);}
+      note.setAttribute('data-sig',sig);note.className='sum-map-note '+(s.tone==='earned'?'earned':'');
+      note.innerHTML=esc(s.label)+(s.detail?'<small>'+esc(s.detail)+'</small>':'');
+    });
   }
   function decorate(){
     if(!student||!J||session)return;
     const view=renderHost();
     if(!view)return;
+    decorateHome(view);decorateUnitMap(view);
     const title=view.querySelector('.journey-unit-hero h1');
     if(!title)return;
     const unit=(J.data.units||[]).find(u=>u.title===title.textContent.trim());
@@ -330,6 +408,7 @@
     if(!block){block=document.createElement('div');block.className='sum-card-slot';hero.appendChild(block);}
     block.setAttribute('data-sig',signature);block.innerHTML=cardHTML(unit.id);
     block.querySelector('[data-mastery-view]')?.addEventListener('click',()=>viewCertificate(unit.id));
+    block.querySelector('[data-mastery-continue]')?.addEventListener('click',()=>continueUnit(unit.id));
   }
   let scheduled=false;
   const host=document.getElementById('app');
@@ -339,6 +418,19 @@
   }
   function viewCertificate(id){
     const u=unitData(id);if(u&&studentStatus(id).earned)window.STEPUP_CELEBRATE?.showCertificate?.(u);
+  }
+  function continueUnit(id){
+    if(!student)return;
+    if(studentStatus(id).earned)return viewCertificate(id);
+    if(window.STEPUP_SMART?.isFullActive?.(id))return window.STEPUP_SMART.advance(id);
+    const work=progressDetails(id,attempts).sections.find(s=>s.remaining>0)||progressDetails(id,attempts).sections.find(s=>s.incorrect>0);
+    if(!work)return openUnit(id);
+    session=null;stopAudio();
+    if(['u4','u5','u6'].includes(id))return J?.go?.(id,work.key);
+    const unitApi=api(id);if(!unitApi)return;
+    if(id==='u2'&&work.key==='reading'&&typeof unitApi.readingLesson==='function')return unitApi.readingLesson(true);
+    if(typeof unitApi.start==='function')return unitApi.start(work.key,false,true);
+    return unitApi.open?.();
   }
   // The standalone mastery test has been retired.
   function start(id){openUnit(id);}
@@ -433,6 +525,6 @@
     else api(id)?.open?.();
   }
   css();
-  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,bestCheck,fullReviewResult,bestFullReview,recordSaved,bank,requirements,validBank,
-    studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
+  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,progressDetails,bestCheck,fullReviewResult,bestFullReview,recordSaved,bank,requirements,validBank,
+    studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,continueUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
