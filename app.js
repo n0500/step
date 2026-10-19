@@ -2189,7 +2189,10 @@ Do not start a new lesson unless I ask.`;
     if(!state.selectedClassId)return alert("Select a class first.");
     await loadLib("xlsx");
     if(typeof XLSX==="undefined")return alert("Excel library did not load. Check the internet connection and try again.");
-    const r=await classReportData(state.selectedClassId);
+    // Keep the original aggregate report, and include the saved question
+    // evidence separately so review completion and certificates can be audited.
+    const saved=(await getAttempts({includeQuestionRecords:true})).filter(a=>a.classId===state.selectedClassId);
+    const r=await classReportData(state.selectedClassId,{attempts:saved.filter(a=>a.recordKind!=="question")});
     if(!r.cls)return;
     const wb=XLSX.utils.book_new();
     const summary=[
@@ -2217,6 +2220,27 @@ Do not start a new lesson unless I ask.`;
     const skills=[["Skill","Correct","Total","Mastery %"]];
     skillStats(r.attempts).forEach(s=>skills.push([s.skill,s.ok,s.total,s.pct]));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(skills),"Skills");
+
+    const units=window.STEPUP_JOURNEY?.data?.units||[];
+    const requirements=[["Unit ID","Unit","Section","Question ID","Training ID"]];
+    const certificates=[["Student ID","Student","Class ID","Unit ID","Unit","Answered","Required","Correct","Unit Mastery %","Certificate Earned","Certificate Source"]];
+    for(const u of units){
+      const req=window.STEPUP_MASTERY?.requirements?.(u.id);
+      if(!Array.isArray(req)||!req.length)continue;
+      req.forEach(q=>requirements.push([u.id,u.number,q.section,q.questionId,q.trainingId]));
+      for(const student of r.students){
+        const status=window.STEPUP_MASTERY.status(u.id,saved.filter(a=>a.studentId===student.id)),p=status.progress||{};
+        certificates.push([student.id,student.displayName,student.classId,u.id,u.number,p.answered||0,p.total||0,p.correct||0,p.accuracy||0,status.earned===true,status.mode||'pending']);
+      }
+    }
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(requirements),"Unit Requirements");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(certificates),"Certificate Status");
+    const evidence=[["Record ID","Student ID","Class ID","Unit ID","Exam Unit","Section","Question ID","Record Kind","Training ID","Study Method","Correct","Best Correct","Score","Total","Percentage","Submitted At","Saved Answers"]];
+    saved.forEach(a=>evidence.push([a.id||'',a.studentId||'',a.classId||'',a.unitId||'',a.examUnit||'',a.examSection||'',a.questionId||'',a.recordKind||'',a.trainingId||'',a.studyMethod||'',
+      a.correct===true,a.bestCorrect===true,a.score??'',a.total??'',a.percentage??'',a.submittedAt||'',JSON.stringify((a.answers||[]).map(q=>({
+        question_id:q.question_id||q.questionId||'',section:q.section||'',correct:q.correct===true,bestCorrect:q.bestCorrect===true
+      })))]));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(evidence),"Certificate Evidence");
     XLSX.writeFile(wb,`PROVE_IT_${slug(r.cls.name)||"class"}_report.xlsx`);
   }
 
