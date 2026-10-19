@@ -426,7 +426,7 @@
     }
     if(window.STEPUP_JOURNEY&&!STEPUP_JOURNEY.__smartProgress){
       var prior=STEPUP_JOURNEY.progressHTML;
-      STEPUP_JOURNEY.progressHTML=function(a,o,p){return progressHTML(a)+prior.call(this,a,o,p);};
+      STEPUP_JOURNEY.progressHTML=function(a,o,p){var original=prior.call(this,a,o,p);return progressHTML(a)+original;};
       STEPUP_JOURNEY.__smartProgress=true;
     }
     var observer=new MutationObserver(function(){enrich();});

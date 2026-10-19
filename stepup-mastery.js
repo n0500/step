@@ -209,8 +209,9 @@
     if(!modules[id])return {earned:false,mode:'unsupported',accuracy:0};
     const old=legacyStatus(id,records),check=bestCheck(id,records),progress=cumulativeStatus(id,records),fullReview=bestFullReview(id,records);
     const evidence={progress,best:check,legacy:old,fullReview};
-    if(old.earned)return {earned:true,mode:'legacy',accuracy:old.accuracy,...evidence};
-    if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:check.accuracy,...evidence};
+    const reviewAccuracy=fullReview?.qualifies?progress.accuracy:0;
+    if(old.earned)return {earned:true,mode:'legacy',accuracy:Math.max(old.accuracy,reviewAccuracy),...evidence};
+    if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:Math.max(check.accuracy,reviewAccuracy),...evidence};
     if(fullReview?.qualifies)return {earned:true,mode:'practice-again',accuracy:progress.accuracy,...evidence};
     if(progress.earned)return {earned:true,mode:'cumulative',accuracy:progress.accuracy,...evidence};
     return {earned:false,mode:'pending',accuracy:progress.accuracy,...evidence};

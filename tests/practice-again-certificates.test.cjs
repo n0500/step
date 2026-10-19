@@ -121,3 +121,14 @@ test('teacher Practice Again list includes only mastered complete retakes from t
     assert.match(all,/Unit 1/);assert.match(all,/Unit 2/);
   }finally{f.dom.window.close();}
 });
+
+test('previously saved Practice Again certificates appear when Progress is reopened on another device',()=>{
+  const f=fixture();try{
+    const a=f.review('u2',30);
+    assert.equal(f.mastery.studentStatus('u2').earned,false);
+    f.w.document.dispatchEvent(new f.w.Event('DOMContentLoaded'));
+    const html=f.w.STEPUP_JOURNEY.progressHTML([a],['u2'],f.student);
+    assert.match(html,/Unit 2 Certificate Available/);assert.match(html,/View Unit Certificate/);
+    assert.equal(f.mastery.studentStatus('u2').earned,true);
+  }finally{f.dom.window.close();}
+});

@@ -243,6 +243,7 @@
       !usesExam(u) && !usesUnit1Mastery(u) && !usesUnit3Mastery(u))acc=masteryState.accuracy;
     if(masteryState?.earned && masteryState.mode==='assessment')acc=masteryState.accuracy;
     if(masteryState?.earned && masteryState.mode==='practice-again')acc=masteryState.accuracy;
+    if(masteryState?.earned && masteryState.fullReview?.qualifies)acc=Math.max(Number(acc)||0,masteryState.accuracy);
     if(acc == null){
       var vals = s.map(function(x){ return best(x.id); }).filter(function(v){ return v>=0; });
       acc = vals.length ? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : 0;
