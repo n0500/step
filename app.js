@@ -15,6 +15,18 @@
   const nowISO = () => new Date().toISOString();
   const fmtTime = sec => `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
   const slug = s => String(s).toLowerCase().trim().replace(/\s+/g," ").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");
+  const UNIT_ACCESS_RELEASE = 3;
+  function releasedOpenUnitIds(record){
+    const ids=[...(record?.openUnits||["u1"])];
+    // Unit 3 was released on 2026-10-19. Existing classes receive it once;
+    // after a teacher changes access, the release version preserves her choice.
+    if(Number(record?.unitAccessRelease||0)<UNIT_ACCESS_RELEASE&&!ids.includes("u3"))ids.push("u3");
+    if(!ids.includes("u1"))ids.unshift("u1");
+    return [...new Set(ids)].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
+  }
+  function withReleasedUnitAccess(record){
+    return record?{...record,openUnits:releasedOpenUnitIds(record)}:record;
+  }
   async function sha256(txt){
     const data = new TextEncoder().encode(txt);
     const hash = await crypto.subtle.digest("SHA-256",data);
@@ -367,9 +379,9 @@
       const d=await state.fb.db.collection("joinCodes").doc(code).get();
       if(!d.exists)return null;
       const j=d.data();
-      return {id:j.classId,code,name:j.className||"",teacherId:j.teacherId,school:j.school||"",openUnits:j.openUnits||["u1"]};
+      return withReleasedUnitAccess({id:j.classId,code,name:j.className||"",teacherId:j.teacherId,school:j.school||"",openUnits:j.openUnits||["u1"],unitAccessRelease:j.unitAccessRelease});
     }
-    return local.classes().find(x=>x.code===code)||null;
+    return withReleasedUnitAccess(local.classes().find(x=>x.code===code)||null);
   }
 
 
@@ -483,20 +495,20 @@
   async function getClassById(id){
     if(state.fb){
       const d=await state.fb.db.collection("classes").doc(id).get();
-      return d.exists?{id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}:null;
+      return d.exists?withReleasedUnitAccess({id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}):null;
     }
     const c=local.classes().find(x=>x.id===id);
-    return c?{...c,openUnits:c.openUnits||["u1"]}:null;
+    return c?withReleasedUnitAccess({...c,openUnits:c.openUnits||["u1"]}):null;
   }
 
   async function getClasses(filterTeacher=null){
     if(state.fb){
       return teacherCached("classes|"+(filterTeacher||""),async()=>{
         let q=state.fb.db.collection("classes"); if(filterTeacher)q=q.where("teacherId","==",filterTeacher);
-        const s=await q.get();return s.docs.map(d=>({id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}));
+        const s=await q.get();return s.docs.map(d=>withReleasedUnitAccess({id:d.id,...d.data(),openUnits:d.data().openUnits||["u1"]}));
       });
     }
-    return local.classes().filter(c=>!filterTeacher||c.teacherId===filterTeacher).map(c=>({...c,openUnits:c.openUnits||["u1"]}));
+    return local.classes().filter(c=>!filterTeacher||c.teacherId===filterTeacher).map(c=>withReleasedUnitAccess({...c,openUnits:c.openUnits||["u1"]}));
   }
   async function getAttempts(filters={}){
     // Teacher reads must carry the same ownership constraint as Firestore rules.
@@ -573,11 +585,17 @@
     return `<ul class="action-list">${weak.map(s=>`<li><strong>${esc(s.skill)} — ${s.pct}%:</strong> ${esc(s.need||"Review this skill and try another focused practice.")}</li>`).join("")}</ul>`;
   }
   function unitById(id){
-    return DATA.units.find(u=>u.id===id)||null;
+    const legacy=DATA.units.find(u=>u.id===id)||null;
+    if((legacy?.trainings||[]).length||id!=="u3")return legacy;
+    return window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id===id)||legacy;
+  }
+  function unitIsReady(unit){
+    if((unit?.trainings||[]).length>0)return true;
+    return unit?.id==="u3"&&!!window.STEPUP_U3_REVIEW&&!!window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id==="u3");
   }
   function openUnitsForClass(cls){
-    const ids=cls?.openUnits||["u1"];
-    return DATA.units.filter(u=>ids.includes(u.id)&&(u.trainings||[]).length>0).sort((a,b)=>a.number-b.number);
+    const ids=releasedOpenUnitIds(cls);
+    return ids.map(unitById).filter(unitIsReady).sort((a,b)=>a.number-b.number);
   }
   function latestAttemptFor(attempts,trainingId){
     return attempts.find(a=>a.trainingId===trainingId)||null;
@@ -857,7 +875,7 @@
     const students=await getStudentsForTeacher(state.profile.id);
     const cards=classes.map(c=>{
       const count=students.filter(s=>s.classId===c.id).length;
-      const openCount=(c.openUnits||["u1"]).filter(id=>(unitById(id)?.trainings||[]).length>0).length;
+      const openCount=(c.openUnits||["u1"]).filter(id=>unitIsReady(unitById(id))).length;
       const isSelected=c.id===state.selectedClassId;
       return `
       <div class="card teacher-class-card ${isSelected?"selected":""}">
@@ -886,7 +904,7 @@
         <details class="teacher-unit-access" ${isSelected?"open":""}><summary>Available Units for This Class</summary>
           <div class="teacher-card-head"><div><h3>Unit Access</h3><p class="muted">Choose the units available to students in this class.</p></div></div>
           ${DATA.units.map(u=>{
-            const isOpen=(c.openUnits||["u1"]).includes(u.id),ready=(u.trainings||[]).length>0;
+            const isOpen=(c.openUnits||["u1"]).includes(u.id),ready=unitIsReady(u);
             return `<div class="lock-row">
               <div>
                 <strong>Unit ${u.number}: ${esc(u.title)}</strong>
@@ -1038,7 +1056,7 @@
   async function createClass(){
     const name=prompt("Class name (e.g. Grade 10 - A):"); if(!name)return;
     let code=`MG1-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
-    const c={teacherId:state.profile.id,name,code,school:state.profile.school||"",openUnits:["u1"],createdAt:nowISO()};
+    const c={teacherId:state.profile.id,name,code,school:state.profile.school||"",openUnits:["u1"],unitAccessRelease:UNIT_ACCESS_RELEASE,createdAt:nowISO()};
     if(state.fb){
       for(let i=0;i<5;i++){
         const chk=await state.fb.db.collection("joinCodes").doc(code).get();
@@ -1050,7 +1068,7 @@
       const joinRef=state.fb.db.collection("joinCodes").doc(code);
       const batch=state.fb.db.batch();
       batch.set(classRef,c);
-      batch.set(joinRef,{classId:classRef.id,className:name,code,teacherId:state.profile.id,school:state.profile.school||"",openUnits:["u1"],createdAt:nowISO()});
+      batch.set(joinRef,{classId:classRef.id,className:name,code,teacherId:state.profile.id,school:state.profile.school||"",openUnits:["u1"],unitAccessRelease:UNIT_ACCESS_RELEASE,createdAt:nowISO()});
       await batch.commit();
       state.selectedClassId=classRef.id;
     }else{
@@ -1068,10 +1086,10 @@
     openUnits.sort((a,b)=>(unitById(a)?.number||0)-(unitById(b)?.number||0));
     if(state.fb){
       const batch=state.fb.db.batch();
-      batch.update(state.fb.db.collection("classes").doc(classId),{openUnits});
-      if(c.code)batch.update(state.fb.db.collection("joinCodes").doc(c.code),{openUnits});
+      batch.update(state.fb.db.collection("classes").doc(classId),{openUnits,unitAccessRelease:UNIT_ACCESS_RELEASE});
+      if(c.code)batch.update(state.fb.db.collection("joinCodes").doc(c.code),{openUnits,unitAccessRelease:UNIT_ACCESS_RELEASE});
       await batch.commit();
-    }else{c.openUnits=openUnits;local.saveClass(c)}
+    }else{c.openUnits=openUnits;c.unitAccessRelease=UNIT_ACCESS_RELEASE;local.saveClass(c)}
     renderTeacher();
   }
   function renderSkillBars(attempts){
