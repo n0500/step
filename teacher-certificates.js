@@ -71,11 +71,11 @@
       const studentAttempts=groups.get(s.id)||[];
       const units=sources.filter(item=>item.questions?.length)
         .map(item=>{
-          // Use the SAME protected certificate policy as the student's screen.
-          // Never grant a new certificate from post-migration cumulative answers.
+          // Use the same saved-question and complete-review policy as the student.
           const result=window.STEPUP_MASTERY?.status?.(item.unitId,studentAttempts);
           return {unitId:item.unitId,number:item.unit.number,title:item.unit.title,
-            earned:!!result?.earned,accuracy:result?.accuracy||0,mode:result?.mode||'pending'};
+            earned:!!result?.earned,accuracy:result?.accuracy||0,mode:result?.mode||'pending',
+            fullReview:result?.fullReview?.qualifies?result.fullReview:null};
         })
         .filter(u=>u.earned);
       return {id:s.id,name:s.displayName||'Student',units};
@@ -83,7 +83,8 @@
       .sort((a,b)=>a.name.localeCompare(b.name,'ar',{sensitivity:'base'}));
   }
 
-  let lastExport={rows:[],cls:null};
+  let lastExport={rows:[],cls:null},onlyReviews=false;
+  function setReviewFilter(value){onlyReviews=!!value;window.PROVE?.setTeacherTab?.('certificates');}
   function ensureCSS(){
     if(document.getElementById('stepupTeacherCertificatesCSS'))return;
     const style=document.createElement('style');style.id='stepupTeacherCertificatesCSS';
@@ -118,7 +119,10 @@
     const sources=requirements();
     const unavailable=sources.filter(s=>!s.questions?.length);
     const roster=(students||[]).filter(s=>s.role==='student'&&s.classId===cls.id);
-    const rows=buildRows(roster,attempts,cls.id,sources);
+    const allRows=buildRows(roster,attempts,cls.id,sources);
+    const reviewRows=allRows.map(row=>({...row,units:row.units.filter(u=>u.fullReview)})).filter(row=>row.units.length);
+    const rows=onlyReviews?reviewRows:allRows;
+    const reviewCertificates=reviewRows.reduce((n,row)=>n+row.units.length,0);
     const certificates=rows.reduce((n,row)=>n+row.units.length,0);
     lastExport={rows,cls};
     const tableRows=rows.map((row,i)=>`
@@ -127,7 +131,7 @@
         <td><strong>${esc(row.name)}</strong></td>
         <td><div class="sct-row-units">${row.units.map(u=>`
           <span class="sct-unit" title="${esc(u.title)}">Unit ${Number(u.number)}
-          <b>${u.accuracy}%</b></span>`).join('')}</div></td>
+          <b>${onlyReviews?u.fullReview.accuracy:u.accuracy}%</b></span>`).join('')}</div></td>
         <td><strong>${row.units.length}</strong></td>
       </tr>`).join('');
     const message=unavailable.length
@@ -137,7 +141,7 @@
       <div class="sct-heading">
         <div><div class="eyebrow">StepUp · Certificates</div>
           <h1>Unit Mastery Certificates</h1>
-          <p>Students who earned unit mastery certificates through cumulative mastery of 80% or higher. Previously earned certificates remain valid.</p></div>
+          <p>Unit certificates are available after completing the required questions with at least 80% mastery, including saved Practice Again reviews. Previously earned certificates remain valid.</p></div>
         <div class="sct-actions">
           <button type="button" class="btn btn-secondary" onclick="PROVE.setTeacherTab('certificates')">Refresh List</button>
           <button type="button" class="btn btn-primary" onclick="STEPUP_CERT_REPORT.exportCSV()">Export List (CSV)</button>
@@ -148,26 +152,31 @@
         <div class="teacher-report-code"><span>Class Code</span><strong dir="ltr">${esc(cls.code||'')}</strong></div>
       </div>
       ${message}
+      <div class="sct-actions" role="group" aria-label="Certificate source">
+        <button type="button" class="btn ${onlyReviews?'btn-secondary':'btn-primary'}" aria-pressed="${!onlyReviews}" onclick="STEPUP_CERT_REPORT.setReviewFilter(false)">All Unit Certificates</button>
+        <button type="button" class="btn ${onlyReviews?'btn-primary':'btn-secondary'}" aria-pressed="${onlyReviews}" onclick="STEPUP_CERT_REPORT.setReviewFilter(true)">Practice Again Certificates</button>
+      </div>
+      <p class="sct-note sct-review-count">Practice Again: <strong>${reviewRows.length} students</strong> · <strong>${reviewCertificates} mastered unit reviews</strong>. Their unit certificates are available.</p>
       <div class="sct-stats">
         <div class="sct-stat"><span>Class Students</span><strong>${roster.length}</strong></div>
-        <div class="sct-stat"><span>Students with Certificates</span><strong>${rows.length}</strong></div>
-        <div class="sct-stat"><span>Total Earned Unit Certificates</span><strong>${certificates}</strong></div>
+        <div class="sct-stat"><span>${onlyReviews?'Practice Again Certificate Holders':'Students with Certificates'}</span><strong>${rows.length}</strong></div>
+        <div class="sct-stat"><span>${onlyReviews?'Mastered Practice Again Reviews':'Total Earned Unit Certificates'}</span><strong>${certificates}</strong></div>
       </div>
       <div class="card teacher-students-table">
         <div class="teacher-card-head"><div><h2>Certificate Roster — ${esc(cls.name)}</h2></div><span class="teacher-code-pill">${rows.length} students</span></div>
         <div class="table-wrap"><table class="sct-table">
           <thead><tr><th>No.</th><th>Student Name</th><th>Mastered Units</th><th>Certificate Count</th></tr></thead>
-          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">No students in this class have earned unit mastery certificates yet.</td></tr>'}</tbody>
+          <tbody>${tableRows||'<tr><td colspan="4" class="sct-empty">'+(onlyReviews?'No completed Practice Again reviews have reached 80% mastery in this class yet.':'No students in this class have earned unit mastery certificates yet.')+'</td></tr>'}</tbody>
         </table></div>
       </div>
-      <p class="sct-note">Certificates use the best saved answer for each question after completing the unit requirements with at least 80% mastery. Previously earned certificates remain valid. Earning a certificate does not mean its file has been downloaded.</p>
+      <p class="sct-note">${onlyReviews?'This list shows verified complete Practice Again reviews with at least 80% correct.':'Certificates use saved answers from unit practice and complete Practice Again reviews with at least 80% mastery.'} Previously earned certificates remain valid. Earning a certificate does not mean its file has been downloaded.</p>
     </section>`;
   }
   function exportCSV(){
     const {rows,cls}=lastExport;
     if(!cls)return;
-    const cells=[['Class','Student Name','Unit','Unit Title','Mastery %']];
-    rows.forEach(row=>row.units.forEach(u=>cells.push([cls.name,row.name,u.number,u.title,u.accuracy])));
+    const cells=[['Class','Student Name','Unit','Unit Title','Mastery %','Source']];
+    rows.forEach(row=>row.units.forEach(u=>cells.push([cls.name,row.name,u.number,u.title,onlyReviews?u.fullReview.accuracy:u.accuracy,onlyReviews?'Practice Again':'Unit Mastery'])));
     const value=cells.map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const link=document.createElement('a');
     const href=URL.createObjectURL(new Blob(['\uFEFF'+value],{type:'text/csv;charset=utf-8'}));
@@ -177,6 +186,6 @@
     setTimeout(()=>URL.revokeObjectURL(href),1000);
   }
 
-  window.STEPUP_CERT_REPORT={render,exportCSV,evaluateUnit,buildRows};
+  window.STEPUP_CERT_REPORT={render,exportCSV,evaluateUnit,buildRows,setReviewFilter};
 })();
 

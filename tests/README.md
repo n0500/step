@@ -1,5 +1,13 @@
 # English speech voice checks
 
+## Practice Again certificates
+
+Run `node --test tests/practice-again-certificates.test.cjs` with `jsdom` on
+`NODE_PATH`. These checks use the real Unit 1–3 question banks and verify saved
+complete retakes, the exact 80% boundary, malformed summaries, cumulative credits,
+previously earned certificates, successful-save timing, student isolation and the
+teacher's Practice Again certificate filter. No production records are changed.
+
 Run `node --test tests/speech-voices.test.cjs` to check ordinary English voice
 selection when device lists include sound effects, reordered voices, duplicate
 quality variants, a single speaker, or voices loaded after the first play.

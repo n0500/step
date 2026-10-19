@@ -15,6 +15,9 @@ on:
       - 'unit1-review-all.js'
       - 'unit2-exam-review.js'
       - 'stepup-celebrate.js'
+      - 'stepup-mastery.js'
+      - 'teacher-certificates.js'
+      - 'tests/practice-again-certificates.test.cjs'
       - 'unit3-review-all.js'
       - 'app.js'
       - 'index.html'
@@ -42,11 +45,14 @@ jobs:
           node --check unit1-review-all.js
           node --check unit2-exam-review.js
           node --check stepup-celebrate.js
+          node --check stepup-mastery.js
+          node --check teacher-certificates.js
           node --check unit3-review-all.js
           node --check app.js
       - name: Student flows and review regression tests
         run: |
           node --test tests/student-smart-review.test.cjs
+          node --test tests/practice-again-certificates.test.cjs
           node --test tests/fix-my-mistakes.test.cjs
           node --test tests/unit1-review-flow.test.cjs tests/unit2-review-progress.test.cjs tests/unit2-review-media.test.cjs tests/unit3-review-media.test.cjs
           node --test tests/unit2-continuous-review.test.cjs
