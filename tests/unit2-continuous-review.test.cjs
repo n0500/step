@@ -328,6 +328,25 @@ for(const entry of ['primary','home','banner','practice'])test('Unit 2 '+entry+'
   }finally{f.dom.window.close();}
 });
 
+test('Practice resumes a saved 22-question path at Reading instead of repeating completed skills',async()=>{
+  const f=await prepared();try{
+    f.stored.push(...f.records((q,i)=>i<20).slice(0,22));
+    await f.login();f.api.practice();
+    await until(()=>f.view().querySelector('.journey-question-card'));
+    assert.ok(f.view().querySelector('.u2-reading-try'),'resume at the unfinished Reading skill');
+    f.view().querySelector('.u2-reading-try').click();
+    assert.equal(f.prompt(),f.bank[22].prompt);
+    for(const q of f.bank.slice(22))await confirmedAnswer(f,q,true);
+    await until(()=>f.view().querySelector('.smart-results .smart-score'));
+    assert.equal(f.writes.length,8,'only the eight unanswered questions should be required');
+    assert.equal(new Set(f.writes.map(q=>q.questionId)).size,8);
+    assert.match(f.view().querySelector('.smart-score').textContent,/28\/30/);
+    assert.equal(f.w.STEPUP_MASTERY.status('u2',f.stored).earned,true);
+    assert.equal(f.view().querySelectorAll('.smart-mistake').length,2);
+    assert.deepEqual(f.errors,[]);
+  }finally{f.dom.window.close();}
+});
+
 test('Continue Review resumes after two old answers and reports their mistakes at the end',async()=>{
   const f=await prepared('two');try{
     await f.login();await primary(f);
