@@ -97,6 +97,29 @@ async function primary(f){
   f.view().querySelector('.journey-focus-start').click();
 }
 
+test('a newly mastered Practice Again immediately opens its downloadable unit certificate',async()=>{
+  const f=await prepared();try{
+    // Canvas drawing is unchanged; verify the real eligibility, dialog and
+    // download flow without requiring a native graphics implementation.
+    const context=new Proxy({measureText:()=>({width:100}),createLinearGradient:()=>({addColorStop(){}})},
+      {get(target,key){return key in target?target[key]:()=>{};}});
+    f.w.HTMLCanvasElement.prototype.getContext=()=>context;
+    f.w.HTMLCanvasElement.prototype.toDataURL=()=> 'data:image/png;base64,QA';
+    f.w.HTMLCanvasElement.prototype.toBlob=function(callback){callback(new f.w.Blob(['certificate'],{type:'image/png'}));};
+    await f.login();f.w.STEPUP_SMART.beginFull('u2');
+    for(let i=0;i<f.bank.length;i++)await confirmedAnswer(f,f.bank[i],i<24);
+    await until(()=>f.view().querySelector('.smart-certificate button'));
+    assert.equal(f.w.STEPUP_MASTERY.studentStatus('u2').earned,true);
+    assert.match(f.view().querySelector('.smart-certificate').textContent,/completed Practice Again/);
+    f.view().querySelector('.smart-certificate button').click();
+    await until(()=>f.w.document.querySelector('.sxc-cert img'));
+    assert.equal(f.w.document.querySelector('.sxc-cert img').alt,'Certificate for Unit 2');
+    assert.equal(f.w.document.querySelector('[data-sxc-dl]').disabled,false);
+    assert.equal(f.summaries.filter(a=>a.recordKind==='smart-full-review').length,1);
+    assert.equal(f.writes.length,30);assert.deepEqual(f.errors,[]);
+  }finally{f.dom.window.close();}
+});
+
 function oldFullRun(f,count){
   const answers={};
   for(const q of f.bank.slice(0,count))answers[q.section+'|'+q.id]={question_id:q.id,section:q.section,

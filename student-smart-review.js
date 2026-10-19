@@ -1,4 +1,4 @@
-/* STEP UP student review upgrade: safe overlay; no changes to certificate logic. */
+/* STEP UP student review upgrade: confirmed answers and complete review results. */
 (function () {
   'use strict';
   var VERSION='20261017-1', activeChoice=null, selecting=false, recentAttempts=[], recentUid=null;
@@ -198,6 +198,7 @@
     if(recentUid!==userId()){recentAttempts=[];recentUid=userId();}
     // Keep in-session Continue Review answers available before reopening My Progress.
     recentAttempts.push(record);
+    window.STEPUP_MASTERY?.recordSaved?.(record);
     var r=run(unit);
     if(!r)return;
     // Standalone practice and delayed answers from an older attempt may update
@@ -243,6 +244,11 @@
   }
   function reportHTML(a){
     var groups=scoreGroups(a),mistakes=(a.answers||[]).filter(function(q){return !q.correct;}),unit=a.unitId;
+    var certificate=window.STEPUP_MASTERY?.studentStatus?.(unit);
+    var certificateHTML=certificate?.earned?'<div class="smart-fix-prompt smart-certificate"><h3>🎓 Unit '+el(unit.slice(1))+' Certificate Available</h3><p>'+(
+      a.recordKind==='smart-full-review'&&window.STEPUP_MASTERY?.fullReviewResult?.(unit,a)?.qualifies
+        ?'You completed Practice Again with at least 80% mastery. Your unit certificate is ready.'
+        :'Your earned unit certificate remains available.')+'</p><button type="button" class="smart-confirm" onclick="STEPUP_MASTERY.viewCertificate(\''+unit+'\')">View Unit Certificate</button></div>':'';
     var previous=recentAttempts.filter(function(x){return x.recordKind==='smart-full-review'&&x.unitId===unit&&x.reviewRunId!==a.reviewRunId;})
       .sort(function(x,y){return Date.parse(y.submittedAt||0)-Date.parse(x.submittedAt||0);})[0];
     var compare=a.recordKind==='smart-recovery-source'?'<span>Completed review path · latest saved answers</span>':previous?'<span>Change from previous: '+(a.percentage-previous.percentage>0?'+':'')+(a.percentage-previous.percentage)+' percentage points</span>':'<span>First recorded full review</span>';
@@ -253,7 +259,7 @@
     }).join('');
     var mis=mistakes.map(function(q,i){return '<details class="smart-mistake"><summary>'+el((i+1)+'. '+q.skill)+' — '+el(q.stem)+'</summary><p><b>Your answer:</b> '+el(q.selectedText)+'</p><p><b>Correct:</b> '+el(q.correctText)+'</p><p>'+el(q.explanation||'Review the lesson and check the clue in the question.')+'</p></details>';}).join('');
     var unlocked=a.percentage===100&&Q[unit]&&Q[unit].length===5;
-    return '<section class="smart-results"><small>STEP UP · Unit '+el(unit&&unit.slice(1))+' · Full review</small><h2>My Learning Level</h2><div class="smart-score">'+a.percentage+'% <small>'+a.score+'/'+a.total+' correct</small></div><p>'+compare+'</p><h3>My Skills</h3>'+rows+
+    return '<section class="smart-results"><small>STEP UP · Unit '+el(unit&&unit.slice(1))+' · Full review</small><h2>My Learning Level</h2><div class="smart-score">'+a.percentage+'% <small>'+a.score+'/'+a.total+' correct</small></div><p>'+compare+'</p>'+certificateHTML+'<h3>My Skills</h3>'+rows+
       (mistakes.length?'<div class="smart-fix-prompt"><h3>Review My Mistakes ('+mistakes.length+')</h3><p>Understand each mistake, then try one new Check question. Your original score stays unchanged.</p><button type="button" class="smart-fix-entry" onclick="STEPUP_FIX.start(\''+unit+'\')">Fix My Mistakes →</button></div><h3>My Mistakes</h3>'+mis:
         '<p class="smart-success">You answered every original review question correctly.</p>')+
       (unit==='u1'?'<p class="smart-writing">Writing · The Internet: review your writing task separately. Multiple-choice results do not assess your writing.</p>':'')+
@@ -420,7 +426,7 @@
     }
     if(window.STEPUP_JOURNEY&&!STEPUP_JOURNEY.__smartProgress){
       var prior=STEPUP_JOURNEY.progressHTML;
-      STEPUP_JOURNEY.progressHTML=function(a,o,p){return progressHTML(a)+prior.call(this,a,o,p);};
+      STEPUP_JOURNEY.progressHTML=function(a,o,p){var original=prior.call(this,a,o,p);return progressHTML(a)+original;};
       STEPUP_JOURNEY.__smartProgress=true;
     }
     var observer=new MutationObserver(function(){enrich();});

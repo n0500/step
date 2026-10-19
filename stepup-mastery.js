@@ -134,6 +134,38 @@
     return best;
   }
 
+  // Saved Practice Again runs are certificate evidence in their own right.
+  // Verify the original question IDs, coverage and score, rather than trusting
+  // a rounded percentage or an optional Extra Challenge result.
+  function fullReviewResult(id,record){
+    const req=requirements(id),a=record;
+    if(!req?.length || !a || a.recordKind!=='smart-full-review' ||
+      a.trainingId!=='smart-full-review-'+id || a.unitId!==id ||
+      a.studyMethod!=='full-original-bank' || Number(a.total)!==req.length ||
+      !Array.isArray(a.answers) || a.answers.length!==req.length)return null;
+    const expected=new Set(req.map(q=>String(q.section)+'|'+String(q.questionId))),seen=new Set();
+    for(const answer of a.answers){
+      const key=String(answer?.section)+'|'+String(answer?.question_id||answer?.questionId);
+      if(!expected.has(key)||seen.has(key)||typeof answer?.correct!=='boolean')return null;
+      seen.add(key);
+    }
+    if(seen.size!==expected.size)return null;
+    const score=a.answers.filter(q=>q.correct===true).length,total=req.length;
+    if(Number(a.score)!==score || Number(a.percentage)!==Math.round(score*100/total))return null;
+    return {score,total,accuracy:Math.round(score*10000/total)/100,
+      qualifies:score*100>=PASS*total,submittedAt:a.submittedAt||'',reviewRunId:a.reviewRunId||''};
+  }
+  function bestFullReview(id,records){
+    let best=null;
+    for(const record of records||[]){
+      if(record?.recordKind!=='smart-full-review')continue;
+      const result=fullReviewResult(id,record);
+      if(result&&(!best||result.score>best.score||
+        result.score===best.score&&result.submittedAt>best.submittedAt))best=result;
+    }
+    return best;
+  }
+
   // Credits every correct answer once across all saved attempts, by unit.
   // STEP practice is not a certificate requirement.
   function cumulativeStatus(id,records){
@@ -154,11 +186,13 @@
         if(a.correct===true||a.bestCorrect===true)q.correct=true;
         continue;
       }
-      const isAssessment=a.trainingId===trainingId(id);
-      const section=isAssessment?null:stages.get(String(a.trainingId));
-      if(!isAssessment&&!section || !Array.isArray(a.answers))continue;
+      const isReview=a.recordKind==='smart-full-review';
+      if(isReview&&!fullReviewResult(id,a))continue;
+      const isMixed=isReview||a.trainingId===trainingId(id);
+      const section=isMixed?null:stages.get(String(a.trainingId));
+      if(!isMixed&&!section || !Array.isArray(a.answers))continue;
       a.answers.forEach(ans=>{
-        const key=(isAssessment?String(ans?.section):section)+'|'+String(ans?.question_id||ans?.questionId);
+        const key=(isMixed?String(ans?.section):section)+'|'+String(ans?.question_id||ans?.questionId);
         const q=questions.get(key);
         if(!q)return;
         q.answered=true;
@@ -173,15 +207,23 @@
   }
   function status(id,records){
     if(!modules[id])return {earned:false,mode:'unsupported',accuracy:0};
-    const old=legacyStatus(id,records),check=bestCheck(id,records),progress=cumulativeStatus(id,records);
-    if(old.earned)return {earned:true,mode:'legacy',accuracy:old.accuracy,progress,best:check,legacy:old};
-    if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:check.accuracy,progress,best:check,legacy:old};
-    if(progress.earned)return {earned:true,mode:'cumulative',accuracy:progress.accuracy,progress,best:check,legacy:old};
-    return {earned:false,mode:'pending',accuracy:progress.accuracy,progress,best:check,legacy:old};
+    const old=legacyStatus(id,records),check=bestCheck(id,records),progress=cumulativeStatus(id,records),fullReview=bestFullReview(id,records);
+    const evidence={progress,best:check,legacy:old,fullReview};
+    const reviewAccuracy=fullReview?.qualifies?progress.accuracy:0;
+    if(old.earned)return {earned:true,mode:'legacy',accuracy:Math.max(old.accuracy,reviewAccuracy),...evidence};
+    if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:Math.max(check.accuracy,reviewAccuracy),...evidence};
+    if(fullReview?.qualifies)return {earned:true,mode:'practice-again',accuracy:progress.accuracy,...evidence};
+    if(progress.earned)return {earned:true,mode:'cumulative',accuracy:progress.accuracy,...evidence};
+    return {earned:false,mode:'pending',accuracy:progress.accuracy,...evidence};
   }
 
   let attempts=[],student=null,session=null,saving=false;
   function hydrate(a,p){if(Array.isArray(a))attempts=a;if(p&&p.role==='student')student=p;}
+  function recordSaved(record){
+    if(!student||!record||record.studentId!==(student.id||student.uid))return;
+    try{if(window.firebase?.auth&&window.firebase.auth().currentUser?.uid!==record.studentId)return;}catch(_){return;}
+    attempts=attempts.concat(record);
+  }
   function studentStatus(id){return status(id,attempts);}
   const J=window.STEPUP_JOURNEY;
   if(J){
@@ -191,6 +233,13 @@
       J[name]=function(a,o,p){hydrate(a,p);return orig.apply(this,arguments);};
     });
   }
+  // Refresh certificate eligibility only after the online save succeeds.
+  const recordAttempt=window.PROVE?.recordJourneyAttempt;
+  if(typeof recordAttempt==='function')window.PROVE.recordJourneyAttempt=async function(){
+    const saved=await recordAttempt.apply(this,arguments);
+    recordSaved(saved);
+    return saved;
+  };
   const renderHost=()=>document.querySelector('.student-view');
   function css(){
     if(document.getElementById('stepupMasteryCSS'))return;
@@ -356,6 +405,6 @@
     else api(id)?.open?.();
   }
   css();
-  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,bestCheck,bank,requirements,validBank,
+  window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,bestCheck,fullReviewResult,bestFullReview,recordSaved,bank,requirements,validBank,
     studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
