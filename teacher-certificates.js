@@ -176,7 +176,7 @@
     const {rows,cls}=lastExport;
     if(!cls)return;
     const cells=[['Class','Student Name','Unit','Unit Title','Mastery %','Source']];
-    rows.forEach(row=>row.units.forEach(u=>cells.push([cls.name,row.name,u.number,u.title,onlyReviews?u.fullReview.accuracy:u.accuracy,onlyReviews?'Practice Again':'Unit Mastery'])));
+    rows.forEach(row=>row.units.forEach(u=>cells.push([cls.name,row.name,u.number,u.title,onlyReviews?u.fullReview.accuracy:u.accuracy,onlyReviews?'Practice Again':u.mode==='teacher-approved'?'Teacher approved':'Unit Mastery'])));
     const value=cells.map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
     const link=document.createElement('a');
     const href=URL.createObjectURL(new Blob(['\uFEFF'+value],{type:'text/csv;charset=utf-8'}));

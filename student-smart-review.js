@@ -101,7 +101,10 @@
   function canPracticeAgain(unit){
     var b=bank(unit);
     if(!b.length)return false;
-    try{if(window.STEPUP_MASTERY?.studentStatus?.(unit)?.earned)return true;}catch(_){}
+    try{
+      var certificate=window.STEPUP_MASTERY?.studentStatus?.(unit);
+      if(certificate?.earned&&certificate.mode!=='teacher-approved')return true;
+    }catch(_){}
     var p;
     try{p=api(unit)?.getProgress?.();}catch(_){return false;}
     if(!p||Number(p.total)!==b.length||Number(p.answered)<b.length)return false;

@@ -33,6 +33,35 @@ function fixture(){
   return {w,dom,student,control,saved,review,mastery:w.STEPUP_MASTERY};
 }
 
+test('teacher-approved Unit 2 certificates credit the historical 22-question mastery without inventing remaining answers',()=>{
+  const f=fixture();try{
+    const records=f.mastery.requirements('u2').filter(q=>['vocab','grammar','functions'].includes(q.section)).map((q,i)=>({
+      recordKind:'question',examUnit:'u2',examSection:q.section,questionId:q.questionId,
+      studentId:f.student.id,correct:i<20,submittedAt:'2026-10-18T20:00:00.000Z'
+    }));
+    assert.equal(records.length,22);
+    const before=JSON.stringify(records),st=f.mastery.status('u2',records);
+    assert.equal(st.earned,true);assert.equal(st.mode,'teacher-approved');assert.equal(st.accuracy,90.91);
+    assert.equal(st.progress.answered,22);assert.equal(st.progress.correct,20);assert.equal(st.progress.total,30);
+    assert.equal(st.fullReview,null);assert.equal(JSON.stringify(records),before);
+    const source={unitId:'u2',questions:f.mastery.requirements('u2'),unit:{number:2,title:'Unit 2'}};
+    assert.equal(f.w.STEPUP_CERT_REPORT.buildRows([f.student],records,f.student.classId,[source])[0].units[0].mode,'teacher-approved');
+    assert.equal(f.mastery.status('u1',records).earned,false);
+    const rejected=[
+      records.slice(0,21),
+      records.map(a=>({...a,submittedAt:'2026-10-19T01:31:44.000Z'})),
+      records.map(a=>({...a,submittedAt:'invalid'})),
+      records.map((a,i)=>({...a,correct:i<17})),
+      records.map(a=>({...a,examUnit:'u1'}))
+    ];
+    for(const bad of rejected)assert.equal(f.mastery.status('u2',bad).earned,false);
+    const next=f.mastery.requirements('u2').find(q=>q.section==='reading');
+    assert.equal(f.mastery.status('u2',[...records.slice(0,21),{...records[0],examSection:next.section,questionId:next.questionId}]).earned,false,'22 answers must cover all three core skills');
+    f.mastery.hydrate(records,f.student);
+    assert.equal(f.mastery.studentStatus('u2').earned,true);
+  }finally{f.dom.window.close();}
+});
+
 for(const unit of ['u1','u2','u3'])test(unit+' saved Practice Again at the 80% boundary unlocks the same certificate for student and teacher',()=>{
   const f=fixture();try{
     const n=f.mastery.requirements(unit).length,a=f.review(unit,Math.ceil(n*.8)),before=JSON.stringify(a);

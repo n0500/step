@@ -205,6 +205,30 @@
     return {earned:total>0&&answered===total&&correct*100>=PASS*total,
       answered,total,correct,accuracy:total?Math.round(correct/total*10000)/100:0};
   }
+  // Teacher-authorized, one-time remedy for the Unit 2 Practice interruption.
+  // Only evidence saved before the fix can qualify. This does not manufacture
+  // answers for Reading/Listening or change the normal 80% completion policy.
+  function interruptionException(id,records){
+    if(id!=='u2')return null;
+    const cutoff=Date.parse('2026-10-19T01:31:43.000Z');
+    const history=(records||[]).filter(a=>{
+      const date=Date.parse(a?.submittedAt||'');
+      return Number.isFinite(date)&&date<=cutoff;
+    });
+    const sections=new Set(['vocab','grammar','functions']);
+    const req=requirements(id);
+    const core=req?.filter(q=>sections.has(q.section));
+    if(!core||core.length!==22)return null;
+    const trainings=new Set(core.map(q=>q.trainingId));
+    const firstSkills=history.filter(a=>a.recordKind==='question'
+      ? a.examUnit===id&&sections.has(a.examSection) : trainings.has(a.trainingId));
+    const completed=cumulativeStatus(id,firstSkills),saved=cumulativeStatus(id,history);
+    if(completed.answered!==22 || completed.correct*100<PASS*22 ||
+      saved.answered>=saved.total || saved.correct*100<PASS*saved.answered)return null;
+    return {reason:'u2-practice-interruption-20261019',cutoff:'2026-10-19T01:31:43.000Z',
+      answered:saved.answered,correct:saved.correct,total:saved.total,
+      accuracy:Math.round(saved.correct*10000/saved.answered)/100};
+  }
   function status(id,records){
     if(!modules[id])return {earned:false,mode:'unsupported',accuracy:0};
     const old=legacyStatus(id,records),check=bestCheck(id,records),progress=cumulativeStatus(id,records),fullReview=bestFullReview(id,records);
@@ -214,6 +238,8 @@
     if(check?.qualifies)return {earned:true,mode:'assessment',accuracy:Math.max(check.accuracy,reviewAccuracy),...evidence};
     if(fullReview?.qualifies)return {earned:true,mode:'practice-again',accuracy:progress.accuracy,...evidence};
     if(progress.earned)return {earned:true,mode:'cumulative',accuracy:progress.accuracy,...evidence};
+    const exception=interruptionException(id,records);
+    if(exception)return {earned:true,mode:'teacher-approved',accuracy:exception.accuracy,...evidence,exception};
     return {earned:false,mode:'pending',accuracy:progress.accuracy,...evidence};
   }
 
@@ -275,7 +301,9 @@
     if(st.earned){
       const description=st.mode==='legacy'||st.mode==='assessment'
         ? 'Your previously earned certificate remains available.'
-        : 'You reached the 80% goal through saved practice.';
+        : st.mode==='teacher-approved'
+          ? 'Your unit certificate is available based on your saved practice results.'
+          : 'You reached the 80% goal through saved practice.';
       return '<div class="sum-card"><div><strong>🏆 Unit mastered</strong><p>'+description+
         '</p></div><button type="button" data-mastery-view="'+id+'">View Certificate</button></div>';
     }
