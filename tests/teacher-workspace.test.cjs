@@ -71,6 +71,28 @@ test('the home page has direct English destinations and counts for the selected 
   }finally{f.dom.window.close();}
 });
 
+test('class Excel audit includes saved review questions and certificate requirements without altering old report totals or exposing PINs',async()=>{
+  const f=await fixture({assessment:true});try{
+    const sheets={},exports=[];
+    f.w.XLSX={utils:{book_new:()=>({}),aoa_to_sheet:rows=>rows,book_append_sheet:(wb,rows,name)=>sheets[name]=rows},writeFile:(wb,name)=>exports.push(name)};
+    const append=f.w.document.head.appendChild.bind(f.w.document.head);
+    f.w.document.head.appendChild=function(node){const result=append(node);if(node.tagName==='SCRIPT'&&node.src.includes('xlsx'))queueMicrotask(()=>node.onload());return result;};
+    await f.w.PROVE.exportClassExcel();
+    assert.equal(exports.length,1);
+    assert.ok(sheets['Unit Requirements'].length>100);
+    const evidence=sheets['Certificate Evidence'],status=sheets['Certificate Status'];
+    const header=evidence[0];
+    assert.ok(evidence.slice(1).some(row=>row[header.indexOf('Record Kind')]==='question'));
+    assert.ok(evidence.slice(1).every(row=>row[header.indexOf('Class ID')]==='qa-a'));
+    assert.ok(evidence.slice(1).some(row=>row[header.indexOf('Training ID')]==='journey-u1-mastery-check'&&JSON.parse(row.at(-1)).length===f.req.length));
+    const student=status.slice(1).find(row=>row[0]==='qa-sara'&&row[3]==='u1');
+    assert.equal(student[9],true);assert.equal(student[5],f.req.length);
+    assert.ok(sheets.Attempts.slice(1).every(row=>row[4]!=='question'),'question evidence must stay separate from attempt averages');
+    assert.ok(!Object.values(sheets).some(rows=>rows[0].some(cell=>/pin|password|token/i.test(String(cell)))));
+    f.unchanged();
+  }finally{f.dom.window.close();}
+});
+
 test('student names are searchable with Arabic letter variants without remote reads',async()=>{
   const f=await fixture();try{
     await f.tab('reports');const count=f.reads.length;f.input('twStudentSearch','امل');assert.deepEqual(f.visible(),['qa-amal']);
