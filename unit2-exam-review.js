@@ -1385,6 +1385,9 @@
   }
 
   function openPractice(){
+    // An unfinished first path must resume saved coverage, including answers
+    // completed on another device. Full retakes start only after mastery.
+    if(window.STEPUP_SMART?.beginFull && !window.STEPUP_SMART.canPracticeAgain('u2'))return continueReview();
     // The older Practice entry must use the same complete journey as Practice Again.
     if(window.STEPUP_SMART?.beginFull)return window.STEPUP_SMART.beginFull('u2');
     stopStepTimer();
