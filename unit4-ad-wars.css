@@ -1,0 +1,69 @@
+/* STEP UP · AD WARS (Unit 4 Grammar) — teacher-only Class Mode mini game */
+.adwars-entry{display:flex;justify-content:space-between;align-items:center;gap:18px;background:linear-gradient(105deg,#f4f8ff,#fff9e9);border:1px solid #d8e5f5}
+.adwars-entry h2{margin:5px 0 6px;font-size:24px;color:#153154}
+.adwars-entry p{margin:0;line-height:1.5;color:#536781}
+.adwars-entry .adwars-tag{display:inline-block;color:#825b00;font-size:12px;font-weight:800;letter-spacing:.08em}
+.adwars-entry button{white-space:nowrap;min-height:44px}
+#adwarsOverlay{position:fixed;z-index:99999;inset:0;background:#101c35;color:#fff;overflow-y:auto;overscroll-behavior:contain;font-family:Arial,"Segoe UI",sans-serif}
+#adwarsOverlay *{box-sizing:border-box}
+#adwarsOverlay .adwars-wrap{max-width:1260px;min-height:100vh;padding:24px 28px 36px;margin:0 auto}
+#adwarsOverlay .adwars-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+#adwarsOverlay .adwars-wordmark{font-size:22px;font-weight:900;letter-spacing:.07em;color:#ffe59b}
+#adwarsOverlay .adwars-kicker{font-size:13px;color:#b8c9e8;font-weight:700;letter-spacing:.08em}
+#adwarsOverlay button{font:inherit;cursor:pointer;border:0;touch-action:manipulation}
+#adwarsOverlay button:focus-visible{outline:3px solid #76d4ff;outline-offset:3px}
+#adwarsOverlay button:disabled{opacity:.43;cursor:not-allowed}
+#adwarsOverlay .adwars-btn{padding:13px 23px;border-radius:12px;font-size:17px;font-weight:800;min-height:49px;background:#ffd66e;color:#152444}
+#adwarsOverlay .adwars-btn.ghost{background:transparent;border:2px solid #526685;color:#e9f0ff}
+#adwarsOverlay .adwars-btn.small{font-size:14px;min-height:40px;padding:8px 15px}
+#adwarsOverlay .adwars-title{text-align:center;font-size:clamp(35px,5vw,64px);line-height:1.06;letter-spacing:.03em;margin:14px 0;color:#fff}
+#adwarsOverlay .adwars-subtitle{text-align:center;font-size:clamp(17px,2vw,23px);color:#cbd7ed;margin:0 0 28px}
+#adwarsOverlay .adwars-hero{padding:45px 20px 34px;text-align:center;background:linear-gradient(145deg,#253d68,#1b2f52);border:1px solid #45618b;border-radius:22px}
+#adwarsOverlay .adwars-cup{font-size:58px;line-height:1.4}
+#adwarsOverlay .adwars-agencies{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:24px 0}
+#adwarsOverlay .adwars-agency{background:#223455;border:1px solid #435a7b;border-radius:15px;padding:18px 12px;text-align:center}
+#adwarsOverlay .adwars-agency.active{border:3px solid #ffd66e;background:#2c4268;box-shadow:0 0 0 4px #ffd66e1c}
+#adwarsOverlay .adwars-agency .team{font-size:16px;font-weight:800;color:#fff}
+#adwarsOverlay .adwars-agency .score{font-size:clamp(32px,4vw,50px);font-weight:900;color:#ffd66e;line-height:1.3}
+#adwarsOverlay .adwars-agency .score-label{font-size:12px;color:#c8d5e9}
+#adwarsOverlay .adwars-intro-rules{font-size:17px;line-height:1.8;color:#e2eafe}
+#adwarsOverlay .adwars-centered{text-align:center}
+#adwarsOverlay .adwars-card{background:#fff;color:#14284c;border-radius:22px;padding:clamp(22px,3vw,38px);box-shadow:0 18px 48px #050c1d55}
+#adwarsOverlay .adwars-meta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+#adwarsOverlay .adwars-round{display:inline-flex;padding:8px 13px;border-radius:999px;background:#eaf1fc;color:#2c508d;font-size:15px;font-weight:900}
+#adwarsOverlay .adwars-timer{font-size:clamp(32px,4vw,52px);font-weight:900;color:#153d77;font-variant-numeric:tabular-nums}
+#adwarsOverlay .adwars-timer.warning{color:#b52525}
+#adwarsOverlay .adwars-progress{height:9px;margin:15px 0 18px;background:#dbe6f6;border-radius:20px;overflow:hidden}
+#adwarsOverlay .adwars-progress>span{display:block;height:100%;width:100%;background:#3986cf;transition:width .22s linear}
+#adwarsOverlay .adwars-question{font-size:clamp(25px,3.8vw,43px);font-weight:900;line-height:1.4;margin:12px 0 25px;text-align:center}
+#adwarsOverlay .adwars-topic{font-size:14px;font-weight:800;letter-spacing:.03em;color:#536987;text-align:center}
+#adwarsOverlay .adwars-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+#adwarsOverlay .adwars-choice{background:#f0f5fc;color:#132b4e;border:3px solid #d3dfef;border-radius:15px;min-height:115px;padding:14px 12px;font-size:clamp(18px,2vw,26px);font-weight:800;text-align:center}
+#adwarsOverlay .adwars-choice .adwars-letter{display:block;font-size:15px;color:#486b96;margin-bottom:9px}
+#adwarsOverlay .adwars-choice.selected{background:#d8eafe;border-color:#245bb5}
+#adwarsOverlay .adwars-choice.correct{background:#e0f5e9;border-color:#1c9557;color:#14562f}
+#adwarsOverlay .adwars-choice.wrong{background:#ffebeb;border-color:#d63e3e;color:#8b2424}
+#adwarsOverlay .adwars-answer{margin:16px 0;padding:15px 17px;border-radius:12px;background:#eef7f2;color:#165937;font-size:18px;line-height:1.55;font-weight:700}
+#adwarsOverlay .adwars-answer.expired{background:#fff3e6;color:#885313}
+#adwarsOverlay .adwars-actions{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:22px}
+#adwarsOverlay .adwars-actions .adwars-btn{flex:1}
+#adwarsOverlay .adwars-note{font-size:14px;color:#657794}
+#adwarsOverlay .adwars-break{text-align:center;padding:24px 10px}
+#adwarsOverlay .adwars-break h2{font-size:clamp(30px,4vw,48px);margin:18px 0 6px}
+#adwarsOverlay .adwars-break p{color:#c8d8f1;font-size:20px;margin:8px 0 24px}
+#adwarsOverlay .adwars-result{background:#213757;border:1px solid #49668a;border-radius:20px;padding:26px}
+#adwarsOverlay .adwars-result h2{font-size:clamp(28px,4vw,48px);color:#ffe091;text-align:center;margin:16px 0}
+#adwarsOverlay .adwars-final-label{text-align:center;color:#ccd9ed;font-size:19px}
+@media(max-width:700px){
+  .adwars-entry{flex-direction:column;align-items:stretch}
+  #adwarsOverlay .adwars-wrap{padding:16px 13px 30px}
+  #adwarsOverlay .adwars-top{margin-bottom:16px}
+  #adwarsOverlay .adwars-wordmark{font-size:18px}
+  #adwarsOverlay .adwars-card{padding:17px}
+  #adwarsOverlay .adwars-choices{grid-template-columns:1fr;gap:9px}
+  #adwarsOverlay .adwars-choice{min-height:64px}
+  #adwarsOverlay .adwars-question{margin:11px 0 15px}
+  #adwarsOverlay .adwars-agency{padding:12px 5px}
+  #adwarsOverlay .adwars-agency .team{font-size:13px}
+  #adwarsOverlay .adwars-agency .score{font-size:30px}
+}
