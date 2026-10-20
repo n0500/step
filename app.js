@@ -586,12 +586,18 @@
   }
   function unitById(id){
     const legacy=DATA.units.find(u=>u.id===id)||null;
-    if((legacy?.trainings||[]).length||id!=="u3")return legacy;
-    return window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id===id)||legacy;
+    if((legacy?.trainings||[]).length||!["u3","u4"].includes(id))return legacy;
+    const journey=window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id===id);
+    // Class Mode expects a trainings array even for journey-only units.
+    return journey?{...journey,trainings:journey.trainings||[]}:legacy;
   }
   function unitIsReady(unit){
     if((unit?.trainings||[]).length>0)return true;
-    return unit?.id==="u3"&&!!window.STEPUP_U3_REVIEW&&!!window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id==="u3");
+    if(unit?.id==="u3")return !!window.STEPUP_U3_REVIEW&&!!window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id==="u3");
+    // Unit 4 is prepared but NOT auto-opened for classes.
+    // Its teacher-controlled Open Unit switch stays authoritative.
+    if(unit?.id==="u4")return window.STEPUP_U4_READY===true;
+    return false;
   }
   function openUnitsForClass(cls){
     const ids=releasedOpenUnitIds(cls);
