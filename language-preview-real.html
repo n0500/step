@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="sx">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#eef4fb">
+<title>STEP UP | Actual UI Language Preview</title>
+<link rel="stylesheet" href="styles.css?v=20261009-11">
+<link rel="stylesheet" href="journey.css?v=20261001-2">
+<link rel="stylesheet" href="home-simplify.css?v=20261001-2">
+<link rel="stylesheet" href="journey-focus.css?v=20261017-3">
+<link rel="stylesheet" href="stepup-athari.css?v=20261017-touch-1">
+<link rel="stylesheet" href="responsive-wide.css?v=20261001-2">
+<link rel="stylesheet" href="future-lab-3d.css?v=20261002-3">
+<link rel="stylesheet" href="student-account-update.css?v=20261005-2">
+<link rel="stylesheet" href="unit4-ad-wars.css?v=20261020-1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+<style>
+/* Demo-specific additions only. All layout, colors, component classes and
+   navigation use the live STEP UP stylesheets linked above. */
+.preview-tag{display:inline-flex;align-items:center;justify-content:center;border:1px solid #a9cce0;color:#426d88;background:#eaf4fc;border-radius:999px;padding:5px 9px;font:700 10px/1.1 Arial,sans-serif;letter-spacing:.05em;white-space:nowrap}
+.preview-language{display:inline-flex;align-items:center;padding:3px;background:#f5f7fb;border:1px solid #d8e2ef;border-radius:12px;gap:3px;flex-shrink:0}
+.preview-language button{background:transparent;border:0;border-radius:9px;font-size:12px;font-weight:800;color:#66809a;padding:7px 9px;min-height:34px;cursor:pointer}
+.preview-language button[aria-pressed="true"]{color:#145986;background:#fff;box-shadow:0 1px 5px #355b811b}
+.preview-message{max-width:980px;margin:0 auto 16px;padding:10px 14px;border:1px dashed #b9d2e5;border-radius:12px;color:#527490;background:#f5faff;font-size:12px;line-height:1.6}
+html.sx body.sx .demo-lesson{max-width:980px;margin:16px auto}
+.demo-answers{display:grid;gap:9px;margin:14px 0;max-width:620px;direction:ltr;text-align:left}
+.demo-answer{display:flex;gap:10px;align-items:center;border:1px solid #dbe5ef;background:#fff;border-radius:13px;padding:13px;cursor:pointer;text-align:left;color:#19344f;font-size:15px}
+.demo-answer.selected{background:#edf7ff;border:2px solid #3c83c6;padding:12px}
+.demo-answer input{accent-color:#1b69b5;width:17px;height:17px;flex-shrink:0}
+.demo-feedback{border-radius:12px;background:#e7f7ef;border:1px solid #c5e7d5;padding:12px 14px;margin:10px 0;color:#285b49}
+.demo-feedback.incorrect{background:#fff6e8;border-color:#f5debc;color:#75552c}
+.demo-question{font-weight:750;font-size:20px;margin:14px 0;direction:ltr;text-align:left;color:#16324e}
+.demo-actions{display:flex;gap:9px;flex-wrap:wrap}
+.demo-settings{max-width:980px;margin:14px auto 0}
+.demo-settings .preview-language{margin-top:10px}
+.demo-profile-hint{font-size:11px;color:#8794a4;display:block;line-height:1.5;margin-top:5px}
+.demo-static-eng{direction:ltr!important;text-align:left!important;unicode-bidi:isolate}
+.demo-hidden{display:none!important}
+html.sx body.sx .preview-message strong{color:#226080}
+@media(max-width:680px){
+  .preview-tag{display:none}
+  .preview-language button{font-size:11px;padding:6px}
+  header.appbar .brand small{display:none!important}
+  header.appbar .nav-actions{gap:5px}
+  .demo-question{font-size:18px}
+  .preview-message{margin-left:14px;margin-right:14px}
+}
+</style>
+</head>
+<body class="sx">
+<div id="app">
+<header class="appbar student-appbar">
+<div class="brand"><div class="logo">SU</div><div><strong>StepUp</strong><small>Learn • Master • Practice • Progress • Student</small></div></div>
+<div class="nav-actions">
+  <span class="preview-tag">PREVIEW ONLY</span>
+  <div class="preview-language" role="group" aria-label="App language">
+    <button type="button" data-language="en" aria-pressed="true">EN</button>
+    <button type="button" data-language="ar" aria-pressed="false">عربي</button>
+  </div>
+  <button class="student-header-avatar" id="demoAvatar" type="button" aria-label="Open profile">S</button>
+</div>
+</header>
+<main class="container student-app-shell">
+<nav class="role-tabs student-nav" data-role="student" aria-label="Student navigation" id="demoNav"></nav>
+<section class="student-view" id="demoView">
+  <div class="student-home-clean">
+    <div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, Student</h1><p>First Secondary · Demo</p></div></div>
+  </div>
+</section>
+</main>
+</div>
+<script>
+(function(){
+ "use strict";
+ // No Firebase SDK, network calls, real sign-in, student IDs, or saved grades.
+ // This is a static preview of the existing HTML/CSS architecture.
+ const STORAGE_KEY="stepup_actual_ui_language_preview_only_v1";
+ let language="en";
+ try {if(localStorage.getItem(STORAGE_KEY)==="ar")language="ar";}catch(_){}
+ let screen="home", openedUnit=false, questionIndex=0, selected=-1, confirmed=false, score=0, completed=false;
+ const units=[
+  {number:1,title:"Big Changes",pct:100,status:"Complete"},
+  {number:2,title:"Careers",pct:82,status:"In progress"},
+  {number:3,title:"What Will Be, Will Be",pct:57,status:"In progress"},
+  {number:4,title:"The Art of Advertising",pct:25,status:"In progress"},
+  {number:5,title:"Did You Hurt Yourself?",pct:0,status:"Locked"},
+  {number:6,title:"Take My Advice",pct:0,status:"Locked"}
+ ];
+ const exercises=[
+  {q:"The cake ___ by Sara yesterday.",options:["was baked","bakes","is baking"],answer:0},
+  {q:"English ___ in many countries.",options:["is spoken","speaks","is speaking"],answer:0}
+ ];
+ const words={
+  en:{
+   preview:"This is the real STEP UP layout with sample data. No student account is connected.",
+   navHome:"Home",navJourney:"My Journey",navProgress:"My Progress",navAssistant:"Assistant",
+   welcome:"Welcome back",greeting:"Hi, Student",studentClass:"First Secondary · Demo",
+   continueYourJourney:"Continue your journey",mastery:"Master • Grammar",journeyTip:"A short adaptive check. Support appears only if you need it.",
+   continue:"Continue",overall:"Journey progress",demoSample:"Sample data · not saved",
+   journeyKicker:"My Journey",journeyTitle:"Small steps. Real progress.",journeyIntro:"One clear stop at a time — no long task list.",
+   complete:"Complete",inProgress:"In progress",locked:"Locked",ready:"Ready",
+   requiredStages:"required stages",teacherOpens:"Teacher will open this unit",
+   progressKicker:"Progress",progressTitle:"My Progress",progressIntro:"See what you have mastered and what deserves one quick review.",
+   learningJourney:"Learning journey",unitsAtGlance:"Units at a glance",openJourney:"Open Journey",
+   practiceResults:"Detailed STEP practice results",yourResults:"Your results",progressTip:"Example scores only. Nothing is saved.",
+   assistantKicker:"Your study companion",assistantTitle:"Need help?",assistantDesc:"Ask about the unit you are studying. Get one clear explanation or a quick practice — then return to your journey.",
+   askAssistant:"Ask Assistant",dictionary:"Dictionary + My Words",dictionaryDesc:"Look up a word, hear it, and save it for later.",
+   writingCoach:"Writing Coach",writingDesc:"Optional support when you want help planning or revising writing.",
+   profileKicker:"Profile",profileTitle:"My Profile",profileIntro:"Keep your name accurate. Class and school information are managed by your teacher.",
+   studentRole:"StepUp Student",demoName:"Demo Student",classLabel:"Class",schoolLabel:"School",accountLabel:"Account",
+   demoAccount:"Demo account",demoSchool:"Sample school",
+   changeLogin:"Change Login Name",logout:"Log out",previewNotAvailable:"This action is disabled in the preview. Your real account is unchanged.",
+   languageTitle:"App Language",languageExplain:"Only menus, buttons, messages and interface instructions change. Activities and questions remain English.",
+   languageEnglish:"English",languageArabic:"العربية",unitOf:"Unit",startPractice:"Start Practice",
+   unitStage:"Grammar · Passive Voice",sampleExercise:"Sample practice · Unit 4",chooseAnswer:"Choose one answer.",confirmAnswer:"Confirm Answer",
+   nextQuestion:"Next Question",seeResult:"See Result",right:"Correct answer!",wrong:"Try again. Review the correct answer.",
+   correctAnswer:"Correct answer",demoFinished:"Sample complete!",yourScore:"Your score",practiceAgain:"Practice Again",backJourney:"Back to My Journey",
+   noSave:"This is a preview: answers, results and language settings do not affect STEP UP accounts.",
+   currentStage:"Current step",goPractice:"Open Sample Practice",scoreSample:"Practice score",lessonContent:"Learning content (English only)",
+   sampleResult:"Illustrative results",viewDetails:"View details",practiceComplete:"Review completed"
+  },
+  ar:{
+   preview:"هذه واجهة STEP UP الأصلية ببيانات تجريبية فقط. لا يوجد اتصال بحسابات الطالبات.",
+   navHome:"الرئيسية",navJourney:"رحلتي",navProgress:"تقدمي",navAssistant:"المساعد",
+   welcome:"مرحبًا بعودتك",greeting:"مرحبًا، طالبتي",studentClass:"الأول الثانوي · تجربة",
+   continueYourJourney:"واصلي رحلتك",mastery:"إتقان • القواعد",journeyTip:"تدريب قصير يتكيف مع مستواك، ويقدم المساعدة عند الحاجة.",
+   continue:"متابعة",overall:"تقدم الرحلة",demoSample:"بيانات توضيحية غير محفوظة",
+   journeyKicker:"رحلتي التعليمية",journeyTitle:"خطوات صغيرة، وتقدم مستمر.",journeyIntro:"أنجزي مهارة واحدة في كل مرة دون قائمة طويلة من المهام.",
+   complete:"مكتملة",inProgress:"قيد التقدم",locked:"مغلقة",ready:"جاهزة",
+   requiredStages:"مراحل أساسية",teacherOpens:"ستفتح المعلمة هذه الوحدة",
+   progressKicker:"التقدم",progressTitle:"تقدمي",progressIntro:"اطّلعي على المهارات التي أتقنتِها وما يحتاج إلى مراجعة.",
+   learningJourney:"رحلة التعلم",unitsAtGlance:"الوحدات باختصار",openJourney:"فتح رحلتي",
+   practiceResults:"تفاصيل نتائج تدريبات STEP",yourResults:"نتائجي",progressTip:"الدرجات أمثلة توضيحية فقط وغير محفوظة.",
+   assistantKicker:"رفيقك في التعلم",assistantTitle:"هل تحتاجين مساعدة؟",assistantDesc:"اسألي عن الوحدة التي تدرسينها، واحصلي على شرح واضح أو تدريب سريع ثم عودي إلى رحلتك.",
+   askAssistant:"اسألي المساعد",dictionary:"القاموس وكلماتي",dictionaryDesc:"ابحثي عن معنى الكلمة، واستمعي إلى نطقها واحفظيها.",
+   writingCoach:"مساعد الكتابة",writingDesc:"دعم اختياري لتخطيط الكتابة ومراجعتها.",
+   profileKicker:"الملف الشخصي",profileTitle:"ملفي الشخصي",profileIntro:"احرصي على صحة اسمك. تتولى المعلمة إدارة معلومات الفصل والمدرسة.",
+   studentRole:"طالبة في STEP UP",demoName:"طالبة تجريبية",classLabel:"الفصل",schoolLabel:"المدرسة",accountLabel:"الحساب",
+   demoAccount:"حساب تجريبي",demoSchool:"مدرسة تجريبية",
+   changeLogin:"تغيير اسم الدخول",logout:"تسجيل الخروج",previewNotAvailable:"هذا الزر للتوضيح فقط، ولا يؤثر في حسابك الحقيقي.",
+   languageTitle:"لغة التطبيق",languageExplain:"تتغير القوائم والأزرار والرسائل وتعليمات الواجهة فقط. تظل الأنشطة والأسئلة باللغة الإنجليزية.",
+   languageEnglish:"English",languageArabic:"العربية",unitOf:"الوحدة",startPractice:"ابدئي التدريب",
+   unitStage:"القواعد · المبني للمجهول",sampleExercise:"تدريب تجريبي · الوحدة الرابعة",chooseAnswer:"اختاري إجابة واحدة.",confirmAnswer:"تأكيد الإجابة",
+   nextQuestion:"السؤال التالي",seeResult:"عرض النتيجة",right:"إجابة صحيحة!",wrong:"إجابة غير صحيحة. راجعي الحل الصحيح.",
+   correctAnswer:"الإجابة الصحيحة",demoFinished:"اكتمل التدريب التجريبي!",yourScore:"نتيجتك",practiceAgain:"التدرب مرة أخرى",backJourney:"العودة إلى رحلتي",
+   noSave:"هذه معاينة فقط: الإجابات والنتائج وتفضيل اللغة لا تؤثر في حسابات STEP UP.",
+   currentStage:"الخطوة الحالية",goPractice:"فتح التدريب التجريبي",scoreSample:"درجة التدريب",lessonContent:"المحتوى التعليمي (إنجليزي فقط)",
+   sampleResult:"نتائج توضيحية",viewDetails:"عرض التفاصيل",practiceComplete:"اكتملت المراجعة"
+  }
+ };
+ const glyphs={
+  home:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.7 12 3l9 7.7v9.1a1.2 1.2 0 0 1-1.2 1.2H15v-6H9v6H4.2A1.2 1.2 0 0 1 3 19.8z"/></svg>',
+  journey:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 4.5v17M9 6h7M9 10h7M9 14h5"/></svg>',
+  progress:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
+  assistant:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/><path d="m18.5 13 .9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></svg>'
+ };
+ const T=k=>words[language][k]||k;
+ const label=(str)=>'<span dir="'+(language==="ar"?"rtl":"ltr")+'">'+str+'</span>';
+ const L=k=>label(T(k));
+ const $=s=>document.querySelector(s);
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const navs=[["home","navHome"],["journey","navJourney"],["progress","navProgress"],["assistant","navAssistant"]];
+ function languagePicker(){return '<div class="preview-language" role="group" aria-label="App language">'+
+  '<button type="button" data-language="en" aria-pressed="'+(language==="en")+'">EN</button>'+
+  '<button type="button" data-language="ar" aria-pressed="'+(language==="ar")+'">عربي</button></div>';}
+ function renderHeader(){
+  $(".nav-actions").innerHTML='<span class="preview-tag">PREVIEW ONLY</span>'+languagePicker()+
+   '<button type="button" class="student-header-avatar" id="demoAvatar" aria-label="'+esc(T("profileTitle"))+'">S</button>';
+ }
+ function renderNav(){
+  $("#demoNav").innerHTML=navs.map(([id,k])=>'<button type="button" class="role-tab '+(id===screen?"active":"")+'" data-go="'+id+'" aria-current="'+(id===screen?"page":"false")+'"><span class="student-nav-icon">'+glyphs[id]+'</span><span class="student-nav-label">'+L(k)+'</span></button>').join("");
+ }
+ function renderHome(){
+  return '<div class="student-home-clean">'+
+   '<div class="student-welcome"><div><div class="section-kicker">'+L("welcome")+'</div><h1>'+L("greeting")+'</h1><p>'+L("studentClass")+'</p></div></div>'+
+   '<section class="journey-continue"><div class="journey-continue-copy">'+
+   '<span class="journey-kicker">'+L("continueYourJourney")+'</span><h2 class="demo-static-eng">Unit 4 • The Art of Advertising</h2>'+
+   '<p>'+L("mastery")+' <span class="demo-static-eng">— Passive Voice</span></p>'+
+   '<div class="journey-mini-progress"><i style="width:25%"></i></div>'+
+   '<small>25% '+L("overall")+'</small></div>'+
+   '<button type="button" class="journey-main-btn" data-go="practice">'+L("continue")+'</button></section>'+
+   '<div class="preview-message">'+L("preview")+'</div>'+
+   '</div>';
+ }
+ function unitCard(u){
+   const locked=u.status==="Locked";
+   const status=locked?T("locked"):u.pct===100?T("complete"):u.pct>0?T("inProgress"):T("ready");
+   return '<button type="button" class="journey-unit-card '+(locked?"locked":"")+' '+(u.pct===100?"complete":"")+'" data-go="'+(locked?"locked":"practice")+'">'+
+    '<div class="journey-unit-top"><span class="journey-unit-num">'+String(u.number).padStart(2,"0")+'</span><span class="journey-status">'+label(status)+'</span></div>'+
+    '<h3 class="demo-static-eng">'+esc(u.title)+'</h3><p class="demo-static-eng">Mega Goal 1 · Unit '+u.number+'</p>'+
+    '<div class="journey-mini-progress"><i style="width:'+u.pct+'%"></i></div>'+
+    '<div class="journey-unit-foot"><span>'+label(locked?T("teacherOpens"):"2/4 "+T("requiredStages"))+'</span><strong>'+(!locked?u.pct+"%":"")+'</strong></div></button>';
+ }
+ function renderJourney(){
+   return '<div class="journey-page-head"><span class="journey-kicker">'+L("journeyKicker")+'</span><h1>'+L("journeyTitle")+'</h1><p>'+L("journeyIntro")+'</p></div>'+
+    '<div class="journey-unit-grid">'+units.map(unitCard).join("")+'</div>'+
+    '<div class="preview-message">'+L("preview")+'</div>';
+ }
+ function renderPractice(){
+  if(completed){
+   return '<div class="student-page-head"><div class="section-kicker">'+L("sampleExercise")+'</div><h1>'+L("demoFinished")+'</h1><p>'+L("noSave")+'</p></div>'+
+    '<div class="card demo-lesson"><h2>'+L("yourScore")+'</h2><div style="font-size:30px;font-weight:800;color:#226e79">'+score+' / '+exercises.length+'</div>'+
+    '<div class="demo-actions" style="margin-top:15px"><button type="button" class="btn btn-primary" data-action="restart">'+L("practiceAgain")+'</button><button type="button" class="btn btn-secondary" data-go="journey">'+L("backJourney")+'</button></div></div>';
+  }
+  const q=exercises[questionIndex], opts=q.options.map((option,i)=>
+   '<label class="demo-answer '+(selected===i?"selected":"")+'"><input type="radio" name="demoAnswer" data-choice="'+i+'" '+(selected===i?"checked":"")+' '+(confirmed?"disabled":"")+'><span>'+esc(option)+'</span></label>').join("");
+  const feedback=confirmed?'<div class="demo-feedback '+(selected!==q.answer?"incorrect":"")+'"><strong>'+L(selected===q.answer?"right":"wrong")+'</strong>'+
+    '<div class="demo-static-eng">'+esc(q.options[q.answer])+'</div></div>':"";
+  return '<div class="student-page-head"><div class="section-kicker">'+L("sampleExercise")+'</div><h1 class="demo-static-eng">Passive Voice</h1><p>'+L("noSave")+'</p></div>'+
+   '<div class="card demo-lesson"><div class="student-section-head"><div><div class="section-kicker demo-static-eng">GRAMMAR · PASSIVE VOICE</div><h2>'+L("currentStage")+' '+(questionIndex+1)+' / '+exercises.length+'</h2></div><span class="pill">Unit 4</span></div>'+
+   '<div class="demo-question">'+esc(q.q)+'</div><div class="demo-answers">'+opts+'</div>'+
+   '<p class="muted">'+L("chooseAnswer")+'</p>'+feedback+
+   '<div class="demo-actions"><button type="button" class="btn btn-primary" data-action="'+(confirmed?"next":"confirm")+'">'+L(confirmed?(questionIndex===exercises.length-1?"seeResult":"nextQuestion"):"confirmAnswer")+'</button>'+
+   '<button type="button" class="btn btn-outline" data-go="journey">'+L("backJourney")+'</button></div></div>';
+ }
+ function renderProgress(){
+  return '<div class="student-page-head"><div class="section-kicker">'+L("progressKicker")+'</div><h1>'+L("progressTitle")+'</h1><p>'+L("progressIntro")+'</p></div>'+
+   '<section class="journey-progress-card"><div class="journey-progress-head"><div><span class="journey-kicker">'+L("learningJourney")+'</span><h2>'+L("unitsAtGlance")+'</h2></div><button type="button" class="journey-link-btn compact" data-go="journey">'+L("openJourney")+'</button></div>'+
+   '<div class="journey-progress-units">'+units.slice(0,4).map(u=>'<div><span>Unit '+u.number+'</span><b>'+u.pct+'%</b><i><em style="width:'+u.pct+'%"></em></i></div>').join("")+'</div></section>'+
+   '<div class="card demo-lesson"><h2>'+L("practiceResults")+'</h2><p>'+L("progressTip")+'</p>'+
+   ['Vocabulary','Grammar','Reading','Listening'].map((skill,i)=>'<div class="metric" style="padding:13px 0;border-bottom:1px solid #e6edf4"><div style="display:flex;justify-content:space-between"><strong class="demo-static-eng">'+skill+'</strong><strong>'+[83,76,81,65][i]+'%</strong></div><div class="progress-track"><div class="progress-value" style="width:'+ [83,76,81,65][i] +'%"></div></div></div>').join("")+
+   '</div><div class="preview-message">'+L("preview")+'</div>';
+ }
+ function renderAssistant(){
+  return '<div class="student-assistant-hub"><section class="assistant-main-card"><div><div class="section-kicker" style="color:#ddd8ff">'+L("assistantKicker")+'</div><h1>'+L("assistantTitle")+'</h1><p>'+L("assistantDesc")+'</p></div><button type="button" class="journey-main-btn" data-action="sample-only">'+L("askAssistant")+'</button></section>'+
+   '<div class="assistant-mini-tools"><button type="button" data-action="sample-only"><span>📘</span><b>'+L("dictionary")+'</b><small>'+L("dictionaryDesc")+'</small></button><button type="button" data-action="sample-only"><span>✍️</span><b>'+L("writingCoach")+'</b><small>'+L("writingDesc")+'</small></button></div>'+
+   '<div class="preview-message">'+L("preview")+'</div></div>';
+ }
+ function renderProfile(){
+  return '<div class="student-page-head"><div class="section-kicker">'+L("profileKicker")+'</div><h1>'+L("profileTitle")+'</h1><p>'+L("profileIntro")+'</p></div>'+
+   '<div class="student-profile-clean card"><div class="student-profile-avatar">S</div><div class="student-profile-main"><strong>'+L("demoName")+'</strong><span>'+L("studentRole")+'</span><small class="demo-profile-hint">'+L("demoSample")+'</small></div>'+
+   '<button class="btn btn-secondary" type="button" data-action="sample-only">'+L("changeLogin")+'</button></div>'+
+   '<div class="card student-profile-details"><div><span>'+L("classLabel")+'</span><strong>'+L("studentClass")+'</strong></div><div><span>'+L("schoolLabel")+'</span><strong>'+L("demoSchool")+'</strong></div><div><span>'+L("accountLabel")+'</span><strong>'+L("demoAccount")+'</strong></div></div>'+
+   '<div class="card demo-settings"><h2>'+L("languageTitle")+'</h2><p>'+L("languageExplain")+'</p>'+languagePicker()+'</div>'+
+   '<div style="max-width:980px;margin:15px auto"><button type="button" class="btn btn-outline student-logout-btn" data-action="sample-only">'+L("logout")+'</button></div>'+
+   '<div class="preview-message">'+L("preview")+'</div>';
+ }
+ function render(){
+  document.documentElement.lang=language;
+  document.documentElement.dir="ltr"; // Preserve STEP UP geometry; translate UI copy only.
+  renderHeader();renderNav();
+  $("#demoView").innerHTML=screen==="home"?renderHome():
+    screen==="journey"?renderJourney():
+    screen==="practice"?renderPractice():
+    screen==="progress"?renderProgress():renderAssistant();
+  if(screen==="profile")$("#demoView").innerHTML=renderProfile();
+ }
+ function navigate(to){
+  if(to==="locked"){alert(T("teacherOpens"));return;}
+  if(!["home","journey","practice","progress","assistant","profile"].includes(to))return;
+  screen=to;render();window.scrollTo(0,0);
+ }
+ document.addEventListener("click",function(e){
+  const lng=e.target.closest("[data-language]");
+  if(lng){const v=lng.dataset.language;if(v!=="en"&&v!=="ar")return;language=v;try{localStorage.setItem(STORAGE_KEY,v);}catch(_){}render();return;}
+  if(e.target.closest("#demoAvatar")){navigate("profile");return;}
+  const go=e.target.closest("[data-go]");
+  if(go){navigate(go.dataset.go);return;}
+  const choice=e.target.closest("[data-choice]");
+  if(choice && !confirmed){selected=Number(choice.dataset.choice);render();return;}
+  const action=e.target.closest("[data-action]");
+  if(!action)return;
+  if(action.dataset.action==="sample-only"){alert(T("previewNotAvailable"));return;}
+  if(action.dataset.action==="restart"){questionIndex=0;selected=-1;confirmed=false;score=0;completed=false;render();return;}
+  if(action.dataset.action==="confirm"){
+    if(selected<0){alert(T("chooseAnswer"));return;}
+    confirmed=true;if(selected===exercises[questionIndex].answer)score++;render();return;
+  }
+  if(action.dataset.action==="next"){
+    if(questionIndex+1===exercises.length){completed=true;}else{questionIndex++;selected=-1;confirmed=false;}
+    render();
+  }
+ });
+ render();
+})();
+</script>
+</body>
+</html>
