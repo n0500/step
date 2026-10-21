@@ -1427,7 +1427,7 @@
       <div class="student-profile-clean card">
         <div class="student-profile-avatar">${esc((state.profile.displayName||"S").trim().charAt(0).toUpperCase()||"S")}</div>
         <div class="student-profile-main"><strong>${esc(state.profile.displayName||"")}</strong><span>StepUp Student</span><small>يمكن اعتماد الاسم الجديد للدخول مع بقاء رمز PIN نفسه</small></div>
-        <button class="btn btn-secondary" onclick="PROVE.editStudentName()">Edit Name</button>
+        <button class="btn btn-secondary" onclick="PROVE.editStudentName()">Change Login Name</button>
       </div>
       <div class="card student-profile-details">
         <div><span>Class</span><strong>${esc(state.profile.classCode||"—")}</strong></div>
