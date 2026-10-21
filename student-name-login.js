@@ -24,7 +24,8 @@
   }
 
   async function checkSavedPin(user,profile,pin){
-    if(normalizePin(profile.pin)===pin) return true;
+    // Verify the real credential, not just the profile copy of the PIN.
+    // The actual Auth email remains stable when display names change.
     const match=String(user.email||"").match(legacyPattern);
     if(!match) return false;
     const credential=firebase.auth.EmailAuthProvider.credential(
