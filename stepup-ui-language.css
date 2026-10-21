@@ -20,5 +20,4 @@
 @media(max-width:420px){
   .student-appbar .stepup-lang-controls{gap:0;padding:2px}
   .student-appbar .stepup-lang-controls button{min-width:32px;padding:5px;font-size:10px}
-  .student-appbar .brand small{display:none}
 }
