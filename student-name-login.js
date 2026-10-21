@@ -14,6 +14,18 @@
     .replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776));
   const legacyPattern = /^s_([a-f0-9]{24})@students\.proveit\.local$/i;
   const failedLogin = code => /invalid-credential|wrong-password|invalid-login-credentials|user-not-found|invalid-email/.test(String(code||""));
+  // Visible, privacy-safe diagnostics: never display PIN, passwords, emails
+  // or document IDs. The stage remains in My Profile if Firebase rejects a write.
+  let renameStage="";
+  function report(stage,detail=""){
+    renameStage=stage;
+    const box=document.getElementById("stepupRenameStatus");
+    if(!box)return;
+    box.style.display="block";
+    box.textContent="تغيير اسم الدخول — "+stage+(detail ? " | "+String(detail).replace(/[^a-zA-Z0-9/_.-]/g,"").slice(0,44) : "");
+  }
+  function diagnostic(){return renameStage;}
+
 
   async function aliasId(name, classCode) {
     const key = normalizeName(classCode).toUpperCase() + "|" + normalizeName(name).toLowerCase();
@@ -45,21 +57,28 @@
   }
 
   async function editName(){
+    report("التحقق من الجلسة");
     if(!auth().currentUser)return alert("سجلي الدخول بحساب الطالبة أولًا.");
     const user=auth().currentUser;
     let original;
+    report("قراءة الحساب من Firebase");
     try{
       const snap=await db().collection("users").doc(user.uid).get({source:"server"});
       if(!snap.exists || snap.data().role!=="student")return alert("ملف الطالبة غير متاح.");
       original=snap.data();
     }catch(error){
       console.warn("StepUp profile read",error?.code);
+      report("فشل قراءة الحساب",error?.code || "read-error");
       return alert("تعذّر فتح ملف الطالبة. تحققي من الاتصال.");
     }
 
     const input=prompt("Enter your correct name / اكتبي اسمك الصحيح:",original.displayName||"");
     if(input===null)return;
     const next=normalizeName(input);
+    if(next===normalizeName(original.displayName)){
+      report("الاسم الجديد مطابق للاسم الحالي، ولم يُطلب أي تغيير");
+      return alert("الاسم المكتوب هو الاسم الحالي نفسه. اكتبي الاسم الجديد مختلفًا عنه.");
+    }
     if(next.length<2||next.length>80)return alert("أدخلي الاسم الصحيح من 2 إلى 80 حرفًا.");
     const pinInput=prompt("Enter your current PIN / أدخلي رمز PIN الحالي:");
     if(pinInput===null)return;
@@ -73,20 +92,25 @@
       return alert("هذا الحساب مرتبط بالبريد الإلكتروني. لا يمكن تغيير اسم الدخول برمز PIN في هذا النوع من الحسابات. تواصلي مع المعلمة.");
     }
     let pinCheck;
+    report("التحقق من PIN");
     try{pinCheck=await checkSavedPin(user,original,pin);}
     catch(error){
       console.warn("StepUp PIN verification",error?.code);
+      report("تعذّر التحقق من PIN",error?.code || "auth-error");
       return alert("تعذّر التحقق من PIN بسبب الاتصال بخدمة تسجيل الدخول ("+
         String(error?.code||"غير معروف")+"). لم يتغير الحساب.");
     }
     if(!pinCheck.valid){
+      report("الرمز لم يجتز التحقق",pinCheck.verifiedBy);
       return alert("لم نتمكن من تأكيد رمز PIN. إن كان الرمز صحيحًا وكنتِ تدخلين به، اطلبي من المعلمة التحقق من رمزك في Student Access. سبب التحقق: "+pinCheck.verifiedBy);
     }
 
+    report("إنشاء معرف الاسم الجديد");
     const id=await aliasId(next,original.classCode);
     const aliasRef=db().collection("loginAliases").doc(id);
     const userRef=db().collection("users").doc(user.uid);
     try{
+      report("حفظ التغيير في Firebase");
       await db().runTransaction(async transaction=>{
         const [profileSnap,aliasSnap]=await Promise.all([
           transaction.get(userRef),transaction.get(aliasRef)
@@ -117,6 +141,7 @@
 
       // Commit success alone is not enough: confirm the actual user document
       // on the Firebase server, then refresh the in-memory profile on screen.
+      report("التحقق من الاسم المحفوظ");
       const verified=await userRef.get({source:"server"});
       if(!verified.exists || verified.data().role!=="student"){
         return alert("تم إرسال تعديل الاسم، لكن لم نتمكن من التحقق من ملف الحساب. أعيدي فتح الصفحة للتحقق.");
@@ -125,11 +150,13 @@
       if(actual!==next){
         return alert("لم يتغير الاسم في قاعدة البيانات بعد، لذلك لن نعرض رسالة نجاح مضللة. تواصلي مع المعلمة إذا تكرر ذلك.");
       }
+      report("التحقق من صلاحية الدخول بالاسم الجديد");
       const aliasCheck=await aliasRef.get({source:"server"});
       if(!aliasCheck.exists || aliasCheck.data().uid!==user.uid ||
           normalizeName(aliasCheck.data().loginName)!==next){
         return alert("حُفظ الاسم الجديد لكن لم يتم تأكيد اسم الدخول. لا تسجلي الخروج الآن؛ أبلغي المعلمة لإصلاح الربط.");
       }
+      report("تحديث الاسم في الملف الشخصي");
       let reflected=false;
       try{
         reflected=typeof window.PROVE?.refreshStudentProfile==="function" &&
@@ -138,13 +165,16 @@
         console.warn("StepUp profile refresh failed",displayError?.code||displayError?.message);
       }
       if(reflected){
+        report("تم تغيير الاسم والتحقق من تسجيل الدخول");
         alert("تم تغيير اسمك من «"+normalizeName(original.displayName)+"» إلى «"+next+"» وحُفظ في حسابك. يمكنك الدخول بالاسم الجديد ورمز PIN نفسه.");
       }else{
+        report("حُفظ الاسم لكن تعذّر تحديث العرض");
         alert("حُفظ الاسم الجديد «"+next+"» في Firebase، لكن تعذّر تحديث العرض. أعيدي فتح الصفحة لمشاهدة الاسم الجديد.");
       }
     }catch(error){
       const code=String(error?.code||error?.message||"");
       console.warn("StepUp rename rejected",code);
+      report("فشل الحفظ في Firebase",error?.code || "write-error");
       if(code.includes("name-in-use"))return alert("هذا الاسم مستخدم لحساب آخر في الفصل. تواصلي مع معلمتك.");
       if(code.includes("profile-changed"))return alert("تغيرت بيانات حسابك. حدّثي الصفحة ثم حاولي مجددًا.");
       if(code.includes("permission-denied")){
@@ -234,5 +264,5 @@
   signInWithNewName.__busyWrapped=true; // Do not let the older auto-create/busy wrappers override this.
   window.PROVE.studentContinue=signInWithNewName;
   window.PROVE.editStudentName=editName;
-  window.STEPUP_NAME_LOGIN={version:"20261021-rename-fix-v5",aliasId,editName};
+  window.STEPUP_NAME_LOGIN={version:"20261021-diagnostic-v9",aliasId,editName,diagnostic};
 })();

@@ -1444,6 +1444,7 @@
         <div class="student-profile-avatar">${esc((state.profile.displayName||"S").trim().charAt(0).toUpperCase()||"S")}</div>
         <div class="student-profile-main"><strong>${esc(state.profile.displayName||"")}</strong><span>StepUp Student</span><small>يمكن اعتماد الاسم الجديد للدخول مع بقاء رمز PIN نفسه</small></div>
         <button class="btn btn-secondary" onclick="window.STEPUP_NAME_LOGIN?.editName ? window.STEPUP_NAME_LOGIN.editName() : alert('تعذّر تحميل أداة تعديل الاسم. أغلقي التبويب وأعيدي فتح STEP UP.')">Change Login Name</button>
+        <div id="stepupRenameStatus" role="status" aria-live="polite" dir="rtl" style="display:none;width:100%;margin-top:10px;padding:10px 12px;border:1px solid #cad6de;border-radius:10px;background:#f6f9fb;color:#214354;font-size:13px;line-height:1.6"></div>
       </div>
       <div class="card student-profile-details">
         <div><span>Class</span><strong>${esc(state.profile.classCode||"—")}</strong></div>
