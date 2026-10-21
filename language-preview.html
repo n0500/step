@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eff5f8">
+<meta name="robots" content="noindex,nofollow">
+<title>STEP UP | Language Preview</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;color:#17334b;background:#eff5f8;--ink:#17334b;--muted:#667f91;--line:#e0e9ed;--sea:#196e71;--dark:#133d42;--mint:#e5f3ef;--pale:#f4f8fa;--purple:#eceafa;--shadow:0 9px 30px rgba(22,54,68,.07)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(160deg,#edf5f6 0%,#f7f9fc 58%,#eef1f8 100%)}
+button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible{outline:3px solid #58a7ae;outline-offset:2px}
+.shell{max-width:1040px;margin:auto;padding:0 24px 105px}
+.topbar{background:rgba(255,255,255,.95);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;backdrop-filter:blur(15px)}
+.topbar-inner{max-width:1040px;margin:auto;min-height:83px;padding:14px 24px;display:flex;gap:18px;align-items:center;justify-content:space-between}
+.logo-side{display:flex;gap:12px;align-items:center;min-width:0}
+.logo{display:grid;place-items:center;background:#143c42;border-radius:15px;color:#fff;width:45px;height:45px;font-weight:850;letter-spacing:-.5px;flex-shrink:0;box-shadow:0 4px 12px #083b432b}
+.brand strong{display:block;font-size:19px;letter-spacing:-.4px}.brand small{color:var(--muted);font-size:11px;display:block}
+.header-controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.demo-chip{font-size:11px;color:#526e7b;border:1px solid #d5e2e6;background:#f4f8f9;border-radius:999px;padding:6px 10px;font-weight:700;white-space:nowrap}
+.lang-control{background:#eff5f7;display:flex;align-items:center;gap:3px;padding:4px;border-radius:12px;direction:ltr;border:1px solid #dce9ec}
+.lang-button{border:0;background:transparent;padding:8px 12px;border-radius:9px;color:#59727c;font-size:12px;font-weight:800;min-width:69px}
+.lang-button.active{background:#fff;color:#164a55;box-shadow:0 2px 8px #153d4716}
+.intro{margin:27px 0 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:#47827e;font-weight:850}
+.intro h1{margin:5px 0 8px;font-size:clamp(25px,3vw,33px);line-height:1.23;letter-spacing:-.65px}
+.muted{color:var(--muted)}.intro p{margin:0;line-height:1.75;font-size:14px}
+.notice{border:1px dashed #c7d9db;border-radius:12px;background:#f6faf9;color:#537078;padding:9px 13px;font-size:12px;line-height:1.7}
+.card{border:1px solid #e1eaed;border-radius:20px;background:#fff;box-shadow:var(--shadow);padding:24px}
+.grid{display:grid;gap:17px}.cols-2{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card h2{font-size:19px;line-height:1.5;margin:0 0 9px}.card h3{font-size:15px;margin:0 0 9px}.card p{line-height:1.75;margin:7px 0;font-size:13px}
+.hero{background:linear-gradient(125deg,#194e54,#237e80);color:#fff;min-height:210px;display:flex;justify-content:space-between;gap:12px;align-items:center;overflow:hidden;position:relative}
+.hero:before{content:"";position:absolute;width:270px;height:270px;border:1px solid #ffffff24;border-radius:50%;inset-inline-end:-65px;top:-93px}
+.hero:after{content:"";position:absolute;width:176px;height:176px;border:20px solid #ffffff12;border-radius:50%;inset-inline-end:22px;bottom:-116px}
+.hero-content{position:relative;z-index:1;max-width:410px}
+.hero .eyebrow{color:#b9dedb}.hero h2{font-size:26px;letter-spacing:-.5px}.hero p{color:#def3ef}
+.round-symbol{position:relative;z-index:1;display:grid;place-items:center;min-width:115px;width:115px;height:115px;border-radius:30px;background:#ffffff23;font-size:61px}
+button.primary{border:1px solid #156c70;background:#187679;color:white;font-weight:750;padding:11px 16px;border-radius:11px;min-height:43px}
+button.primary:hover{background:#115e61}
+button.secondary{border:1px solid #d8e5e7;background:#fff;color:#205461;font-weight:700;padding:10px 15px;border-radius:11px;min-height:42px}
+button.secondary:hover{background:#f4f9f9}
+button.white{border:0;background:#fff;color:#175d60;font-weight:800;border-radius:11px;padding:10px 15px;min-height:42px}
+button:disabled{opacity:.52;cursor:not-allowed}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:24px 0 12px}
+.section-head h2{margin:0;font-size:18px}.section-head small{color:var(--muted);font-size:12px}
+.stat-number{font-size:26px;font-weight:850;letter-spacing:-1px;color:#244c59}.stat-caption{font-size:12px;color:#627d8b;line-height:1.5}
+.pill{border-radius:999px;background:#e7f4ee;color:#29715b;font-size:11px;font-weight:800;padding:6px 10px;white-space:nowrap}
+.pill.purple{background:#efebfc;color:#655b9f}
+.progress-track{height:9px;border-radius:999px;background:#e8eef0;overflow:hidden;margin:12px 0}
+.progress-track span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#1b8280,#77b8a6);transition:width .2s}
+.unit-banner{border:1px solid #e5e7f0;background:linear-gradient(130deg,#f5f4fc,#fff);padding:20px;border-radius:18px}
+.unit-number{font-size:11px;letter-spacing:1.3px;color:#7166a7;font-weight:850}
+.unit-title{font-size:20px;font-weight:800;color:#29334b;margin:6px 0}.unit-desc{font-size:13px;color:#63758d}
+.unit-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid #edf1f3}
+.unit-icon{width:43px;height:43px;border-radius:12px;background:#e7f3ef;display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.unit-copy{min-width:0;flex:1}.unit-copy strong{display:block;font-size:14px}.unit-copy small{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.quiz-card{padding:26px}
+.quiz-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.quiz-eyebrow{font-weight:700;color:#2c7b77;font-size:12px;letter-spacing:1px}
+.lesson-english{direction:ltr;text-align:left;unicode-bidi:isolate}
+.lesson-english .question{font-size:20px;line-height:1.5;font-weight:760;color:#203346;margin:19px 0 20px}
+.choice{display:flex;gap:13px;align-items:center;direction:ltr;text-align:left;border:1px solid #e0e8ed;border-radius:12px;padding:13px 15px;margin:9px 0;min-height:51px;cursor:pointer;background:#fff;font-size:15px;color:#29465a}
+.choice:has(input:checked){border:2px solid #247d81;background:#f1faf8;padding:12px 14px}
+.choice input{accent-color:#217b7f;width:17px;height:17px;flex-shrink:0}
+.lesson-hint{background:#f5f7fb;color:#5f7384;padding:11px 13px;border-radius:10px;margin-top:12px;font-size:12px;line-height:1.7}
+.feedback{margin:16px 0 0;padding:15px;border-radius:11px;font-size:14px;line-height:1.7}
+.feedback.good{background:#e8f7ed;color:#275b44;border:1px solid #c6e7d4}
+.feedback.retry{background:#fff6eb;color:#79562c;border:1px solid #f3e2c6}
+.feedback strong{display:block;margin-bottom:3px}.feedback .lesson-english{margin-top:6px;font-size:14px}
+.pbar{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:15px 0 0;font-size:12px;color:#6c808c}
+.metric{padding:15px 0;border-top:1px solid #edf1f3}.metric-head{display:flex;justify-content:space-between;align-items:center;gap:15px;font-weight:750;font-size:13px}
+.metric-head b{color:#215d63;font-size:14px}
+.profile-head{display:flex;gap:14px;align-items:center;margin:2px 0 18px}
+.avatar{width:60px;height:60px;display:grid;place-items:center;border-radius:19px;background:#15474c;color:#fff;font-size:24px;font-weight:800;flex-shrink:0}
+.profile-head strong{font-size:17px}.profile-head small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.profile-detail{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:15px 0;border-top:1px solid #edf1f3;font-size:13px}
+.profile-detail strong{font-size:14px}
+.language-settings{background:#f6fafb;padding:17px;border-radius:16px;border:1px solid #e4edee;margin-top:18px}
+.language-settings h3{margin:0 0 7px}
+.helper{font-size:12px;line-height:1.85;color:#667f91}
+.nav{display:flex;align-items:center;justify-content:space-around;gap:5px;background:#fffffffa;border:1px solid #e0e9ec;border-radius:18px;margin:25px 0;padding:8px;box-shadow:var(--shadow)}
+.nav-btn{border:0;background:transparent;border-radius:12px;padding:11px 15px;min-height:60px;color:#6a8490;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;flex:1;font-size:12px;font-weight:760}
+.nav-btn.active{color:#156d72;background:#e9f5f2}
+.nav-icon{font-size:21px;line-height:1}
+.bottom-caption{text-align:center;font-size:12px;color:#7a8f98;padding:0 0 12px}
+#screen-home,#screen-journey,#screen-progress,#screen-profile{animation:fade .2s ease}
+@keyframes fade{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+[hidden]{display:none!important}
+html[dir="rtl"] .topbar-inner,html[dir="rtl"] .hero,html[dir="rtl"] .profile-head{direction:rtl}
+html[dir="rtl"] .brand,html[dir="rtl"] .logo-side{direction:ltr}
+html[dir="rtl"] .brand{text-align:left}
+html[dir="rtl"] .lesson-english,html[dir="rtl"] .unit-title,html[dir="rtl"] .unit-number,html[dir="rtl"] .unit-desc{direction:ltr;text-align:left}
+html[dir="rtl"] .quiz-eyebrow{direction:ltr;unicode-bidi:isolate}
+@media(max-width:720px){
+ .shell{padding:0 15px 104px}.topbar-inner{padding:10px 15px;min-height:71px}
+ .brand strong{font-size:16px}.brand small{font-size:10px}.logo{width:40px;height:40px;border-radius:12px}
+ .header-controls{gap:5px}.demo-chip{display:none}.lang-button{min-width:49px;padding:8px 7px;font-size:11px}
+ .intro{margin-top:20px}.intro h1{font-size:26px}.cols-2{grid-template-columns:1fr}.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .card{padding:18px;border-radius:18px}.hero{min-height:190px}.hero h2{font-size:23px}.round-symbol{min-width:72px;width:72px;height:82px;font-size:40px;border-radius:22px}
+ .stat-number{font-size:23px}.nav{position:fixed;bottom:0;left:10px;right:10px;z-index:4;border-radius:19px;padding:5px;margin:0 0 max(7px,env(safe-area-inset-bottom))}
+ .nav-btn{padding:8px 3px;font-size:10px;min-height:53px}.nav-icon{font-size:19px}
+ .profile-detail{display:block}.profile-detail strong{display:block;margin-top:5px}
+}
+@media(max-width:365px){.brand small{display:none}.round-symbol{display:none}.cols-3 .card{padding:12px}.stat-number{font-size:21px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+ <div class="topbar-inner">
+  <div class="logo-side"><div class="logo">SU</div><div class="brand"><strong>StepUp</strong><small>Learn · Master · Practice · Progress</small></div></div>
+  <div class="header-controls"><span class="demo-chip" data-t="demoLabel">DEMO · No real accounts</span><div class="lang-control" role="group" aria-label="Language">
+   <button type="button" class="lang-button active" data-lang="en">English</button>
+   <button type="button" class="lang-button" data-lang="ar">العربية</button>
+  </div></div>
+ </div>
+</header>
+<div class="shell">
+ <section class="intro">
+  <div><div class="eyebrow" data-t="previewLabel">INTERACTIVE PREVIEW</div><h1 id="page-title" data-t="homeTitle">Welcome back!</h1><p id="page-description" data-t="homeDesc">Choose your language. Your English activities stay in English.</p></div>
+  <div class="notice" data-t="notice">Preview only · No grades, certificates, or student accounts will change.</div>
+ </section>
+ <main>
+  <div id="screen-home">
+   <div class="grid cols-2">
+    <div class="card hero"><div class="hero-content"><div class="eyebrow" data-t="welcome">YOUR LEARNING SPACE</div><h2 data-t="heroTitle">Keep learning, keep growing.</h2><p data-t="heroDesc">Ready for one more little win?</p><div class="actions"><button type="button" class="white" data-go="journey" data-t="startPractice">Start Practice →</button></div></div><div class="round-symbol" aria-hidden="true">🎓</div></div>
+    <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h2 data-t="yourProgress">Your Progress</h2><span class="pill" data-t="onTrack">On track</span></div><div style="font-size:37px;font-weight:850;letter-spacing:-2px;color:#1b6f72;margin-top:15px">78%</div><div class="progress-track"><span style="width:78%"></span></div><p class="muted" data-t="progressMessage">You're making steady progress. Keep practising!</p><div class="actions"><button class="secondary" type="button" data-go="progress" data-t="viewProgress">View Progress</button></div></div>
+   </div>
+   <div class="section-head"><h2 data-t="continueJourney">Continue Your Journey</h2><small data-t="sampleData">Sample data</small></div>
+   <div class="grid cols-3">
+    <div class="card"><span class="unit-number">UNIT 4</span><h3 style="margin-top:7px">Passive Voice</h3><div class="progress-track"><span style="width:70%"></span></div><p class="muted" data-t="grammarTask">Grammar practice</p></div>
+    <div class="card"><span class="unit-number">UNIT 4</span><h3 style="margin-top:7px">Vocabulary</h3><div class="progress-track"><span style="width:85%"></span></div><p class="muted" data-t="vocabTask">Word practice</p></div>
+    <div class="card"><span class="unit-number">UNIT 4</span><h3 style="margin-top:7px">Reading</h3><div class="progress-track"><span style="width:64%"></span></div><p class="muted" data-t="readingTask">Reading practice</p></div>
+   </div>
+  </div>
+  <div id="screen-journey" hidden>
+   <div class="grid cols-2">
+    <div class="card">
+      <div class="unit-banner"><div class="unit-number">MEGA GOAL 1 · UNIT 4</div><div class="unit-title">The Art of Advertising</div><div class="unit-desc">Grammar · Passive Voice</div></div>
+      <div class="section-head"><h2 data-t="skillList">Your Skills</h2><span class="pill purple" data-t="demoLesson">Sample lesson</span></div>
+      <div class="unit-row"><div class="unit-icon">📖</div><div class="unit-copy"><strong data-t="grammarLabel">Grammar</strong><small>Passive Voice</small></div><span class="pill" data-t="tryNow">Try now</span></div>
+      <div class="unit-row"><div class="unit-icon">🔤</div><div class="unit-copy"><strong data-t="vocabularyLabel">Vocabulary</strong><small>Words & Meaning</small></div><span class="pill purple" data-t="sampleOnly">Preview</span></div>
+      <div class="unit-row"><div class="unit-icon">🎧</div><div class="unit-copy"><strong data-t="listeningLabel">Listening</strong><small>Listening Practice</small></div><span class="pill purple" data-t="sampleOnly">Preview</span></div>
+    </div>
+    <div class="card quiz-card">
+      <div class="quiz-top"><span class="quiz-eyebrow">GRAMMAR · PASSIVE VOICE</span><span class="pill" id="quiz-counter">1 / 2</span></div>
+      <div id="quiz-body">
+        <div class="lesson-english">
+         <div class="question" id="quiz-question">The cake ___ by Sara yesterday.</div>
+         <div id="quiz-options" role="radiogroup" aria-label="Answer options"></div>
+        </div>
+        <div class="lesson-hint" data-t="questionHint">Read the sentence and choose the correct answer.</div>
+        <div id="quiz-feedback" hidden class="feedback" role="status"></div>
+        <div class="actions">
+          <button type="button" class="primary" id="quiz-confirm" data-t="confirmAnswer">Confirm Answer</button>
+          <button type="button" class="secondary" id="quiz-next" hidden data-t="nextQuestion">Next Question →</button>
+        </div>
+      </div>
+      <div id="quiz-complete" hidden>
+        <h2 data-t="challengeComplete">Challenge complete!</h2><div style="font-size:40px;color:#197576;font-weight:850" id="quiz-score">2 / 2</div><p data-t="demoScore">These are demonstration results and are not saved.</p><button type="button" class="primary" id="quiz-restart" data-t="practiceAgain">Practice Again</button>
+      </div>
+    </div>
+   </div>
+  </div>
+  <div id="screen-progress" hidden>
+   <div class="grid cols-2">
+    <div class="card">
+     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 data-t="masteryTitle">Skill Mastery</h2><span class="pill" data-t="sampleData">Sample data</span></div>
+     <p class="muted" data-t="masteryDesc">A quick look at your learning journey.</p>
+     <div class="metric"><div class="metric-head"><span data-t="vocabularyLabel">Vocabulary</span><b>82%</b></div><div class="progress-track"><span style="width:82%"></span></div></div>
+     <div class="metric"><div class="metric-head"><span data-t="grammarLabel">Grammar</span><b>70%</b></div><div class="progress-track"><span style="width:70%"></span></div></div>
+     <div class="metric"><div class="metric-head"><span data-t="readingLabel">Reading</span><b>75%</b></div><div class="progress-track"><span style="width:75%"></span></div></div>
+     <div class="metric"><div class="metric-head"><span data-t="listeningLabel">Listening</span><b>66%</b></div><div class="progress-track"><span style="width:66%"></span></div></div>
+    </div>
+    <div class="card">
+      <div style="font-size:35px;margin-bottom:15px">🌟</div><h2 data-t="nextStepTitle">Your Next Step</h2><p data-t="nextStepDesc">Review Passive Voice, then try the grammar question again.</p>
+      <div class="unit-banner lesson-english" style="margin-top:17px"><div class="unit-number">GRAMMAR TIP</div><p style="font-size:15px;color:#27394b"><strong>was / were + past participle</strong></p><p>Example: The email was sent yesterday.</p></div>
+      <div class="actions"><button type="button" class="primary" data-go="journey" data-t="reviewLesson">Review Lesson</button></div>
+    </div>
+   </div>
+  </div>
+  <div id="screen-profile" hidden>
+    <div class="grid cols-2">
+     <div class="card">
+       <h2 data-t="myProfile">My Profile</h2>
+       <div class="profile-head"><div class="avatar">S</div><div><strong>Demo Student</strong><small>StepUp Student · DEMO</small></div></div>
+       <div class="profile-detail"><span data-t="classLabel">Class</span><strong>First Secondary · Demo</strong></div>
+       <div class="profile-detail"><span data-t="accountLabel">Account</span><strong data-t="demoAccount">Demo account (not real)</strong></div>
+       <div class="language-settings"><h3 data-t="languageSetting">App Language</h3><p class="helper" data-t="languageHelper">Only the interface changes. Questions, answers and learning content always stay in English.</p><div class="lang-control" style="width:max-content;margin-top:14px"><button type="button" class="lang-button active" data-lang="en">English</button><button type="button" class="lang-button" data-lang="ar">العربية</button></div></div>
+     </div>
+     <div class="card"><h2 data-t="demoFeatures">What changes with the language?</h2>
+       <div class="unit-row"><div class="unit-icon">🌐</div><div class="unit-copy"><strong data-t="changeOne">Menus and buttons</strong><small data-t="changeOneDesc">Navigation and instructions change language.</small></div></div>
+       <div class="unit-row"><div class="unit-icon">📘</div><div class="unit-copy"><strong data-t="changeTwo">Learning content</strong><small data-t="changeTwoDesc">English stays unchanged.</small></div></div>
+       <div class="unit-row"><div class="unit-icon">💾</div><div class="unit-copy"><strong data-t="changeThree">Your preference</strong><small data-t="changeThreeDesc">The demo remembers your language on this device.</small></div></div>
+     </div>
+    </div>
+  </div>
+ </main>
+ <nav class="nav" aria-label="Student Navigation">
+  <button class="nav-btn active" type="button" data-go="home" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span data-t="homeNav">Home</span></button>
+  <button class="nav-btn" type="button" data-go="journey"><span class="nav-icon" aria-hidden="true">▤</span><span data-t="journeyNav">My Journey</span></button>
+  <button class="nav-btn" type="button" data-go="progress"><span class="nav-icon" aria-hidden="true">▥</span><span data-t="progressNav">My Progress</span></button>
+  <button class="nav-btn" type="button" data-go="profile"><span class="nav-icon" aria-hidden="true">◉</span><span data-t="profileNav">My Profile</span></button>
+ </nav>
+ <div class="bottom-caption">STEP UP · LANGUAGE PREVIEW · <span data-t="notConnected">No connection to real student data</span></div>
+</div>
+<script>
+(function(){
+ "use strict";
+ var key="stepup_language_preview_only_v1";
+ var translations={
+  en:{
+   demoLabel:"DEMO · No real accounts",previewLabel:"INTERACTIVE PREVIEW",
+   homeTitle:"Welcome back!",homeDesc:"Choose your language. Your English activities stay in English.",
+   notice:"Preview only · No grades, certificates, or student accounts will change.",
+   welcome:"YOUR LEARNING SPACE",heroTitle:"Keep learning, keep growing.",heroDesc:"Ready for one more little win?",
+   startPractice:"Start Practice →",yourProgress:"Your Progress",onTrack:"On track",
+   progressMessage:"You're making steady progress. Keep practising!",viewProgress:"View Progress",
+   continueJourney:"Continue Your Journey",sampleData:"Sample data",grammarTask:"Grammar practice",
+   vocabTask:"Word practice",readingTask:"Reading practice",skillList:"Your Skills",demoLesson:"Sample lesson",
+   grammarLabel:"Grammar",vocabularyLabel:"Vocabulary",readingLabel:"Reading",listeningLabel:"Listening",
+   tryNow:"Try now",sampleOnly:"Preview",questionHint:"Read the sentence and choose the correct answer.",
+   confirmAnswer:"Confirm Answer",nextQuestion:"Next Question →",finishPractice:"See Result",
+   correctAnswer:"Correct answer!",incorrectAnswer:"Not quite. Review the correct answer.",
+   chooseFirst:"Choose one answer first.",challengeComplete:"Challenge complete!",
+   demoScore:"These are demonstration results and are not saved.",practiceAgain:"Practice Again",
+   masteryTitle:"Skill Mastery",masteryDesc:"A quick look at your learning journey.",
+   nextStepTitle:"Your Next Step",nextStepDesc:"Review Passive Voice, then try the grammar question again.",
+   reviewLesson:"Review Lesson",myProfile:"My Profile",classLabel:"Class",accountLabel:"Account",
+   demoAccount:"Demo account (not real)",languageSetting:"App Language",
+   languageHelper:"Only the interface changes. Questions, answers and learning content always stay in English.",
+   demoFeatures:"What changes with the language?",changeOne:"Menus and buttons",
+   changeOneDesc:"Navigation and instructions change language.",changeTwo:"Learning content",
+   changeTwoDesc:"English stays unchanged.",changeThree:"Your preference",
+   changeThreeDesc:"The demo remembers your language on this device.",
+   homeNav:"Home",journeyNav:"My Journey",progressNav:"My Progress",profileNav:"My Profile",
+   notConnected:"No connection to real student data",
+   journeyTitle:"My Learning Journey",journeyDesc:"Try a sample Grammar question. The question always stays in English.",
+   progressTitle:"My Progress",progressDesc:"Only interface labels change; the example scores are not real.",
+   profileTitle:"My Profile",profileDesc:"Change the language here or in the top bar.",
+   correctChoice:"Correct answer: "
+  },
+  ar:{
+   demoLabel:"تجربة فقط · بدون حسابات حقيقية",previewLabel:"معاينة تفاعلية",
+   homeTitle:"مرحبًا بعودتك!",homeDesc:"اختاري لغة الواجهة؛ الأسئلة والأنشطة ستبقى باللغة الإنجليزية.",
+   notice:"نسخة تجريبية فقط · لا تتغير الدرجات أو الشهادات أو حسابات الطالبات.",
+   welcome:"مساحتك التعليمية",heroTitle:"واصلي التعلّم والتقدم",heroDesc:"هل أنتِ مستعدة لإنجاز جديد؟",
+   startPractice:"ابدئي التدريب ←",yourProgress:"تقدمي",onTrack:"تقدم جيد",
+   progressMessage:"تقدمك مستمر. واصلي التدرب!",viewProgress:"عرض التقدم",
+   continueJourney:"تابعي رحلتك",sampleData:"بيانات تجريبية",grammarTask:"تدريب القواعد",
+   vocabTask:"تدريب المفردات",readingTask:"تدريب القراءة",skillList:"مهاراتك",demoLesson:"درس تجريبي",
+   grammarLabel:"القواعد",vocabularyLabel:"المفردات",readingLabel:"القراءة",listeningLabel:"الاستماع",
+   tryNow:"جرّبي الآن",sampleOnly:"معاينة",questionHint:"اقرئي الجملة واختاري الإجابة الصحيحة.",
+   confirmAnswer:"تأكيد الإجابة",nextQuestion:"السؤال التالي ←",finishPractice:"عرض النتيجة",
+   correctAnswer:"إجابة صحيحة!",incorrectAnswer:"ليست الإجابة الصحيحة. راجعي الحل.",
+   chooseFirst:"اختاري إجابة أولًا.",challengeComplete:"أكملتِ التحدي!",
+   demoScore:"هذه نتائج توضيحية غير محفوظة.",practiceAgain:"التدرب مرة أخرى",
+   masteryTitle:"إتقان المهارات",masteryDesc:"نظرة سريعة على رحلتك التعليمية.",
+   nextStepTitle:"خطوتك القادمة",nextStepDesc:"راجعي المبني للمجهول، ثم أعيدي تجربة سؤال القواعد.",
+   reviewLesson:"مراجعة الدرس",myProfile:"ملفي الشخصي",classLabel:"الفصل",accountLabel:"الحساب",
+   demoAccount:"حساب توضيحي (غير حقيقي)",languageSetting:"لغة التطبيق",
+   languageHelper:"تتغير الواجهة فقط. تبقى الأسئلة والخيارات والمحتويات التعليمية باللغة الإنجليزية.",
+   demoFeatures:"ماذا يتغير عند تبديل اللغة؟",changeOne:"القوائم والأزرار",
+   changeOneDesc:"تتغير لغة التنقل والتعليمات.",changeTwo:"المحتوى التعليمي",
+   changeTwoDesc:"يبقى المحتوى باللغة الإنجليزية.",changeThree:"تفضيل اللغة",
+   changeThreeDesc:"تتذكر هذه التجربة اللغة المختارة على هذا الجهاز.",
+   homeNav:"الرئيسية",journeyNav:"رحلتي",progressNav:"تقدمي",profileNav:"ملفي",
+   notConnected:"لا اتصال ببيانات الطالبات الحقيقية",
+   journeyTitle:"رحلتي التعليمية",journeyDesc:"جرّبي سؤالًا في القواعد. يظل السؤال باللغة الإنجليزية.",
+   progressTitle:"تقدمي",progressDesc:"تتغير تسميات الواجهة فقط؛ الدرجات المعروضة تجريبية.",
+   profileTitle:"ملفي الشخصي",profileDesc:"يمكنك اختيار اللغة هنا أو من الشريط العلوي.",
+   correctChoice:"الإجابة الصحيحة: "
+  }
+ };
+ var pages={home:["homeTitle","homeDesc"],journey:["journeyTitle","journeyDesc"],progress:["progressTitle","progressDesc"],profile:["profileTitle","profileDesc"]};
+ var questions=[
+  {sentence:"The cake ___ by Sara yesterday.",options:["was baked","bakes","is baking"],answer:0},
+  {sentence:"English ___ in many countries.",options:["is spoken","speaks","is speaking"],answer:0}
+ ];
+ var lang="en",page="home",index=0,answered=false,selected=null,correct=0,complete=false;
+ try{var stored=localStorage.getItem(key);if(stored==="ar"||stored==="en")lang=stored;}catch(_){}
+ function t(k){return translations[lang][k]||k;}
+ function setLanguage(next){
+  lang=next==="ar"?"ar":"en";
+  try{localStorage.setItem(key,lang);}catch(_){}
+  document.documentElement.lang=lang;
+  document.documentElement.dir=lang==="ar"?"rtl":"ltr";
+  document.querySelectorAll("[data-lang]").forEach(function(btn){var active=btn.getAttribute("data-lang")===lang;btn.classList.toggle("active",active);btn.setAttribute("aria-pressed",active?"true":"false");});
+  document.querySelectorAll("[data-t]").forEach(function(node){node.textContent=t(node.getAttribute("data-t"));});
+  document.getElementById("page-title").textContent=t(pages[page][0]);
+  document.getElementById("page-description").textContent=t(pages[page][1]);
+  if(complete){renderQuiz();return;}
+  var fb=document.getElementById("quiz-feedback");
+  if(answered)showFeedback(fb);
+  document.getElementById("quiz-next").textContent=t(index===questions.length-1?"finishPractice":"nextQuestion");
+ }
+ function go(view){
+  if(!pages[view])return;
+  page=view;
+  Object.keys(pages).forEach(function(name){document.getElementById("screen-"+name).hidden=name!==page;});
+  document.querySelectorAll("[data-go]").forEach(function(btn){if(!btn.classList.contains("nav-btn"))return;var active=btn.getAttribute("data-go")===page;btn.classList.toggle("active",active);if(active)btn.setAttribute("aria-current","page");else btn.removeAttribute("aria-current");});
+  document.getElementById("page-title").textContent=t(pages[page][0]);
+  document.getElementById("page-description").textContent=t(pages[page][1]);
+  if(page==="journey")renderQuiz();
+  window.scrollTo({top:0,behavior:"smooth"});
+ }
+ function renderQuiz(){
+  document.getElementById("quiz-complete").hidden=!complete;
+  document.getElementById("quiz-body").hidden=complete;
+  if(complete){document.getElementById("quiz-score").textContent=correct+" / "+questions.length;return;}
+  var item=questions[index];
+  document.getElementById("quiz-question").textContent=item.sentence;
+  document.getElementById("quiz-counter").textContent=(index+1)+" / "+questions.length;
+  var container=document.getElementById("quiz-options");
+  container.innerHTML="";
+  item.options.forEach(function(answer,i){
+    var label=document.createElement("label");label.className="choice";
+    var input=document.createElement("input");input.type="radio";input.name="sample-quiz";input.value=String(i);input.disabled=answered;input.checked=selected===i;input.addEventListener("change",function(){selected=i;});
+    var span=document.createElement("span");span.textContent=answer;
+    label.appendChild(input);label.appendChild(span);container.appendChild(label);
+  });
+  document.getElementById("quiz-confirm").hidden=answered;
+  document.getElementById("quiz-next").hidden=!answered;
+  document.getElementById("quiz-next").textContent=t(index===questions.length-1?"finishPractice":"nextQuestion");
+  var box=document.getElementById("quiz-feedback");box.hidden=!answered;
+  if(answered)showFeedback(box);
+ }
+ function showFeedback(box){
+  var item=questions[index],isCorrect=selected===item.answer;
+  box.hidden=false;
+  box.className="feedback "+(isCorrect?"good":"retry");
+  box.textContent="";
+  var title=document.createElement("strong");title.textContent=t(isCorrect?"correctAnswer":"incorrectAnswer");
+  var detail=document.createElement("div");detail.className="lesson-english";detail.textContent=t("correctChoice")+item.options[item.answer];
+  box.appendChild(title);box.appendChild(detail);
+ }
+ document.getElementById("quiz-confirm").addEventListener("click",function(){
+  if(selected===null){alert(t("chooseFirst"));return;}
+  answered=true;
+  if(selected===questions[index].answer)correct++;
+  renderQuiz();
+ });
+ document.getElementById("quiz-next").addEventListener("click",function(){
+  if(index+1===questions.length)complete=true;
+  else {index++;selected=null;answered=false;}
+  renderQuiz();
+ });
+ document.getElementById("quiz-restart").addEventListener("click",function(){index=0;correct=0;selected=null;answered=false;complete=false;renderQuiz();});
+ document.querySelectorAll("[data-lang]").forEach(function(btn){btn.addEventListener("click",function(){setLanguage(btn.getAttribute("data-lang"));});});
+ document.querySelectorAll("[data-go]").forEach(function(btn){btn.addEventListener("click",function(){go(btn.getAttribute("data-go"));});});
+ setLanguage(lang);go("home");
+})();
+</script>
+</body>
+</html>
