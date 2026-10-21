@@ -115,9 +115,33 @@
         if(Object.keys(updates).length)transaction.update(userRef,updates);
       });
 
-      // Only after the alias + profile update have succeeded together.
-      alert("تم اعتماد الاسم الجديد. يمكنكِ تسجيل الدخول به من أي جهاز، باستخدام رمز PIN نفسه. بقي الحساب والتقدم والشهادات كما هي.");
-      window.location.reload();
+      // Commit success alone is not enough: confirm the actual user document
+      // on the Firebase server, then refresh the in-memory profile on screen.
+      const verified=await userRef.get({source:"server"});
+      if(!verified.exists || verified.data().role!=="student"){
+        return alert("تم إرسال تعديل الاسم، لكن لم نتمكن من التحقق من ملف الحساب. أعيدي فتح الصفحة للتحقق.");
+      }
+      const actual=normalizeName(verified.data().displayName);
+      if(actual!==next){
+        return alert("لم يتغير الاسم في قاعدة البيانات بعد، لذلك لن نعرض رسالة نجاح مضللة. تواصلي مع المعلمة إذا تكرر ذلك.");
+      }
+      const aliasCheck=await aliasRef.get({source:"server"});
+      if(!aliasCheck.exists || aliasCheck.data().uid!==user.uid ||
+          normalizeName(aliasCheck.data().loginName)!==next){
+        return alert("حُفظ الاسم الجديد لكن لم يتم تأكيد اسم الدخول. لا تسجلي الخروج الآن؛ أبلغي المعلمة لإصلاح الربط.");
+      }
+      let reflected=false;
+      try{
+        reflected=typeof window.PROVE?.refreshStudentProfile==="function" &&
+          await window.PROVE.refreshStudentProfile(next);
+      }catch(displayError){
+        console.warn("StepUp profile refresh failed",displayError?.code||displayError?.message);
+      }
+      if(reflected){
+        alert("تم تغيير اسمك من «"+normalizeName(original.displayName)+"» إلى «"+next+"» وحُفظ في حسابك. يمكنك الدخول بالاسم الجديد ورمز PIN نفسه.");
+      }else{
+        alert("حُفظ الاسم الجديد «"+next+"» في Firebase، لكن تعذّر تحديث العرض. أعيدي فتح الصفحة لمشاهدة الاسم الجديد.");
+      }
     }catch(error){
       const code=String(error?.code||error?.message||"");
       console.warn("StepUp rename rejected",code);

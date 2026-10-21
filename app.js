@@ -114,6 +114,22 @@
     state.profile = snap.exists ? {id:snap.id,...snap.data()} : null;
   }
 
+  // Synchronize the visible student profile from the committed server document.
+  // The user UID, existing learning progress and authentication are unchanged.
+  async function refreshStudentProfile(expectedName=""){
+    if(!state.fb || !state.user || state.profile?.role!=="student") return false;
+    const accountId=state.user.uid;
+    const snap=await state.fb.db.collection("users").doc(accountId).get({source:"server"});
+    if(!snap.exists || snap.data().role!=="student") return false;
+    const actualName=String(snap.data().displayName||"").trim().replace(/\s+/g," ");
+    if(expectedName && actualName!==String(expectedName).trim().replace(/\s+/g," "))return false;
+    if(state.user.uid!==accountId) return false;
+    state.profile={id:snap.id,...snap.data()};
+    state.studentTab="profile";
+    await renderStudent();
+    return true;
+  }
+
   function shell(content, title=""){
     const isStudent=state.profile?.role==="student";
     const initial=esc((state.profile?.displayName||"S").trim().charAt(0).toUpperCase()||"S");
@@ -2216,7 +2232,7 @@ Do not start a new lesson unless I ask.`;
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
