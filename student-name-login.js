@@ -110,34 +110,40 @@
     const aliasRef=db().collection("loginAliases").doc(id);
     const userRef=db().collection("users").doc(user.uid);
     try{
-      report("حفظ التغيير في Firebase");
-      await db().runTransaction(async transaction=>{
-        const [profileSnap,aliasSnap]=await Promise.all([
-          transaction.get(userRef),transaction.get(aliasRef)
-        ]);
-        if(!profileSnap.exists || profileSnap.data().role!=="student"){
-          throw new Error("account-missing");
-        }
-        const current=profileSnap.data();
-        if(current.classCode!==original.classCode || current.displayName!==original.displayName){
-          throw new Error("profile-changed");
-        }
-        if(aliasSnap.exists && aliasSnap.data().uid!==user.uid){
-          throw new Error("name-in-use");
-        }
-        const data={
+      report("قراءة بيانات الحفظ");
+      const [profileSnap,aliasSnap]=await Promise.all([
+        userRef.get({source:"server"}), aliasRef.get({source:"server"})
+      ]);
+      if(!profileSnap.exists || profileSnap.data().role!=="student"){
+        throw new Error("account-missing");
+      }
+      const current=profileSnap.data();
+      if(current.classCode!==original.classCode || current.displayName!==original.displayName){
+        throw new Error("profile-changed");
+      }
+      if(aliasSnap.exists && aliasSnap.data().uid!==user.uid){
+        throw new Error("name-in-use");
+      }
+
+      // A Firestore write batch is atomic but does not impose the transaction
+      // read/retry requirements. The deployed rules check the final state with
+      // getAfter(), so neither the alias nor profile can be committed alone.
+      const batch=db().batch();
+      if(!aliasSnap.exists){
+        batch.set(aliasRef,{
           uid:user.uid,
           classCode:current.classCode,
           loginName:next,
           loginEmail:email,
           createdAt:firebase.firestore.FieldValue.serverTimestamp()
-        };
-        if(!aliasSnap.exists)transaction.set(aliasRef,data);
-        const updates={};
-        if(current.displayName!==next)updates.displayName=next;
-        if(pinCheck.verifiedBy==="auth" && normalizePin(current.pin)!==pin) updates.pin=pin;
-        if(Object.keys(updates).length)transaction.update(userRef,updates);
-      });
+        });
+      }
+      const updates={};
+      if(current.displayName!==next)updates.displayName=next;
+      if(pinCheck.verifiedBy==="auth" && normalizePin(current.pin)!==pin)updates.pin=pin;
+      if(Object.keys(updates).length)batch.update(userRef,updates);
+      report("حفظ الاسم وبيانات الدخول معًا");
+      await batch.commit();
 
       // Commit success alone is not enough: confirm the actual user document
       // on the Firebase server, then refresh the in-memory profile on screen.
@@ -174,13 +180,21 @@
     }catch(error){
       const code=String(error?.code||error?.message||"");
       console.warn("StepUp rename rejected",code);
-      report("فشل الحفظ في Firebase",error?.code || "write-error");
+      const safeCode=String(error?.code || error?.name || "unknown-error")
+        .replace(/[^a-zA-Z0-9/_.-]/g,"").slice(0,48);
+      report("فشل حفظ الاسم",safeCode);
       if(code.includes("name-in-use"))return alert("هذا الاسم مستخدم لحساب آخر في الفصل. تواصلي مع معلمتك.");
-      if(code.includes("profile-changed"))return alert("تغيرت بيانات حسابك. حدّثي الصفحة ثم حاولي مجددًا.");
+      if(code.includes("profile-changed"))return alert("تغيرت بيانات الحساب أثناء العملية. حدّثي الصفحة ثم حاولي مجددًا.");
       if(code.includes("permission-denied")){
-        return alert("رفضت Firebase حفظ اسم الدخول الجديد (permission-denied). لا يتعلق هذا بخطأ في PIN. لم يتغير الحساب، ويحتاج الأمر مراجعة قواعد Firestore المنشورة.");
+        return alert("منعت قواعد Firebase حفظ الاسم الجديد (permission-denied). لم تتغير بياناتك؛ يلزم فحص قواعد الحسابات والأسماء.");
       }
-      return alert("تعذّر حفظ اسم الدخول الجديد. لم تتغير بيانات حسابك، حاولي مجددًا.");
+      if(/unavailable|deadline-exceeded|network-request-failed/.test(code)){
+        return alert("تعذّر الاتصال بـ Firebase أثناء الحفظ ("+safeCode+"). تحققي من الاتصال وأعيدي المحاولة لاحقًا.");
+      }
+      if(code.includes("already-exists")){
+        return alert("الاسم الجديد مسجل مسبقًا. اختاري اسمًا مختلفًا أو راجعي المعلمة.");
+      }
+      return alert("لم يكتمل حفظ الاسم في Firebase. رمز التشخيص: "+safeCode+". لم تتغير بيانات الحساب.");
     }
   }
 
