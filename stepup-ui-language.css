@@ -21,3 +21,25 @@
   .student-appbar .stepup-lang-controls{gap:0;padding:2px}
   .student-appbar .stepup-lang-controls button{min-width:32px;padding:5px;font-size:10px}
 }
+
+/* The existing Athari mobile theme hides every direct > span inside
+   .appbar .nav-actions. Keep the student language control visible explicitly,
+   without changing the theme, teacher header or any other header element. */
+@media (max-width:700px){
+  html.sx body.sx header.appbar.student-appbar .nav-actions > span.stepup-lang-controls{
+    display:inline-flex !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}
+html.sx body.sx header.appbar.student-appbar .nav-actions .stepup-lang-controls button[data-student-ui-language]{
+  background:transparent !important;
+  border:0 !important;
+  color:#365b76 !important;
+  box-shadow:none !important;
+}
+html.sx body.sx header.appbar.student-appbar .nav-actions .stepup-lang-controls button[data-student-ui-language][aria-pressed="true"]{
+  background:#fff !important;
+  color:#145986 !important;
+  box-shadow:0 1px 5px rgba(15,48,85,.16) !important;
+}
