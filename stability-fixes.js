@@ -62,98 +62,10 @@
     window.PROVE.__teacherRegistrationPatched = VERSION;
   }
 
-  function patchStudentAccess(){
-    if(!window.PROVE || window.PROVE.__studentAccessPatched) return;
-
-    const originalContinue = window.PROVE.studentContinue;
-    window.PROVE.studentContinue = async function(forcedClassCode=''){
-      if(!fbReady()) return originalContinue(forcedClassCode);
-
-      const name = (document.getElementById('stName')?.value || '').trim().replace(/\s+/g,' ');
-      const classCode = (forcedClassCode || document.getElementById('stClassCode')?.value || '').trim().toUpperCase();
-      const pin = (document.getElementById('stPin')?.value || '').trim();
-
-      if(!name || !classCode || !/^[0-9]{4}$/.test(pin)){
-        return alert('Please enter your full name and a 4-digit PIN.');
-      }
-
-      const db = firebase.firestore();
-      let join;
-      try{
-        const snap = await db.collection('joinCodes').doc(classCode).get();
-        if(!snap.exists) return alert('Class not found. Check the class link or code.');
-        join = snap.data();
-      }catch(e){
-        console.error('StepUp class lookup failed',e);
-        return alert('Could not check the class right now. Please try again.');
-      }
-
-      const c = await studentCreds(name,classCode,pin);
-      try{
-        const cr = await firebase.auth().signInWithEmailAndPassword(c.email,c.password);
-        const userRef = db.collection('users').doc(cr.user.uid);
-        const profile = await userRef.get();
-        if(!profile.exists){
-          await userRef.set({
-            role:'student', displayName:name, classId:join.classId, classCode,
-            teacherId:join.teacherId, school:join.school || '', createdAt:new Date().toISOString()
-          });
-          window.location.reload();
-        }
-        return;
-      }catch(loginError){
-        // First visit with a valid 4-digit PIN continues to profile creation.
-      }
-
-      try{
-        const cr = await firebase.auth().createUserWithEmailAndPassword(c.email,c.password);
-        await db.collection('users').doc(cr.user.uid).set({
-          role:'student', displayName:name, classId:join.classId, classCode,
-          teacherId:join.teacherId, school:join.school || '', createdAt:new Date().toISOString()
-        });
-        window.location.reload();
-      }catch(createError){
-        if(createError?.code === 'auth/email-already-in-use'){
-          return alert('The name is already registered. Check your PIN and try again.');
-        }
-        console.error('StepUp student profile creation failed',createError);
-        alert('Could not continue. Please try again.');
-      }
-    };
-
-    window.PROVE.editStudentName = async function(){
-      if(!fbReady()) return alert('Name editing is unavailable right now.');
-      const user = firebase.auth().currentUser;
-      if(!user) return alert('You are not signed in.');
-      const db = firebase.firestore();
-      const ref = db.collection('users').doc(user.uid);
-      const snap = await ref.get();
-      if(!snap.exists) return alert('Student profile not found.');
-      const profile = snap.data();
-      const current = String(profile.displayName || '').trim();
-      const next = (prompt('Enter the student name:',current) || '').trim().replace(/\s+/g,' ');
-      if(!next || next === current) return;
-      if(next.length < 2 || next.length > 80) return alert('Please enter a valid name.');
-      const pin = (prompt('Enter your current PIN to confirm the name change:') || '').trim();
-      if(!/^[0-9]{4}$/.test(pin)) return alert('Enter your current 4-digit PIN.');
-      try{
-        const oldCreds = await studentCreds(current,profile.classCode,pin);
-        const newCreds = await studentCreds(next,profile.classCode,pin);
-        const credential = firebase.auth.EmailAuthProvider.credential(oldCreds.email,oldCreds.password);
-        await user.reauthenticateWithCredential(credential);
-        if(user.email !== newCreds.email) await user.updateEmail(newCreds.email);
-        await user.updatePassword(newCreds.password);
-        await ref.update({displayName:next});
-        alert('Name updated. Use the new name with the same PIN next time.');
-        window.location.reload();
-      }catch(e){
-        console.error('StepUp name update failed',e);
-        alert(e?.code === 'auth/email-already-in-use' ? 'That name is already in use in this class.' : 'Could not update the name. Check your PIN and try again.');
-      }
-    };
-
-    window.PROVE.__studentAccessPatched = VERSION;
-  }
+  // Student authentication and renaming are owned by student-flow-guard.js
+  // and student-name-login.js. The legacy patch here was overriding both
+  // after the page rendered, causing incorrect-PIN messages and silently
+  // reopening the old auto-registration path. Intentionally retired.
 
   function improveAuthUI(){
     document.querySelectorAll('button[onclick*="teacherRegister"]').forEach(btn => {
@@ -318,7 +230,6 @@
   function refreshUI(){
     patchJourney();
     patchTeacherRegistration();
-    patchStudentAccess();
     improveAuthUI();
     renderOwnerAccess();
     fixMotivation();
