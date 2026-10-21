@@ -1,164 +1,211 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0b1429">
-<meta name="description" content="STEP UP Adventures: an independent, no-grades Unit 4 detective adventure.">
-<title>STEP UP ADVENTURES | The Missing Ad</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090d20">
+<meta name="description" content="STEP UP Adventures: The Ad Heist, an independent Unit 4 detective game.">
+<title>STEP UP ADVENTURES · THE AD HEIST</title>
 <style>
-:root{color-scheme:dark;--bg:#091326;--panel:#14233e;--edge:#334663;--txt:#f7f8fc;--muted:#bcc9de;--teal:#52e4c4;--gold:#ffd176;--pink:#f8a2c7;--red:#ffb1b6;--round:22px}
+:root{color-scheme:dark;--bg:#080e20;--glass:#131d37;--line:#435574;--white:#f9fcff;--soft:#ced8ea;--cyan:#69e8f4;--green:#61f3c2;--gold:#ffd485;--pink:#ff92b8;--red:#ff647f}
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse 100% 65% at 60% 0%,#173456 0%,#091326 68%);color:var(--txt);font:500 16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100svh}
-button,a{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
-a{color:inherit}.wrap{width:min(100% - 28px,1000px);margin:auto}
-header{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap}
-.brand{font-size:19px;letter-spacing:.06em;font-weight:900}.brand em{font-style:normal;color:var(--teal)}.eyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);font-weight:800}
-.toplink{border:1px solid var(--edge);border-radius:999px;text-decoration:none;padding:9px 16px;color:var(--muted);font-size:14px}
-.toplink:hover{background:#ffffff12;color:white}
-.flag{border:1px solid #ffffff21;color:#d7e9f7;padding:4px 11px;border-radius:999px;font-size:12px}
-.title{font-size:clamp(29px,5vw,53px);line-height:1.1;letter-spacing:-.035em;margin:8px 0 14px;font-weight:900}
-.lead{color:var(--muted);font-size:17px;max-width:720px;margin:0 0 18px}
-.headline{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.small{font-size:13px;color:var(--muted)}.subtle{color:var(--muted)}
-.progress{display:flex;gap:9px;margin:20px 0 22px}
-.progress span{height:6px;flex:1;border-radius:99px;background:#2b3e5e}
-.progress span.on{background:linear-gradient(90deg,#54e5c5,#aedafc)}
-.page{background:linear-gradient(145deg,#182a49,#101b33);border:1px solid var(--edge);border-radius:var(--round);padding:clamp(18px,3vw,30px);box-shadow:0 30px 90px #0005;overflow:hidden}
-.game-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:center}
-.textcard{padding:2px 3px}
-.textcard h2{font-size:clamp(25px,3.2vw,37px);line-height:1.19;margin:10px 0}
-.textcard p{color:#d1dceb}
-.illustration{min-height:320px;position:relative;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 32%,#456184,#15213b 63%);border:1px solid #ffffff22}
-.illustration:before{content:"";position:absolute;bottom:0;width:100%;height:28%;background:linear-gradient(110deg,#1f3857,#2f5172);clip-path:polygon(0 35%,100% 0,100% 100%,0 100%)}
-.art{position:relative;font-size:110px;filter:drop-shadow(0 16px 18px #0008);transform:rotate(-8deg)}
-.tape{position:absolute;top:28px;right:25px;background:#ffd176;color:#222c3b;transform:rotate(7deg);padding:8px 12px;border-radius:7px;font-weight:900;letter-spacing:.05em;font-size:13px}
-.btn{background:var(--teal);border:0;border-radius:14px;color:#082b32;font-weight:900;padding:13px 22px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;box-shadow:0 5px 0 #267f76}
-.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #267f76}.btn.secondary{background:#273d61;color:#fff;box-shadow:none;border:1px solid #547193}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
-.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:23px}
-.pill{background:#10283d;border:1px solid #2b5e6e;border-radius:100px;color:#bff8ed;padding:6px 13px;font-size:13px;font-weight:750}
-.scene{height:410px;position:relative;overflow:hidden;border-radius:19px;background:linear-gradient(180deg,#334b6a 0%,#253650 66%,#182b46 66%,#132741 100%);border:1px solid #526783;box-shadow:inset 0 10px 40px #0004}
-.scene:before{content:"";position:absolute;top:10%;left:36%;height:42%;width:30%;border:11px solid #344563;background:linear-gradient(160deg,#5a7593,#34475e);box-shadow:inset 0 0 30px #14253b;transform:skewY(-2deg)}
-.scene:after{content:"";position:absolute;bottom:26%;left:0;width:100%;height:2px;background:#8192a540}
-.neon{position:absolute;top:19px;left:18px;color:#cbe9ff;font-size:13px;font-weight:900;letter-spacing:.12em}
-.lamp{position:absolute;width:125px;height:24px;border-radius:0 0 60px 60px;background:#bad2e6;right:16px;top:0;box-shadow:0 18px 42px #cbe7f97a}
-.poster{position:absolute;top:12%;left:41%;width:18%;height:34%;border:9px solid #132740;background:repeating-linear-gradient(135deg,#4b6885 0,#4b6885 12px,#31445d 12px,#31445d 24px);display:grid;place-items:center;font-weight:900;font-size:16px;text-align:center;color:#e7f0ff;transform:rotate(-3deg)}
-.desk{position:absolute;bottom:14%;left:8%;width:82%;height:21%;border-radius:12px;background:linear-gradient(150deg,#7a95aa,#2a4969);box-shadow:0 20px 0 #182841,0 26px 14px #0006}
-.hotspot{position:absolute;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;min-width:115px;min-height:103px;border:2px solid #ffffff66;border-radius:18px;color:#fff;background:linear-gradient(135deg,#153554e0,#102239ed);box-shadow:0 8px 20px #09111c99,0 0 0 4px #4eecc429;transition:transform .14s,border .14s}
-.hotspot:hover{transform:translateY(-5px);border-color:var(--gold)}.hotspot.found{border-color:var(--teal);box-shadow:0 0 0 4px #4eecc43d;background:#0a4948e8}
-.hotspot strong{font-size:14px}.hotspot .emo{font-size:37px;line-height:1.25}.hotspot .tick{position:absolute;top:-11px;right:-10px;background:#55e7c5;color:#053c3d;border-radius:999px;font-weight:900;padding:0 8px}
-.hotspot[data-clue="email"]{left:9%;bottom:18%}
-.hotspot[data-clue="printer"]{right:8%;bottom:20%}
-.hotspot[data-clue="phone"]{left:43%;top:36%}
-.cluelist{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}
-.cluechip{border:1px solid #54708a;padding:7px 11px;border-radius:10px;color:var(--muted);font-size:13px}
-.cluechip.found{color:var(--teal);border-color:#368c81;background:#0e343b}
-.alert{border-radius:14px;background:#102d45;border:1px solid #3e657e;padding:14px 16px;margin-top:18px;color:#e7f1fd}
-.boxnote{padding:16px 18px;background:#0c213a;border:1px solid #2f5a74;border-radius:15px}
-.boxnote strong{color:var(--gold)}
-.quote{font-size:clamp(20px,3vw,27px);line-height:1.35;font-weight:800;letter-spacing:-.01em;color:white}
-.panel-split{display:grid;grid-template-columns:1fr .9fr;gap:18px}
-.mission-tag{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--teal);font-weight:900}
-.tile-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
-.tile{border:1px solid #7196ba;color:white;background:#28496c;border-radius:12px;min-height:62px;padding:13px;font-weight:900;font-size:20px}
-.tile:disabled{opacity:.3}
-.slot{display:inline-flex;min-width:100px;border-bottom:3px dashed #7b9eba;padding:7px 8px;justify-content:center;color:var(--gold)}
-.feedback{border:1px solid #41617f;background:#142e4b;border-radius:12px;padding:13px;margin-top:16px;min-height:50px}
-.feedback.error{border-color:#b9656a;color:#ffd8db}.feedback.ok{border-color:#349987;color:#8bffdf}
-.keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:330px;margin:17px auto 0}
-.key{min-height:63px;border:1px solid #527091;background:#273f60;border-radius:13px;color:#fff;font-size:22px;font-weight:850}
-.key:active{background:#397f82}.display{font-size:32px;letter-spacing:.25em;text-align:center;padding:14px 8px;background:#09182a;border:2px solid #53738e;border-radius:14px;max-width:330px;margin:auto;font-variant-numeric:tabular-nums}
-.record{border-radius:15px;border:1px solid #59728c;background:linear-gradient(140deg,#1e3d5c,#162b45);padding:18px}
-.record h3{margin:0 0 6px}.record p{margin:7px 0;color:#e0ebf7}
-.voice{background:#2b415b;border:1px solid #6886a4;color:#fff;border-radius:999px;padding:8px 13px;min-height:43px;font-weight:800;margin-top:8px}
-.voice:hover{border-color:var(--teal)}
-.badge-card{padding:32px 22px;text-align:center;max-width:560px;margin:auto;background:radial-gradient(circle at 50% 0%,#365979,#162940 65%);border:1px solid #6b8b99;border-radius:20px}
-.badge-card .medal{font-size:84px;display:block;filter:drop-shadow(0 8px 18px #0006)}
-.badge-card h2{font-size:35px;margin:9px 0 3px}.badge-card .winner{color:var(--gold);font-size:17px;font-weight:850}
-footer{font-size:13px;color:#91a5c1;text-align:center;padding:22px 0 35px}
-.overlay{position:fixed;z-index:20;inset:0;display:grid;place-items:center;background:#030914dd;padding:18px;backdrop-filter:blur(5px)}
-.modal{width:min(100%,550px);border-radius:20px;border:1px solid #6a91a8;padding:24px;background:#172d4c;box-shadow:0 30px 100px #000c}
-.modal h2{font-size:26px;margin:5px 0 14px}.modal p{color:#e0eafd}
-.close{float:right;border:1px solid #6c8aa0;background:transparent;color:white;border-radius:10px;padding:7px 12px}
-.hidden{display:none!important}
-@media(max-width:680px){header{padding-top:14px}.game-grid,.panel-split{grid-template-columns:1fr}.page{padding:17px}.illustration{min-height:190px}.art{font-size:76px}.scene{height:330px}.hotspot{min-width:91px;min-height:90px}.hotspot[data-clue="email"]{left:3%;bottom:13%}.hotspot[data-clue="printer"]{right:3%;bottom:13%}.hotspot[data-clue="phone"]{left:37%;top:31%}.hotspot .emo{font-size:28px}.hotspot strong{font-size:12px}.poster{font-size:12px}.desk{bottom:10%}.tape{font-size:10px}.quote{font-size:20px}.title{font-size:33px}}
+body{margin:0;min-height:100dvh;background:radial-gradient(70% 65% at 50% -20%,#254876 0%,#080e20 78%);color:var(--white);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+button,a{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+a{color:inherit}
+.shell{max-width:1090px;padding:0 18px;margin:0 auto}
+header{min-height:79px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0}
+.logo{font-weight:1000;letter-spacing:.07em;font-size:18px}.logo b{color:var(--cyan)}.tiny{font-size:11px;letter-spacing:.15em;font-weight:850;color:var(--cyan);text-transform:uppercase}
+header .right{display:flex;align-items:center;gap:8px}
+.link,.switch{border:1px solid #50627b;background:#1c2d4c;border-radius:50px;padding:8px 12px;color:#f6faff;text-decoration:none;font-size:12px;min-height:39px}
+.link:hover,.switch:hover{background:#2c456c}
+.status{border:1px solid #754b65;color:#ffd6e5;background:#3d233db3;border-radius:60px;padding:5px 11px;font-size:11px;letter-spacing:.04em;font-weight:800}
+.status .light{display:inline-block;width:8px;height:8px;border-radius:100%;margin-right:5px;background:var(--red);box-shadow:0 0 12px var(--red);animation:pulse 1.6s infinite}
+.rail{display:flex;align-items:center;gap:8px;margin:5px 0 16px}
+.rail>div{height:5px;border-radius:9px;flex:1;background:#283b5a;overflow:hidden}.rail>div.on{background:linear-gradient(90deg,#7ff5e9,#6cb9ff);box-shadow:0 0 12px #51dada}
+.rail small{font-size:11px;color:#adbed9;min-width:77px;text-align:right}
+.hud{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:13px}
+.hud .left{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.clock{font-size:12px;font-weight:900;letter-spacing:.09em;border:1px solid #725568;color:#ffe6ee;border-radius:10px;padding:6px 11px;background:#301e39}
+.clock.hot{color:white;border-color:var(--red);background:#8b2c47}
+.pill{display:inline-block;padding:6px 11px;border:1px solid #3d7180;border-radius:40px;background:#102f42;color:#c1faff;font-size:12px;font-weight:750}
+.card{border:1px solid #445a7b;border-radius:23px;background:linear-gradient(145deg,#172944 0%,#0d1933 68%);overflow:hidden;min-height:570px;box-shadow:0 25px 85px #0009;position:relative}
+.card:before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#81f6e7,transparent);opacity:.7;pointer-events:none}
+.area{padding:clamp(17px,3vw,32px)}
+h1,h2,h3,p{margin-top:0}h1{font-weight:1000;letter-spacing:-.045em;line-height:1.06;font-size:clamp(32px,5vw,59px);margin-bottom:17px}h2{font-weight:900;letter-spacing:-.035em;line-height:1.16;font-size:clamp(24px,3vw,37px);margin:6px 0 13px}
+p{color:var(--soft)}.step{color:var(--cyan);text-transform:uppercase;letter-spacing:.14em;font-weight:900;font-size:11px;margin-bottom:12px}
+.lead{font-size:clamp(15px,1.9vw,19px);max-width:560px}
+.flex{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.btn{border:0;border-radius:13px;padding:14px 21px;min-height:50px;background:var(--green);color:#042d30;font-weight:950;box-shadow:0 5px 0 #208f78;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #208f78}.btn.alt{background:#273f60;box-shadow:none;color:white;border:1px solid #63809c}.btn:disabled{opacity:.45;cursor:default;box-shadow:none}
+.panel{border:1px solid #415d7c;background:#102641e3;border-radius:15px;padding:16px}
+.panel.cyan{border-color:#379ea3;background:#0c353dd9}.panel.warn{border-color:#9e6676;background:#3b2439cb}
+.roman{font-size:12px;letter-spacing:.14em;color:#a8bddb;font-weight:850}.glow{color:var(--green)}.pink{color:var(--pink)}
+.terminal{font:750 13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;color:#baf9e9}
+.intro{min-height:575px;position:relative;display:grid;grid-template-columns:1.06fr .94fr;align-items:center;gap:12px;padding:clamp(18px,4vw,43px);background:radial-gradient(circle at 80% 36%,#1c4a6c 0%,transparent 40%),linear-gradient(155deg,#15263f,#0a1429)}
+.intro:after{content:"";position:absolute;width:600px;height:600px;border:1px solid #46e6ec15;border-radius:50%;right:-170px;top:-110px;pointer-events:none}
+.intro h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 28px #1e8fa0}
+.alert{background:#45253b;border:1px solid #9c5e74;color:#fff1f6;border-radius:10px;display:inline-flex;gap:7px;padding:8px 13px;font-weight:900;font-size:11px;letter-spacing:.12em;margin-bottom:17px}
+.intro-visual{position:relative;min-height:370px;display:grid;place-items:center}
+.radar{width:min(100%,390px);aspect-ratio:1;border-radius:50%;border:2px solid #69d7e246;box-shadow:inset 0 0 45px #22accb33,0 0 50px #1c87a32a;display:grid;place-items:center;position:relative;background:repeating-radial-gradient(circle at center,transparent 0,transparent 48px,#75e3ea24 49px,#75e3ea24 50px);animation:slowspin 16s linear infinite}
+.radar:before,.radar:after{content:"";position:absolute;background:#6bd9e557;left:50%;top:5%;height:90%;width:1px}.radar:after{transform:rotate(90deg)}
+.poster-art{display:grid;place-items:center;width:52%;height:65%;border:9px solid #98bbd9;background:linear-gradient(130deg,#234763,#0b2341);transform:rotate(-11deg);box-shadow:17px 20px 25px #0009,0 0 60px #1adce03a;z-index:2;animation:float 3.6s ease-in-out infinite}
+.poster-art span{font-size:75px;line-height:1}.poster-art strong{color:#fff;font-size:15px;letter-spacing:.13em;text-align:center}.poster-art small{color:var(--pink);font-size:14px;font-weight:1000}
+.stamp{position:absolute;z-index:3;bottom:19%;right:-4%;border:4px solid #ff8ca4;color:#ffaebf;font-weight:1000;letter-spacing:.13em;padding:7px 17px;transform:rotate(-16deg);font-size:clamp(15px,2.5vw,25px);text-shadow:0 0 14px #ff3150}
+.scene-layout{display:grid;grid-template-columns:1.6fr .7fr;gap:17px}
+.room{height:400px;position:relative;overflow:hidden;border-radius:17px;background:linear-gradient(#1b3755 0 63%,#233a59 63% 70%,#132b49 70%);border:1px solid #6a89a9;box-shadow:inset 0 0 110px #0007}
+.room:before{content:"";position:absolute;left:25%;top:15%;width:50%;height:49%;border:12px solid #142c48;background:linear-gradient(130deg,#51768e,#172b46);box-shadow:0 8px 20px #0007}
+.room:after{content:"";position:absolute;left:0;bottom:29%;height:3px;width:100%;background:#66819e}
+.scene-title{position:absolute;top:11px;left:14px;border:1px solid #6c9aaf;background:#0b1d33dd;border-radius:8px;padding:5px 9px;color:#aaf4e9;font-size:11px;letter-spacing:.08em;font-weight:850}
+.room .spotlight{position:absolute;right:10%;top:-17px;background:#c2e4e9;width:130px;height:23px;border-radius:0 0 60px 60px;box-shadow:0 10px 45px #a0e5f87a}
+.blank-frame{position:absolute;top:25%;left:41%;transform:rotate(-4deg);display:flex;flex-direction:column;align-items:center;color:#d7e9f5;font-weight:1000;letter-spacing:.07em;font-size:18px}.blank-frame b{font-size:36px}
+.tabletop{position:absolute;bottom:10%;left:8%;width:85%;height:18%;border-radius:13px;background:linear-gradient(135deg,#8ba7bf,#355c7a);box-shadow:0 20px 0 #0b203b,0 24px 20px #000b}
+.hotspot{position:absolute;z-index:5;border-radius:17px;padding:8px;min-height:94px;width:126px;display:flex;align-items:center;justify-content:center;flex-direction:column;border:2px solid #b1eafa;background:#102d49ed;color:#fff;box-shadow:0 4px 23px #071126,0 0 0 5px #61e3ee25;animation:hotspot 2.2s infinite}
+.hotspot .icon{font-size:35px;line-height:1.3}.hotspot span:last-child{font-size:12px;font-weight:900}.hotspot:hover{border-color:var(--gold);transform:translateY(-4px)}.hotspot.found{border-color:var(--green);background:#10483fdc;animation:none}.hotspot[data-clue="email"]{left:4%;bottom:18%}.hotspot[data-clue="printer"]{right:4%;bottom:18%}.hotspot[data-clue="log"]{left:42%;top:37%}
+.casefile{min-height:400px;display:flex;flex-direction:column;gap:10px}
+.evidence-list{display:grid;gap:9px}.ev{border:1px dashed #5a718c;border-radius:11px;padding:11px;color:#d0daeb;display:flex;align-items:center;gap:8px;background:#152a42}.ev.found{border:1px solid #3da58d;color:#a4f9df;background:#103d3e}
+.slot{font-size:17px;font-weight:900;color:var(--cyan);min-width:45px}.ev span:last-child{font-size:13px}
+.modal-root{position:fixed;inset:0;z-index:40;background:#020713e9;display:grid;place-items:center;padding:16px;backdrop-filter:blur(6px)}
+.modal-root[hidden]{display:none}.modal{width:min(100%,550px);border-radius:20px;background:linear-gradient(140deg,#243a58,#11213d);border:1px solid #79bfd0;padding:24px;box-shadow:0 15px 75px #000b;animation:arrival .25s ease-out}
+.modal h2{margin:8px 0}.x{float:right;background:#284464;border:1px solid #6a91a8;border-radius:8px;padding:6px 11px;color:white}
+.clue-text{font-size:clamp(18px,2.4vw,23px);font-weight:850;color:white;background:#081d33;border-left:4px solid var(--gold);padding:17px;border-radius:8px}
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:20px 0}
+.event{border:1px solid #6d8fac;border-radius:17px;padding:17px 12px;display:grid;gap:8px;min-height:148px;text-align:left;background:#1c3654;color:#f9feff;transition:transform .15s}
+.event:hover{transform:translateY(-4px);background:#254b67}.event .number{font-size:13px;color:var(--cyan);font-weight:1000}.event .emoji{font-size:36px}.event .event-title{font-weight:900;font-size:17px}.event.selected{border:2px solid var(--green);background:#134c4a}.event:disabled{opacity:.6;cursor:default}
+.timeline-track{display:flex;align-items:center;gap:10px;margin:20px 0}
+.bubble{display:grid;place-items:center;flex:1;border:1px dashed #68839e;min-height:71px;border-radius:13px;background:#0b1e36;color:#96abc9;font-weight:850;font-size:13px;text-align:center;padding:6px}
+.bubble.filled{border:1px solid var(--cyan);color:white;background:#143f59}.arrow{color:var(--cyan);font-size:20px}
+.device{border:1px solid #7195b3;background:radial-gradient(circle at 70% -10%,#304f69,#0c1e35);border-radius:20px;padding:20px;position:relative}
+.device .gridlines{height:10px;background:repeating-linear-gradient(90deg,#51c4d250 0 2px,transparent 2px 17px);margin-bottom:13px}
+.connection{display:grid;grid-template-columns:45px 1fr;gap:10px;align-items:start;padding:12px 0;border-bottom:1px solid #ffffff19}
+.node{width:42px;height:42px;border:2px solid #698ca8;border-radius:50%;display:grid;place-items:center;background:#19334b;color:#b3d7ea;font-weight:900}
+.node.active{background:#12614f;border-color:var(--green);color:#fff;box-shadow:0 0 20px #51ffc35a}
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.option{border:1px solid #5d88a6;background:#203f5e;color:#fff;border-radius:11px;padding:12px 8px;min-height:50px;font-weight:900;font-size:14px}
+.option:hover{border-color:var(--gold);background:#2b536c}.option:disabled{opacity:.5;cursor:default}.option.correct{background:#176052;border:2px solid var(--green);color:#ceffef;opacity:1}
+.visual-meter{height:9px;background:#254264;border-radius:7px;overflow:hidden}.visual-meter div{height:100%;background:linear-gradient(90deg,#70fbcf,#7ddcf7);transition:width .2s}
+.locations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
+.location{border:1px solid #6586a4;border-radius:17px;background:#152e4c;color:white;padding:21px 10px;display:grid;gap:10px;text-align:center;min-height:187px;align-content:center}
+.location .door{font-size:56px;filter:drop-shadow(0 9px 8px #0009)}
+.location strong{font-size:19px}.location small{color:#a9c4d9;font-size:11px}.location:hover{border-color:var(--green);box-shadow:0 0 18px #6bf5e332;transform:translateY(-3px)}
+.feed{padding:14px 18px;border:1px solid #587994;border-radius:12px;background:#091f35;color:#dbebf6;font-size:14px;margin-top:17px;min-height:50px}
+.feed.good{border-color:#30a88b;color:#a9ffdd;background:#103f3a}.feed.bad{border-color:#a46585;color:#ffd0dd;background:#462839}
+.victory{padding:clamp(23px,5vw,44px);display:grid;grid-template-columns:.85fr 1.15fr;gap:25px;align-items:center;min-height:560px;background:radial-gradient(circle at 32% 30%,#235b6a,#0b1930 69%)}
+.crown{width:240px;height:270px;display:grid;place-items:center;margin:auto;border:2px solid #78e9e294;border-radius:24px;background:linear-gradient(150deg,#1c5062,#162b48);box-shadow:0 0 50px #29d5bf55;transform:rotate(-7deg);animation:float 3.2s ease-in-out infinite;position:relative}
+.crown .big{font-size:105px}.crown:after{content:"CASE CLOSED";position:absolute;bottom:18px;font-weight:950;color:var(--gold);letter-spacing:.15em}
+.impact{font-weight:1000;color:var(--gold);text-transform:uppercase;letter-spacing:.13em;font-size:14px}
+.callout{padding:12px 14px;border-left:3px solid var(--green);background:#103a45;border-radius:6px;font-size:13px;color:#c9ffeb}
+footer{font-size:12px;color:#9fb0c9;text-align:center;padding:21px}
+.shake{animation:shake .3s ease}
+@keyframes hotspot{0%,100%{box-shadow:0 4px 23px #071126,0 0 0 4px #61e3ee20}50%{box-shadow:0 4px 23px #071126,0 0 0 9px #61e3ee05}}
+@keyframes float{0%,100%{translate:0 0}50%{translate:0 -9px}}
+@keyframes pulse{50%{opacity:.35;box-shadow:0 0 0 var(--red)}}
+@keyframes slowspin{to{transform:rotate(360deg)}}
+@keyframes arrival{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@media(max-width:750px){.intro,.scene-layout,.victory{grid-template-columns:1fr}.intro{padding:25px}.intro-visual{min-height:210px}.radar{width:205px}.poster-art{border-width:6px}.poster-art span{font-size:42px}.poster-art strong{font-size:10px}.poster-art small{font-size:9px}.stamp{font-size:13px;bottom:10%;right:5%}.card{min-height:0}.room{height:310px}.hotspot{width:95px;min-height:75px}.hotspot .icon{font-size:26px}.hotspot span:last-child{font-size:11px}.hotspot[data-clue="email"]{left:2%;bottom:11%}.hotspot[data-clue="printer"]{right:2%;bottom:11%}.hotspot[data-clue="log"]{left:37%;top:34%}.timeline,.locations{gap:7px}.event{padding:10px 7px;min-height:128px}.event .emoji{font-size:26px}.event .event-title{font-size:13px}.options{grid-template-columns:1fr}.location{padding:13px 6px;min-height:137px}.location .door{font-size:37px}.location strong{font-size:14px}.location small{font-size:9px}.crown{width:180px;height:200px}.crown .big{font-size:80px}.status{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="shell">
 <header>
-<div><div class="brand">STEP <em>UP</em> <span style="color:#fff7;font-weight:500">/ ADVENTURES</span></div><div class="eyebrow">UNIT 4 · THE ART OF ADVERTISING</div></div>
-<a id="return" class="toplink" href="./">← Return to STEP UP</a>
+<div><div class="logo">STEP <b>UP</b> <span style="color:#ffffff94">/ ADVENTURES</span></div><div class="tiny">Mega Goal 1 · Unit 4</div></div>
+<div class="right"><button type="button" class="switch" id="sound" aria-pressed="false">♪ Sound off</button><a id="back" class="link" href="./">← STEP UP</a></div>
 </header>
-<div class="headline"><span class="flag">🎮 Play-only pilot</span><span class="flag">No marks · No certificates affected</span></div>
-<div id="progress" class="progress" role="progressbar" aria-label="Adventure progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span></span><span></span><span></span><span></span></div>
-<main id="game" class="page" aria-live="polite"></main>
-<footer>STEP UP ADVENTURES · An independent Unit 4 trial · Created by Nuha Almutairi</footer>
+<div class="hud"><div class="left"><span class="status"><span class="light"></span> LIVE INCIDENT</span><span class="pill">🔎 CASE 004 · THE AD HEIST</span></div><div id="timer" class="clock" aria-label="Launch countdown">LAUNCH IN 06:00</div></div>
+<div id="rail" class="rail" role="progressbar" aria-label="Mission progress" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"><div></div><div></div><div></div><div></div><div></div><small id="progressText">BRIEFING</small></div>
+<main id="game" class="card" aria-live="polite"></main>
+<footer>Independent play-only experiment · No score or certificate changes · Created by Nuha Almutairi</footer>
 </div>
-<div id="overlay" class="overlay hidden" aria-live="polite"></div>
+<div class="modal-root" id="modal" hidden></div>
 <script>
 (function(){
-"use strict";
-const game=document.getElementById("game"), overlay=document.getElementById("overlay");
-document.getElementById("return").href="./"+window.location.search;
-const evidence={
- email:{title:"📩 A Message from Sara",label:"Email",text:"The final poster was designed yesterday. I left it on the studio desk. — Sara",insight:"PAST PASSIVE · was designed"},
- printer:{title:"🖨️ The Printer Log",label:"Printer",text:"The poster was printed this morning. Only one final copy was made.",insight:"PAST PASSIVE · was printed"},
- phone:{title:"📞 The Launch Voicemail",label:"Voicemail",text:"Good morning, team! The new advertisement will be launched at ten o'clock. Please keep the final copy safe.",insight:"FUTURE PASSIVE · will be launched"}
+'use strict';
+const $=id=>document.getElementById(id);
+const game=$('game'),modal=$('modal'),rail=$('rail'),timer=$('timer'),back=$('back'),sound=$('sound');
+back.href='./'+location.search;
+let stage=0,found=new Set(),order=[],solved=[false,false,false],alerts=0,feedback='',seconds=360,tick=null,soundOn=false,ctx=null,openKey=null;
+const clues={
+ email:{name:'Designer’s Message',icon:'📨',text:'“The final poster was designed yesterday at 4 PM. I left it on the editing desk.” — Sara',log:'DESIGNED · YESTERDAY · 4:00 PM'},
+ printer:{name:'Printer Receipt',icon:'🖨️',text:'“The only final copy was printed today at 9:42 AM.”',log:'PRINTED · TODAY · 9:42 AM'},
+ log:{name:'Security Camera Log',icon:'📹',text:'“Archive B was opened at 9:46 AM. Access ID: A-0 (AUTO-GUARD).”',log:'ARCHIVE B · TODAY · 9:46 AM'}
 };
-let stage=0,found=new Set(),openClue=null,words=[],fixed=false,pin="",feedback="",audio=null;
-function renderProgress(){
- const p=document.getElementById("progress");p.setAttribute("aria-valuenow",String(stage));
- p.querySelectorAll("span").forEach((el,i)=>el.classList.toggle("on",i<stage));
-}
-function btn(action,label,kind,extra){return '<button type="button" class="btn '+(kind||"")+'" data-action="'+action+'" '+(extra||"")+'>'+label+'</button>'}
+const events=[
+ {id:'archive',time:'9:46 AM',title:'A locker was opened',emoji:'🔒'},
+ {id:'brief',time:'Yesterday · 4 PM',title:'The poster was designed',emoji:'🎨'},
+ {id:'print',time:'Today · 9:42 AM',title:'The poster was printed',emoji:'🖨️'}
+];
+const locks=[
+ {cam:'CAM 01 / DESIGN ROOM',stem:'The original poster ___ yesterday.',choices:['was designed','is design','will designed'],answer:0,tip:'A finished action yesterday → was + V3'},
+ {cam:'CAM 02 / ARCHIVE TRANSFER',stem:'The poster ___ to the archive.',choices:['has moved','has been moved','have been move'],answer:1,tip:'Present perfect passive → has been + V3'},
+ {cam:'CAM 03 / LAUNCH CONTROL',stem:'The advertisement ___ at ten.',choices:['will launched','will be launched','was launch'],answer:1,tip:'Future passive → will be + V3'}
+];
+function beep(freq=600,len=.065){if(!soundOn)return;try{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;ctx=ctx||new Audio();const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.045,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+len);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+len)}catch(e){}}
+function updateTimer(){let mm=Math.floor(Math.max(0,seconds)/60),ss=String(Math.max(0,seconds)%60).padStart(2,'0');timer.textContent=seconds>0?'LAUNCH IN '+String(mm).padStart(2,'0')+':'+ss:'OVERTIME · KEEP GOING';timer.classList.toggle('hot',seconds<=60);if(stage===5){timer.textContent='CASE CLOSED';timer.classList.remove('hot')}}
+function startClock(){if(tick)return;tick=setInterval(function(){if(stage<5&&seconds>0){seconds--;updateTimer()}},1000)}
+function button(label,act,secondary,disabled){return '<button class="btn'+(secondary?' alt':'')+'" type="button" data-action="'+act+'"'+(disabled?' disabled':'')+'>'+label+'</button>'}
+function showFeedback(message,good){feedback=message;const el=$('game');const old=el.querySelector('.feed');if(old){old.textContent=message;old.className='feed '+(good?'good':'bad')}else{const d=document.createElement('div');d.className='feed '+(good?'good':'bad');d.textContent=message;el.querySelector('.area')?.appendChild(d)}beep(good?790:170)}
+function stepHeader(number,label,title,lead){return '<div class="step">MISSION 0'+number+' / '+label+'</div><h2>'+title+'</h2><p>'+lead+'</p>'}
 function intro(){
- game.innerHTML='<div class="game-grid"><section class="textcard"><div class="mission-tag">CASE FILE #004 · THE MISSING AD</div><h1 class="title">The Missing<br>Advertisement</h1><p class="lead">The final campaign poster has vanished just before launch. You are the English Detective. Explore the studio, collect evidence, and unlock the archive.</p><div class="pill">🔎 Explore → Repair → Unlock → Solve</div><p class="small" lang="ar" dir="rtl">مغامرة قصيرة: ابحثي عن الأدلة، أصلحي الرسالة، وافتحي الخزنة. يمكن المحاولة مرة أخرى دون خصم درجات.</p><div class="actions">'+btn("start","Start Investigation →")+'</div></section><div class="illustration" aria-hidden="true"><span class="art">🕵️‍♀️🗂️</span><span class="tape">TOP SECRET · UNIT 4</span></div></div>';
+ game.innerHTML='<section class="intro"><div><div class="alert">● URGENT TRANSMISSION · 09:54 AM</div><div class="step">YOUR FIRST ASSIGNMENT</div><h1>THE <em>AD</em><br>HEIST<span style="color:var(--pink)">.</span></h1><p class="lead">The final advertisement has vanished. The campaign launches in six minutes. Three clues. One missing poster. Can you crack the case before the reveal?</p><div class="flex" style="margin:20px 0 25px"><span class="pill">🎬 Interactive mystery</span><span class="pill">🎧 Audio clue</span><span class="pill">🔐 Security hack</span></div>'+button('🕵️ ACCEPT MISSION →','start')+'<p style="font-size:12px;margin-top:22px" lang="ar" dir="rtl">الوقت للتشويق فقط، ولن تخسري اللعبة عند انتهائه. لا توجد درجات أو عقوبات.</p></div><div class="intro-visual" aria-hidden="true"><div class="radar"><div class="poster-art"><div style="text-align:center"><span>📢</span><br><strong>SECRET AD</strong><br><small>UNIT 4</small></div></div></div><div class="stamp">MISSING!</div></div></section>';
 }
-function search(){
- let foundCount=found.size;
- let chips=Object.keys(evidence).map(k=>'<span class="cluechip '+(found.has(k)?"found":"")+'">'+(found.has(k)?"✓ ":"○ ")+evidence[k].label+'</span>').join("");
- game.innerHTML='<div class="mission-tag">MISSION 01 / SEARCH THE STUDIO</div><h1 class="title">Find the three clues</h1><p class="lead">Tap the objects in the room. Every clue contains a piece of the story.</p><div class="scene" aria-label="Interactive detective scene"><span class="neon">NOVA · CREATIVE STUDIO</span><span class="lamp" aria-hidden="true"></span><div class="poster" aria-hidden="true">FINAL<br>POSTER<br>?</div><div class="desk" aria-hidden="true"></div>'+
- Object.keys(evidence).map(k=>'<button type="button" class="hotspot '+(found.has(k)?"found":"")+'" data-clue="'+k+'" aria-label="Inspect '+evidence[k].label+'"><span class="emo">'+(k==="email"?"📩":k==="printer"?"🖨️":"📞")+'</span><strong>'+evidence[k].label+'</strong>'+(found.has(k)?'<span class="tick">✓</span>':"")+'</button>').join("")+
- '</div><div class="cluelist">'+chips+'</div><div class="actions"><span class="pill">'+foundCount+' / 3 clues collected</span>'+btn("repair","Repair the Message →","",foundCount!==3?"disabled":"")+'</div>';
+function room(){
+ let items=Object.keys(clues).map(k=>'<button type="button" class="hotspot '+(found.has(k)?'found':'')+'" data-clue="'+k+'" aria-label="Inspect '+clues[k].name+'"><span class="icon">'+clues[k].icon+'</span><span>'+({email:'Message',printer:'Printer',log:'Security'}[k])+'</span></button>').join('');
+ game.innerHTML='<section class="area">'+stepHeader(1,'CRIME SCENE','Someone took the poster.','Search the studio. Tap three glowing objects to uncover what happened.')+
+ '<div class="scene-layout"><div class="room"><div class="scene-title">● CAMERA 01 · NOVA AD STUDIO</div><div class="spotlight"></div><div class="blank-frame"><b>?</b>MISSING</div><div class="tabletop"></div>'+items+'</div><aside class="panel casefile"><div class="roman">EVIDENCE BOARD</div><h3 style="margin:0">CLUES '+found.size+' / 3</h3><div class="evidence-list">'+Object.keys(clues).map(k=>'<div class="ev '+(found.has(k)?'found':'')+'"><span class="slot">'+(found.has(k)?'✓':'?')+'</span><span>'+clues[k].name+'</span></div>').join('')+'</div><p style="font-size:13px;margin:auto 0 0">Clues unlock the next part of the investigation.</p>'+button('Rebuild the Timeline →','timeline',false,found.size!==3)+'</aside></div></section>';
 }
-function showClue(k){
- openClue=k;found.add(k);search();const c=evidence[k];
- overlay.classList.remove("hidden");
- overlay.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-label="'+c.label+' clue"><button type="button" class="close" data-action="close">✕ Close</button><div class="mission-tag">EVIDENCE COLLECTED</div><h2>'+c.title+'</h2><p class="quote">“'+c.text+'”</p><div class="boxnote"><strong>Grammar clue:</strong> '+c.insight+'</div>'+(k==="phone"?'<button type="button" class="voice" data-action="speak">▶ Play voicemail (English)</button><p class="small">If audio is unavailable, you can read the transcript above.</p>':"")+'<div class="actions">'+btn("close","Add to Evidence ✓")+'</div></div>';
- overlay.querySelector('[data-action="close"]').focus();
+function viewClue(key){
+ openKey=key;found.add(key);room();const c=clues[key];
+ modal.hidden=false;modal.innerHTML='<section class="modal" role="dialog" aria-modal="true" aria-label="Evidence found"><button type="button" class="x" data-action="dismiss">✕</button><div class="step">EVIDENCE UNLOCKED · '+found.size+' / 3</div><h2>'+c.icon+' '+c.name+'</h2><p class="clue-text">'+c.text+'</p><div class="panel cyan terminal">'+c.log+'</div><div class="flex" style="margin-top:15px">'+(key==='log'?button('▶ HEAR SECURITY LOG','voice',true):'')+button('SAVE CLUE ✓','dismiss')+'</div></section>';
+ modal.querySelector('.x')?.focus();beep(770);
 }
-function closeClue(){openClue=null;overlay.innerHTML="";overlay.classList.add("hidden");if("speechSynthesis" in window)window.speechSynthesis.cancel();}
-function repair(){
- let tokens=["designed","are","was","design"];
- let chosen=words.map(i=>tokens[i]);
- game.innerHTML='<div class="mission-tag">MISSION 02 / RESTORE THE MESSAGE</div><h1 class="title">The damaged memo</h1><p class="lead">Two words are missing from the archive message. Tap the correct word tiles in order to rebuild the sentence.</p><div class="panel-split"><section><div class="record"><h3>📝 Recovered fragment</h3><p>From yesterday’s studio memo:</p><div class="quote">The poster <span class="slot">'+(chosen[0]||"_____")+'</span> <span class="slot">'+(chosen[1]||"_____")+'</span> yesterday.</div></div><p class="small" lang="ar" dir="rtl">اختاري كلمتين بالترتيب لتكوين جملة مبنية للمجهول في الماضي.</p><div class="actions">'+btn("reset","↺ Reset words","secondary")+'</div></section><section><div class="boxnote"><strong>Evidence hint:</strong> Read Sara’s email. Which passive form tells us about yesterday?</div><div class="tile-list">'+tokens.map((t,i)=>'<button type="button" class="tile" data-word="'+i+'" '+(words.includes(i)||fixed?"disabled":"")+'>'+t+'</button>').join("")+'</div></section></div>'+(feedback?'<div class="feedback '+(fixed?"ok":"error")+'" role="status">'+feedback+'</div>':'')+(fixed?'<div class="actions">'+btn("vault","Unlock the Archive →")+'</div>':'');
+function dismiss(){openKey=null;modal.hidden=true;modal.innerHTML='';try{speechSynthesis.cancel()}catch(e){}}
+function voice(){
+ const c=clues[openKey||'log'];try{if(!('speechSynthesis' in window))throw Error('no voice');speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(c.text.replace(/[“”]/g,''));u.lang='en-US';u.rate=.86;speechSynthesis.speak(u)}catch(e){const n=modal.querySelector('.terminal');if(n)n.textContent=c.text}
 }
-function vault(){
- game.innerHTML='<div class="mission-tag">MISSION 03 / ARCHIVE SECURITY</div><h1 class="title">Enter the launch code</h1><p class="lead">The archive uses the time mentioned in the voicemail as its 4-digit access code (HHMM).</p><div class="panel-split"><section class="record"><h3>🔐 Archive Door B</h3><p class="small">Read the voicemail or play it aloud. Enter four digits to open the door.</p><div class="display" aria-label="Four digit access code">'+pin.padEnd(4,"·")+'</div><div class="keypad">'+["1","2","3","4","5","6","7","8","9","Clear","0","⌫"].map(n=>'<button type="button" class="key" data-digit="'+n+'" aria-label="'+(n==="⌫"?"Delete last digit":n)+'">'+n+'</button>').join("")+'</div><div class="actions" style="justify-content:center">'+btn("unlock","Unlock Door 🔓","",pin.length!==4?"disabled":"")+'</div></section><section><div class="boxnote"><strong>Last clue: Voicemail</strong><p>“'+evidence.phone.text+'”</p><button type="button" data-action="speak" class="voice">▶ Replay voicemail</button></div><p class="small" lang="ar" dir="rtl">استخدمي وقت إطلاق الإعلان المذكور في التسجيل بوصفه رمزًا من أربعة أرقام. مثال: 9:30 ← 0930.</p>'+(feedback?'<div class="feedback error" role="status">'+feedback+'</div>':'')+'</section></div>';
+function timeline(){
+ const timelineCards=events.map(e=>'<button type="button" class="event '+(order.includes(e.id)?'selected':'')+'" data-event="'+e.id+'"'+(order.includes(e.id)?' disabled':'')+'><span class="number">● '+e.time+'</span><span class="emoji">'+e.emoji+'</span><span class="event-title">'+e.title+'</span></button>').join('');
+ game.innerHTML='<section class="area">'+stepHeader(2,'RECONSTRUCT THE NIGHT','Put the evidence in order.','The camera database scrambled three events. Tap the events from earliest to latest. Think like a detective, not a test taker.')+
+ '<div class="panel"><div class="roman">SECURITY FOOTAGE · FRAGMENTS</div><div class="timeline">'+timelineCards+'</div><div class="roman">YOUR RECONSTRUCTED TIMELINE</div><div class="timeline-track">'+[0,1,2].map(i=>'<div class="bubble '+(order[i]?'filled':'')+'">'+(order[i]?events.find(e=>e.id===order[i]).time:'FRAME 0'+(i+1))+'</div>'+(i<2?'<span class="arrow">→</span>':'')).join('')+'</div></div><div class="flex" style="margin-top:15px">'+button('↺ Clear sequence','clear',true)+button('Check footage →','check',false,order.length<3)+'</div><div id="note" class="feed '+(feedback?'bad':'')+'">'+(feedback||'Watch the timestamps. Every clue matters.')+'</div></section>';
 }
-function win(){
- game.innerHTML='<div class="badge-card"><span class="medal" aria-hidden="true">🏅</span><div class="mission-tag">CASE #004 CLOSED</div><h2>Case Solved!</h2><div class="winner">ENGLISH DETECTIVE · UNIT 4</div><p>You found the missing campaign poster in Archive B. It was kept safely before the launch!</p><div class="boxnote" style="text-align:left"><strong>Grammar unlocked</strong><p>✓ The poster <b>was designed</b> yesterday.</p><p>✓ The poster <b>was printed</b> this morning.</p><p>✓ The ad <b>will be launched</b> at ten.</p></div><p class="small" lang="ar" dir="rtl">أحسنتِ! الشارة للمتعة داخل التجربة فقط، ولا تغيّر درجات الإتقان أو شهادات STEP UP.</p><div class="actions" style="justify-content:center">'+btn("replay","Play Again ↻")+ '<a class="btn secondary" href="./'+window.location.search+'">Return to STEP UP</a></div></div>';
+function hack(){
+ game.innerHTML='<section class="area">'+stepHeader(3,'BREAK THE FIREWALL','Restore the security signal.','Three camera connections were jammed. Choose the right phrase to reconnect each security feed. Each repaired connection lights up.')+
+ '<div class="device"><div class="gridlines"></div><div class="flex" style="justify-content:space-between"><span class="terminal">SECURITY CORE / A-0</span><span class="pill">'+solved.filter(Boolean).length+' / 3 circuits online</span></div><div class="visual-meter" style="margin:12px 0 5px"><div style="width:'+(solved.filter(Boolean).length/3*100)+'%"></div></div>'+
+ locks.map((l,i)=>'<div class="connection"><div class="node '+(solved[i]?'active':'')+'">'+(solved[i]?'✓':i+1)+'</div><div><div class="roman">'+l.cam+'</div><p style="margin:6px 0;font-size:16px;font-weight:850;color:white">'+l.stem+'</p><div class="options">'+l.choices.map((choice,j)=>'<button type="button" class="option '+(solved[i]&&j===l.answer?'correct':'')+'" data-lock="'+i+'" data-option="'+j+'"'+(solved[i]?' disabled':'')+'>'+choice+'</button>').join('')+'</div></div></div>').join('')+
+ '<div class="feed '+(feedback?'bad':'')+'" id="note">'+(feedback||'Tap the missing phrase to connect each circuit. Wrong turns can be retried.')+'</div><div class="flex" style="margin-top:18px">'+button('🔓 OPEN SECURITY DOSSIER →','dossier',false,!solved.every(Boolean))+'</div></div></section>';
 }
-function render(){renderProgress();if(stage===0)intro();else if(stage===1)search();else if(stage===2)repair();else if(stage===3)vault();else win();}
-function speak(){if(!("speechSynthesis" in window)){feedback="Audio is not available on this device. Read the voicemail transcript instead.";if(stage===3)vault();return;}try{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(evidence.phone.text);u.lang="en-US";u.rate=.88;window.speechSynthesis.speak(u);}catch(e){feedback="Please use the displayed voicemail transcript.";if(stage===3)vault();}}
-document.addEventListener("click",function(event){
- const clue=event.target.closest("[data-clue]");if(clue&&stage===1){showClue(clue.dataset.clue);return;}
- const digit=event.target.closest("[data-digit]");if(digit&&stage===3){const d=digit.dataset.digit;if(d==="Clear")pin="";else if(d==="⌫")pin=pin.slice(0,-1);else if(pin.length<4)pin+=d;feedback="";vault();return;}
- const word=event.target.closest("[data-word]");if(word&&stage===2&&!fixed){let v=Number(word.dataset.word);if(!words.includes(v)&&words.length<2)words.push(v);if(words.length===2){if(words[0]===2&&words[1]===0){fixed=true;feedback="✓ Restored! Simple past passive = was + past participle. The archive key is ready.";}else{feedback="Not quite. Yesterday points to the past. Try was + the past participle. Tap Reset words to try again.";}}repair();return;}
- const b=event.target.closest("[data-action]");if(!b)return;
- switch(b.dataset.action){
- case "start":stage=1;render();break;
- case "close":closeClue();break;
- case "repair":if(found.size===3){closeClue();stage=2;feedback="";render();}break;
- case "reset":words=[];fixed=false;feedback="";render();break;
- case "vault":if(fixed){stage=3;feedback="";render();}break;
- case "unlock":if(pin==="1000"){stage=4;feedback="";render();}else{feedback="The archive remains locked. Check the launch time in the voicemail and try again.";pin="";vault();}break;
- case "replay":stage=0;found=new Set();words=[];fixed=false;pin="";feedback="";render();break;
- case "speak":speak();break;
+function dossier(){
+ game.innerHTML='<section class="area">'+stepHeader(4,'FINAL DECISION','Who moved the missing poster?','The evidence points to one access ID. Choose the responsible person or system. Your deduction decides the case.')+
+ '<div class="panel cyan"><div class="terminal">SECURITY FOOTAGE RESTORED ✓</div><p style="margin:7px 0;color:#eafff4">“Archive B was opened at 9:46 AM. Access ID: <b>A-0 (AUTO-GUARD)</b>.”</p></div>'+
+ '<div class="locations"><button type="button" class="location" data-suspect="sara"><span class="door">👩🏻‍🎨</span><strong>SARA</strong><small>The designer</small></button><button type="button" class="location" data-suspect="editor"><span class="door">🕶️</span><strong>THE EDITOR</strong><small>Last to review the ad</small></button><button type="button" class="location" data-suspect="auto"><span class="door">🤖</span><strong>AUTO-GUARD</strong><small>Automated security system</small></button></div><div class="feed '+(feedback?'bad':'')+'" id="note">'+(feedback||'Hint: Investigators trust access logs more than guesses.')+'</div></section>';
+}
+function ending(){
+ game.innerHTML='<section class="victory"><div class="crown" aria-hidden="true"><span class="big">🏆</span></div><div><div class="step">✔ MISSION COMPLETE · CASE 004</div><div class="impact">Plot twist unlocked!</div><h1>CASE<br>SOLVED<span class="glow">.</span></h1><p class="lead">The ad was <b>not stolen.</b> AUTO-GUARD moved it to Archive B to protect the final copy. The launch is saved!</p><div class="callout"><b>ENGLISH DETECTIVE BADGE</b><br>Clue finder · Timeline restorer · Security hacker</div><p style="font-size:13px;margin-top:12px">Notice how the clues used Passive Voice naturally: <b>was designed</b> · <b>was printed</b> · <b>has been moved</b> · <b>will be launched</b>.</p><p class="roman">THIS IS A PLAY-ONLY BADGE. NO MASTERY SCORES OR CERTIFICATES WERE MODIFIED.</p><div class="flex" style="margin-top:22px">'+button('↻ PLAY AGAIN','restart')+'<a href="./'+location.search+'" class="btn alt">BACK TO STEP UP</a></div></div></section>';
+}
+function render(){
+ rail.setAttribute('aria-valuenow',String(stage));rail.querySelectorAll('div').forEach((n,i)=>n.classList.toggle('on',i<stage));
+ $('progressText').textContent=['BRIEFING','INVESTIGATE','TIMELINE','SECURITY','FINAL CHOICE','CASE SOLVED'][stage];
+ updateTimer();if(stage===0)intro();else if(stage===1)room();else if(stage===2)timeline();else if(stage===3)hack();else if(stage===4)dossier();else ending();
+}
+function next(newStage){feedback='';stage=newStage;render();window.scrollTo?.({top:0,behavior:'smooth'})}
+document.addEventListener('click',e=>{
+ const clue=e.target.closest('[data-clue]');if(clue&&stage===1){viewClue(clue.dataset.clue);return}
+ const ev=e.target.closest('[data-event]');if(ev&&stage===2&&!order.includes(ev.dataset.event)){order.push(ev.dataset.event);beep(600);timeline();return}
+ const lock=e.target.closest('[data-lock]');if(lock&&stage===3){let i=Number(lock.dataset.lock),j=Number(lock.dataset.option);if(solved[i])return;if(j===locks[i].answer){solved[i]=true;feedback='✓ Security connection '+(i+1)+' restored!';hack();beep(900)}else{alerts++;feedback='Signal rejected. '+locks[i].tip+'. Try another connection.';hack();beep(200)}return}
+ const suspect=e.target.closest('[data-suspect]');if(suspect&&stage===4){if(suspect.dataset.suspect==='auto'){beep(950,.15);next(5);clearInterval(tick);tick=null}else{alerts++;showFeedback('Not this time! The camera identifies access ID A-0. Review the security log and try again.',false)}return}
+ const btn=e.target.closest('[data-action]');if(!btn)return;
+ switch(btn.dataset.action){
+ case 'start':startClock();next(1);beep(900);break;
+ case 'dismiss':dismiss();break;
+ case 'voice':voice();break;
+ case 'timeline':if(found.size===3)next(2);break;
+ case 'clear':order=[];feedback='';timeline();break;
+ case 'check':if(order.length===3){if(order.join('|')==='brief|print|archive'){next(3);beep(930,.13)}else{alerts++;feedback='Footage order incorrect. Follow the exact timestamps: yesterday first, then today.';order=[];timeline();beep(190)}}break;
+ case 'dossier':if(solved.every(Boolean))next(4);break;
+ case 'restart':clearInterval(tick);tick=null;seconds=360;found.clear();order=[];solved=[false,false,false];alerts=0;feedback='';next(0);break;
  }
 });
-document.addEventListener("keydown",function(event){if(event.key==="Escape"&&openClue)closeClue();if(stage===3&&overlay.classList.contains("hidden")){if(/^[0-9]$/.test(event.key)&&pin.length<4){pin+=event.key;feedback="";vault();}else if(event.key==="Backspace"){pin=pin.slice(0,-1);vault();}else if(event.key==="Enter"&&pin.length===4){const unlock=document.querySelector('[data-action="unlock"]');if(unlock)unlock.click();}}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!modal.hidden)dismiss()});
+sound.addEventListener('click',()=>{soundOn=!soundOn;sound.textContent=soundOn?'♪ Sound on':'♪ Sound off';sound.setAttribute('aria-pressed',String(soundOn));beep(760)});
 render();
 })();
 </script>
