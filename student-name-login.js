@@ -119,45 +119,70 @@
   }
 
   async function signInWithNewName(forcedClassCode){
-    // First let the existing login handle original credentials and historical
-    // pending-email upgrades. Only intercept an exact registered name alias.
     const name=normalizeName(document.getElementById("stName")?.value);
     const classCode=normalizeName(forcedClassCode||document.getElementById("stClassCode")?.value).toUpperCase();
     const pin=normalizePin(document.getElementById("stPin")?.value);
     if(!name || !classCode || !/^[0-9]{4}$/.test(pin)){
       return originalLogin.apply(this,arguments);
     }
-    const currentUser=auth().currentUser;
-    if(currentUser)return originalLogin.apply(this,arguments);
+    if(auth().currentUser)return originalLogin.apply(this,arguments);
 
-    // New aliases are looked up before legacy auth only for a matching
-    // registered name. Both paths still require the correct PIN.
+    // Preserve legacy login priority so a later renamed student cannot take
+    // over the login route of another student with the same original name.
+    const id=(await aliasId(name,classCode)).slice(2);
+    const directEmail="s_"+id+"@students.proveit.local";
+    const directPassword=pin+"Aa!"+id.slice(0,4);
+    let directResult;
+    try{
+      directResult=await auth().signInWithEmailAndPassword(directEmail,directPassword);
+    }catch(error){
+      if(!failedLogin(error?.code)){
+        console.warn("StepUp legacy login error",error?.code);
+        return alert("تعذّر الدخول حاليًا. تحققي من الإنترنت وحاولي مجددًا.");
+      }
+    }
+
+    if(directResult){
+      try{
+        const profile=await db().collection("users").doc(directResult.user.uid).get({source:"server"});
+        if(!profile.exists || profile.data().role!=="student"){
+          await auth().signOut();
+          return alert("ملف الحساب غير متاح. تواصلي مع معلمتك.");
+        }
+        window.location.reload();
+      }catch(error){
+        console.warn("StepUp legacy profile read",error?.code);
+        return alert("تعذّر قراءة الحساب. تحققي من الإنترنت.");
+      }
+      return;
+    }
+
     let entry=null;
     try{
-      const snap=await db().collection("loginAliases").doc(await aliasId(name,classCode)).get({source:"server"});
-      if(snap.exists) entry=snap.data();
+      const snap=await db().collection("loginAliases").doc("a_"+id).get({source:"server"});
+      if(snap.exists)entry=snap.data();
     }catch(error){
-      // Roll back to the long-standing original sign-in if rules are not yet deployed.
+      // Leave old login/email-upgrade behavior intact until alias rules deploy.
       if(error?.code!=="permission-denied")console.warn("StepUp alias lookup",error?.code);
       return originalLogin.apply(this,arguments);
     }
-    if(!entry) return originalLogin.apply(this,arguments);
+    if(!entry)return originalLogin.apply(this,arguments);
     const match=String(entry.loginEmail||"").match(legacyPattern);
     if(!match || entry.classCode!==classCode ||
-      normalizeName(entry.loginName).toLowerCase()!==name.toLowerCase() ||
-      !entry.uid){
+       normalizeName(entry.loginName).toLowerCase()!==name.toLowerCase() ||
+       !entry.uid){
       return alert("تعذّر التعرف على بيانات الاسم الجديد. تواصلي مع معلمتك.");
     }
     try{
-      const password=pin+"Aa!"+match[1].slice(0,4);
-      const result=await auth().signInWithEmailAndPassword(entry.loginEmail,password);
+      const result=await auth().signInWithEmailAndPassword(
+        entry.loginEmail,pin+"Aa!"+match[1].slice(0,4));
       const profile=await db().collection("users").doc(result.user.uid).get({source:"server"});
       if(result.user.uid!==entry.uid || !profile.exists ||
         profile.data().role!=="student" ||
         profile.data().classCode!==classCode ||
         normalizeName(profile.data().displayName).toLowerCase()!==name.toLowerCase()){
         await auth().signOut();
-        return alert("بيانات اسم الدخول لا تطابق حساب الطالبة. تواصلي مع معلمتك.");
+        return alert("بيانات الاسم الجديد لا تطابق حساب الطالبة. تواصلي مع معلمتك.");
       }
       window.location.reload();
     }catch(error){
