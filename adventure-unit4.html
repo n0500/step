@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1429">
+<meta name="description" content="STEP UP Adventures: an independent, no-grades Unit 4 detective adventure.">
+<title>STEP UP ADVENTURES | The Missing Ad</title>
+<style>
+:root{color-scheme:dark;--bg:#091326;--panel:#14233e;--edge:#334663;--txt:#f7f8fc;--muted:#bcc9de;--teal:#52e4c4;--gold:#ffd176;--pink:#f8a2c7;--red:#ffb1b6;--round:22px}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse 100% 65% at 60% 0%,#173456 0%,#091326 68%);color:var(--txt);font:500 16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100svh}
+button,a{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+a{color:inherit}.wrap{width:min(100% - 28px,1000px);margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap}
+.brand{font-size:19px;letter-spacing:.06em;font-weight:900}.brand em{font-style:normal;color:var(--teal)}.eyebrow{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--teal);font-weight:800}
+.toplink{border:1px solid var(--edge);border-radius:999px;text-decoration:none;padding:9px 16px;color:var(--muted);font-size:14px}
+.toplink:hover{background:#ffffff12;color:white}
+.flag{border:1px solid #ffffff21;color:#d7e9f7;padding:4px 11px;border-radius:999px;font-size:12px}
+.title{font-size:clamp(29px,5vw,53px);line-height:1.1;letter-spacing:-.035em;margin:8px 0 14px;font-weight:900}
+.lead{color:var(--muted);font-size:17px;max-width:720px;margin:0 0 18px}
+.headline{display:flex;gap:11px;align-items:center;flex-wrap:wrap}.small{font-size:13px;color:var(--muted)}.subtle{color:var(--muted)}
+.progress{display:flex;gap:9px;margin:20px 0 22px}
+.progress span{height:6px;flex:1;border-radius:99px;background:#2b3e5e}
+.progress span.on{background:linear-gradient(90deg,#54e5c5,#aedafc)}
+.page{background:linear-gradient(145deg,#182a49,#101b33);border:1px solid var(--edge);border-radius:var(--round);padding:clamp(18px,3vw,30px);box-shadow:0 30px 90px #0005;overflow:hidden}
+.game-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:center}
+.textcard{padding:2px 3px}
+.textcard h2{font-size:clamp(25px,3.2vw,37px);line-height:1.19;margin:10px 0}
+.textcard p{color:#d1dceb}
+.illustration{min-height:320px;position:relative;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 32%,#456184,#15213b 63%);border:1px solid #ffffff22}
+.illustration:before{content:"";position:absolute;bottom:0;width:100%;height:28%;background:linear-gradient(110deg,#1f3857,#2f5172);clip-path:polygon(0 35%,100% 0,100% 100%,0 100%)}
+.art{position:relative;font-size:110px;filter:drop-shadow(0 16px 18px #0008);transform:rotate(-8deg)}
+.tape{position:absolute;top:28px;right:25px;background:#ffd176;color:#222c3b;transform:rotate(7deg);padding:8px 12px;border-radius:7px;font-weight:900;letter-spacing:.05em;font-size:13px}
+.btn{background:var(--teal);border:0;border-radius:14px;color:#082b32;font-weight:900;padding:13px 22px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;box-shadow:0 5px 0 #267f76}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #267f76}.btn.secondary{background:#273d61;color:#fff;box-shadow:none;border:1px solid #547193}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:23px}
+.pill{background:#10283d;border:1px solid #2b5e6e;border-radius:100px;color:#bff8ed;padding:6px 13px;font-size:13px;font-weight:750}
+.scene{height:410px;position:relative;overflow:hidden;border-radius:19px;background:linear-gradient(180deg,#334b6a 0%,#253650 66%,#182b46 66%,#132741 100%);border:1px solid #526783;box-shadow:inset 0 10px 40px #0004}
+.scene:before{content:"";position:absolute;top:10%;left:36%;height:42%;width:30%;border:11px solid #344563;background:linear-gradient(160deg,#5a7593,#34475e);box-shadow:inset 0 0 30px #14253b;transform:skewY(-2deg)}
+.scene:after{content:"";position:absolute;bottom:26%;left:0;width:100%;height:2px;background:#8192a540}
+.neon{position:absolute;top:19px;left:18px;color:#cbe9ff;font-size:13px;font-weight:900;letter-spacing:.12em}
+.lamp{position:absolute;width:125px;height:24px;border-radius:0 0 60px 60px;background:#bad2e6;right:16px;top:0;box-shadow:0 18px 42px #cbe7f97a}
+.poster{position:absolute;top:12%;left:41%;width:18%;height:34%;border:9px solid #132740;background:repeating-linear-gradient(135deg,#4b6885 0,#4b6885 12px,#31445d 12px,#31445d 24px);display:grid;place-items:center;font-weight:900;font-size:16px;text-align:center;color:#e7f0ff;transform:rotate(-3deg)}
+.desk{position:absolute;bottom:14%;left:8%;width:82%;height:21%;border-radius:12px;background:linear-gradient(150deg,#7a95aa,#2a4969);box-shadow:0 20px 0 #182841,0 26px 14px #0006}
+.hotspot{position:absolute;z-index:3;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;min-width:115px;min-height:103px;border:2px solid #ffffff66;border-radius:18px;color:#fff;background:linear-gradient(135deg,#153554e0,#102239ed);box-shadow:0 8px 20px #09111c99,0 0 0 4px #4eecc429;transition:transform .14s,border .14s}
+.hotspot:hover{transform:translateY(-5px);border-color:var(--gold)}.hotspot.found{border-color:var(--teal);box-shadow:0 0 0 4px #4eecc43d;background:#0a4948e8}
+.hotspot strong{font-size:14px}.hotspot .emo{font-size:37px;line-height:1.25}.hotspot .tick{position:absolute;top:-11px;right:-10px;background:#55e7c5;color:#053c3d;border-radius:999px;font-weight:900;padding:0 8px}
+.hotspot[data-clue="email"]{left:9%;bottom:18%}
+.hotspot[data-clue="printer"]{right:8%;bottom:20%}
+.hotspot[data-clue="phone"]{left:43%;top:36%}
+.cluelist{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}
+.cluechip{border:1px solid #54708a;padding:7px 11px;border-radius:10px;color:var(--muted);font-size:13px}
+.cluechip.found{color:var(--teal);border-color:#368c81;background:#0e343b}
+.alert{border-radius:14px;background:#102d45;border:1px solid #3e657e;padding:14px 16px;margin-top:18px;color:#e7f1fd}
+.boxnote{padding:16px 18px;background:#0c213a;border:1px solid #2f5a74;border-radius:15px}
+.boxnote strong{color:var(--gold)}
+.quote{font-size:clamp(20px,3vw,27px);line-height:1.35;font-weight:800;letter-spacing:-.01em;color:white}
+.panel-split{display:grid;grid-template-columns:1fr .9fr;gap:18px}
+.mission-tag{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--teal);font-weight:900}
+.tile-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{border:1px solid #7196ba;color:white;background:#28496c;border-radius:12px;min-height:62px;padding:13px;font-weight:900;font-size:20px}
+.tile:disabled{opacity:.3}
+.slot{display:inline-flex;min-width:100px;border-bottom:3px dashed #7b9eba;padding:7px 8px;justify-content:center;color:var(--gold)}
+.feedback{border:1px solid #41617f;background:#142e4b;border-radius:12px;padding:13px;margin-top:16px;min-height:50px}
+.feedback.error{border-color:#b9656a;color:#ffd8db}.feedback.ok{border-color:#349987;color:#8bffdf}
+.keypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:330px;margin:17px auto 0}
+.key{min-height:63px;border:1px solid #527091;background:#273f60;border-radius:13px;color:#fff;font-size:22px;font-weight:850}
+.key:active{background:#397f82}.display{font-size:32px;letter-spacing:.25em;text-align:center;padding:14px 8px;background:#09182a;border:2px solid #53738e;border-radius:14px;max-width:330px;margin:auto;font-variant-numeric:tabular-nums}
+.record{border-radius:15px;border:1px solid #59728c;background:linear-gradient(140deg,#1e3d5c,#162b45);padding:18px}
+.record h3{margin:0 0 6px}.record p{margin:7px 0;color:#e0ebf7}
+.voice{background:#2b415b;border:1px solid #6886a4;color:#fff;border-radius:999px;padding:8px 13px;min-height:43px;font-weight:800;margin-top:8px}
+.voice:hover{border-color:var(--teal)}
+.badge-card{padding:32px 22px;text-align:center;max-width:560px;margin:auto;background:radial-gradient(circle at 50% 0%,#365979,#162940 65%);border:1px solid #6b8b99;border-radius:20px}
+.badge-card .medal{font-size:84px;display:block;filter:drop-shadow(0 8px 18px #0006)}
+.badge-card h2{font-size:35px;margin:9px 0 3px}.badge-card .winner{color:var(--gold);font-size:17px;font-weight:850}
+footer{font-size:13px;color:#91a5c1;text-align:center;padding:22px 0 35px}
+.overlay{position:fixed;z-index:20;inset:0;display:grid;place-items:center;background:#030914dd;padding:18px;backdrop-filter:blur(5px)}
+.modal{width:min(100%,550px);border-radius:20px;border:1px solid #6a91a8;padding:24px;background:#172d4c;box-shadow:0 30px 100px #000c}
+.modal h2{font-size:26px;margin:5px 0 14px}.modal p{color:#e0eafd}
+.close{float:right;border:1px solid #6c8aa0;background:transparent;color:white;border-radius:10px;padding:7px 12px}
+.hidden{display:none!important}
+@media(max-width:680px){header{padding-top:14px}.game-grid,.panel-split{grid-template-columns:1fr}.page{padding:17px}.illustration{min-height:190px}.art{font-size:76px}.scene{height:330px}.hotspot{min-width:91px;min-height:90px}.hotspot[data-clue="email"]{left:3%;bottom:13%}.hotspot[data-clue="printer"]{right:3%;bottom:13%}.hotspot[data-clue="phone"]{left:37%;top:31%}.hotspot .emo{font-size:28px}.hotspot strong{font-size:12px}.poster{font-size:12px}.desk{bottom:10%}.tape{font-size:10px}.quote{font-size:20px}.title{font-size:33px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div><div class="brand">STEP <em>UP</em> <span style="color:#fff7;font-weight:500">/ ADVENTURES</span></div><div class="eyebrow">UNIT 4 · THE ART OF ADVERTISING</div></div>
+<a id="return" class="toplink" href="./">← Return to STEP UP</a>
+</header>
+<div class="headline"><span class="flag">🎮 Play-only pilot</span><span class="flag">No marks · No certificates affected</span></div>
+<div id="progress" class="progress" role="progressbar" aria-label="Adventure progress" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><span></span><span></span><span></span><span></span></div>
+<main id="game" class="page" aria-live="polite"></main>
+<footer>STEP UP ADVENTURES · An independent Unit 4 trial · Created by Nuha Almutairi</footer>
+</div>
+<div id="overlay" class="overlay hidden" aria-live="polite"></div>
+<script>
+(function(){
+"use strict";
+const game=document.getElementById("game"), overlay=document.getElementById("overlay");
+document.getElementById("return").href="./"+window.location.search;
+const evidence={
+ email:{title:"📩 A Message from Sara",label:"Email",text:"The final poster was designed yesterday. I left it on the studio desk. — Sara",insight:"PAST PASSIVE · was designed"},
+ printer:{title:"🖨️ The Printer Log",label:"Printer",text:"The poster was printed this morning. Only one final copy was made.",insight:"PAST PASSIVE · was printed"},
+ phone:{title:"📞 The Launch Voicemail",label:"Voicemail",text:"Good morning, team! The new advertisement will be launched at ten o'clock. Please keep the final copy safe.",insight:"FUTURE PASSIVE · will be launched"}
+};
+let stage=0,found=new Set(),openClue=null,words=[],fixed=false,pin="",feedback="",audio=null;
+function renderProgress(){
+ const p=document.getElementById("progress");p.setAttribute("aria-valuenow",String(stage));
+ p.querySelectorAll("span").forEach((el,i)=>el.classList.toggle("on",i<stage));
+}
+function btn(action,label,kind,extra){return '<button type="button" class="btn '+(kind||"")+'" data-action="'+action+'" '+(extra||"")+'>'+label+'</button>'}
+function intro(){
+ game.innerHTML='<div class="game-grid"><section class="textcard"><div class="mission-tag">CASE FILE #004 · THE MISSING AD</div><h1 class="title">The Missing<br>Advertisement</h1><p class="lead">The final campaign poster has vanished just before launch. You are the English Detective. Explore the studio, collect evidence, and unlock the archive.</p><div class="pill">🔎 Explore → Repair → Unlock → Solve</div><p class="small" lang="ar" dir="rtl">مغامرة قصيرة: ابحثي عن الأدلة، أصلحي الرسالة، وافتحي الخزنة. يمكن المحاولة مرة أخرى دون خصم درجات.</p><div class="actions">'+btn("start","Start Investigation →")+'</div></section><div class="illustration" aria-hidden="true"><span class="art">🕵️‍♀️🗂️</span><span class="tape">TOP SECRET · UNIT 4</span></div></div>';
+}
+function search(){
+ let foundCount=found.size;
+ let chips=Object.keys(evidence).map(k=>'<span class="cluechip '+(found.has(k)?"found":"")+'">'+(found.has(k)?"✓ ":"○ ")+evidence[k].label+'</span>').join("");
+ game.innerHTML='<div class="mission-tag">MISSION 01 / SEARCH THE STUDIO</div><h1 class="title">Find the three clues</h1><p class="lead">Tap the objects in the room. Every clue contains a piece of the story.</p><div class="scene" aria-label="Interactive detective scene"><span class="neon">NOVA · CREATIVE STUDIO</span><span class="lamp" aria-hidden="true"></span><div class="poster" aria-hidden="true">FINAL<br>POSTER<br>?</div><div class="desk" aria-hidden="true"></div>'+
+ Object.keys(evidence).map(k=>'<button type="button" class="hotspot '+(found.has(k)?"found":"")+'" data-clue="'+k+'" aria-label="Inspect '+evidence[k].label+'"><span class="emo">'+(k==="email"?"📩":k==="printer"?"🖨️":"📞")+'</span><strong>'+evidence[k].label+'</strong>'+(found.has(k)?'<span class="tick">✓</span>':"")+'</button>').join("")+
+ '</div><div class="cluelist">'+chips+'</div><div class="actions"><span class="pill">'+foundCount+' / 3 clues collected</span>'+btn("repair","Repair the Message →","",foundCount!==3?"disabled":"")+'</div>';
+}
+function showClue(k){
+ openClue=k;found.add(k);search();const c=evidence[k];
+ overlay.classList.remove("hidden");
+ overlay.innerHTML='<div class="modal" role="dialog" aria-modal="true" aria-label="'+c.label+' clue"><button type="button" class="close" data-action="close">✕ Close</button><div class="mission-tag">EVIDENCE COLLECTED</div><h2>'+c.title+'</h2><p class="quote">“'+c.text+'”</p><div class="boxnote"><strong>Grammar clue:</strong> '+c.insight+'</div>'+(k==="phone"?'<button type="button" class="voice" data-action="speak">▶ Play voicemail (English)</button><p class="small">If audio is unavailable, you can read the transcript above.</p>':"")+'<div class="actions">'+btn("close","Add to Evidence ✓")+'</div></div>';
+ overlay.querySelector('[data-action="close"]').focus();
+}
+function closeClue(){openClue=null;overlay.innerHTML="";overlay.classList.add("hidden");if("speechSynthesis" in window)window.speechSynthesis.cancel();}
+function repair(){
+ let tokens=["designed","are","was","design"];
+ let chosen=words.map(i=>tokens[i]);
+ game.innerHTML='<div class="mission-tag">MISSION 02 / RESTORE THE MESSAGE</div><h1 class="title">The damaged memo</h1><p class="lead">Two words are missing from the archive message. Tap the correct word tiles in order to rebuild the sentence.</p><div class="panel-split"><section><div class="record"><h3>📝 Recovered fragment</h3><p>From yesterday’s studio memo:</p><div class="quote">The poster <span class="slot">'+(chosen[0]||"_____")+'</span> <span class="slot">'+(chosen[1]||"_____")+'</span> yesterday.</div></div><p class="small" lang="ar" dir="rtl">اختاري كلمتين بالترتيب لتكوين جملة مبنية للمجهول في الماضي.</p><div class="actions">'+btn("reset","↺ Reset words","secondary")+'</div></section><section><div class="boxnote"><strong>Evidence hint:</strong> Read Sara’s email. Which passive form tells us about yesterday?</div><div class="tile-list">'+tokens.map((t,i)=>'<button type="button" class="tile" data-word="'+i+'" '+(words.includes(i)||fixed?"disabled":"")+'>'+t+'</button>').join("")+'</div></section></div>'+(feedback?'<div class="feedback '+(fixed?"ok":"error")+'" role="status">'+feedback+'</div>':'')+(fixed?'<div class="actions">'+btn("vault","Unlock the Archive →")+'</div>':'');
+}
+function vault(){
+ game.innerHTML='<div class="mission-tag">MISSION 03 / ARCHIVE SECURITY</div><h1 class="title">Enter the launch code</h1><p class="lead">The archive uses the time mentioned in the voicemail as its 4-digit access code (HHMM).</p><div class="panel-split"><section class="record"><h3>🔐 Archive Door B</h3><p class="small">Read the voicemail or play it aloud. Enter four digits to open the door.</p><div class="display" aria-label="Four digit access code">'+pin.padEnd(4,"·")+'</div><div class="keypad">'+["1","2","3","4","5","6","7","8","9","Clear","0","⌫"].map(n=>'<button type="button" class="key" data-digit="'+n+'" aria-label="'+(n==="⌫"?"Delete last digit":n)+'">'+n+'</button>').join("")+'</div><div class="actions" style="justify-content:center">'+btn("unlock","Unlock Door 🔓","",pin.length!==4?"disabled":"")+'</div></section><section><div class="boxnote"><strong>Last clue: Voicemail</strong><p>“'+evidence.phone.text+'”</p><button type="button" data-action="speak" class="voice">▶ Replay voicemail</button></div><p class="small" lang="ar" dir="rtl">استخدمي وقت إطلاق الإعلان المذكور في التسجيل بوصفه رمزًا من أربعة أرقام. مثال: 9:30 ← 0930.</p>'+(feedback?'<div class="feedback error" role="status">'+feedback+'</div>':'')+'</section></div>';
+}
+function win(){
+ game.innerHTML='<div class="badge-card"><span class="medal" aria-hidden="true">🏅</span><div class="mission-tag">CASE #004 CLOSED</div><h2>Case Solved!</h2><div class="winner">ENGLISH DETECTIVE · UNIT 4</div><p>You found the missing campaign poster in Archive B. It was kept safely before the launch!</p><div class="boxnote" style="text-align:left"><strong>Grammar unlocked</strong><p>✓ The poster <b>was designed</b> yesterday.</p><p>✓ The poster <b>was printed</b> this morning.</p><p>✓ The ad <b>will be launched</b> at ten.</p></div><p class="small" lang="ar" dir="rtl">أحسنتِ! الشارة للمتعة داخل التجربة فقط، ولا تغيّر درجات الإتقان أو شهادات STEP UP.</p><div class="actions" style="justify-content:center">'+btn("replay","Play Again ↻")+ '<a class="btn secondary" href="./'+window.location.search+'">Return to STEP UP</a></div></div>';
+}
+function render(){renderProgress();if(stage===0)intro();else if(stage===1)search();else if(stage===2)repair();else if(stage===3)vault();else win();}
+function speak(){if(!("speechSynthesis" in window)){feedback="Audio is not available on this device. Read the voicemail transcript instead.";if(stage===3)vault();return;}try{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(evidence.phone.text);u.lang="en-US";u.rate=.88;window.speechSynthesis.speak(u);}catch(e){feedback="Please use the displayed voicemail transcript.";if(stage===3)vault();}}
+document.addEventListener("click",function(event){
+ const clue=event.target.closest("[data-clue]");if(clue&&stage===1){showClue(clue.dataset.clue);return;}
+ const digit=event.target.closest("[data-digit]");if(digit&&stage===3){const d=digit.dataset.digit;if(d==="Clear")pin="";else if(d==="⌫")pin=pin.slice(0,-1);else if(pin.length<4)pin+=d;feedback="";vault();return;}
+ const word=event.target.closest("[data-word]");if(word&&stage===2&&!fixed){let v=Number(word.dataset.word);if(!words.includes(v)&&words.length<2)words.push(v);if(words.length===2){if(words[0]===2&&words[1]===0){fixed=true;feedback="✓ Restored! Simple past passive = was + past participle. The archive key is ready.";}else{feedback="Not quite. Yesterday points to the past. Try was + the past participle. Tap Reset words to try again.";}}repair();return;}
+ const b=event.target.closest("[data-action]");if(!b)return;
+ switch(b.dataset.action){
+ case "start":stage=1;render();break;
+ case "close":closeClue();break;
+ case "repair":if(found.size===3){closeClue();stage=2;feedback="";render();}break;
+ case "reset":words=[];fixed=false;feedback="";render();break;
+ case "vault":if(fixed){stage=3;feedback="";render();}break;
+ case "unlock":if(pin==="1000"){stage=4;feedback="";render();}else{feedback="The archive remains locked. Check the launch time in the voicemail and try again.";pin="";vault();}break;
+ case "replay":stage=0;found=new Set();words=[];fixed=false;pin="";feedback="";render();break;
+ case "speak":speak();break;
+ }
+});
+document.addEventListener("keydown",function(event){if(event.key==="Escape"&&openClue)closeClue();if(stage===3&&overlay.classList.contains("hidden")){if(/^[0-9]$/.test(event.key)&&pin.length<4){pin+=event.key;feedback="";vault();}else if(event.key==="Backspace"){pin=pin.slice(0,-1);vault();}else if(event.key==="Enter"&&pin.length===4){const unlock=document.querySelector('[data-action="unlock"]');if(unlock)unlock.click();}}});
+render();
+})();
+</script>
+</body>
+</html>
