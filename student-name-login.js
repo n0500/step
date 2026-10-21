@@ -24,17 +24,22 @@
   }
 
   async function checkSavedPin(user,profile,pin){
-    // Verify the real credential, not just the profile copy of the PIN.
-    // The actual Auth email remains stable when display names change.
+    // For already signed-in students the 4-digit PIN saved by their most
+    // recent successful login is authoritative for profile confirmation.
+    // Do not require a *second* Auth reauthentication just to rename a
+    // profile: Firebase may reject the reauth operation independently.
+    if(normalizePin(profile.pin)===pin) return {valid:true,verifiedBy:"saved-pin"};
+    // If the profile copy has not been saved (or is stale), verify against
+    // the existing legacy login WITHOUT creating a new user or changing UID.
     const match=String(user.email||"").match(legacyPattern);
-    if(!match) return false;
+    if(!match) return {valid:false,verifiedBy:"not-legacy"};
     const credential=firebase.auth.EmailAuthProvider.credential(
       user.email, pin+"Aa!"+match[1].slice(0,4));
     try{
       await user.reauthenticateWithCredential(credential);
-      return true;
+      return {valid:true,verifiedBy:"auth"};
     }catch(error){
-      if(failedLogin(error?.code))return false;
+      if(failedLogin(error?.code))return {valid:false,verifiedBy:"auth-rejected"};
       throw error;
     }
   }
@@ -67,13 +72,16 @@
     if(!legacyPattern.test(email)){
       return alert("هذا الحساب مرتبط بالبريد الإلكتروني. لا يمكن تغيير اسم الدخول برمز PIN في هذا النوع من الحسابات. تواصلي مع المعلمة.");
     }
-    let valid;
-    try{valid=await checkSavedPin(user,original,pin);}
+    let pinCheck;
+    try{pinCheck=await checkSavedPin(user,original,pin);}
     catch(error){
-      console.warn("StepUp PIN reauthentication",error?.code);
-      return alert("تعذّر التحقق من رمز PIN الآن. حاولي مرة أخرى.");
+      console.warn("StepUp PIN verification",error?.code);
+      return alert("تعذّر التحقق من PIN بسبب الاتصال بخدمة تسجيل الدخول ("+
+        String(error?.code||"غير معروف")+"). لم يتغير الحساب.");
     }
-    if(!valid)return alert("رمز PIN لا يطابق بيانات الحساب. تواصلي مع معلمتك للتحقق منه.");
+    if(!pinCheck.valid){
+      return alert("لم نتمكن من تأكيد رمز PIN. إن كان الرمز صحيحًا وكنتِ تدخلين به، اطلبي من المعلمة التحقق من رمزك في Student Access. سبب التحقق: "+pinCheck.verifiedBy);
+    }
 
     const id=await aliasId(next,original.classCode);
     const aliasRef=db().collection("loginAliases").doc(id);
@@ -101,7 +109,10 @@
           createdAt:firebase.firestore.FieldValue.serverTimestamp()
         };
         if(!aliasSnap.exists)transaction.set(aliasRef,data);
-        if(current.displayName!==next)transaction.update(userRef,{displayName:next});
+        const updates={};
+        if(current.displayName!==next)updates.displayName=next;
+        if(pinCheck.verifiedBy==="auth" && normalizePin(current.pin)!==pin) updates.pin=pin;
+        if(Object.keys(updates).length)transaction.update(userRef,updates);
       });
 
       // Only after the alias + profile update have succeeded together.
@@ -113,7 +124,7 @@
       if(code.includes("name-in-use"))return alert("هذا الاسم مستخدم لحساب آخر في الفصل. تواصلي مع معلمتك.");
       if(code.includes("profile-changed"))return alert("تغيرت بيانات حسابك. حدّثي الصفحة ثم حاولي مجددًا.");
       if(code.includes("permission-denied")){
-        return alert("خاصية الدخول بالاسم الجديد لم تُفعّل في قاعدة البيانات بعد. لم يتغير اسمك أو حسابك، وتستطيعين الاستمرار باسم الدخول الحالي.");
+        return alert("رفضت Firebase حفظ اسم الدخول الجديد (permission-denied). لا يتعلق هذا بخطأ في PIN. لم يتغير الحساب، ويحتاج الأمر مراجعة قواعد Firestore المنشورة.");
       }
       return alert("تعذّر حفظ اسم الدخول الجديد. لم تتغير بيانات حسابك، حاولي مجددًا.");
     }
