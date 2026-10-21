@@ -130,10 +130,8 @@
           const ref = db.collection('users').doc(cr.user.uid);
           const profile = await withAuthRetry(cr.user,() => ref.get());
           if(!profile.exists){
-            await withAuthRetry(cr.user,() => ref.set({
-              role:'student',displayName:name,classId:join.classId,classCode,
-              teacherId:join.teacherId,school:join.school || '',createdAt:new Date().toISOString()
-            }));
+            await firebase.auth().signOut();
+            return alert('ملف هذا الحساب غير متاح. تواصلي مع معلمتك لاستعادته؛ إنشاء الحسابات الجديدة مغلق.');
           }
 
           // Reload once after a confirmed profile read/write so app.js starts
@@ -147,28 +145,8 @@
         return;
       }
 
-      // 2) First visit: create the account.
-      let createdUser = null;
-      try{
-        const created = await firebase.auth().createUserWithEmailAndPassword(creds.email,creds.password);
-        createdUser = created.user;
-        const createdRef = db.collection('users').doc(created.user.uid);
-        await withAuthRetry(created.user,() => createdRef.set({
-          role:'student',displayName:name,classId:join.classId,classCode,
-          teacherId:join.teacherId,school:join.school || '',createdAt:new Date().toISOString()
-        }));
-        try{ await created.user.getIdToken(true); }catch(_){}
-        window.location.reload();
-      }catch(createError){
-        if(createError?.code === 'auth/email-already-in-use'){
-          return alert('This name is already registered with a different PIN. Check your PIN and try again.\nهذا الاسم مسجّل برمز مختلف. تأكدي من الرمز وحاولي مرة أخرى.');
-        }
-        if(createdUser){
-          try{ await createdUser.delete(); }catch(_){}
-        }
-        console.error('StepUp student account creation failed',createError);
-        alert(explain(createError));
-      }
+      // No implicit sign-up: a failed sign-in must never create a new UID.
+      return alert('تعذّر الدخول بهذه البيانات. تحققي من الاسم ورمز PIN، أو تواصلي مع المعلمة. إنشاء الحسابات الجديدة في STEP UP مغلق حاليًا.');
     };
 
     wrapped.__accountGuardPatched = VERSION;

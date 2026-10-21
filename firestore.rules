@@ -40,15 +40,9 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow create: if signedIn() && (
-        (
-          request.auth.uid == uid &&
-          request.resource.data.role == "student" &&
-          get(/databases/$(database)/documents/joinCodes/$(request.resource.data.classCode)).data.classId == request.resource.data.classId &&
-          get(/databases/$(database)/documents/joinCodes/$(request.resource.data.classCode)).data.teacherId == request.resource.data.teacherId
-        ) ||
-        (isOwner() && request.resource.data.role in ["owner", "teacher"])
-      );
+      // Registration is closed: only the owner can provision administrative profiles.
+      // Existing student documents remain readable/updatable under their original rules.
+      allow create: if isOwner() && request.resource.data.role in ["owner", "teacher"];
       allow read: if signedIn() && (
         request.auth.uid == uid ||
         isOwner() ||

@@ -162,7 +162,7 @@
             <div class="field"><label>Class code / كود الفصل</label><input id="stClassCode" autocapitalize="characters"></div>
             <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
           </div>
-          <div class="quick-entry-note">First time? Your profile will be created automatically. Returning student? The same button signs you in.</div>
+          <div class="quick-entry-note">Existing students only. New account registration is closed. / الدخول للحسابات الحالية فقط؛ تم إيقاف إنشاء الحسابات الجديدة.</div>
           <button class="btn btn-primary" style="margin-top:12px" onclick="PROVE.studentContinue()">Continue</button>
         </div>`;
     } else {
@@ -173,9 +173,9 @@
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn btn-primary" onclick="PROVE.emailLogin('${role}')">Sign in</button>
-          ${role==="teacher"?`<button class="btn btn-secondary" onclick="PROVE.teacherRegister()">Create teacher account</button>`:""}
+          
         </div>
-        <p class="muted" style="font-size:12px">${role==="owner"?"Owner account must match the owner email configured in Firebase.":"Teacher registration creates a teacher profile."}</p>`;
+        <p class="muted" style="font-size:12px">${role==="owner"?"Owner account must match the owner email configured in Firebase.":"Teacher sign-in is available for existing accounts only."}</p>`;
     }
   }
 
@@ -202,7 +202,7 @@
             <div class="field"><label>Full name / الاسم الكامل</label><input id="stName" autocomplete="name"></div>
             <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
           </div>
-          <div class="quick-entry-note">Use the same name and PIN every time. If this is your first visit, your profile is created automatically.</div>
+          <div class="quick-entry-note">Use your registered name and PIN. New account registration is closed. / استخدمي اسمك ورمز PIN المسجلين؛ إنشاء الحسابات الجديدة مغلق.</div>
           <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="PROVE.studentContinue('${esc(classCode)}')">Continue</button>
         </div>
       </div>`;
@@ -223,96 +223,37 @@
     const name=(document.getElementById("stName")?.value||"").trim();
     const classCode=(forcedClassCode || document.getElementById("stClassCode")?.value || "").trim().toUpperCase();
     const pin=(document.getElementById("stPin")?.value||"").trim();
-
     if(!name || !classCode || !/^\d{4}$/.test(pin)){
-      return alert("Please enter your full name and a 4-digit PIN.");
+      return alert("أدخلي الاسم الكامل ورمز PIN المكوّن من 4 أرقام.");
     }
-
     const classObj=await findClassByCode(classCode);
-    if(!classObj)return alert("Class not found. Check the class link or code.");
-
+    if(!classObj) return alert("تعذّر العثور على الفصل. تأكدي من رابط الفصل أو رمزه.");
     const c=await studentCreds(name,classCode,pin);
-
     if(state.fb){
       try{
-        // Returning student: sign in.
         const cr=await state.fb.auth.signInWithEmailAndPassword(c.email,c.password);
-
-        // If a teacher previously deleted this student from StepUp, the
-        // Firebase Authentication account may still exist. Recreate only the
-        // StepUp profile document so the same name + PIN can be used again.
-        const userRef=state.fb.db.collection("users").doc(cr.user.uid);
-        const existingProfile=await userRef.get();
-        if(!existingProfile.exists){
-          const prof={
-            role:"student",displayName:name,classId:classObj.id,classCode,
-            teacherId:classObj.teacherId,school:classObj.school||"",createdAt:nowISO()
-          };
-          await userRef.set(prof);
-          state.profile={id:cr.user.uid,...prof};
-          state.studentTab="home";
-          await renderDashboard();
+        const profile=await state.fb.db.collection("users").doc(cr.user.uid).get();
+        if(!profile.exists){
+          await state.fb.auth.signOut();
+          return alert("ملف الحساب غير متاح. يرجى التواصل مع المعلمة لاستعادته.");
         }
-        return;
-      }catch(loginError){
-        // First visit: create profile automatically.
-        try{
-          const cr=await state.fb.auth.createUserWithEmailAndPassword(c.email,c.password);
-          const prof={
-            role:"student",displayName:name,classId:classObj.id,classCode,
-            teacherId:classObj.teacherId,school:classObj.school||"",createdAt:nowISO()
-          };
-          await state.fb.db.collection("users").doc(cr.user.uid).set(prof);
-          state.profile={id:cr.user.uid,...prof};
-          state.studentTab="home";
-          await renderDashboard();
-          return;
-        }catch(createError){
-          if(createError.code==="auth/email-already-in-use"){
-            return alert("The name is already registered. Check your PIN and try again.");
-          }
-          return alert("Could not continue: "+createError.message);
-        }
+        return; // Firebase auth observer displays the existing dashboard.
+      }catch(e){
+        return alert("تعذّر الدخول. تأكدي من الاسم ورمز PIN. إنشاء الحسابات الجديدة مغلق حاليًا.");
       }
-    }else{
-      const existing=local.users().find(x=>x.loginEmail===c.email);
-      if(existing){
-        if(existing.loginPassword!==c.password)return alert("Incorrect PIN.");
-        local.set("session",{uid:existing.id,email:c.email});
-        state.user={uid:existing.id,email:c.email};state.profile=existing;state.studentTab="home";
-        return renderDashboard();
-      }
-      const id=uid(),prof={
-        id,role:"student",displayName:name,classId:classObj.id,classCode,
-        teacherId:classObj.teacherId,school:classObj.school||"",
-        loginEmail:c.email,loginPassword:c.password,createdAt:nowISO()
-      };
-      local.saveUser(prof);local.set("session",{uid:id,email:c.email});
-      state.user={uid:id,email:c.email};state.profile=prof;state.studentTab="home";
-      return renderDashboard();
     }
+    const existing=local.users().find(x=>x.loginEmail===c.email);
+    if(!existing) return alert("الحساب غير مسجل. تم إيقاف إنشاء الحسابات الجديدة في STEP UP.");
+    if(existing.loginPassword!==c.password) return alert("رمز PIN غير صحيح. تواصلي مع معلمتك إذا نسيته.");
+    local.set("session",{uid:existing.id,email:c.email});
+    state.user={uid:existing.id,email:c.email};
+    state.profile=existing;
+    state.studentTab="home";
+    return renderDashboard();
   }
 
   async function studentRegister(){
-    const name=document.getElementById("stName").value.trim(), classCode=document.getElementById("stClassCode").value.trim().toUpperCase(), pin=document.getElementById("stPin").value.trim();
-    if(!name || !classCode || !/^\d{4}$/.test(pin)) return alert("Enter full name, class code, and a 4-digit PIN.");
-    const classObj = await findClassByCode(classCode);
-    if(!classObj) return alert("Class code not found.");
-    const c=await studentCreds(name,classCode,pin);
-    if(state.fb){
-      try{
-        const cr=await state.fb.auth.createUserWithEmailAndPassword(c.email,c.password);
-        const prof={role:"student",displayName:name,classId:classObj.id,classCode,teacherId:classObj.teacherId,school:classObj.school||"",createdAt:nowISO()};
-        await state.fb.db.collection("users").doc(cr.user.uid).set(prof);
-        state.profile={id:cr.user.uid,...prof};
-        await renderDashboard();
-      }catch(e){alert("Could not create profile: "+e.message)}
-    } else {
-      const existing=local.users().find(x=>x.loginEmail===c.email);
-      if(existing) return alert("This profile already exists. Use Login.");
-      const id=uid(), prof={id,role:"student",displayName:name,classId:classObj.id,classCode,teacherId:classObj.teacherId,school:classObj.school||"",loginEmail:c.email,loginPassword:c.password,createdAt:nowISO()};
-      local.saveUser(prof);local.set("session",{uid:id,email:c.email});state.user={uid:id,email:c.email};state.profile=prof;renderDashboard();
-    }
+    return alert("إنشاء الحسابات الجديدة متوقف في STEP UP. يمكن الدخول بالحساب المسجل فقط.");
   }
 
   async function studentLogin(){
@@ -329,20 +270,7 @@
   }
 
   async function teacherRegister(){
-    const email=document.getElementById("authEmail").value.trim(), password=document.getElementById("authPassword").value;
-    const name=prompt("Teacher name:"); if(!name)return;
-    const school=prompt("School:")||"";
-    if(state.fb){
-      try{
-        const cr=await state.fb.auth.createUserWithEmailAndPassword(email,password);
-        const prof={role:"teacher",displayName:name,school,createdAt:nowISO(),status:"active"};
-        await state.fb.db.collection("users").doc(cr.user.uid).set(prof);
-      }catch(e){alert("Registration failed: "+e.message)}
-    } else {
-      if(local.users().some(x=>x.loginEmail===email)) return alert("Email already exists.");
-      const id=uid(),prof={id,role:"teacher",displayName:name,school,loginEmail:email,loginPassword:password,createdAt:nowISO(),status:"active"};
-      local.saveUser(prof);local.set("session",{uid:id,email});state.user={uid:id,email};state.profile=prof;renderDashboard();
-    }
+    return alert("إنشاء الحسابات الجديدة متوقف في STEP UP. استخدمي حساب المعلمة الحالي.");
   }
 
   async function emailLogin(role){

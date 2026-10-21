@@ -7,7 +7,6 @@
   if(!window.PROVE || !window.firebase || !firebase.auth || !firebase.firestore) return;
 
   var originalContinue = window.PROVE.studentContinue;
-  var originalRegister = window.PROVE.studentRegister;
   var LEGACY_DOMAIN = "@students.proveit.local";
   var observerTimer = null;
   var upgradeBusy = false;
@@ -248,53 +247,8 @@
     }
   }
 
-  async function studentRegister(forcedClassCode){
-    if(!originalRegister) return;
-
-    var nameEl = document.getElementById("stName");
-    var codeEl = document.getElementById("stClassCode");
-    var pinEl = document.getElementById("stPin");
-    var name = nameEl ? nameEl.value.trim() : "";
-    var classCode = String(forcedClassCode || (codeEl ? codeEl.value : "") || "").trim().toUpperCase();
-    var pin = pinEl ? pinEl.value.trim() : "";
-
-    if(!name || !classCode || !/^\d{4}$/.test(pin)){
-      alert("لإنشاء الحساب أدخلي الاسم الكامل وPIN المكوّن من 4 أرقام.");
-      return;
-    }
-
-    rememberPin();
-    var creds = await legacyCreds(name,classCode,pin);
-    if(localStorage.getItem(upgradedKey(creds.email)) === "1"){
-      alert("سبق ربط هذا الحساب ببريد إلكتروني. اختاري «الدخول بالبريد الإلكتروني» للدخول إلى حسابك نفسه. ربط البريد اختياري للحسابات الأخرى.");
-      return;
-    }
-
-    var ok = confirm(
-      "إنشاء حساب جديد — لأول استخدام فقط.\n\n" +
-      "إذا سبق لك استخدام Step Up من قبل، اختاري «إلغاء» ثم استخدمي «دخول بالحساب الحالي» حتى يبقى تقدمك محفوظًا في حسابك نفسه.\n\n" +
-      "هل هذه أول مرة لك فعلًا في Step Up؟"
-    );
-    if(!ok) return;
-
-    var temporaryCode = null;
-    if(!codeEl){
-      temporaryCode = document.createElement("input");
-      temporaryCode.type = "hidden";
-      temporaryCode.id = "stClassCode";
-      temporaryCode.value = classCode;
-      (nameEl && nameEl.parentNode ? nameEl.parentNode : document.body).appendChild(temporaryCode);
-    }else if(forcedClassCode){
-      codeEl.value = classCode;
-    }
-
-    try{
-      var registered = await originalRegister.call(window.PROVE);
-      if(auth().currentUser) savePin(auth().currentUser.uid,pin);
-      return registered;
-    }finally{
-      if(temporaryCode) temporaryCode.remove();
-    }
+  async function studentRegister(){
+    return alert("إنشاء الحسابات الجديدة في STEP UP متوقف. استخدمي دخول بالحساب الحالي.");
   }
 
   async function studentEmailLogin(){
@@ -916,7 +870,7 @@
       note.setAttribute("dir","rtl");
       note.innerHTML =
         '<strong>اكتبي اسمك ورمز PIN ثم اضغطي «دخول بالحساب الحالي».</strong><br>' +
-        '• أول مرة لك؟ اختاري «إنشاء حساب جديد — أول مرة فقط».<br>' +
+        '• إنشاء الحسابات الجديدة متوقف حاليًا.<br>' +
         '• نسيتِ رمز PIN؟ تواصلي مع معلمتك.';
     }
 
@@ -925,15 +879,8 @@
       primary.textContent = "دخول بالحساب الحالي";
     }
 
-    var forcedClassCode = classCodeFromUrl();
     var actions = document.createElement("div");
     actions.className = "stepup-account-actions";
-
-    var createBtn = document.createElement("button");
-    createBtn.type = "button";
-    createBtn.className = "btn btn-secondary stepup-account-create";
-    createBtn.textContent = "إنشاء حساب جديد — أول مرة فقط";
-    createBtn.addEventListener("click",function(){ studentRegister(forcedClassCode); });
 
     var emailBtn = document.createElement("button");
     emailBtn.type = "button";
@@ -941,7 +888,6 @@
     emailBtn.textContent = "ربطتِ بريدك سابقًا واخترتِ كلمة مرور؟ الدخول بالبريد";
     emailBtn.addEventListener("click",showEmailLogin);
 
-    actions.appendChild(createBtn);
     actions.appendChild(emailBtn);
 
     if(primary && primary.parentNode){
@@ -963,7 +909,7 @@
   function loginButtons(){
     var root = document.getElementById("stName");
     root = root ? (root.closest(".student-entry-card") || document.getElementById("authBox") || document) : document;
-    return Array.prototype.slice.call(root.querySelectorAll("button.btn-primary, .stepup-account-create, .stepup-account-email-entry"));
+    return Array.prototype.slice.call(root.querySelectorAll("button.btn-primary, .stepup-account-email-entry"));
   }
 
   function setLoginBusy(on){
