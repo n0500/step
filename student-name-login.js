@@ -45,7 +45,7 @@
   }
 
   async function editName(){
-    if(!auth().currentUser)return originalEditName();
+    if(!auth().currentUser)return alert("سجلي الدخول بحساب الطالبة أولًا.");
     const user=auth().currentUser;
     let original;
     try{
@@ -210,5 +210,5 @@
   signInWithNewName.__busyWrapped=true; // Do not let the older auto-create/busy wrappers override this.
   window.PROVE.studentContinue=signInWithNewName;
   window.PROVE.editStudentName=editName;
-  window.STEPUP_NAME_LOGIN={version:"20261021-alias-login",aliasId};
+  window.STEPUP_NAME_LOGIN={version:"20261021-rename-fix-v5",aliasId,editName};
 })();

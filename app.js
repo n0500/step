@@ -1537,100 +1537,12 @@
   // Profile display names are independent of the legacy name+PIN credentials.
   // Never change the Firebase Auth email/password here: doing so can block
   // sign-in on projects with email enumeration protection.
+  // One canonical implementation. Never fall back to the obsolete Auth
+  // email/password rename flow, which falsely reported correct PINs as wrong.
   async function editStudentName(){
-    const current=(state.profile?.displayName||"").trim();
-    const input=prompt("Enter the student's correct name:",current);
-    if(input===null)return;
-    const next=input.trim().replace(/\s+/g," ");
-    if(!next || next===current)return;
-    if(next.length<2 || next.length>80)return alert("Please enter a name between 2 and 80 characters.");
-
-    const entered=prompt("Enter your current 4-digit PIN to confirm the name change:");
-    if(entered===null)return;
-    const normalizePin=value=>String(value||"").trim()
-      .replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632))
-      .replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776));
-    const pin=normalizePin(entered);
-    if(!/^[0-9]{4}$/.test(pin))return alert("أدخلي رمز PIN المكوّن من 4 أرقام.");
-
-    try{
-      if(state.fb){
-        const user=state.fb.auth.currentUser;
-        if(!user || !state.profile?.id || user.uid!==state.profile.id){
-          return alert("انتهت جلسة الدخول. أعيدي الدخول إلى حسابك الحالي.");
-        }
-        const ref=state.fb.db.collection("users").doc(user.uid);
-        const snapshot=await ref.get({source:"server"});
-        if(!snapshot.exists || snapshot.data().role!=="student"){
-          return alert("لم يتم العثور على ملف الطالبة. تواصلي مع معلمتك.");
-        }
-        const profile=snapshot.data();
-        if(String(profile.displayName||"").trim()!==current){
-          return alert("تم تحديث بيانات الحساب من جهاز آخر. أعيدي فتح الملف الشخصي والمحاولة.");
-        }
-
-        const savedPin=normalizePin(profile.pin);
-        let validPin=/^[0-9]{4}$/.test(savedPin) && savedPin===pin;
-        let verifiedWithAuth=false;
-        if(!validPin){
-          // PIN-based legacy accounts encode part of the hash in their actual
-          // Firebase email. Use the signed-in user's email, NEVER displayName.
-          const match=String(user.email||"").toLowerCase()
-            .match(/^s_([a-f0-9]{24})@students\.proveit\.local$/);
-          if(match){
-            const password=pin+"Aa!"+match[1].slice(0,4);
-            try{
-              const credential=firebase.auth.EmailAuthProvider.credential(user.email,password);
-              await user.reauthenticateWithCredential(credential);
-              validPin=true;
-              verifiedWithAuth=true;
-            }catch(error){
-              const code=String(error?.code||"");
-              if(/wrong-password|invalid-credential|invalid-login-credentials|user-not-found/.test(code)){
-                return alert("رمز PIN لا يطابق بيانات الدخول. تأكدي من الرمز أو تواصلي مع معلمتك.");
-              }
-              throw error;
-            }
-          }
-        }
-        if(!validPin){
-          return alert("تعذّر التحقق من PIN لهذا الحساب. تواصلي مع معلمتك للتحقق من الرمز المحفوظ.");
-        }
-
-        const updates={displayName:next};
-        if(verifiedWithAuth && savedPin!==pin) updates.pin=pin;
-        await ref.update(updates);
-        state.profile.displayName=next;
-        if(updates.pin)state.profile.pin=pin;
-      }else{
-        const email=String(state.profile?.loginEmail||"").toLowerCase();
-        const match=email.match(/^s_([a-f0-9]{24})@students\.proveit\.local$/);
-        const savedPin=normalizePin(state.profile?.pin);
-        const pinMatchesSaved=/^[0-9]{4}$/.test(savedPin) && savedPin===pin;
-        const pinMatchesLogin=!!match && state.profile.loginPassword===pin+"Aa!"+match[1].slice(0,4);
-        if(!pinMatchesSaved && !pinMatchesLogin){
-          return alert("رمز PIN غير صحيح. تواصلي مع معلمتك إذا نسيته.");
-        }
-        state.profile.displayName=next;
-        if(pinMatchesLogin)state.profile.pin=pin;
-        local.saveUser(state.profile);
-      }
-      alert("تم تحديث الاسم الظاهر بنجاح. حسابك ونتائجك وشهاداتك محفوظة. عند الدخول مرة أخرى استخدمي اسم الدخول السابق ورمز PIN نفسه؛ بيانات الدخول لم تتغير.");
-      renderStudent();
-    }catch(error){
-      console.error("StepUp display-name update failed",error?.code||error?.message);
-      const code=String(error?.code||"");
-      if(/permission-denied/.test(code)){
-        return alert("تعذّر حفظ الاسم بسبب صلاحيات الوصول. لم يتغير حسابك أو رمز PIN.");
-      }
-      if(/network-request-failed|unavailable|deadline-exceeded/.test(code)){
-        return alert("تعذّر الاتصال لحفظ الاسم. تحققي من الإنترنت وحاولي مجددًا.");
-      }
-      if(/too-many-requests/.test(code)){
-        return alert("محاولات كثيرة للتحقق. حاولي لاحقًا.");
-      }
-      return alert("تعذّر تعديل الاسم حاليًا. لم تتغير بيانات تسجيل الدخول أو رمز PIN.");
-    }
+    const handler=window.STEPUP_NAME_LOGIN?.editName;
+    if(typeof handler==="function")return handler();
+    return alert("الصفحة تعمل بنسخة قديمة من تعديل الاسم. أغلقي تبويب STEP UP وافتحي الرابط مجددًا.");
   }
 
   function findTraining(id){
