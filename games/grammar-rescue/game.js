@@ -1,111 +1,96 @@
 
 const levels=[
   {
-    "tense": "Factory routine",
-    "tag": "QUALITY CONTROL",
-    "name": "Vehicle inspection",
+    "tense": "Factory Label",
+    "tag": "PRODUCTION LINE 01",
+    "name": "Daily production",
     "words": [
-      "were",
-      "before shipment.",
-      "inspected",
-      "Every vehicle",
-      "have been",
-      "is",
-      "inspect",
-      "will be"
-    ],
-    "solution": [
-      "Every vehicle",
-      "is",
-      "inspected",
-      "before shipment."
-    ],
-    "prompt": "Quality inspectors check every vehicle before shipment, as part of the factory's daily routine. Rewrite their procedure for our label without saying who checks it.",
-    "description": "Choose the correct passive construction for a regular process.",
-    "explain": "The regular procedure needs the present passive: singular subject + is + past participle.",
-    "hint": "A daily routine needs the tense used for facts and repeated actions.",
-    "scene": "A daily safety check."
-  },
-  {
-    "tense": "History archive",
-    "tag": "ARCHIVE RECOVERY",
-    "name": "First solar model",
-    "words": [
-      "has been",
-      "in 2018.",
-      "were",
-      "introduced",
-      "The first solar-powered model",
-      "is",
-      "was",
-      "introducing",
-      "will be"
-    ],
-    "solution": [
-      "The first solar-powered model",
-      "was",
-      "introduced",
-      "in 2018."
-    ],
-    "prompt": "The museum record says: 'Engineers introduced the first solar-powered model in 2018.' Rewrite it so the model, not the engineers, is the focus.",
-    "description": "Repair a historical label using the year as your clue.",
-    "explain": "A completed event in a specific past year uses the past passive: was + past participle.",
-    "hint": "The year is finished, and the subject refers to one model.",
-    "scene": "A historical exhibit."
-  },
-  {
-    "tense": "Delivery update",
-    "tag": "SHIPMENT STATUS",
-    "name": "Inspection complete",
-    "words": [
-      "The new models",
-      "has been",
-      "inspecting",
-      "today.",
+      "Cars",
+      "made",
       "are",
-      "have been",
-      "will be",
-      "inspected",
+      "in this factory.",
+      "is"
+    ],
+    "solution": [
+      "Cars",
+      "are",
+      "made",
+      "in this factory."
+    ],
+    "prompt": "Workers make cars here every day. Complete the factory label using the passive voice.",
+    "description": "A daily production fact needs a correct label.",
+    "explain": "Cars is plural, so use are + past participle: Cars are made in this factory.",
+    "hint": "The subject is plural: cars. Which helper verb agrees with it?",
+    "scene": "Daily production is underway."
+  },
+  {
+    "tense": "History Label",
+    "tag": "PRODUCTION LINE 02",
+    "name": "A historic car",
+    "words": [
+      "was",
+      "The car",
+      "repaired",
+      "yesterday.",
+      "is"
+    ],
+    "solution": [
+      "The car",
+      "was",
+      "repaired",
       "yesterday."
     ],
-    "solution": [
-      "The new models",
-      "have been",
-      "inspected",
-      "today."
-    ],
-    "prompt": "The technicians have just finished checking the new models. Their results matter NOW because the shipment can leave. Write the completion update.",
-    "description": "Write a result-focused status, not a routine or a future plan.",
-    "explain": "Present perfect passive connects completed inspection with its present result: have been + past participle.",
-    "hint": "The job is complete and important now. The subject is plural.",
-    "scene": "Results ready for release."
+    "prompt": "A mechanic repaired this car yesterday. Make a label about what happened.",
+    "description": "Use the time clue to fix the museum label.",
+    "explain": "Yesterday refers to a completed past event. Use was + past participle.",
+    "hint": "Yesterday tells you the action happened in the past.",
+    "scene": "The workshop record needs a label."
   },
   {
-    "tense": "Launch forecast",
-    "tag": "FUTURE RELEASE",
-    "name": "Electric buses",
+    "tense": "Quality Update",
+    "tag": "PRODUCTION LINE 03",
+    "name": "Delivery completed",
     "words": [
-      "were",
-      "assemble",
-      "next year.",
-      "The electric buses",
       "have been",
-      "will be",
-      "assembled",
-      "last year.",
-      "are"
+      "The orders",
+      "delivered",
+      "already.",
+      "has been"
     ],
     "solution": [
-      "The electric buses",
-      "will be",
-      "assembled",
-      "next year."
+      "The orders",
+      "have been",
+      "delivered",
+      "already."
     ],
-    "prompt": "No electric buses have been built yet. The company has scheduled production for next year. Write the announcement for customers.",
-    "description": "Distinguish a future plan from work already completed.",
-    "explain": "A future passive announcement uses will be + past participle.",
-    "hint": "Nothing has happened yet. Choose a construction for an action in the future.",
-    "scene": "Next year's product plan."
+    "prompt": "All the orders are ready to go. Workers finished delivering them. Update the delivery board.",
+    "description": "Show a completed action with a result now.",
+    "explain": "With the plural subject orders, use have been + past participle.",
+    "hint": "The orders is plural. Choose the plural form of have/has been.",
+    "scene": "Delivery status: complete."
+  },
+  {
+    "tense": "Launch Plan",
+    "tag": "PRODUCTION LINE 04",
+    "name": "New model announcement",
+    "words": [
+      "next month.",
+      "will be",
+      "The new model",
+      "launched",
+      "was"
+    ],
+    "solution": [
+      "The new model",
+      "will be",
+      "launched",
+      "next month."
+    ],
+    "prompt": "The company plans to introduce a new model next month. Finish the future announcement.",
+    "description": "The model has not launched yet.",
+    "explain": "For a future passive action, use will be + past participle.",
+    "hint": "Next month is in the future.",
+    "scene": "A new product is coming."
   }
 ];
 let level=0,chosen=[],passed=[false,false,false,false],solved=false,usedHint=false;
@@ -137,146 +122,143 @@ const chapters={
   "2": {
     "heading": "Product <span>Showroom</span>",
     "label": "MISSION 02 / PRODUCT SHOWROOM",
-    "sub": "Read the clues. Make a choice you can defend.",
+    "sub": "Compare products and help shoppers choose.",
     "art": "var(--showroom-art)",
     "scene": "PRODUCT SHOWROOM",
     "onair": "CUSTOMERS WAITING",
     "tasks": [
       {
         "kind": "select",
-        "topic": "COMPARATIVES IN CONTEXT",
-        "title": "The phone buyer",
-        "instruction": "Find the only phone that meets EVERY condition.",
-        "dialog": "I can spend up to $800. I need a phone lighter than the 210 g model. But the 155 g model has too little battery life for me.",
+        "topic": "COMPARATIVE",
+        "title": "Find the perfect phone",
+        "instruction": "Read the weights and choose the right phone.",
+        "dialog": "I want a phone lighter than Phone A, but heavier than Phone B.",
         "emoji": "📱",
-        "sceneTitle": "Compare three specifications",
-        "sceneDesc": "A decision must satisfy the weight AND budget clues.",
+        "sceneTitle": "Compare phone weights",
+        "sceneDesc": "Which phone fits the comparison?",
         "cards": [
           {
             "icon": "📱",
             "name": "Phone A",
-            "note": "210 g · 5,000 mAh",
-            "tag": "$720"
+            "note": "210 g",
+            "tag": "MODEL A"
           },
           {
             "icon": "📱",
             "name": "Phone B",
-            "note": "155 g · 2,800 mAh",
-            "tag": "$790"
+            "note": "150 g",
+            "tag": "MODEL B"
           },
           {
             "icon": "📱",
             "name": "Phone C",
-            "note": "182 g · 4,300 mAh",
-            "tag": "$760"
+            "note": "180 g",
+            "tag": "MODEL C"
           }
         ],
         "answer": 2,
-        "explain": "Phone C meets the budget, is lighter than A, and avoids the small-battery model B.",
-        "hint": "First eliminate the weight the buyer rejects. Then check both remaining conditions."
+        "explain": "Phone C (180 g) is lighter than A (210 g) and heavier than B (150 g).",
+        "hint": "Find the phone with a weight between 150 g and 210 g."
       },
       {
         "kind": "select",
-        "topic": "SUPERLATIVE CLAIMS",
-        "title": "Which ad is accurate?",
-        "instruction": "Choose an advertisement that is BOTH true and grammatical.",
-        "dialog": "Battery test: Model A lasts 8 hours, Model B lasts 13 hours, and Model C lasts 11 hours. Only one claim may go live.",
-        "emoji": "🔋",
-        "sceneTitle": "Verify the battery advertisement",
-        "sceneDesc": "Use the data and the superlative correctly.",
+        "topic": "SUPERLATIVE",
+        "title": "The best battery",
+        "instruction": "Choose the correct statement about the longest battery life.",
+        "dialog": "Laptop A lasts 7 hours. Laptop B lasts 12 hours. Laptop C lasts 9 hours.",
+        "emoji": "💻",
+        "sceneTitle": "Battery comparison",
+        "sceneDesc": "Check the number and the grammar.",
         "cards": [
           {
             "icon": "🔋",
-            "name": "Model C has the longest battery life.",
-            "note": "Claim A"
+            "name": "Laptop A lasts the longest.",
+            "note": "Option A"
           },
           {
             "icon": "🔋",
-            "name": "Model B has the longest battery life.",
-            "note": "Claim B"
+            "name": "Laptop B lasts the longest.",
+            "note": "Option B"
           },
           {
             "icon": "🔋",
-            "name": "Model B has the most longest battery life.",
-            "note": "Claim C"
+            "name": "Laptop C lasts the longest.",
+            "note": "Option C"
           }
         ],
         "answer": 1,
-        "explain": "13 hours is the highest duration. The correct superlative is the longest, without most.",
-        "hint": "Compare all three values, then make sure the superlative is not doubled."
+        "explain": "Laptop B lasts 12 hours, longer than A and C. It lasts the longest.",
+        "hint": "Compare 7, 12 and 9 hours."
       },
       {
         "kind": "pair",
         "topic": "AS ... AS",
-        "title": "Same weight AND capacity",
-        "instruction": "Select TWO bags equally heavy AND equally spacious.",
-        "dialog": "My friend and I need equally heavy bags with the same capacity. The prices do not matter.",
+        "title": "Match the bags",
+        "instruction": "Choose TWO bags that are as heavy as each other.",
+        "dialog": "My sister and I need bags of the same weight. Help us find a pair.",
         "emoji": "🧳",
-        "sceneTitle": "Match two specifications",
-        "sceneDesc": "A weight match alone is not enough.",
+        "sceneTitle": "Equal-weight challenge",
+        "sceneDesc": "Pick two bags with equal weights.",
         "cards": [
           {
             "icon": "🧳",
             "name": "Bag A",
-            "note": "2.1 kg · 25 L",
-            "tag": "$90"
+            "note": "2.5 kg"
           },
           {
             "icon": "🧳",
             "name": "Bag B",
-            "note": "2.1 kg · 30 L",
-            "tag": "$90"
+            "note": "3 kg"
           },
           {
             "icon": "🧳",
             "name": "Bag C",
-            "note": "2.1 kg · 25 L",
-            "tag": "$110"
+            "note": "2.5 kg"
           }
         ],
         "answer": [
           0,
           2
         ],
-        "explain": "A is as heavy as C, and A is as spacious as C. Both weigh 2.1 kg and hold 25 L.",
-        "hint": "Every bag has the same weight. Which two ALSO hold the same number of liters?"
+        "explain": "Bag A is as heavy as Bag C because both weigh 2.5 kg.",
+        "hint": "Look for two matching numbers."
       },
       {
         "kind": "select",
         "topic": "SENSE VERBS + LIKE",
-        "title": "The mystery speaker",
-        "instruction": "Choose the description supported by BOTH sensory clues.",
-        "dialog": "The speaker makes a low buzzing sound. Its case feels soft, just like velvet. There is no picture on the screen.",
-        "emoji": "🔊",
-        "sceneTitle": "Describe what you notice",
-        "sceneDesc": "Do not confuse sounds, appearance and touch.",
+        "title": "What is that smell?",
+        "instruction": "Choose the sentence that describes the perfume.",
+        "dialog": "This perfume has a scent similar to roses.",
+        "emoji": "🌹",
+        "sceneTitle": "Perfume counter",
+        "sceneDesc": "Choose the sense verb that fits.",
         "cards": [
           {
-            "icon": "👀",
-            "name": "It looks like a bee and feels like velvet.",
-            "note": "Description A"
+            "icon": "🌹",
+            "name": "It smells like roses.",
+            "note": "Option A"
           },
           {
-            "icon": "🎵",
-            "name": "It sounds like a bee and feels like velvet.",
-            "note": "Description B"
+            "icon": "🌹",
+            "name": "It looks like roses.",
+            "note": "Option B"
           },
           {
-            "icon": "🖐️",
-            "name": "It sounds like velvet and feels like a bee.",
-            "note": "Description C"
+            "icon": "🌹",
+            "name": "It sounds like roses.",
+            "note": "Option C"
           }
         ],
-        "answer": 1,
-        "explain": "Sounds like describes the buzzing; feels like describes the soft surface. Both clues are needed.",
-        "hint": "Match each sensory clue to the sense used to notice it."
+        "answer": 0,
+        "explain": "We use smells like to describe a similar scent.",
+        "hint": "Use the sense verb connected to your nose."
       }
     ]
   },
   "3": {
     "heading": "Smart Shopping <span>Mall</span>",
     "label": "MISSION 03 / FORM, MEANING & FUNCTION",
-    "sub": "Solve real shopping problems using precise English.",
+    "sub": "Solve seven quick shopping challenges.",
     "art": "var(--mall-art)",
     "scene": "SMART SHOPPING MALL",
     "onair": "CUSTOMERS WAITING",
@@ -284,319 +266,306 @@ const chapters={
       {
         "kind": "select",
         "topic": "DEMONSTRATIVES",
-        "title": "The distant display",
-        "instruction": "Write the shopkeeper’s sentence, not the customer’s.",
-        "dialog": "The SHOPKEEPER is standing beside one silver watch. TWO gold watches are far across the aisle, near the customer. The shopkeeper wants to advertise the gold watches.",
-        "emoji": "⌚",
-        "sceneTitle": "See the scene from the speaker’s position",
-        "sceneDesc": "Distance and number both matter.",
+        "title": "The shoes over there",
+        "instruction": "Choose the correct sentence.",
+        "dialog": "A customer points to TWO shoes far away from her.",
+        "emoji": "👟",
+        "sceneTitle": "Near or far?",
+        "sceneDesc": "Think about distance and number.",
         "cards": [
           {
-            "icon": "⌚",
-            "name": "Those gold watches are on sale.",
-            "note": "Sign A"
+            "icon": "👟",
+            "name": "Those shoes are nice.",
+            "note": "Option A"
           },
           {
-            "icon": "⌚",
-            "name": "These gold watches are on sale.",
-            "note": "Sign B"
+            "icon": "👟",
+            "name": "These shoes are nice.",
+            "note": "Option B"
           },
           {
-            "icon": "⌚",
-            "name": "That gold watches are on sale.",
-            "note": "Sign C"
+            "icon": "👟",
+            "name": "That shoes are nice.",
+            "note": "Option C"
           }
         ],
         "answer": 0,
-        "explain": "Those is used for two or more items far from the speaker. The speaker is the shopkeeper.",
-        "hint": "Who is speaking? Where are the gold watches relative to that person?"
+        "explain": "Those is used for plural items that are far away.",
+        "hint": "Two shoes = plural; far away = not these."
       },
       {
         "kind": "arrange",
-        "topic": "NEGATIVE IMPERATIVES",
-        "title": "Protect the display",
-        "instruction": "Build a polite warning; extra word tiles are traps.",
-        "dialog": "Visitors are touching a delicate screen and leaving fingerprints. The manager needs a polite sign telling people NOT to touch it.",
-        "emoji": "🚫",
-        "sceneTitle": "Create a safety instruction",
-        "sceneDesc": "A warning requires a negative command.",
+        "topic": "IMPERATIVES",
+        "title": "Keep the screen clean",
+        "instruction": "Arrange the words to make a warning.",
+        "dialog": "Visitors must not touch the new tablet on display.",
+        "emoji": "📣",
+        "sceneTitle": "Safety sign",
+        "sceneDesc": "Create a negative command.",
         "words": [
-          "touches",
-          "Please",
-          "do not",
-          "touching",
-          "the display.",
+          "the screen.",
           "touch",
-          "not to",
-          "do"
+          "Don’t",
+          "touches",
+          "Do"
         ],
         "solution": [
-          "Please",
-          "do not",
+          "Don’t",
           "touch",
-          "the display."
+          "the screen."
         ],
-        "explain": "A polite negative imperative can use Please + do not + base verb.",
-        "hint": "A negative command needs do not before the base form of the action verb."
+        "explain": "A negative command starts with Don’t + base verb.",
+        "hint": "Start with Don’t, then the base verb."
       },
       {
         "kind": "select",
-        "topic": "A / AN BY SOUND",
-        "title": "The tricky articles",
-        "instruction": "Only one advertisement uses BOTH articles correctly.",
-        "dialog": "The offer includes an hour-long demo and a notebook bearing a university logo. Listen to the BEGINNING SOUNDS, not only the first letters.",
-        "emoji": "📝",
-        "sceneTitle": "Two articles, one decision",
-        "sceneDesc": "Silent h and the /y/ sound can be misleading.",
+        "topic": "A / AN",
+        "title": "The missing article",
+        "instruction": "Choose the correct product label.",
+        "dialog": "The customer wants to buy an umbrella.",
+        "emoji": "☂️",
+        "sceneTitle": "Label check",
+        "sceneDesc": "Listen for the first sound.",
         "cards": [
           {
-            "icon": "📝",
-            "name": "A hour-long demo and an university notebook.",
+            "icon": "☂️",
+            "name": "an umbrella",
             "note": "Label A"
           },
           {
-            "icon": "📝",
-            "name": "An hour-long demo and a university notebook.",
+            "icon": "☂️",
+            "name": "a umbrella",
             "note": "Label B"
           },
           {
-            "icon": "📝",
-            "name": "An hour-long demo and an university notebook.",
+            "icon": "☂️",
+            "name": "an umbrellas",
             "note": "Label C"
           }
         ],
-        "answer": 1,
-        "explain": "Hour begins with a vowel sound, so an; university begins with /y/, so a.",
-        "hint": "The h in hour is silent, while university begins with a consonant /y/ sound."
+        "answer": 0,
+        "explain": "Umbrella begins with a vowel sound. Use an with a singular countable noun.",
+        "hint": "Say umbrella aloud. Does it begin with a vowel sound?"
       },
       {
         "kind": "select",
         "topic": "POSSESSIVE PRONOUNS",
-        "title": "Sort the earbuds",
-        "instruction": "Choose the clerk’s reply without repeating “earbuds.”",
-        "dialog": "The clerk is speaking TO YOU. She points to blue earbuds that belong to YOU, and red earbuds that belong to HER. Which statement should the clerk say?",
-        "emoji": "🎧",
-        "sceneTitle": "Who owns which pair?",
-        "sceneDesc": "Follow the speaker’s point of view.",
+        "title": "Lost shoes",
+        "instruction": "Complete Sara’s sentence.",
+        "dialog": "Sara says, “These shoes belong to me. They are ____.”",
+        "emoji": "👟",
+        "sceneTitle": "Lost and found",
+        "sceneDesc": "Choose the correct possessive pronoun.",
         "cards": [
           {
-            "icon": "🎧",
-            "name": "The blue ones are hers; the red ones are yours.",
-            "note": "Reply A"
+            "icon": "👟",
+            "name": "mine",
+            "note": "Option A"
           },
           {
-            "icon": "🎧",
-            "name": "The blue ones are yours; the red ones are hers.",
-            "note": "Reply B"
+            "icon": "👟",
+            "name": "my",
+            "note": "Option B"
           },
           {
-            "icon": "🎧",
-            "name": "The blue ones are mine; the red ones are theirs.",
-            "note": "Reply C"
+            "icon": "👟",
+            "name": "me",
+            "note": "Option C"
           }
         ],
-        "answer": 1,
-        "explain": "The listener owns blue, so yours; the clerk owns red, so hers.",
-        "hint": "In the clerk’s sentence, which pronoun refers to the person she is speaking to?"
+        "answer": 0,
+        "explain": "Mine replaces my shoes and shows ownership without another noun.",
+        "hint": "You need a word that can stand alone after “They are”."
       },
       {
         "kind": "select",
-        "topic": "WHOSE / OWNERSHIP",
-        "title": "A shared purchase",
-        "instruction": "Give the correct answer to “Whose...?”",
-        "dialog": "Ali and Faisal bought these headphones TOGETHER. Neither boy owns them alone. A customer asks, “Whose headphones are these?”",
+        "topic": "WHOSE",
+        "title": "Whose headphones?",
+        "instruction": "Answer the customer’s question.",
+        "dialog": "Whose headphones are these? They belong to Omar.",
         "emoji": "🎧",
-        "sceneTitle": "Find the shared owner",
-        "sceneDesc": "One object can belong to more than one person.",
+        "sceneTitle": "Ownership detective",
+        "sceneDesc": "Who owns the headphones?",
         "cards": [
           {
             "icon": "🎧",
-            "name": "They're his.",
-            "note": "Reply A"
+            "name": "They’re hers.",
+            "note": "Option A"
           },
           {
             "icon": "🎧",
-            "name": "They're ours.",
-            "note": "Reply B"
+            "name": "They’re his.",
+            "note": "Option B"
           },
           {
             "icon": "🎧",
-            "name": "They're theirs.",
-            "note": "Reply C"
+            "name": "They’re theirs.",
+            "note": "Option C"
           }
         ],
-        "answer": 2,
-        "explain": "The headphones belong to two other people, so they are theirs.",
-        "hint": "The speaker is not Ali or Faisal. Choose the pronoun for ownership by two other people."
+        "answer": 1,
+        "explain": "Omar is one male owner, so the headphones are his.",
+        "hint": "Which pronoun shows possession by one boy?"
       },
       {
         "kind": "select",
         "topic": "ONE / ONES",
-        "title": "The cheaper chargers",
-        "instruction": "Choose a reply that preserves BOTH quantity and price.",
-        "dialog": "The customer needs THREE chargers. The three BLUE chargers cost $105 altogether, while three BLACK chargers cost $150. What should the assistant recommend?",
-        "emoji": "🔌",
-        "sceneTitle": "Quantity matters",
-        "sceneDesc": "A plural noun needs the correct replacement word.",
+        "title": "Choose the blue shoes",
+        "instruction": "Fill in the missing word.",
+        "dialog": "I like these shoes, but I want the blue ____.",
+        "emoji": "👟",
+        "sceneTitle": "Shoe counter",
+        "sceneDesc": "Choose a word that replaces a plural noun.",
         "cards": [
           {
-            "icon": "🔌",
-            "name": "Take the blue one.",
-            "note": "Reply A"
+            "icon": "👟",
+            "name": "ones",
+            "note": "Option A"
           },
           {
-            "icon": "🔌",
-            "name": "Take the black ones.",
-            "note": "Reply B"
+            "icon": "👟",
+            "name": "one",
+            "note": "Option B"
           },
           {
-            "icon": "🔌",
-            "name": "Take the blue ones.",
-            "note": "Reply C"
+            "icon": "👟",
+            "name": "it",
+            "note": "Option C"
           }
         ],
-        "answer": 2,
-        "explain": "Three chargers are plural, so ones replaces chargers; the blue group is cheaper.",
-        "hint": "The customer needs three, not one. Then compare the total prices."
+        "answer": 0,
+        "explain": "Ones replaces the plural noun shoes.",
+        "hint": "Shoes is plural. Use the plural replacement word."
       },
       {
         "kind": "select",
         "topic": "TOO / ENOUGH",
-        "title": "Fit the customer",
-        "instruction": "Approve the only true, grammatically accurate recommendation.",
-        "dialog": "The customer needs size M and has no more than $200. Jacket A is size S for $120; Jacket B is size M for $180; Jacket C is size M for $250.",
+        "title": "The expensive jacket",
+        "instruction": "Complete the customer’s sentence.",
+        "dialog": "The jacket costs $250. I only have $200. It is ____.",
         "emoji": "🧥",
-        "sceneTitle": "Explain the best choice",
-        "sceneDesc": "Use both the size and budget evidence.",
+        "sceneTitle": "Shopping budget",
+        "sceneDesc": "What is the problem with the price?",
         "cards": [
           {
             "icon": "🧥",
-            "name": "Jacket A is big enough but too expensive.",
-            "note": "Advice A"
+            "name": "too expensive",
+            "note": "Option A"
           },
           {
             "icon": "🧥",
-            "name": "Jacket B is large enough and inexpensive enough.",
-            "note": "Advice B"
+            "name": "expensive enough",
+            "note": "Option B"
           },
           {
             "icon": "🧥",
-            "name": "Jacket C is cheap enough but too small.",
-            "note": "Advice C"
+            "name": "too cheap",
+            "note": "Option C"
           }
         ],
-        "answer": 1,
-        "explain": "Jacket B fits size M and costs less than $200. A is too small, while C is too expensive.",
-        "hint": "Check the size requirement first, then check which price stays inside the budget."
+        "answer": 0,
+        "explain": "The jacket costs more than the customer can pay, so it is too expensive.",
+        "hint": "The price is higher than the money available."
       }
     ]
   },
   "4": {
     "heading": "The Big <span>Launch</span>",
     "label": "FINAL MISSION / SAVE THE CAMPAIGN",
-    "sub": "Final quality control: combine meaning, grammar, and evidence.",
+    "sub": "Three final choices to complete the launch.",
     "art": "var(--launch-art)",
     "scene": "LIVE ADVERTISING CAMPAIGN",
     "onair": "PRE-LAUNCH",
     "tasks": [
       {
         "kind": "select",
-        "topic": "FINAL · TWO PASSIVE TENSES",
-        "title": "Correct the factory report",
-        "instruction": "Choose the ONLY passive report that preserves both time clues.",
-        "dialog": "Engineers installed the machines last Monday. Quality inspectors test them every Friday. The launch team needs an accurate passive-voice summary.",
+        "topic": "FINAL · PASSIVE VOICE",
+        "title": "Check the factory ad",
+        "instruction": "Choose the correct advertisement.",
+        "dialog": "These shoes are made in Italy. We need the correct sentence for our new poster.",
         "emoji": "🏭",
-        "sceneTitle": "Past event + regular routine",
-        "sceneDesc": "Both clauses must match the original meaning.",
+        "sceneTitle": "Factory quality check",
+        "sceneDesc": "Check the passive verb.",
         "cards": [
           {
-            "icon": "📄",
-            "name": "The machines were installed last Monday and are tested every Friday.",
-            "note": "Report A"
+            "icon": "👟",
+            "name": "These shoes are made in Italy.",
+            "note": "Version A"
           },
           {
-            "icon": "📄",
-            "name": "The machines are installed last Monday and were tested every Friday.",
-            "note": "Report B"
+            "icon": "👟",
+            "name": "These shoes is made in Italy.",
+            "note": "Version B"
           },
           {
-            "icon": "📄",
-            "name": "The machines have been installed last Monday and will be tested every Friday.",
-            "note": "Report C"
+            "icon": "👟",
+            "name": "These shoes are make in Italy.",
+            "note": "Version C"
           }
         ],
         "answer": 0,
-        "explain": "Were installed reports a finished past event; are tested describes a routine that happens every Friday.",
-        "hint": "One clause happened on a specific past day; the other describes a recurring schedule.",
-      "reasonChoices": [{"icon":"🧠","name":"Both actions happened last Monday, so both verbs must use were."},{"icon":"🧠","name":"A specific finished day needs past passive; a repeated Friday routine needs present passive."},{"icon":"🧠","name":"Every Friday is a future plan, so the second clause needs will be."}],
-      "reasonAnswer": 1,
-      "reasonHint": "Identify which clue names a finished day, and which describes a repeated habit."
+        "explain": "Shoes is plural. The present passive uses are + past participle.",
+        "hint": "Plural shoes takes are, followed by the past participle made."
       },
       {
         "kind": "select",
-        "topic": "FINAL · TWO COMPARISONS",
-        "title": "Check the camera promotion",
-        "instruction": "Publish only a claim that is grammatically correct AND supported by the table.",
-        "dialog": "Camera A: $520, 3-year warranty. Camera B: $600, 2-year warranty. Camera C: $760, 1-year warranty.",
-        "emoji": "📷",
-        "sceneTitle": "Prices and warranties",
-        "sceneDesc": "The correct claim needs two true comparisons.",
+        "topic": "FINAL · COMPARATIVES",
+        "title": "The lighter phone",
+        "instruction": "Choose the true comparison.",
+        "dialog": "The old phone weighs 190 g. The new phone weighs 160 g.",
+        "emoji": "📱",
+        "sceneTitle": "New product claim",
+        "sceneDesc": "Which comparison can we publish?",
         "cards": [
           {
-            "icon": "📷",
-            "name": "Camera B is the least expensive and has the longest warranty.",
+            "icon": "📱",
+            "name": "The new phone is heavier than the old one.",
             "note": "Claim A"
           },
           {
-            "icon": "📷",
-            "name": "Camera A is less expensive than B and has the longest warranty.",
+            "icon": "📱",
+            "name": "The new phone is lighter than the old one.",
             "note": "Claim B"
           },
           {
-            "icon": "📷",
-            "name": "Camera C is as inexpensive as A and has a longer warranty.",
+            "icon": "📱",
+            "name": "The new phone is as heavy as the old one.",
             "note": "Claim C"
           }
         ],
         "answer": 1,
-        "explain": "A is cheaper than B ($520 vs $600) and has the longest warranty of all three (3 years).",
-        "hint": "A claim must be correct for BOTH price and warranty, not just one.",
-      "reasonChoices": [{"icon":"🧠","name":"A costs less than B, and its three-year warranty exceeds both other warranties."},{"icon":"🧠","name":"The longest warranty always means the product is the cheapest, regardless of its price."},{"icon":"🧠","name":"Camera A and Camera C have equal warranties, but Camera A costs less."}],
-      "reasonAnswer": 0,
-      "reasonHint": "Recheck each of the two comparisons against the figures."
+        "explain": "160 g is less than 190 g, so the new phone is lighter.",
+        "hint": "Compare the weights. A lower number means a lighter phone."
       },
       {
         "kind": "select",
-        "topic": "FINAL · DISTANCE + OWNERSHIP",
-        "title": "Authorize the last announcement",
-        "instruction": "Think from the SHOPKEEPER’s point of view.",
-        "dialog": "The shopkeeper is beside ONE black speaker she owns. TWO red speakers belong to the customer and are far across the store. What should the shopkeeper say?",
-        "emoji": "🚀",
-        "sceneTitle": "The final language check",
-        "sceneDesc": "Get distance, number, and ownership right at once.",
+        "topic": "FINAL · DEMONSTRATIVES",
+        "title": "The last shop sign",
+        "instruction": "Choose the correct sentence.",
+        "dialog": "Maha points to TWO bags across the room. They belong to her friend Sara.",
+        "emoji": "👜",
+        "sceneTitle": "Launch authorization",
+        "sceneDesc": "Combine distance, number, and ownership.",
         "cards": [
           {
-            "icon": "🔊",
-            "name": "These red speakers are yours, but that black one is mine.",
-            "note": "Announcement A"
+            "icon": "👜",
+            "name": "Those bags are hers.",
+            "note": "Sign A"
           },
           {
-            "icon": "🔊",
-            "name": "Those red speakers are mine, but this black one is yours.",
-            "note": "Announcement B"
+            "icon": "👜",
+            "name": "These bags are hers.",
+            "note": "Sign B"
           },
           {
-            "icon": "🔊",
-            "name": "Those red speakers are yours, but this black one is mine.",
-            "note": "Announcement C"
+            "icon": "👜",
+            "name": "That bags are hers.",
+            "note": "Sign C"
           }
         ],
-        "answer": 2,
-        "explain": "Those = far and plural; this = near and singular. Yours belongs to the customer and mine to the shopkeeper.",
-        "hint": "Work from the speaker’s position. Compare near/far, one/two, and who owns each item.",
-      "reasonChoices": [{"icon":"🧠","name":"These always points to a single nearby object, and that always to several distant ones."},{"icon":"🧠","name":"Because the customer is near the red pair, the shopkeeper must say these."},{"icon":"🧠","name":"Those matches the distant pair; this matches the nearby single speaker; yours/mine match the owners."}],
-      "reasonAnswer": 2,
-      "reasonHint": "A complete reason must explain distance, singular/plural, and ownership."
+        "answer": 0,
+        "explain": "Those is used for plural items far away; hers shows they belong to Sara.",
+        "hint": "Two bags far away = those. Sara owns them."
       }
     ]
   }
