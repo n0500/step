@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1843"><title>STEP UP · Grammar Rescue Adventure</title>
+<link rel="stylesheet" href="./styles.css?v=4">
+</head><body>
+<div class="app-shell">
+<header class="topbar"><div class="brand"><span class="brand-logo">⚡</span><span>STEP <strong>UP</strong><small>GRAMMAR RESCUE</small></span></div>
+<div class="top-meta"><span class="tag">UNIT 4 · THE ART OF ADVERTISING</span><button class="ghost-button" id="reset-progress" type="button" title="Restart this demo">↻ Restart</button></div></header>
+<main>
+<section id="map-view" class="map-view">
+ <div class="welcome"><div><div class="eyebrow">THE ADVENTURE BEGINS</div><h1>GRAMMAR <em>RESCUE</em></h1><p>Save the Big Launch! Complete grammar missions, repair the campaign and bring the advertising city back to life.</p>
+ <button id="quick-start" class="btn btn-violet" type="button">🚀 Start Adventure <span>→</span></button></div><div class="mascot" aria-hidden="true"><div class="mascot-glow"></div><div class="mascot-figure">👩🏻‍💼</div><div class="mascot-bubble">“Our campaign needs YOU!”</div></div></div>
+ <div class="city-panel"><div class="city-header"><div><span class="eyebrow">YOUR MISSION MAP</span><h2>Advertising City <span>🌃</span></h2></div><div class="progress-box"><div class="progress-top"><span id="map-count">0 / 19 challenges</span><strong id="map-pct">0%</strong></div><div class="track"><span id="map-bar"></span></div></div></div>
+ <div class="citysky"><div class="moon"></div><div class="stars">✦ ⋆ ✦</div><div class="skybuildings"><span>▥</span><span>▤</span><span>▥</span><span>▦</span><span>▥</span><span>▤</span><span>▥</span><span>▦</span><span>▥</span><span>▤</span><span>▥</span></div></div>
+ <div id="mission-cards" class="mission-cards"></div>
+ </div>
+ <p class="legal">Standalone preview only · Your STEP UP progress, mastery scores, and certificates are not affected.</p>
+</section>
+<section id="game-view" class="game-view hidden">
+ <div class="game-heading"><button id="back-map" type="button" class="back-button">← Mission Map</button><div class="game-identity"><span id="mission-pill">MISSION 01</span><strong id="mission-title">Production Lab</strong><small id="mission-subtitle">Passive Voice</small></div><div class="step-counter"><span id="step-caption">Challenge 1 / 4</span><div class="tinytrack"><span id="step-track"></span></div></div></div>
+ <div class="game-layout">
+  <div id="stage" class="stage stage-factory"><div class="stage-top"><span class="stage-label" id="stage-label">🚘 CAR FACTORY</span><span class="stage-status" id="stage-status">● WAITING</span></div>
+  <div class="stage-backdrop"><div class="stage-window"></div><div class="stage-lights"></div><div class="stage-art" id="stage-art"><span class="decor-a"></span><span class="decor-b"></span><div class="art-main" id="art-main">🚘</div><div class="stage-platform"></div></div></div>
+  <div class="stage-actor"><div class="actor" id="stage-actor">🤖</div><div class="actor-talk" id="actor-talk">Can you help?</div></div>
+  <div class="stage-bottom"><span id="stage-readout">🟡 System awaiting your answer</span><span id="stage-stars">☆ ☆ ☆</span></div></div>
+  <div class="activity"><div class="activity-header"><span class="eyebrow" id="activity-category">PRODUCTION CONTROL</span><span id="activity-number">01 / 04</span></div><h2 id="question-title">Repair the sentence</h2><p class="instruction" id="question-subtitle">Tap the words in the correct order.</p>
+  <div class="prompt-card"><span class="prompt-icon" id="prompt-icon">📋</span><div><span id="prompt-label">PRODUCT INFORMATION</span><p id="question-prompt">Our car needs a label.</p></div></div>
+  <div id="interaction-area" class="interaction-area" aria-live="polite"><div class="answer-box"><span>Your sentence goes here…</span></div><div class="words"><button type="button" class="word">in Japan.</button><button type="button" class="word">This car</button><button type="button" class="word">made</button><button type="button" class="word">is</button></div></div>
+  <div class="tools-row"><button type="button" id="hint-button" class="chip-button">💡 Hint</button><button type="button" id="clear-button" class="chip-button">↻ Try again</button></div>
+  <div id="hint-box" class="hint-box hidden"></div><div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div>
+  <button type="button" id="check-button" class="btn btn-violet main-action">Check Answer <span>→</span></button>
+  </div>
+ </div><p class="legal">Tap cards to interact · Demo progress stays on this device only</p>
+</section>
+</main></div>
+<div class="overlay hidden" id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title"><div class="result-card"><div class="result-icon" id="result-icon">🏆</div><span class="eyebrow" id="result-kicker">MISSION COMPLETE</span><h2 id="result-title">Wonderful!</h2><p id="result-description">You've completed this mission.</p><div class="reward-ribbon" id="reward-ribbon">⭐ ⭐ ⭐</div><button class="btn btn-violet" id="result-next" type="button">Next Mission →</button><button id="result-map" type="button" class="chip-button">View Mission Map</button></div></div>
+<script src="./game.js?v=4" defer></script>
+</body></html>
