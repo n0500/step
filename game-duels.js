@@ -62,8 +62,11 @@ function scoreBoard(){
  table.innerHTML=sorted.length?'<div class="duel-table"><div class="duel-th"><span>Rank · Player</span><span>Rounds</span><span>Points</span></div>'+
  sorted.map((p,i)=>'<div class="duel-tr"><span>'+(i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':'#'+(i+1)+' ')+clean(p.name)+'</span><span>'+p.played+'/4</span><strong>'+p.points+'</strong></div>').join("")+'</div>':'<p class="duel-note">You are the first player. Share the invitation link!</p>';
  const roundList=$("duelRoundResults");if(roundList)roundList.innerHTML=ROUND_NAMES.map((name,i)=>{
-  const key=String(i+1),finish=roundScores.filter(x=>x.roundKey===key).length;
-  return '<div class="duel-round"><b>0'+key+' · '+clean(name)+'</b><small>'+finish+' finished · '+ROUND_QUESTIONS[key]+' challenges</small></div>';
+  const key=String(i+1);
+  const finished=roundScores.filter(x=>x.roundKey===key).sort((a,b)=>b.points-a.points||a.seconds-b.seconds);
+  const leader=finished[0];
+  const winner=leader?' · 🥇 '+clean(map[leader.uid]?.name||"Player")+' ('+leader.points+' pts)':'';
+  return '<div class="duel-round"><b>0'+key+' · '+clean(name)+'</b><small>'+finished.length+' finished · '+ROUND_QUESTIONS[key]+' challenges'+winner+'</small></div>';
  }).join("");
 }
 function watchRoom(id){
@@ -86,7 +89,7 @@ async function openRoom(id){
  saveRecent(u.uid,id);
  roomId=id;
  panel("Grammar Rescue · Competition",
- '<p class="duel-note">4 rounds · 18 challenges. Play anytime—your friends do not need to be online.</p>'+
+ '<p class="duel-note">4 rounds · 18 challenges. Play anytime. Earn 10 points per solved question; each wrong attempt costs 2 points. Ties are decided by time.</p>'+
  '<div class="duel-actions"><button data-duel-copy class="duel-primary">🔗 Copy invite link</button><button data-duel-share class="duel-secondary">Share</button></div>'+
  '<div class="duel-invite-url" id="duelInviteUrl">'+clean(inviteUrl(id))+'</div>'+
  '<div class="duel-steps" id="duelRoundResults"></div>'+
