@@ -1,24 +1,127 @@
 
 const levels=[
-{tense:'Present Passive',tag:'PRESENT PASSIVE',name:'This car',words:['in Japan.','This car','made','is'],solution:['This car','is','made','in Japan.'],prompt:'This car needs a correct production label before it can leave the factory.',description:'Our first product is ready for inspection.',explain:'Present Passive: is / are + past participle.',scene:'A car is ready.'},
-{tense:'Past Passive',tag:'PAST PASSIVE',name:'The first car',words:['in 1886.','invented','was','The first car'],solution:['The first car','was','invented','in 1886.'],prompt:'We need the correct sentence for the history display.',description:'The history exhibit is waiting for a correct date label.',explain:'Past Passive: was / were + past participle.',scene:'History display online.'},
-{tense:'Present Perfect Passive',tag:'PRESENT PERFECT',name:'Our products',words:['used','worldwide.','Our products','have been'],solution:['Our products','have been','used','worldwide.'],prompt:'Visitors want to know how our products have been used.',description:'The quality-control panel needs an update.',explain:'Present Perfect Passive: has / have been + past participle.',scene:'Quality check in progress.'},
-{tense:'Future Passive',tag:'FUTURE PASSIVE',name:'A new engine',words:['produced','will be','next year.','A new engine'],solution:['A new engine','will be','produced','next year.'],prompt:'The launch team needs an announcement about next year.',description:'The future-production line is waiting for your approval.',explain:'Future Passive: will be + past participle.',scene:'Launch plan prepared.'}
+  {
+    "tense": "Factory routine",
+    "tag": "QUALITY CONTROL",
+    "name": "Helmet inspection",
+    "words": [
+      "were",
+      "before shipment.",
+      "inspected",
+      "Every helmet",
+      "have been",
+      "is",
+      "inspect",
+      "will be"
+    ],
+    "solution": [
+      "Every helmet",
+      "is",
+      "inspected",
+      "before shipment."
+    ],
+    "prompt": "Quality inspectors check every helmet before shipment, as part of the factory's daily routine. Rewrite their procedure for our label without saying who checks it.",
+    "description": "Choose the correct passive construction for a regular process.",
+    "explain": "The regular procedure needs the present passive: singular subject + is + past participle.",
+    "hint": "A daily routine needs the tense used for facts and repeated actions.",
+    "scene": "A daily safety check."
+  },
+  {
+    "tense": "History archive",
+    "tag": "ARCHIVE RECOVERY",
+    "name": "First solar model",
+    "words": [
+      "has been",
+      "in 2018.",
+      "were",
+      "introduced",
+      "The first solar-powered model",
+      "is",
+      "was",
+      "introducing",
+      "will be"
+    ],
+    "solution": [
+      "The first solar-powered model",
+      "was",
+      "introduced",
+      "in 2018."
+    ],
+    "prompt": "The museum record says: 'Engineers introduced the first solar-powered model in 2018.' Rewrite it so the model, not the engineers, is the focus.",
+    "description": "Repair a historical label using the year as your clue.",
+    "explain": "A completed event in a specific past year uses the past passive: was + past participle.",
+    "hint": "The year is finished, and the subject refers to one model.",
+    "scene": "A historical exhibit."
+  },
+  {
+    "tense": "Delivery update",
+    "tag": "SHIPMENT STATUS",
+    "name": "Inspection complete",
+    "words": [
+      "The new devices",
+      "has been",
+      "inspecting",
+      "today.",
+      "are",
+      "have been",
+      "will be",
+      "inspected",
+      "yesterday."
+    ],
+    "solution": [
+      "The new devices",
+      "have been",
+      "inspected",
+      "today."
+    ],
+    "prompt": "The technicians have just finished checking the new devices. Their results matter NOW because the shipment can leave. Write the completion update.",
+    "description": "Write a result-focused status, not a routine or a future plan.",
+    "explain": "Present perfect passive connects completed inspection with its present result: have been + past participle.",
+    "hint": "The job is complete and important now. The subject is plural.",
+    "scene": "Results ready for release."
+  },
+  {
+    "tense": "Launch forecast",
+    "tag": "FUTURE RELEASE",
+    "name": "Electric buses",
+    "words": [
+      "were",
+      "assemble",
+      "next year.",
+      "The electric buses",
+      "have been",
+      "will be",
+      "assembled",
+      "last year.",
+      "are"
+    ],
+    "solution": [
+      "The electric buses",
+      "will be",
+      "assembled",
+      "next year."
+    ],
+    "prompt": "No electric buses have been built yet. The company has scheduled production for next year. Write the announcement for customers.",
+    "description": "Distinguish a future plan from work already completed.",
+    "explain": "A future passive announcement uses will be + past participle.",
+    "hint": "Nothing has happened yet. Choose a construction for an action in the future.",
+    "scene": "Next year's product plan."
+  }
 ];
 let level=0,chosen=[],passed=[false,false,false,false],solved=false,usedHint=false;
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-function render(){let q=levels[level];$('steps').innerHTML=levels.map((_,i)=>`<span class="${passed[i]?'done':i===level?'on':''}"></span>`).join('');$('starCounter').textContent=`⭐ ${passed.filter(Boolean).length} / 4`;$('roundLabel').textContent=`CHALLENGE ${level+1} OF 4`;$('difficulty').textContent=q.tag;$('tenseName').textContent=q.tense;$('factoryMarker').textContent=`PRODUCTION LINE 0${level+1}`;$('sceneTitle').textContent=solved?'Product approved!':q.scene;$('sceneDesc').textContent=solved?'The production line is moving again.':q.description;$('robotMessage').textContent=`“${solved?'Excellent! You fixed it. Thank you!':q.prompt}”`;$('machineStatus').textContent=solved?'● Production released':'● Waiting for repair';$('machineStatus').className=`value ${solved?'green':'orange'}`;$('hintNote').hidden=!usedHint;$('hintNote').textContent=`💡 ${q.explain} Start with the subject of the sentence.`;$('answerRow').classList.toggle('good',solved);$('factoryArt').classList.toggle('success',solved);
+function render(){let q=levels[level];$('steps').innerHTML=levels.map((_,i)=>`<span class="${passed[i]?'done':i===level?'on':''}"></span>`).join('');$('starCounter').textContent=`⭐ ${passed.filter(Boolean).length} / 4`;$('roundLabel').textContent=`CHALLENGE ${level+1} OF 4`;$('difficulty').textContent=q.tag;$('tenseName').textContent=q.tense;$('factoryMarker').textContent=`PRODUCTION LINE 0${level+1}`;$('sceneTitle').textContent=solved?'Product approved!':q.scene;$('sceneDesc').textContent=solved?'The production line is moving again.':q.description;$('robotMessage').textContent=`“${solved?'Excellent! You fixed it. Thank you!':q.prompt}”`;$('machineStatus').textContent=solved?'● Production released':'● Waiting for repair';$('machineStatus').className=`value ${solved?'green':'orange'}`;$('hintNote').hidden=!usedHint;$('hintNote').textContent=`💡 ${q.hint}`;$('answerRow').classList.toggle('good',solved);$('factoryArt').classList.toggle('success',solved);
   $('answerRow').innerHTML=q.solution.map((_,i)=>chosen[i]!==undefined?`<button class="slot filled" data-remove="${i}" ${solved?'disabled':''}>${escapeHTML(chosen[i].word)}</button>`:`<span class="slot ${usedHint&&i===chosen.length?'hinted':''}">${i+1}</span>`).join('');
   $('wordBank').innerHTML=q.words.map((w,i)=>`<button type="button" class="word" data-pick="${i}" ${solved||chosen.some(c=>c.index===i)?'disabled':''}>${escapeHTML(w)}</button>`).join('');
   $('nextBtn').hidden=!solved;$('checkBtn').hidden=solved;$('hintBtn').disabled=solved;$('resetBtn').disabled=solved;$('resultBox').classList.toggle('show',solved);$('explanation').textContent=q.explain;
 }
 function info(message,type=''){$('feedback').textContent=message;$('feedback').className='status '+type;}
-$('wordBank').addEventListener('click',e=>{const tile=e.target.closest('[data-pick]');if(!tile||solved)return;let i=Number(tile.dataset.pick);if(chosen.some(c=>c.index===i))return;chosen.push({index:i,word:levels[level].words[i]});usedHint=false;render();info(chosen.length===4?'Ready! Press Check to inspect your sentence.':'Nice! Keep arranging the words.');});
+$('wordBank').addEventListener('click',e=>{const tile=e.target.closest('[data-pick]');if(!tile||solved)return;let i=Number(tile.dataset.pick);if(chosen.some(c=>c.index===i)||chosen.length>=levels[level].solution.length)return;chosen.push({index:i,word:levels[level].words[i]});usedHint=false;render();info(chosen.length===levels[level].solution.length?'Ready! Press Check to inspect your sentence.':'Check the clues and choose carefully.');});
 $('answerRow').addEventListener('click',e=>{let el=e.target.closest('[data-remove]');if(!el||solved)return;chosen.splice(Number(el.dataset.remove),1);render();info('Word returned to the bank.');});
 $('hintBtn').addEventListener('click',()=>{usedHint=true;render();info('Read the highlighted hint, then try again.');});
 $('resetBtn').addEventListener('click',()=>{chosen=[];usedHint=false;render();info('Words reset. Try building the sentence again.');});
-$('checkBtn').addEventListener('click',()=>{const q=levels[level];if(chosen.length!==q.solution.length){info(`Choose all ${q.solution.length} parts before checking.`,'error');return;}let success=chosen.every((c,i)=>c.word===q.solution[i]);if(!success){info('Almost! The word order is not correct yet. Tap a word to return it to the bank.','error');$('answerRow').animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:240});return;}solved=true;passed[level]=true;render();info('✓ Perfect! Grammar approved. The product can move forward!','correct');celebrate();});
+$('checkBtn').addEventListener('click',()=>{const q=levels[level];if(chosen.length!==q.solution.length){info(`Choose all ${q.solution.length} parts before checking.`,'error');return;}let success=chosen.every((c,i)=>c.word===q.solution[i]);if(!success){info('Not approved yet. Review the time clue and check the auxiliary and participle.','error');$('answerRow').animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:240});return;}solved=true;passed[level]=true;render();info('✓ Perfect! Grammar approved. The product can move forward!','correct');celebrate();});
 $('nextBtn').addEventListener('click',()=>{if(level===levels.length-1){window.GRAMMAR_RESCUE_CONTINUE();return;}level++;chosen=[];solved=false;usedHint=false;render();info('New production line unlocked. Arrange the next sentence.');});
 $('restartBtn').addEventListener('click',()=>{$('completed').classList.remove('visible');level=0;chosen=[];passed=[false,false,false,false];solved=false;usedHint=false;render();info('New mission started. Choose the words in the correct order.');});
 function celebrate(){let colors=['#59efdb','#ffcc65','#a896ff','#ff7bc4','#ebf7ff'];$('confetti').innerHTML=Array.from({length:32},(_,i)=>`<span style="left:${(i*31+7)%100}%;background:${colors[i%5]};animation-delay:${(i%9)*.08}s;transform:rotate(${i*22}deg)"></span>`).join('');setTimeout(()=>{$('confetti').innerHTML='';},2800)}
