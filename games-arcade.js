@@ -91,7 +91,7 @@
       '<button type="button" data-arc-back>← Games</button>' +
       '<button type="button" data-arc-exit aria-label="Close game">✕</button>' +
       '</div><iframe class="arc-gameframe" title="Grammar Rescue · Unit 4" allow="autoplay" src="' +
-      escapeHtml(path + '?v=20261022-challenge-2') + '"></iframe>';
+      escapeHtml(path + '?v=20261022-challenge-3') + '"></iframe>';
     document.body.appendChild(overlay);
     pausePage();
   }
