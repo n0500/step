@@ -55,14 +55,14 @@
   }
 
   function arcadeMarkup() {
-    return '<div class="arc-head"><h2>🎮 Games Arcade</h2><p>Learn through play · Units 1–6</p></div>' +
+    return '<div class="arc-head"><h2>🎮 Games Arcade</h2><p>Learn through play · Units 1–6</p><div class="arc-head-tools"><span>Play Solo or Challenge Friends</span><button type="button" data-duel-recent-list>🏆 My competitions</button></div></div>' +
       Array.from({length: 6}, function (_, index) {
         const unit = index + 1;
         const unitGames = games.filter(function (game) { return game.unit === unit; });
         const cards = unitGames.map(function (game) {
           return '<div class="arc-game"><div><strong>' + escapeHtml(game.title) +
             '</strong><small>' + escapeHtml(game.description) + '</small></div>' +
-            '<button type="button" data-arc-game="' + escapeHtml(game.title) + '">Play →</button></div>';
+            '<div class="arc-game-actions"><button type="button" data-arc-game="' + escapeHtml(game.title) + '">Play Solo →</button>' + (game.path ? '<button type="button" data-duel-create>⚔ Challenge Friends</button>' : '') + '</div></div>';
         }).join("");
         return '<section class="arc-unit"><h3>Unit ' + unit + '</h3>' +
           (cards || '<p class="arc-empty">New games will appear here.</p>') + '</section>';
@@ -117,7 +117,7 @@
     if (!button) return;
     const game = games.find(function (g) { return g.title === button.getAttribute("data-arc-game"); });
     if (!game) return;
-    if (game.path) openGame(game.path);
+    if (game.path) { window.STEPUP_GAME_DUELS?.leave(); openGame(game.path); }
     else if (typeof game.launch === "function") { closeArcade(); game.launch(); }
   });
 
@@ -137,6 +137,8 @@
 
   window.STEPUP_GAMES_ARCADE = {
     open: openArcade,
+    launchGame: openGame,
+    close: closeArcade,
     register: function (game) {
       if (game && Number.isInteger(game.unit) && game.unit >= 1 && game.unit <= 6 &&
           typeof game.title === "string" && (typeof game.launch === "function" || typeof game.path === "string")) {
