@@ -128,7 +128,7 @@ el("result-kicker").textContent=last?"CAMPAIGN LAUNCHED!":"MISSION COMPLETE";
 el("result-title").textContent=last?"You saved the Big Launch!":missionData[M].name+" complete!";
 el("result-description").textContent=last?"The advertisements are repaired and the city is celebrating. Great grammar work!":"Excellent work! "+count(missionData[M])+" challenges completed in "+missionData[M].name+".";
 el("reward-ribbon").textContent=last?"🎆 ⭐ ⭐ ⭐ 🎆":"⭐ ⭐ ⭐";
-el("result-next").textContent=last?"Play Again ↻":"Next Mission →";
+el("result-next").textContent=last?"Replay Finale ↻":"Next Mission →";
 el("result-overlay").classList.remove("hidden");
 }
 el("quick-start").addEventListener("click",function(){openMission(firstUnfinished());});
@@ -137,7 +137,7 @@ el("hint-button").addEventListener("click",function(){el("hint-box").classList.t
 el("clear-button").addEventListener("click",function(){if(solved)return;selected=null;ordered=[];el("feedback").className="feedback hidden";el("stage-status").textContent="● WAITING";el("actor-talk").textContent=current().title+" — Can you help?";renderInteraction();});
 el("check-button").addEventListener("click",check);
 el("result-map").addEventListener("click",openMap);
-el("result-next").addEventListener("click",function(){el("result-overlay").classList.add("hidden");if(M<missionData.length-1){openMission(M+1);}else{openMap();}});
+el("result-next").addEventListener("click",function(){el("result-overlay").classList.add("hidden");if(M<missionData.length-1){openMission(M+1);}else{openMission(M);}});
 el("reset-progress").addEventListener("click",function(){if(window.confirm("Restart the standalone Grammar Rescue demo? This will only erase demo progress on this device.")){done={};persist();openMap();}});
 el("result-overlay").addEventListener("click",function(evt){if(evt.target===el("result-overlay"))openMap();});
 document.addEventListener("keydown",function(evt){if(evt.key==="Escape"&&!el("result-overlay").classList.contains("hidden"))openMap();});
