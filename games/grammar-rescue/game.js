@@ -3,24 +3,24 @@ const levels=[
   {
     "tense": "Factory routine",
     "tag": "QUALITY CONTROL",
-    "name": "Helmet inspection",
+    "name": "Vehicle inspection",
     "words": [
       "were",
       "before shipment.",
       "inspected",
-      "Every helmet",
+      "Every vehicle",
       "have been",
       "is",
       "inspect",
       "will be"
     ],
     "solution": [
-      "Every helmet",
+      "Every vehicle",
       "is",
       "inspected",
       "before shipment."
     ],
-    "prompt": "Quality inspectors check every helmet before shipment, as part of the factory's daily routine. Rewrite their procedure for our label without saying who checks it.",
+    "prompt": "Quality inspectors check every vehicle before shipment, as part of the factory's daily routine. Rewrite their procedure for our label without saying who checks it.",
     "description": "Choose the correct passive construction for a regular process.",
     "explain": "The regular procedure needs the present passive: singular subject + is + past participle.",
     "hint": "A daily routine needs the tense used for facts and repeated actions.",
@@ -58,7 +58,7 @@ const levels=[
     "tag": "SHIPMENT STATUS",
     "name": "Inspection complete",
     "words": [
-      "The new devices",
+      "The new models",
       "has been",
       "inspecting",
       "today.",
@@ -69,12 +69,12 @@ const levels=[
       "yesterday."
     ],
     "solution": [
-      "The new devices",
+      "The new models",
       "have been",
       "inspected",
       "today."
     ],
-    "prompt": "The technicians have just finished checking the new devices. Their results matter NOW because the shipment can leave. Write the completion update.",
+    "prompt": "The technicians have just finished checking the new models. Their results matter NOW because the shipment can leave. Write the completion update.",
     "description": "Write a result-focused status, not a routine or a future plan.",
     "explain": "Present perfect passive connects completed inspection with its present result: have been + past participle.",
     "hint": "The job is complete and important now. The subject is plural.",
