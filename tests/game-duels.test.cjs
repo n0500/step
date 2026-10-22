@@ -50,7 +50,7 @@ function fakeFirebase(){
  function coll(base){
   return {doc:id=>doc(base+'/'+id),onSnapshot(fn){
     const prefix=base+'/';
-    fn({docs:[...records.entries()].filter(([k])=>k.startsWith(prefix)&&!k.slice(prefix.length).includes('/')).map(([key,val])=>({id:key.slice(prefix.length),data:()=>val}))]});
+    fn({docs:[...records.entries()].filter(([k])=>k.startsWith(prefix)&&!k.slice(prefix.length).includes('/')).map(([key,val])=>({id:key.slice(prefix.length),data:()=>val}))});
     return ()=>{};
   }};
  }
