@@ -527,7 +527,10 @@ const chapters={
         ],
         "answer": 0,
         "explain": "Were installed reports a finished past event; are tested describes a routine that happens every Friday.",
-        "hint": "One clause happened on a specific past day; the other describes a recurring schedule."
+        "hint": "One clause happened on a specific past day; the other describes a recurring schedule.",
+      "reasonChoices": [{"icon":"🧠","name":"Both actions happened last Monday, so both verbs must use were."},{"icon":"🧠","name":"A specific finished day needs past passive; a repeated Friday routine needs present passive."},{"icon":"🧠","name":"Every Friday is a future plan, so the second clause needs will be."}],
+      "reasonAnswer": 1,
+      "reasonHint": "Identify which clue names a finished day, and which describes a repeated habit."
       },
       {
         "kind": "select",
@@ -557,7 +560,10 @@ const chapters={
         ],
         "answer": 1,
         "explain": "A is cheaper than B ($520 vs $600) and has the longest warranty of all three (3 years).",
-        "hint": "A claim must be correct for BOTH price and warranty, not just one."
+        "hint": "A claim must be correct for BOTH price and warranty, not just one.",
+      "reasonChoices": [{"icon":"🧠","name":"A costs less than B, and its three-year warranty exceeds both other warranties."},{"icon":"🧠","name":"The longest warranty always means the product is the cheapest, regardless of its price."},{"icon":"🧠","name":"Camera A and Camera C have equal warranties, but Camera A costs less."}],
+      "reasonAnswer": 0,
+      "reasonHint": "Recheck each of the two comparisons against the figures."
       },
       {
         "kind": "select",
@@ -587,12 +593,15 @@ const chapters={
         ],
         "answer": 2,
         "explain": "Those = far and plural; this = near and singular. Yours belongs to the customer and mine to the shopkeeper.",
-        "hint": "Work from the speaker’s position. Compare near/far, one/two, and who owns each item."
+        "hint": "Work from the speaker’s position. Compare near/far, one/two, and who owns each item.",
+      "reasonChoices": [{"icon":"🧠","name":"These always points to a single nearby object, and that always to several distant ones."},{"icon":"🧠","name":"Because the customer is near the red pair, the shopkeeper must say these."},{"icon":"🧠","name":"Those matches the distant pair; this matches the nearby single speaker; yours/mine match the owners."}],
+      "reasonAnswer": 2,
+      "reasonHint": "A complete reason must explain distance, singular/plural, and ownership."
       }
     ]
   }
 };
-let currentChapter=2,index=0,selection=[],solved=false,hintShown=false;
+let currentChapter=2,index=0,selection=[],solved=false,hintShown=false,reasonPhase=false;
 const completed={1:false,2:false,3:false,4:false};
 const completedCounts={2:0,3:0,4:0};
 function factoryComplete(){return Array.isArray(window.passed)&&window.passed.every(Boolean)||completed[1];}
@@ -600,7 +609,7 @@ function changeHeader(){const earned=4+(completedCounts[2]||0)+(completedCounts[
 function missionView(chapter,which=0){
  const chapterReady=chapter===1||completed[chapter-1];if(!chapterReady){showMap();return;}
  if(chapter===1){document.body.classList.remove('gr-active');$gr('gr-stage').style.display='none';document.querySelector('.app > .page-head').hidden=false;document.querySelector('.app > .mission-layout').hidden=false;document.querySelector('.app > .footnote').hidden=false;hideMap();window.scrollTo({top:0,behavior:'instant'});return;}
- currentChapter=chapter;index=which;solved=false;selection=[];hintShown=false;
+ currentChapter=chapter;index=which;solved=false;selection=[];hintShown=false;reasonPhase=false;
  document.body.classList.add('gr-active');document.querySelector('.app > .page-head').hidden=true;document.querySelector('.app > .mission-layout').hidden=true;document.querySelector('.app > .footnote').hidden=true;
  $gr('gr-stage').style.display='block';hideMap();renderQuestion();changeHeader();window.scrollTo({top:0,behavior:'instant'});
 }
@@ -608,19 +617,21 @@ function renderQuestion(){
  const chapter=chapters[currentChapter],t=chapter.tasks[index];
  $gr('gr-chapter-label').textContent=chapter.label;$gr('gr-heading').innerHTML=chapter.heading;$gr('gr-subhead').textContent=chapter.sub;
  $gr('gr-question-count').textContent='CHALLENGE '+(index+1)+' OF '+chapter.tasks.length;
- $gr('gr-topic').textContent=t.topic;$gr('gr-quest-title').textContent=t.title;$gr('gr-quest-instruction').textContent=t.instruction;
- $gr('gr-avatar').textContent=t.emoji;$gr('gr-customer-message').textContent='“'+t.dialog+'”';
+ $gr('gr-topic').textContent=reasonPhase?'REASON CHECK':t.topic;$gr('gr-quest-title').textContent=reasonPhase?'Prove your decision':t.title;$gr('gr-quest-instruction').textContent=reasonPhase?'Choose WHY your answer is correct.':t.instruction;
+ $gr('gr-avatar').textContent=t.emoji;$gr('gr-customer-message').textContent=reasonPhase?'“Good choice. Now show the evidence that supports it.”':'“'+t.dialog+'”';
  $gr('gr-scene').style.setProperty('--gr-art',chapter.art);$gr('gr-scene-label').textContent=chapter.scene;$gr('gr-onair').textContent=chapter.onair;
  $gr('gr-scene-emoji').textContent=t.emoji;$gr('gr-scene-title').textContent=solved?'Great job!':t.sceneTitle;$gr('gr-scene-desc').textContent=solved?'The campaign is one step closer to launch.':t.sceneDesc;
  $gr('gr-progress-count').textContent=completedCounts[currentChapter]+' / '+chapter.tasks.length+' completed';$gr('gr-progress-fill').style.width=(completedCounts[currentChapter]/chapter.tasks.length*100)+'%';
  const wordsMode=t.kind==='arrange';$gr('gr-builder').hidden=!wordsMode;$gr('gr-choices').hidden=wordsMode;$gr('gr-reset').hidden=!wordsMode;
  $gr('gr-check').hidden=t.kind==='select'||solved;$gr('gr-next').hidden=!solved;$gr('gr-hint').disabled=solved;$gr('gr-reset').disabled=solved;
- $gr('gr-feedback').className='gr-note';$gr('gr-feedback').textContent=solved?'✓ '+t.explain:'Choose the correct answer to save this part of the campaign.';
+ $gr('gr-feedback').className='gr-note';$gr('gr-feedback').textContent=solved?'✓ '+t.explain:reasonPhase?'Your answer is selected. Defend it with evidence.':'Choose the correct answer to save this part of the campaign.';
  $gr('gr-reward').className=solved?'gr-reward show':'gr-reward';$gr('gr-reward').textContent=solved?'✅ Approved! '+t.explain:'';
  if(wordsMode){renderWords(t);}else{renderCards(t);}
 }
-function renderCards(t){$gr('gr-choices').innerHTML=t.cards.map((c,i)=>{
- const pick=selection.includes(i),ok=solved&&(Array.isArray(t.answer)?t.answer.includes(i):t.answer===i);
+function renderCards(t){const cards=reasonPhase&&t.reasonChoices?t.reasonChoices:t.cards; const correctAnswer=reasonPhase?t.reasonAnswer:t.answer;
+ $gr('gr-choices').classList.toggle('reading-choices',cards.some(c=>c.name.length>35));
+ $gr('gr-choices').innerHTML=cards.map((c,i)=>{
+ const pick=selection.includes(i),ok=solved&&(Array.isArray(correctAnswer)?correctAnswer.includes(i):correctAnswer===i);
  return `<button type="button" data-gr-pick="${i}" class="gr-pick ${pick?'selected':''} ${ok?'correct':''}" ${solved?'disabled':''} aria-pressed="${pick}"><span class="gr-emoji">${htmlSafe(c.icon)}</span><span class="gr-product-name">${htmlSafe(c.name)}</span>${c.note?`<span class="gr-product-note">${htmlSafe(c.note)}</span>`:''}${c.tag?`<span class="gr-infotag">${htmlSafe(c.tag)}</span>`:''}</button>`;
  }).join('');
  if(t.kind==='pair'&&!solved)$gr('gr-feedback').textContent='Select two cards and press Check.';
@@ -631,11 +642,12 @@ function renderWords(t){$gr('gr-bank').innerHTML=t.words.map((w,i)=>`<button typ
 }
 function grFeedback(msg,bad=false){$gr('gr-feedback').textContent=msg;$gr('gr-feedback').className='gr-note'+(bad?' bad':'');}
 function doPick(n){if(solved)return;const t=chapters[currentChapter].tasks[index];
+ if(reasonPhase){if(n===t.reasonAnswer){selection=[n];completeQuestion();}else{selection=[n];renderCards(t);grFeedback('The explanation does not support every clue. Try again.',true);}return;}
  if(t.kind==='pair'){
   if(selection.includes(n))selection=selection.filter(v=>v!==n);else if(selection.length<2)selection.push(n);else selection=[selection[1],n];renderCards(t);return;
  }
  if(t.kind!=='select')return;
- if(n===t.answer){selection=[n];completeQuestion();}
+ if(n===t.answer){selection=[n];if(t.reasonChoices){reasonPhase=true;selection=[];renderQuestion();grFeedback('Your answer fits. Now explain why it fits.');}else completeQuestion();}
  else{selection=[n];renderCards(t);grFeedback('Not approved yet. Check every clue before trying another option.',true);}
 }
 function completeQuestion(){const t=chapters[currentChapter].tasks[index];if(solved)return;solved=true;completedCounts[currentChapter]=Math.max(completedCounts[currentChapter],index+1);
@@ -650,7 +662,7 @@ function checkSelection(){if(solved)return;const t=chapters[currentChapter].task
   const good=t.answer.every(v=>selection.includes(v));if(good)completeQuestion();else grFeedback('This pair does not satisfy both requirements. Compare their measurements again.',true);
  }
 }
-function nextChallenge(){if(!solved)return;const chapter=chapters[currentChapter];if(index<chapter.tasks.length-1){index++;selection=[];solved=false;hintShown=false;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});return;}
+function nextChallenge(){if(!solved)return;const chapter=chapters[currentChapter];if(index<chapter.tasks.length-1){index++;selection=[];solved=false;hintShown=false;reasonPhase=false;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});return;}
  completed[currentChapter]=true; if(currentChapter===4){$gr('gr-win').classList.add('visible');changeHeader();return;}showMap();
 }
 function showMap(){const a=$gr('gr-map-missions');const titles=[['Production Lab','Passive Voice','🏭'],['Product Showroom','Comparisons & Sense Verbs','🏬'],['Smart Shopping Mall','Form, Meaning & Function','🛍️'],['The Big Launch','Final Grammar Challenge','🚀']];
@@ -663,7 +675,7 @@ $gr('gr-bank').addEventListener('click',e=>{const b=e.target.closest('[data-gr-w
 $gr('gr-answer').addEventListener('click',e=>{const b=e.target.closest('[data-gr-remove]');if(!b||solved)return;const t=chapters[currentChapter].tasks[index];selection.splice(Number(b.dataset.grRemove),1);renderWords(t);});
 $gr('gr-check').addEventListener('click',checkSelection);
 $gr('gr-reset').addEventListener('click',()=>{if(solved)return;selection=[];renderQuestion();});
-$gr('gr-hint').addEventListener('click',()=>{if(solved)return;const t=chapters[currentChapter].tasks[index];grFeedback('💡 '+t.hint);});
+$gr('gr-hint').addEventListener('click',()=>{if(solved)return;const t=chapters[currentChapter].tasks[index];grFeedback('💡 '+(reasonPhase&&t.reasonHint?t.reasonHint:t.hint));});
 $gr('gr-next').addEventListener('click',nextChallenge);
 $gr('gr-map-button').addEventListener('click',showMap);
 $gr('gr-map-close').addEventListener('click',hideMap);
