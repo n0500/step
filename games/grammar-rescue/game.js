@@ -632,10 +632,10 @@ function completeQuestion(){const t=chapters[currentChapter].tasks[index];if(sol
 function checkSelection(){if(solved)return;const t=chapters[currentChapter].tasks[index];
  if(t.kind==='arrange'){
   if(selection.length<t.solution.length){grFeedback('Please select all '+t.solution.length+' words first.',true);return;}
-  const ok=selection.every((w,i)=>t.words[w]===t.solution[i]);if(ok)completeQuestion();else grFeedback('Not quite. Check the imperative structure before submitting again.',true);
+  const ok=selection.every((w,i)=>t.words[w]===t.solution[i]);if(ok)completeQuestion();else {duelChapterMistakes++;grFeedback('Not quite. Check the imperative structure before submitting again.',true);}
  }else if(t.kind==='pair'){
   if(selection.length!==2){grFeedback('Choose TWO bags before checking.',true);return;}
-  const good=t.answer.every(v=>selection.includes(v));if(good)completeQuestion();else grFeedback('This pair does not satisfy both requirements. Compare their measurements again.',true);
+  const good=t.answer.every(v=>selection.includes(v));if(good)completeQuestion();else {duelChapterMistakes++;grFeedback('This pair does not satisfy both requirements. Compare their measurements again.',true);}
  }
 }
 function nextChallenge(){if(!solved)return;const chapter=chapters[currentChapter];if(index<chapter.tasks.length-1){index++;selection=[];solved=false;hintShown=false;reasonPhase=false;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});return;}
