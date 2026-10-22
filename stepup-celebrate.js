@@ -561,6 +561,8 @@
   }
 
   /* ---------- certificate design: Bilingual Formal (chosen 2026-10-01) ---------- */
+  /* Display-only school leadership credit; no effect on certificate eligibility. */
+  var SCHOOL_PRINCIPAL = 'Ruqayyah Saleh Al-Obaishi';
   var CW = 2000, CH = 1414;
   function ar(s){ return /[؀-ۿ]/.test(s||''); }
   function rr(x,a,b,w,h,r){ x.beginPath(); x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r); x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath(); }
@@ -701,13 +703,26 @@
     x.fillStyle = BL; x.font = '800 34px Tajawal'; x.fillText(d.acc+'%', rx, ry+2);
     x.textAlign='left'; x.fillStyle = ink; x.font = '800 32px Tajawal'; x.fillText('Accuracy', rx+86, ry-26);
     x.fillStyle = muted; x.direction='rtl'; x.textAlign='right'; x.font = '700 28px Tajawal'; x.fillText('نسبة الإنجاز', rx+86+165, ry+22); x.direction='ltr'; x.textAlign='center';
-    // teacher tile
+    // Teacher and School Principal within the existing certificate footer tile
     var tx = W-470;
-    x.fillStyle = '#1b2f63'; if(ar(d.teacher)){ x.direction='rtl'; x.font='700 48px "Aref Ruqaa"'; } else x.font = '68px "Great Vibes"';
-    x.fillText(d.teacherFirst, tx, ty+58); x.direction='ltr';
-    x.strokeStyle = '#c9c3f2'; x.lineWidth = 2; x.beginPath(); x.moveTo(tx-150,ty+96); x.lineTo(tx+150,ty+96); x.stroke();
-    x.fillStyle = ink; x.direction = ar(d.teacherTitled)?'rtl':'ltr'; x.font = '800 28px Tajawal'; x.fillText(d.teacherTitled, tx, ty+132); x.direction='ltr';
-    x.fillStyle = '#5a4fc4'; x.font = '700 24px Tajawal'; x.fillText('Teacher · المعلمة', tx, ty+170);
+    x.fillStyle = '#1b2f63';
+    if(ar(d.teacher)){ x.direction='rtl'; fit(x,d.teacherFirst,tw-44,44,'700 $px "Aref Ruqaa"',30); }
+    else fit(x,d.teacherFirst,tw-44,61,'$px "Great Vibes"',40);
+    x.fillText(d.teacherFirst,tx,ty+43); x.direction='ltr';
+    x.strokeStyle = '#c9c3f2'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(tx-145,ty+77); x.lineTo(tx+145,ty+77); x.stroke();
+    x.fillStyle = ink; x.direction=ar(d.teacherTitled)?'rtl':'ltr';
+    fit(x,d.teacherTitled,tw-36,27,'800 $px Tajawal',20);
+    x.fillText(d.teacherTitled,tx,ty+102); x.direction='ltr';
+    x.fillStyle = '#5a4fc4'; x.font = '700 20px Tajawal';
+    x.fillText('Teacher · المعلمة',tx,ty+125);
+    x.strokeStyle = '#d9d5ef'; x.lineWidth = 1.5;
+    x.beginPath(); x.moveTo(tx-155,ty+141); x.lineTo(tx+155,ty+141); x.stroke();
+    x.fillStyle = ink; x.direction='ltr';
+    fit(x,d.principal,tw-40,27,'800 $px Tajawal',20);
+    x.fillText(d.principal,tx,ty+165);
+    x.fillStyle = '#5a4fc4'; x.font = '700 19px Tajawal';
+    x.fillText('School Principal · مديرة المدرسة',tx,ty+187);
     // centre seal (teal + aqua + gold star) with blue ribbons, date in a mint pill
     var sx = W/2, sy = ty+64;
     x.fillStyle = BL;
@@ -774,6 +789,7 @@
       name: p.name || 'StepUp Student', unitNo: u.number, unitTitle: u.title, acc: st.accuracy,
       date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}),
       school: p.school || '', teacher: teacher, teacherFirst: teacher.split(/\s+/)[0], teacherTitled: titled(teacher),
+      principal: SCHOOL_PRINCIPAL,
       year: new Date().getFullYear()
     });
     drawStepAchievementStamp(x, u);
