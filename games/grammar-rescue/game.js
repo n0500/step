@@ -577,7 +577,7 @@ const chapters={
     ]
   }
 };
-let currentChapter=2,index=0,selection=[],solved=false,hintShown=false,reasonPhase=false;
+let currentChapter=2,index=0,selection=[],solved=false,hintShown=false,reasonPhase=false;let duelChapterMistakes=0,duelChapterStart=performance.now();
 const completed={1:false,2:false,3:false,4:false};
 const completedCounts={2:0,3:0,4:0};
 function factoryComplete(){return Array.isArray(window.passed)&&window.passed.every(Boolean)||completed[1];}
@@ -585,7 +585,7 @@ function changeHeader(){const earned=4+(completedCounts[2]||0)+(completedCounts[
 function missionView(chapter,which=0){
  const chapterReady=chapter===1||completed[chapter-1];if(!chapterReady){showMap();return;}
  if(chapter===1){document.body.classList.remove('gr-active');$gr('gr-stage').style.display='none';document.querySelector('.app > .page-head').hidden=false;document.querySelector('.app > .mission-layout').hidden=false;document.querySelector('.app > .footnote').hidden=false;hideMap();window.scrollTo({top:0,behavior:'instant'});return;}
- currentChapter=chapter;index=which;solved=false;selection=[];hintShown=false;reasonPhase=false;
+ currentChapter=chapter;index=which;solved=false;selection=[];hintShown=false;reasonPhase=false;duelChapterMistakes=0;duelChapterStart=performance.now();
  document.body.classList.add('gr-active');document.querySelector('.app > .page-head').hidden=true;document.querySelector('.app > .mission-layout').hidden=true;document.querySelector('.app > .footnote').hidden=true;
  $gr('gr-stage').style.display='block';hideMap();renderQuestion();changeHeader();window.scrollTo({top:0,behavior:'instant'});
 }
@@ -624,7 +624,7 @@ function doPick(n){if(solved)return;const t=chapters[currentChapter].tasks[index
  }
  if(t.kind!=='select')return;
  if(n===t.answer){selection=[n];if(t.reasonChoices){reasonPhase=true;selection=[];renderQuestion();grFeedback('Your answer fits. Now explain why it fits.');}else completeQuestion();}
- else{selection=[n];renderCards(t);grFeedback('Not approved yet. Check every clue before trying another option.',true);}
+ else{duelChapterMistakes++;selection=[n];renderCards(t);grFeedback('Not approved yet. Check every clue before trying another option.',true);}
 }
 function completeQuestion(){const t=chapters[currentChapter].tasks[index];if(solved)return;solved=true;completedCounts[currentChapter]=Math.max(completedCounts[currentChapter],index+1);
  $gr('gr-scene').classList.add('gr-flash');setTimeout(()=>$gr('gr-scene').classList.remove('gr-flash'),700);renderQuestion();changeHeader();
@@ -639,7 +639,7 @@ function checkSelection(){if(solved)return;const t=chapters[currentChapter].task
  }
 }
 function nextChallenge(){if(!solved)return;const chapter=chapters[currentChapter];if(index<chapter.tasks.length-1){index++;selection=[];solved=false;hintShown=false;reasonPhase=false;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});return;}
- completed[currentChapter]=true; if(currentChapter===4){$gr('gr-win').classList.add('visible');changeHeader();return;}showMap();
+ completed[currentChapter]=true;reportDuelRound(currentChapter,chapter.tasks.length,duelChapterMistakes,duelChapterStart); if(currentChapter===4){$gr('gr-win').classList.add('visible');changeHeader();return;}showMap();
 }
 function showMap(){const a=$gr('gr-map-missions');const titles=[['Production Lab','Passive Voice','🏭'],['Product Showroom','Comparisons & Sense Verbs','🏬'],['Smart Shopping Mall','Form, Meaning & Function','🛍️'],['The Big Launch','Final Grammar Challenge','🚀']];
  a.innerHTML=titles.map((p,i)=>{const n=i+1,done=completed[n],unlocked=n===1||completed[n-1],now=unlocked&&!done;
