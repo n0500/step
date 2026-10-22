@@ -134,29 +134,463 @@ render();
 const $gr=id=>document.getElementById(id);
 const htmlSafe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const chapters={
- 2:{heading:'Product <span>Showroom</span>',label:'MISSION 02 / PRODUCT SHOWROOM',sub:'Compare products to help the customers.',art:'var(--showroom-art)',scene:'PRODUCT SHOWROOM',onair:'CUSTOMERS WAITING',
-  tasks:[
-   {kind:'select',topic:'COMPARATIVE',title:'Find the right phone!',instruction:'Compare the weight of three phones.',dialog:'I need a phone lighter than Phone A but heavier than Phone B.',emoji:'📱',sceneTitle:'Choose the right phone',sceneDesc:'Use the weight information to compare products.',cards:[{icon:'📱',name:'Phone A',note:'Heavy model',tag:'210 g'},{icon:'📱',name:'Phone B',note:'Light model',tag:'150 g'},{icon:'📱',name:'Phone C',note:'Mid-weight model',tag:'180 g'}],answer:2,explain:'Phone C is lighter than A (210 g) but heavier than B (150 g).',hint:'The correct weight is between 150 g and 210 g.'},
-   {kind:'select',topic:'SUPERLATIVE',title:'The premium laptop',instruction:'Help the shopper find the most expensive laptop.',dialog:'I want the most expensive laptop. Which one should I choose?',emoji:'💻',sceneTitle:'Premium laptops',sceneDesc:'Find the highest price to complete the ad.',cards:[{icon:'💻',name:'Laptop A',note:'Classic',tag:'$800'},{icon:'💻',name:'Laptop B',note:'Premium',tag:'$1,200'},{icon:'💻',name:'Laptop C',note:'Standard',tag:'$950'}],answer:1,explain:'Laptop B is the most expensive. We use the most + adjective to compare three or more.',hint:'Compare all three prices and choose the highest.'},
-   {kind:'pair',topic:'AS ... AS',title:'Find the matching bags',instruction:'Choose TWO bags of equal weight.',dialog:'We need two bags that are as heavy as each other.',emoji:'🧳',sceneTitle:'Equal-weight challenge',sceneDesc:'Match products that share the same weight.',cards:[{icon:'🧳',name:'Bag A',note:'Travel suitcase',tag:'2 kg'},{icon:'🧳',name:'Bag B',note:'Travel suitcase',tag:'3 kg'},{icon:'🧳',name:'Bag C',note:'Travel suitcase',tag:'2 kg'}],answer:[0,2],explain:'Bag A is as heavy as Bag C. Both weigh 2 kg.',hint:'The pattern is as + adjective + as. Look for two identical weights.'},
-   {kind:'select',topic:'SENSE VERBS + LIKE',title:'The perfume mystery',instruction:'Choose the natural sentence to describe the smell.',dialog:'This perfume has the same scent as roses. How can I describe it?',emoji:'🌹',sceneTitle:'Fragrance station',sceneDesc:'Use the correct sense verb and like + noun.',cards:[{icon:'👃',name:'It smells roses.',note:'Option A'},{icon:'🌹',name:'It smells like roses.',note:'Option B'},{icon:'💬',name:'It sounds roses.',note:'Option C'}],answer:1,explain:'Use smells like + noun: This perfume smells like roses.',hint:'Which sense verb describes a scent? Add like before roses.'}
-  ]},
- 3:{heading:'Smart Shopping <span>Mall</span>',label:'MISSION 03 / FORM, MEANING & FUNCTION',sub:'Rescue customers in seven mini-missions.',art:'var(--mall-art)',scene:'SMART SHOPPING MALL',onair:'CUSTOMERS WAITING',
-  tasks:[
-   {kind:'select',topic:'DEMONSTRATIVES',title:'Point & Find',instruction:'Tap the bag the customer means.',dialog:'That red bag over there looks beautiful!',emoji:'👜',sceneTitle:'Find the correct item',sceneDesc:'Near or far? Singular or plural?',cards:[{icon:'🟩',name:'Green bag',note:'Near us',tag:'THIS'},{icon:'👜',name:'Red bag',note:'Far away',tag:'THAT'},{icon:'🎒',name:'Blue backpack',note:'Near us',tag:'THIS'}],answer:1,explain:'That describes one item farther away from the speaker.',hint:'That = singular + far away.'},
-   {kind:'arrange',topic:'IMPERATIVES',title:'Make the slogan!',instruction:'Arrange the words to create an advertising command.',dialog:'Our new tablet needs a catchy slogan. Make a command!',emoji:'📣',sceneTitle:'Slogan workshop',sceneDesc:'Write an instruction that makes customers act.',words:['today!','new tablet','Buy','the'],solution:['Buy','the','new tablet','today!'],explain:'Imperatives begin with a base-form verb: Buy the new tablet today!',hint:'Start with a verb in its base form. This is a command.'},
-   {kind:'select',topic:'A / AN',title:'The correct label',instruction:'Choose the grammatically correct product label.',dialog:'A customer wants to buy an umbrella. Which shelf label is correct?',emoji:'☂️',sceneTitle:'Packaging check',sceneDesc:'Listen for a vowel sound at the start.',cards:[{icon:'☂️',name:'a umbrella',note:'Label A'},{icon:'☂️',name:'an umbrella',note:'Label B'},{icon:'☂️',name:'a an umbrella',note:'Label C'}],answer:1,explain:'Use an before umbrella because it begins with a vowel sound.',hint:'Umbrella begins with a vowel sound.'},
-   {kind:'select',topic:'POSSESSIVE PRONOUNS',title:'Lost & Found',instruction:'Return the correct backpack to Layla.',dialog:'Layla says: “This blue backpack is mine!” Can you find it?',emoji:'🎒',sceneTitle:'Return lost belongings',sceneDesc:'Choose the item that belongs to the customer.',cards:[{icon:'🎒',name:'Red backpack',note:'Owner: Sara'},{icon:'🎒',name:'Green backpack',note:'Owner: Amal'},{icon:'🎒',name:'Blue backpack',note:'Owner: Layla'}],answer:2,explain:'The blue backpack is hers. Mine is a possessive pronoun meaning it belongs to me.',hint:'Layla described both the color and ownership.'},
-   {kind:'select',topic:'WHOSE',title:'Who owns the headphones?',instruction:'Choose the correct answer to Whose...?',dialog:'Whose headphones are these? They belong to Omar.',emoji:'🎧',sceneTitle:'Ownership detective',sceneDesc:'Find the appropriate possessive pronoun.',cards:[{icon:'👧',name:"They're hers.",note:'Option A'},{icon:'👦',name:"They're his.",note:'Option B'},{icon:'🧑',name:"They're mine.",note:'Option C'}],answer:1,explain:'Whose asks about ownership. Omar is male, so: They’re his.',hint:'Think of Omar and the possessive pronoun for he.'},
-   {kind:'select',topic:'ONE / ONES',title:'Pick the blue ones!',instruction:'Choose the pair the customer is talking about.',dialog:'I like those shoes, but I want the blue ones.',emoji:'👟',sceneTitle:'Find the shoes',sceneDesc:'One replaces a singular noun; ones replaces a plural noun.',cards:[{icon:'👟',name:'Pink shoes',note:'Pair A',tag:'PINK'},{icon:'👟',name:'Blue shoes',note:'Pair B',tag:'BLUE'},{icon:'🥾',name:'Black boots',note:'Pair C',tag:'BLACK'}],answer:1,explain:'Ones refers to the plural noun shoes: the blue ones.',hint:'Shoes is plural. The customer wants BLUE shoes.'},
-   {kind:'select',topic:'TOO / ENOUGH',title:'Shopping Rescue',instruction:'Find a medium jacket for $200 or less.',dialog:'I need a medium jacket. I have only $200. Can you help me?',emoji:'🧥',sceneTitle:'Fit & budget mission',sceneDesc:'Choose the item that fits and is affordable.',cards:[{icon:'🧥',name:'Jacket A',note:'Size S',tag:'$120'},{icon:'🧥',name:'Jacket B',note:'Size M',tag:'$180'},{icon:'🧥',name:'Jacket C',note:'Size M',tag:'$250'}],answer:1,explain:'Jacket A is too small. Jacket C is too expensive. Jacket B is big enough and affordable.',hint:'You need size M AND a price below $201.'}
-  ]},
- 4:{heading:'The Big <span>Launch</span>',label:'FINAL MISSION / SAVE THE CAMPAIGN',sub:'Fix the final advertising mistakes to launch!',art:'var(--launch-art)',scene:'LIVE ADVERTISING CAMPAIGN',onair:'PRE-LAUNCH',
-  tasks:[
-   {kind:'select',topic:'FINAL · PASSIVE VOICE',title:'Fix the factory ad',instruction:'Select the only correct sentence before publishing.',dialog:'The advertisement says “These shoes is made in Italy.” Fix it!',emoji:'🛠️',sceneTitle:'Final quality control',sceneDesc:'Check subject–verb agreement in the passive.',cards:[{icon:'❌',name:'These shoes is made in Italy.',note:'Version A'},{icon:'✅',name:'These shoes are made in Italy.',note:'Version B'},{icon:'❓',name:'These shoes made in Italy.',note:'Version C'}],answer:1,explain:'Shoes is plural. Present passive: are + past participle.',hint:'These shoes is plural. Use are + V3.'},
-   {kind:'select',topic:'FINAL · COMPARATIVES',title:'Fix the comparison',instruction:'Select the correctly written comparison.',dialog:'The advertisement says “This laptop is more faster than the old one.”',emoji:'⚖️',sceneTitle:'Almost ready to launch',sceneDesc:'Avoid double comparatives.',cards:[{icon:'💻',name:'This laptop is faster than the old one.',note:'Version A'},{icon:'💻',name:'This laptop is most faster than the old one.',note:'Version B'},{icon:'💻',name:'This laptop is more fast than the old one.',note:'Version C'}],answer:0,explain:'For fast, use faster than (not more faster).',hint:'For a short adjective like fast, add -er.'},
-   {kind:'select',topic:'FINAL · DEMONSTRATIVES',title:'One last correction!',instruction:'Correct the shop announcement.',dialog:'The last sign says “That are my bag.” Fix it to launch!',emoji:'🚀',sceneTitle:'Launch authorization',sceneDesc:'Only one sign remains to be repaired.',cards:[{icon:'👜',name:'That is my bag.',note:'Version A'},{icon:'👜',name:'Those is my bag.',note:'Version B'},{icon:'👜',name:'That are my bag.',note:'Version C'}],answer:0,explain:'That is a singular demonstrative, so use is.',hint:'That points to one thing, so choose is.'}
-  ]}
+  "2": {
+    "heading": "Product <span>Showroom</span>",
+    "label": "MISSION 02 / PRODUCT SHOWROOM",
+    "sub": "Read the clues. Make a choice you can defend.",
+    "art": "var(--showroom-art)",
+    "scene": "PRODUCT SHOWROOM",
+    "onair": "CUSTOMERS WAITING",
+    "tasks": [
+      {
+        "kind": "select",
+        "topic": "COMPARATIVES IN CONTEXT",
+        "title": "The phone buyer",
+        "instruction": "Find the only phone that meets EVERY condition.",
+        "dialog": "I can spend up to $800. I need a phone lighter than the 210 g model. But the 155 g model has too little battery life for me.",
+        "emoji": "📱",
+        "sceneTitle": "Compare three specifications",
+        "sceneDesc": "A decision must satisfy the weight AND budget clues.",
+        "cards": [
+          {
+            "icon": "📱",
+            "name": "Phone A",
+            "note": "210 g · 5,000 mAh",
+            "tag": "$720"
+          },
+          {
+            "icon": "📱",
+            "name": "Phone B",
+            "note": "155 g · 2,800 mAh",
+            "tag": "$790"
+          },
+          {
+            "icon": "📱",
+            "name": "Phone C",
+            "note": "182 g · 4,300 mAh",
+            "tag": "$760"
+          }
+        ],
+        "answer": 2,
+        "explain": "Phone C meets the budget, is lighter than A, and avoids the small-battery model B.",
+        "hint": "First eliminate the weight the buyer rejects. Then check both remaining conditions."
+      },
+      {
+        "kind": "select",
+        "topic": "SUPERLATIVE CLAIMS",
+        "title": "Which ad is accurate?",
+        "instruction": "Choose an advertisement that is BOTH true and grammatical.",
+        "dialog": "Battery test: Model A lasts 8 hours, Model B lasts 13 hours, and Model C lasts 11 hours. Only one claim may go live.",
+        "emoji": "🔋",
+        "sceneTitle": "Verify the battery advertisement",
+        "sceneDesc": "Use the data and the superlative correctly.",
+        "cards": [
+          {
+            "icon": "🔋",
+            "name": "Model C has the longest battery life.",
+            "note": "Claim A"
+          },
+          {
+            "icon": "🔋",
+            "name": "Model B has the longest battery life.",
+            "note": "Claim B"
+          },
+          {
+            "icon": "🔋",
+            "name": "Model B has the most longest battery life.",
+            "note": "Claim C"
+          }
+        ],
+        "answer": 1,
+        "explain": "13 hours is the highest duration. The correct superlative is the longest, without most.",
+        "hint": "Compare all three values, then make sure the superlative is not doubled."
+      },
+      {
+        "kind": "pair",
+        "topic": "AS ... AS",
+        "title": "Same weight AND capacity",
+        "instruction": "Select TWO bags equally heavy AND equally spacious.",
+        "dialog": "My friend and I need equally heavy bags with the same capacity. The prices do not matter.",
+        "emoji": "🧳",
+        "sceneTitle": "Match two specifications",
+        "sceneDesc": "A weight match alone is not enough.",
+        "cards": [
+          {
+            "icon": "🧳",
+            "name": "Bag A",
+            "note": "2.1 kg · 25 L",
+            "tag": "$90"
+          },
+          {
+            "icon": "🧳",
+            "name": "Bag B",
+            "note": "2.1 kg · 30 L",
+            "tag": "$90"
+          },
+          {
+            "icon": "🧳",
+            "name": "Bag C",
+            "note": "2.1 kg · 25 L",
+            "tag": "$110"
+          }
+        ],
+        "answer": [
+          0,
+          2
+        ],
+        "explain": "A is as heavy as C, and A is as spacious as C. Both weigh 2.1 kg and hold 25 L.",
+        "hint": "Every bag has the same weight. Which two ALSO hold the same number of liters?"
+      },
+      {
+        "kind": "select",
+        "topic": "SENSE VERBS + LIKE",
+        "title": "The mystery speaker",
+        "instruction": "Choose the description supported by BOTH sensory clues.",
+        "dialog": "The speaker makes a low buzzing sound. Its case feels soft, just like velvet. There is no picture on the screen.",
+        "emoji": "🔊",
+        "sceneTitle": "Describe what you notice",
+        "sceneDesc": "Do not confuse sounds, appearance and touch.",
+        "cards": [
+          {
+            "icon": "👀",
+            "name": "It looks like a bee and feels like velvet.",
+            "note": "Description A"
+          },
+          {
+            "icon": "🎵",
+            "name": "It sounds like a bee and feels like velvet.",
+            "note": "Description B"
+          },
+          {
+            "icon": "🖐️",
+            "name": "It sounds like velvet and feels like a bee.",
+            "note": "Description C"
+          }
+        ],
+        "answer": 1,
+        "explain": "Sounds like describes the buzzing; feels like describes the soft surface. Both clues are needed.",
+        "hint": "Match each sensory clue to the sense used to notice it."
+      }
+    ]
+  },
+  "3": {
+    "heading": "Smart Shopping <span>Mall</span>",
+    "label": "MISSION 03 / FORM, MEANING & FUNCTION",
+    "sub": "Solve real shopping problems using precise English.",
+    "art": "var(--mall-art)",
+    "scene": "SMART SHOPPING MALL",
+    "onair": "CUSTOMERS WAITING",
+    "tasks": [
+      {
+        "kind": "select",
+        "topic": "DEMONSTRATIVES",
+        "title": "The distant display",
+        "instruction": "Write the shopkeeper’s sentence, not the customer’s.",
+        "dialog": "The SHOPKEEPER is standing beside one silver watch. TWO gold watches are far across the aisle, near the customer. The shopkeeper wants to advertise the gold watches.",
+        "emoji": "⌚",
+        "sceneTitle": "See the scene from the speaker’s position",
+        "sceneDesc": "Distance and number both matter.",
+        "cards": [
+          {
+            "icon": "⌚",
+            "name": "Those gold watches are on sale.",
+            "note": "Sign A"
+          },
+          {
+            "icon": "⌚",
+            "name": "These gold watches are on sale.",
+            "note": "Sign B"
+          },
+          {
+            "icon": "⌚",
+            "name": "That gold watches are on sale.",
+            "note": "Sign C"
+          }
+        ],
+        "answer": 0,
+        "explain": "Those is used for two or more items far from the speaker. The speaker is the shopkeeper.",
+        "hint": "Who is speaking? Where are the gold watches relative to that person?"
+      },
+      {
+        "kind": "arrange",
+        "topic": "NEGATIVE IMPERATIVES",
+        "title": "Protect the display",
+        "instruction": "Build a polite warning; extra word tiles are traps.",
+        "dialog": "Visitors are touching a delicate screen and leaving fingerprints. The manager needs a polite sign telling people NOT to touch it.",
+        "emoji": "🚫",
+        "sceneTitle": "Create a safety instruction",
+        "sceneDesc": "A warning requires a negative command.",
+        "words": [
+          "touches",
+          "Please",
+          "do not",
+          "touching",
+          "the display.",
+          "touch",
+          "not to",
+          "do"
+        ],
+        "solution": [
+          "Please",
+          "do not",
+          "touch",
+          "the display."
+        ],
+        "explain": "A polite negative imperative can use Please + do not + base verb.",
+        "hint": "A negative command needs do not before the base form of the action verb."
+      },
+      {
+        "kind": "select",
+        "topic": "A / AN BY SOUND",
+        "title": "The tricky articles",
+        "instruction": "Only one advertisement uses BOTH articles correctly.",
+        "dialog": "The offer includes an hour-long demo and a notebook bearing a university logo. Listen to the BEGINNING SOUNDS, not only the first letters.",
+        "emoji": "📝",
+        "sceneTitle": "Two articles, one decision",
+        "sceneDesc": "Silent h and the /y/ sound can be misleading.",
+        "cards": [
+          {
+            "icon": "📝",
+            "name": "A hour-long demo and an university notebook.",
+            "note": "Label A"
+          },
+          {
+            "icon": "📝",
+            "name": "An hour-long demo and a university notebook.",
+            "note": "Label B"
+          },
+          {
+            "icon": "📝",
+            "name": "An hour-long demo and an university notebook.",
+            "note": "Label C"
+          }
+        ],
+        "answer": 1,
+        "explain": "Hour begins with a vowel sound, so an; university begins with /y/, so a.",
+        "hint": "The h in hour is silent, while university begins with a consonant /y/ sound."
+      },
+      {
+        "kind": "select",
+        "topic": "POSSESSIVE PRONOUNS",
+        "title": "Sort the earbuds",
+        "instruction": "Choose the clerk’s reply without repeating “earbuds.”",
+        "dialog": "The clerk is speaking TO YOU. She points to blue earbuds that belong to YOU, and red earbuds that belong to HER. Which statement should the clerk say?",
+        "emoji": "🎧",
+        "sceneTitle": "Who owns which pair?",
+        "sceneDesc": "Follow the speaker’s point of view.",
+        "cards": [
+          {
+            "icon": "🎧",
+            "name": "The blue ones are hers; the red ones are yours.",
+            "note": "Reply A"
+          },
+          {
+            "icon": "🎧",
+            "name": "The blue ones are yours; the red ones are hers.",
+            "note": "Reply B"
+          },
+          {
+            "icon": "🎧",
+            "name": "The blue ones are mine; the red ones are theirs.",
+            "note": "Reply C"
+          }
+        ],
+        "answer": 1,
+        "explain": "The listener owns blue, so yours; the clerk owns red, so hers.",
+        "hint": "In the clerk’s sentence, which pronoun refers to the person she is speaking to?"
+      },
+      {
+        "kind": "select",
+        "topic": "WHOSE / OWNERSHIP",
+        "title": "A shared purchase",
+        "instruction": "Give the correct answer to “Whose...?”",
+        "dialog": "Ali and Faisal bought these headphones TOGETHER. Neither boy owns them alone. A customer asks, “Whose headphones are these?”",
+        "emoji": "🎧",
+        "sceneTitle": "Find the shared owner",
+        "sceneDesc": "One object can belong to more than one person.",
+        "cards": [
+          {
+            "icon": "🎧",
+            "name": "They're his.",
+            "note": "Reply A"
+          },
+          {
+            "icon": "🎧",
+            "name": "They're ours.",
+            "note": "Reply B"
+          },
+          {
+            "icon": "🎧",
+            "name": "They're theirs.",
+            "note": "Reply C"
+          }
+        ],
+        "answer": 2,
+        "explain": "The headphones belong to two other people, so they are theirs.",
+        "hint": "The speaker is not Ali or Faisal. Choose the pronoun for ownership by two other people."
+      },
+      {
+        "kind": "select",
+        "topic": "ONE / ONES",
+        "title": "The cheaper chargers",
+        "instruction": "Choose a reply that preserves BOTH quantity and price.",
+        "dialog": "The customer needs THREE chargers. The three BLUE chargers cost $105 altogether, while three BLACK chargers cost $150. What should the assistant recommend?",
+        "emoji": "🔌",
+        "sceneTitle": "Quantity matters",
+        "sceneDesc": "A plural noun needs the correct replacement word.",
+        "cards": [
+          {
+            "icon": "🔌",
+            "name": "Take the blue one.",
+            "note": "Reply A"
+          },
+          {
+            "icon": "🔌",
+            "name": "Take the black ones.",
+            "note": "Reply B"
+          },
+          {
+            "icon": "🔌",
+            "name": "Take the blue ones.",
+            "note": "Reply C"
+          }
+        ],
+        "answer": 2,
+        "explain": "Three chargers are plural, so ones replaces chargers; the blue group is cheaper.",
+        "hint": "The customer needs three, not one. Then compare the total prices."
+      },
+      {
+        "kind": "select",
+        "topic": "TOO / ENOUGH",
+        "title": "Fit the customer",
+        "instruction": "Approve the only true, grammatically accurate recommendation.",
+        "dialog": "The customer needs size M and has no more than $200. Jacket A is size S for $120; Jacket B is size M for $180; Jacket C is size M for $250.",
+        "emoji": "🧥",
+        "sceneTitle": "Explain the best choice",
+        "sceneDesc": "Use both the size and budget evidence.",
+        "cards": [
+          {
+            "icon": "🧥",
+            "name": "Jacket A is big enough but too expensive.",
+            "note": "Advice A"
+          },
+          {
+            "icon": "🧥",
+            "name": "Jacket B is large enough and inexpensive enough.",
+            "note": "Advice B"
+          },
+          {
+            "icon": "🧥",
+            "name": "Jacket C is cheap enough but too small.",
+            "note": "Advice C"
+          }
+        ],
+        "answer": 1,
+        "explain": "Jacket B fits size M and costs less than $200. A is too small, while C is too expensive.",
+        "hint": "Check the size requirement first, then check which price stays inside the budget."
+      }
+    ]
+  },
+  "4": {
+    "heading": "The Big <span>Launch</span>",
+    "label": "FINAL MISSION / SAVE THE CAMPAIGN",
+    "sub": "Final quality control: combine meaning, grammar, and evidence.",
+    "art": "var(--launch-art)",
+    "scene": "LIVE ADVERTISING CAMPAIGN",
+    "onair": "PRE-LAUNCH",
+    "tasks": [
+      {
+        "kind": "select",
+        "topic": "FINAL · TWO PASSIVE TENSES",
+        "title": "Correct the factory report",
+        "instruction": "Choose the ONLY passive report that preserves both time clues.",
+        "dialog": "Engineers installed the machines last Monday. Quality inspectors test them every Friday. The launch team needs an accurate passive-voice summary.",
+        "emoji": "🏭",
+        "sceneTitle": "Past event + regular routine",
+        "sceneDesc": "Both clauses must match the original meaning.",
+        "cards": [
+          {
+            "icon": "📄",
+            "name": "The machines were installed last Monday and are tested every Friday.",
+            "note": "Report A"
+          },
+          {
+            "icon": "📄",
+            "name": "The machines are installed last Monday and were tested every Friday.",
+            "note": "Report B"
+          },
+          {
+            "icon": "📄",
+            "name": "The machines have been installed last Monday and will be tested every Friday.",
+            "note": "Report C"
+          }
+        ],
+        "answer": 0,
+        "explain": "Were installed reports a finished past event; are tested describes a routine that happens every Friday.",
+        "hint": "One clause happened on a specific past day; the other describes a recurring schedule."
+      },
+      {
+        "kind": "select",
+        "topic": "FINAL · TWO COMPARISONS",
+        "title": "Check the camera promotion",
+        "instruction": "Publish only a claim that is grammatically correct AND supported by the table.",
+        "dialog": "Camera A: $520, 3-year warranty. Camera B: $600, 2-year warranty. Camera C: $760, 1-year warranty.",
+        "emoji": "📷",
+        "sceneTitle": "Prices and warranties",
+        "sceneDesc": "The correct claim needs two true comparisons.",
+        "cards": [
+          {
+            "icon": "📷",
+            "name": "Camera B is the least expensive and has the longest warranty.",
+            "note": "Claim A"
+          },
+          {
+            "icon": "📷",
+            "name": "Camera A is less expensive than B and has the longest warranty.",
+            "note": "Claim B"
+          },
+          {
+            "icon": "📷",
+            "name": "Camera C is as inexpensive as A and has a longer warranty.",
+            "note": "Claim C"
+          }
+        ],
+        "answer": 1,
+        "explain": "A is cheaper than B ($520 vs $600) and has the longest warranty of all three (3 years).",
+        "hint": "A claim must be correct for BOTH price and warranty, not just one."
+      },
+      {
+        "kind": "select",
+        "topic": "FINAL · DISTANCE + OWNERSHIP",
+        "title": "Authorize the last announcement",
+        "instruction": "Think from the SHOPKEEPER’s point of view.",
+        "dialog": "The shopkeeper is beside ONE black speaker she owns. TWO red speakers belong to the customer and are far across the store. What should the shopkeeper say?",
+        "emoji": "🚀",
+        "sceneTitle": "The final language check",
+        "sceneDesc": "Get distance, number, and ownership right at once.",
+        "cards": [
+          {
+            "icon": "🔊",
+            "name": "These red speakers are yours, but that black one is mine.",
+            "note": "Announcement A"
+          },
+          {
+            "icon": "🔊",
+            "name": "Those red speakers are mine, but this black one is yours.",
+            "note": "Announcement B"
+          },
+          {
+            "icon": "🔊",
+            "name": "Those red speakers are yours, but this black one is mine.",
+            "note": "Announcement C"
+          }
+        ],
+        "answer": 2,
+        "explain": "Those = far and plural; this = near and singular. Yours belongs to the customer and mine to the shopkeeper.",
+        "hint": "Work from the speaker’s position. Compare near/far, one/two, and who owns each item."
+      }
+    ]
+  }
 };
 let currentChapter=2,index=0,selection=[],solved=false,hintShown=false;
 const completed={1:false,2:false,3:false,4:false};
@@ -202,7 +636,7 @@ function doPick(n){if(solved)return;const t=chapters[currentChapter].tasks[index
  }
  if(t.kind!=='select')return;
  if(n===t.answer){selection=[n];completeQuestion();}
- else{selection=[n];renderCards(t);grFeedback('Not quite. '+t.hint,true);}
+ else{selection=[n];renderCards(t);grFeedback('Not approved yet. Check every clue before trying another option.',true);}
 }
 function completeQuestion(){const t=chapters[currentChapter].tasks[index];if(solved)return;solved=true;completedCounts[currentChapter]=Math.max(completedCounts[currentChapter],index+1);
  $gr('gr-scene').classList.add('gr-flash');setTimeout(()=>$gr('gr-scene').classList.remove('gr-flash'),700);renderQuestion();changeHeader();
@@ -210,10 +644,10 @@ function completeQuestion(){const t=chapters[currentChapter].tasks[index];if(sol
 function checkSelection(){if(solved)return;const t=chapters[currentChapter].tasks[index];
  if(t.kind==='arrange'){
   if(selection.length<t.solution.length){grFeedback('Please select all '+t.solution.length+' words first.',true);return;}
-  const ok=selection.every((w,i)=>t.words[w]===t.solution[i]);if(ok)completeQuestion();else grFeedback('The word order is not correct yet. '+t.hint,true);
+  const ok=selection.every((w,i)=>t.words[w]===t.solution[i]);if(ok)completeQuestion();else grFeedback('Not quite. Check the imperative structure before submitting again.',true);
  }else if(t.kind==='pair'){
   if(selection.length!==2){grFeedback('Choose TWO bags before checking.',true);return;}
-  const good=t.answer.every(v=>selection.includes(v));if(good)completeQuestion();else grFeedback('These bags are not as heavy as each other. '+t.hint,true);
+  const good=t.answer.every(v=>selection.includes(v));if(good)completeQuestion();else grFeedback('This pair does not satisfy both requirements. Compare their measurements again.',true);
  }
 }
 function nextChallenge(){if(!solved)return;const chapter=chapters[currentChapter];if(index<chapter.tasks.length-1){index++;selection=[];solved=false;hintShown=false;renderQuestion();window.scrollTo({top:0,behavior:'smooth'});return;}
