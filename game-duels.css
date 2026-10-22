@@ -1,0 +1,35 @@
+/* Student Games Arcade – friend challenges */
+#stepupDuelOverlay{position:fixed;inset:0;z-index:100003;overflow:auto;padding:clamp(8px,3vw,24px);background:rgba(9,17,43,.84);font-family:inherit;display:grid;align-items:start;justify-items:center}
+#stepupDuelOverlay .duel-box{margin:20px auto 70px;width:min(100%,660px);border-radius:24px;padding:clamp(16px,3.8vw,28px);background:#f5f7ff;border:1px solid #b8c5ee;box-shadow:0 24px 70px #0008;color:#192855;line-height:1.5}
+.duel-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.duel-head h2{font-size:clamp(22px,4vw,28px);margin:4px 0 6px;color:#172656}
+.duel-kicker{font-size:11px;color:#6865be;font-weight:850;letter-spacing:.09em}
+.duel-close{width:40px;height:40px;min-width:40px;border:0;border-radius:12px;background:#dfe6f5;color:#28335f;font-size:18px;cursor:pointer}
+.duel-note{font-size:14px;color:#4c5f82;margin:12px 0 16px}
+.duel-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.duel-primary,.duel-secondary,.duel-recent{border:0;border-radius:12px;min-height:43px;font-size:14px;font-weight:800;cursor:pointer;padding:11px 16px}
+.duel-primary{background:#4e4dd0;color:white;box-shadow:0 4px 0 #313288}
+.duel-secondary{background:#e2e8fa;color:#253d72}
+.duel-invite-url{font-size:12px;overflow-wrap:anywhere;background:white;border:1px dashed #959fdc;padding:11px;border-radius:12px;color:#435786;user-select:all}
+.duel-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:20px 0}
+.duel-round{background:white;border:1px solid #d9e1f6;border-radius:12px;padding:12px;min-width:0}
+.duel-round b{font-size:13px;display:block}
+.duel-round small{font-size:11px;color:#67799d;display:block;margin-top:4px}
+.duel-standings-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.duel-standings-head h3{font-size:18px;margin:0 0 8px}
+.duel-standings-head small{color:#687ca6}
+.duel-table{display:grid;gap:4px}
+.duel-th,.duel-tr{display:grid;grid-template-columns:minmax(100px,1fr) 66px 65px;align-items:center;gap:6px;padding:9px;border-radius:9px}
+.duel-th{font-size:11px;color:#596b8c}
+.duel-tr{background:#fff;border:1px solid #dfe5f2;font-size:13px}
+.duel-tr:nth-child(2){background:#eeedff;border-color:#9fa4e5}
+.duel-tr strong{text-align:right}
+.duel-status{margin:14px 0 0;font-size:12px;line-height:1.6;color:#536581}
+.duel-status.duel-error{color:#9d2946;font-weight:700}
+.duel-recent{width:100%;display:flex;justify-content:space-between;text-align:left;margin:7px 0;background:#fff;color:#263668;border:1px solid #d2daed}
+.arc-game .arc-game-actions{display:flex;gap:8px;flex-wrap:wrap}
+.arc-game .arc-game-actions button{width:auto}
+.arc-game .arc-game-actions [data-duel-create]{background:#d7dbff;color:#293478}
+.arc-head-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.arc-head-tools button{border:1px solid #c8d3ed;color:#2e3e7a;background:#fff;border-radius:10px;padding:9px 14px;font-weight:750;cursor:pointer}
+@media(max-width:440px){.duel-steps{grid-template-columns:1fr 1fr}.duel-th,.duel-tr{grid-template-columns:minmax(95px,1fr) 52px 48px;font-size:11px;padding:8px 5px}.duel-actions button{flex:1 1 125px}}
