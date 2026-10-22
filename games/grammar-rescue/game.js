@@ -94,6 +94,7 @@ const levels=[
   }
 ];
 let level=0,chosen=[],passed=[false,false,false,false],solved=false,usedHint=false;
+let duelMistakes=0,duelStarted=performance.now();
 const $=id=>document.getElementById(id);
 const escapeHTML=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 function render(){let q=levels[level];$('steps').innerHTML=levels.map((_,i)=>`<span class="${passed[i]?'done':i===level?'on':''}"></span>`).join('');$('starCounter').textContent=`⭐ ${passed.filter(Boolean).length} / 4`;$('roundLabel').textContent=`CHALLENGE ${level+1} OF 4`;$('difficulty').textContent=q.tag;$('tenseName').textContent=q.tense;$('factoryMarker').textContent=`PRODUCTION LINE 0${level+1}`;$('sceneTitle').textContent=solved?'Product approved!':q.scene;$('sceneDesc').textContent=solved?'The production line is moving again.':q.description;$('robotMessage').textContent=`“${solved?'Excellent! You fixed it. Thank you!':q.prompt}”`;$('machineStatus').textContent=solved?'● Production released':'● Waiting for repair';$('machineStatus').className=`value ${solved?'green':'orange'}`;$('hintNote').hidden=!usedHint;$('hintNote').textContent=`💡 ${q.hint}`;$('answerRow').classList.toggle('good',solved);$('factoryArt').classList.toggle('success',solved);
