@@ -232,8 +232,7 @@ service cloud.firestore {
     }
 
 
-    // Games Arcade: private, link-based student competitions.
-    // A link opens one game for invited logged-in students. No official mastery is changed.
+    // Private Games Arcade invitations: available to existing STEP UP students only.
     function gameRoomOpen(roomId) {
       return exists(/databases/$(database)/documents/gameChallenges/$(roomId))
         && get(/databases/$(database)/documents/gameChallenges/$(roomId)).data.expiresAt > request.time;
@@ -242,25 +241,11 @@ service cloud.firestore {
       return isStudent() && gameRoomOpen(roomId)
         && exists(/databases/$(database)/documents/gameChallenges/$(roomId)/players/$(request.auth.uid));
     }
-
     match /gameChallenges/{roomId} {
       allow get: if isStudent() && resource.data.expiresAt > request.time;
       allow list: if false;
       allow create: if isStudent()
-        && roomId.matches('^[A-Za-z0-9_-]{20,48}
-      allow get: if true;
-      allow list: if isOwner() || ownsTeacherData();
-      allow create: if createsOwnTeacherData();
-      allow update: if isOwner() || (
-        isTeacher()
-        && resource.data.teacherId == request.auth.uid
-        && request.resource.data.teacherId == request.auth.uid
-      );
-      allow delete: if isOwner() || ownsTeacherData();
-    }
-  }
-}
-)
+        && roomId.matches('^[A-Za-z0-9_-]{20,48}$')
         && request.resource.data.keys().hasOnly(['gameId','createdBy','createdAt','expiresAt','schema'])
         && request.resource.data.keys().hasAll(['gameId','createdBy','createdAt','expiresAt','schema'])
         && request.resource.data.gameId == 'grammar-rescue'
@@ -272,7 +257,8 @@ service cloud.firestore {
       allow update, delete: if false;
 
       match /players/{playerId} {
-        allow get: if isStudent() && gameRoomOpen(roomId) && (playerId == request.auth.uid || gameRoomMember(roomId));
+        allow get: if isStudent() && gameRoomOpen(roomId)
+          && (playerId == request.auth.uid || gameRoomMember(roomId));
         allow list: if gameRoomMember(roomId);
         allow create: if isStudent() && gameRoomOpen(roomId)
           && playerId == request.auth.uid
