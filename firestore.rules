@@ -272,7 +272,8 @@ service cloud.firestore {
       allow update, delete: if false;
 
       match /players/{playerId} {
-        allow get, list: if gameRoomMember(roomId);
+        allow get: if isStudent() && gameRoomOpen(roomId) && (playerId == request.auth.uid || gameRoomMember(roomId));
+        allow list: if gameRoomMember(roomId);
         allow create: if isStudent() && gameRoomOpen(roomId)
           && playerId == request.auth.uid
           && request.resource.data.keys().hasOnly(['uid','name','joinedAt'])
