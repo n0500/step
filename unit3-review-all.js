@@ -6,7 +6,7 @@
   const J = window.STEPUP_JOURNEY;
   if (!J?.data) return;
 
-  const VERSION = 'u3-review-accuracy-20261010-4';
+  const VERSION = 'u3-conversation-audio-20261026-1';
   const UNIT_ID = 'u3';
   const UNIT_NUMBER = 3;
   const UNIT = (J.data.units || []).find(u => u.id === UNIT_ID || Number(u.number) === UNIT_NUMBER);
@@ -333,24 +333,10 @@
     return `<details class="u3-reading-passage" open><summary>📖 The Tulsa Time Capsule • Reading text</summary><div>${String(UNIT.reading||'').split(/\n\s*\n/).map(p=>`<p dir="ltr">${esc(p)}</p>`).join('')}</div><small>Reading strategy: read the question first, scan for the evidence, then choose.</small></details>`;
   }
   function speakListening(){
-    stopListening();
-    if(!window.speechSynthesis || typeof SpeechSynthesisUtterance==='undefined'){
-      setListeningStatus('Audio playback is not supported on this device.');
-      return;
-    }
-    const token=listeningAudioToken;
-    const status=message=>{if(token===listeningAudioToken)setListeningStatus(message);};
-    try{
-      const speech=new SpeechSynthesisUtterance(String(UNIT.listening||''));
-      speech.lang='en-US';speech.rate=.88;
-      const voice=window.STEPUP_SPEECH?.pickEnglish()[0];
-      if(voice){speech.voice=voice;speech.lang=voice.lang||'en-US';}
-      speech.onstart=()=>status('Playing…');
-      speech.onend=()=>status('Finished. Replay anytime.');
-      speech.onerror=()=>status('Audio stopped. Tap Play to try again.');
-      status('Playing…');
-      window.speechSynthesis.speak(speech);
-    }catch(_){status('Audio stopped. Tap Play to try again.');}
+    const audio=document.querySelector('.u3-original-conversation audio');
+    if(!audio){setListeningStatus('Original audio player not available. Please reopen Listening.');return;}
+    audio.play().then(()=>setListeningStatus('Playing original conversation.'))
+      .catch(()=>setListeningStatus('Tap the audio player to start or replay the recording.'));
   }
   function setListeningStatus(message){
     const element=document.getElementById('u3ListeningStatus');
@@ -358,10 +344,21 @@
   }
   function stopListening(){
     listeningAudioToken++;
+    try{document.querySelectorAll('.u3-original-conversation audio').forEach(a=>a.pause());}catch(_){}
     try{window.speechSynthesis?.cancel();}catch(_){}
-    setListeningStatus('Stopped. Tap Play to listen again.');
   }
-  function listeningHTML(){ return `<div class="u3-listening-player" aria-label="Listening audio"><span>🎧</span><div><b>Graduation Predictions</b><small id="u3ListeningStatus" role="status" aria-live="polite">Listen as many times as you need, then answer from evidence.</small></div><button type="button" onclick="STEPUP_U3_REVIEW.listen()">▶ Play</button><button type="button" onclick="STEPUP_U3_REVIEW.stopAudio()">■ Stop</button></div>`; }
+  function listeningHTML(){
+    return `<section class="u3-listening-player u3-original-conversation" aria-label="Unit 3 original Conversation audio">
+      <span aria-hidden="true">🎧</span>
+      <div style="flex:1 1 280px;min-width:220px">
+        <b>Original Conversation • The Intelligent Home</b>
+        <small id="u3ListeningStatus" role="status" aria-live="polite">Listen and replay while answering the four questions.</small>
+        <audio controls preload="metadata" playsinline aria-label="Mega Goal 1 Unit 3 Conversation recording"
+          src="assets/audio/mega-goal-1/unit-03/conversation.mp3"
+          style="width:100%;min-height:48px;margin-top:8px"></audio>
+      </div>
+      </section>`;
+  }
   function mediaHTML(sectionKey){
     return sectionKey==='reading'?passageHTML():sectionKey==='listening'?listeningHTML():'';
   }

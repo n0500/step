@@ -16,7 +16,7 @@
     ['m3','Future in Progress','Future progressive • future arrangements'],
     ['m4','Form, Meaning & Function','Suggestions • Wh-questions • tag questions'],
     ['m5','The Tulsa Time Capsule','Reading • evidence from the text'],
-    ['m6','Graduation Predictions','Listening • past achievements & future plans'],
+    ['m6','The Intelligent Home of the Future','Listening • original Conversation • reporter & engineer'],
     ['m7','Unit 3 Final Challenge','Full Unit 3 review']
   ];
   rename.forEach(([id,title,sub]) => { const m=missions.find(x=>x.id===id); if(m){m.title=title;m.sub=sub;} });
@@ -32,18 +32,9 @@
 
 5 The good news is that when the Belvedere was unearthed, Teddy and Gene were still alive. They never thought they would be here to see it happen. Someone present said, “It’s our King Tut’s tomb. It’s like a fairy tale.”`;
 
-  // Teacher-guide audioscript (Unit 3 Listening): original listening script for in-app TTS.
-  u.listening = `Today is a very important day for all of you. It marks the end of your high school days and the beginning of a new life for you. From here, some of you will go off to college and others will be starting jobs. I’ve known you all through high school. And some of you I’ve known since kindergarten, when you were only six years old.
-
-Ibrahim Al-Onazy, no one could run like you in school races. You have become a really good athlete, and I’m sure you’re going to make a fine physical education teacher when you finish college.
-
-Steven Walker, you always had to prove your point, and you could argue your points well and give a lot of good reasons. You have been a great captain of our debate team. I’m certain you’re going to be a successful lawyer, and I wish you the best of luck at college and then at law school.
-
-Saeed Al-Yami, you always had a great scientific mind, and you truly deserve that scholarship to the School of Science and Technology. Our school is going to miss you. We’re going to lose our science researcher temporarily. I say temporarily because in the future we’ll probably be reading about your work in scientific journals and the press. We might even watch you being interviewed on television.
-
-Jim Miller, you were always busy raising money and working for good causes and charities. You’ll be a wonderful social worker after you finish college.
-
-Whatever road you may take, I’m sure you’ll always remember the days you spent at Riverside High. The friends you made and the good times you had are things you will never forget.`;
+  // Unit 3 original Conversation transcript, Student Book p.39 / CD1 Track 24.
+  // Used as accessible text context where a transcript is needed; student playback uses the MP3.
+  u.listening = "Reporter: Would you tell us about the new intelligent home of the future?\nEngineer: Certainly. The concept of Intelligent Buildings is to monitor and optimize lighting, security, ventilation, heating, audiovisual and entertainment systems, and so on. It's an integrated household system that will make people's lives easier.\nReporter: How will the house actually function?\nEngineer: When you arrive at the front door, you won't need a key. The door will open with a touch of your finger. The system will recognize your fingerprint.\nReporter: What happens after I enter the house?\nEngineer: The lights will come on if it's night, the climate control will be activated, and surround sound will automatically play your favorite radio station.\nReporter: What special facilities will there be in the kitchen?\nEngineer: You'll be able to \"call\" your refrigerator when you're at the supermarket and find out how much milk there is or how many eggs you have left.\nReporter: That's wonderful. What about the housework? I hate doing that.\nEngineer: The house will come equipped with a robot that will do the cleaning, the washing, and the cooking.\nReporter: No kidding? Can I buy the robot without the house?";
 
   const old = (J.data.questions || []).filter(q => q.unit_id !== 'MG1_U3');
   const src = {
@@ -52,7 +43,7 @@ Whatever road you may take, I’m sure you’ll always remember the days you spe
     g:'Mega Goal 1 • Unit 3 • Grammar pp. 36–37',
     f:'Mega Goal 1 • Unit 3 • Form, Meaning and Function pp. 44–45',
     r:'Mega Goal 1 • Unit 3 • Reading pp. 40–41',
-    l:'Mega Goal 1 • Unit 3 • Listening p. 38 / Teacher Guide audioscript',
+    l:'Mega Goal 1 • Unit 3 • Conversation p.39 • CD1 Track 24 (2025)',
     revV:'Revision: MG1 Revision 1st term 1447 (3) • Vocabulary',
     revG:'Revision: MG1 Revision 1st term 1447 (3) + MG -1 - General revision (grammar)'
   };
@@ -113,11 +104,12 @@ Whatever road you may take, I’m sure you’ll always remember the days you spe
   q.push(Q('U3R-READ-S2','m5','Mastery','Reading Strategy • Reference','In the sentence “It lay there for 50 years,” what does “It” refer to?',['The concrete vault','The Plymouth car','The courthouse','The flag'],1,'“It” refers to the Plymouth car that had just been lowered into the concrete vault.','Look back for the closest logical noun before “It”.',src.r));
   q.push(Q('U3R-READ-S3','m5','Mastery','Reading Strategy • Inference','What can we infer about the vault after it was opened in 2007?',['It completely protected the car.','It did not fully protect the car from moisture.','Nobody knew where it was.','It had been opened many times.'],1,'The car was rusty and the text says the tomb was unable to protect it from moisture, so the vault was not fully effective.','Combine clues; the answer is supported even if it is not stated in exactly these words.',src.r));
 
-  // Listening — original teacher-guide audioscript.
-  q.push(Q('U3R-LIST-M1','m6','Mastery','Listening • Detail','What will Ibrahim become?',['A physical education teacher','A lawyer','A science researcher','A social worker'],0,'The principal predicts Ibrahim will become a physical education teacher.','Listen for Ibrahim and school races.',src.l));
-  q.push(Q('U3R-LIST-M2','m6','Mastery','Listening • Detail','What will Steven become?',['A scientist','A lawyer','A teacher','A social worker'],1,'The principal predicts Steven will become a successful lawyer.','Listen for the debate team.',src.l));
-  q.push(Q('U3R-LIST-M3','m6','Mastery','Listening • Detail','What will Saeed become?',['A science researcher','A lawyer','A physical education teacher','A social worker'],0,'The principal links Saeed’s scientific mind and scholarship to a future in research.','Listen for science journals and research.',src.l));
-  q.push(Q('U3R-LIST-M4','m6','Mastery','Listening • Detail','What will Jim become?',['A social worker','A scientist','A pilot','A lawyer'],0,'The principal predicts Jim will become a social worker.','Listen for good causes and charities.',src.l));
+  // Listening: questions grounded in the Unit 3 original Conversation (Intelligent Home).
+  // Keep existing question IDs so earlier question/attempt records and certificates are not deleted.
+  q.push(Q('U3R-LIST-M1','m6','Mastery','Listening • Main Idea','What is the main topic of the conversation?',['A robot that only cooks meals','How an intelligent home uses technology to make life easier','A building with no security systems','A reporter visiting a science museum'],1,'The engineer describes an integrated intelligent home designed to make daily life easier.','Listen for the main purpose of the intelligent home.',src.l));
+  q.push(Q('U3R-LIST-M2','m6','Mastery','Listening • Detail','How will a person open the front door of the intelligent home?',['With a traditional key','By calling the refrigerator','By touching the door so it recognizes their fingerprint','By asking the robot to open it'],2,'The engineer explains that the door opens with a touch of your finger because the system recognizes fingerprints.','Listen for the special way to enter the house.',src.l));
+  q.push(Q('U3R-LIST-M3','m6','Mastery','Listening • Detail','What can you find out by calling the refrigerator?',['How much milk and how many eggs are left','Whether the front door is locked','Which radio station is playing','When the next bus arrives'],0,'The refrigerator can tell you how much milk or how many eggs remain while you are at the supermarket.','Listen for what you can check remotely while shopping.',src.l));
+  q.push(Q('U3R-LIST-M4','m6','Mastery','Listening • Inference','Why is the reporter especially interested in buying the robot?',['He wants it to monitor the weather','He needs it to repair the front door','He wants it to choose a radio station','He dislikes housework and wants help with chores'],3,'The reporter says he hates housework, and the engineer says the robot will clean, wash and cook.','Connect what the reporter dislikes with what the robot can do.',src.l));
 
   // Final Challenge — six short mixed checks; no repetition of the 31-item path.
   q.push(Q('U3R-FIN-01','m7','Final Challenge','Final Challenge','People ___ more free time in the future.',['are going to have','had','having','has'],0,'Be going to can be used for a prediction about the future.','Use a future form.',src.g));
