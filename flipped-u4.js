@@ -240,11 +240,11 @@ function render(){
  }else if(state.step===7){
    body='<div class="fw-scene-art">💡 <span>🌎</span></div><div class="fw-scene"><span class="fw-eyebrow">THINK LIKE A READER</span><h2>Can one mistake change the world?</h2><p>There is no single right opinion. Share your idea and discuss it in class.</p><div class="fw-answers">'+[['yes','Yes, it can!'],['maybe','Maybe. It depends.'],['no','No, not by itself.']].map(x=>'<button type="button" data-fw="opinion" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">Your teacher will see the opinion and your two reading checks, not a grade.</p></div>';
  }else{
-   body='<div class="fw-scene-art">✨ 💳</div><div class="fw-scene"><span class="fw-eyebrow">YOU ARE READY</span><h2>Great! You’re ready for class!</h2><p>You read the original story and answered both reading questions.</p><div class="fw-quote">Reading check: '+correctCount()+'/2 correct · Let’s discuss your idea together in class.</div><button class="fw-primary" type="button" data-fw="close">Done for Today</button><button class="fw-restart" type="button" data-fw="restart">Explore the story again</button></div>';
+   body='<div class="fw-scene-art">✨ 💳</div><div class="fw-scene"><span class="fw-eyebrow">YOU ARE READY</span><h2>Great! You’re ready for class!</h2><p>You read the original story and answered both reading questions.</p><div class="fw-quote">You completed both reading checks. Bring your ideas to class!</div><button class="fw-primary" type="button" data-fw="close">Done for Today</button><button class="fw-restart" type="button" data-fw="restart">Explore the story again</button></div>';
  }
  const audioSection='<section class="fw-audio"><div><b>🎧 Original textbook reading audio</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Audio is ready':'Load original audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section>';
  if(!modal.querySelector('.fw-sheet')){
-   modal.innerHTML='<div class="fw-sheet">'+head+'<main class="fw-main">'+body+'</main>'+audioSection+'<footer><span id="fwSync">Progress saved · No grades or certificates</span><span id="fwStepLabel">'+e(steps[state.step])+'</span></footer></div>';
+   modal.innerHTML='<div class="fw-sheet">'+head+audioSection+'<main class="fw-main">'+body+'</main><footer><span id="fwSync">Progress saved · No grades or certificates</span><span id="fwStepLabel">'+e(steps[state.step])+'</span></footer></div>';
    if(audioURL)attachAudio();
  }else{
    const main=modal.querySelector('.fw-main');
