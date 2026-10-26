@@ -58,3 +58,27 @@
 .fw-extra>div{max-height:260px;overflow-y:auto;padding:10px 18px 20px;border-top:1px solid #e3eaf0}
 .fw-extra p{font-size:16px;line-height:1.75;margin:9px 0 14px}
 .fw-extra .fw-adapted{font-size:12px;color:#7f919e;font-style:italic}
+
+/* Short, evidence-based preparation: one authentic reading screen and two checks. */
+.fw-reading{width:100%;max-width:700px;box-sizing:border-box;background:#fff;padding:24px 28px;border:1px solid #dce5ed;border-radius:20px;box-shadow:0 8px 30px #2445620b;text-align:left}
+.fw-reading h2{margin:4px 0 8px;color:#1b4b67;font-size:clamp(24px,4vw,31px)}
+.fw-reading-help{color:#587389;font-size:15px;line-height:1.6;margin:0 0 15px}
+.fw-reading-text{max-height:min(53vh,460px);min-height:185px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d8e5ea;background:#fbfdff;border-radius:13px;padding:16px 18px;margin:0 0 16px;text-align:left}
+.fw-reading-text p{color:#31526a;font-size:16px;line-height:1.8;margin:0 0 14px}
+.fw-reading-text p:last-child{margin-bottom:0}
+.fw-reading>.fw-primary{display:block;width:100%;background:#276d83;color:#fff;border:0;padding:15px 16px;border-radius:13px;font-size:16px;font-weight:800;cursor:pointer}
+.fw-reading .fw-note{font-size:13px;color:#778fa0;text-align:center;margin:10px 0 0}
+.fw-answers button:disabled{opacity:1;cursor:default}
+.fw-answers .fw-answer-right{border-color:#71b19c;background:#ecfaf5}
+.fw-answers .fw-answer-try{border-color:#d3b37b;background:#fff8ed}
+.fw-feedback{background:#f1f8fa;border:1px solid #cfe5e9;padding:13px 17px;border-radius:14px;margin-top:18px;text-align:left}
+.fw-feedback strong{display:block;color:#22647a;margin-bottom:5px;font-size:16px}
+.fw-feedback p{font-size:15px;line-height:1.65;margin:0;color:#456e82}
+.fw-skill-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.fw-skill-summary>div{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #d9e5ed;background:white;border-radius:10px;padding:13px;font-size:13px}
+.fw-skill-summary strong{color:#275a76}.fw-skill-summary span{color:#57798d}
+@media(max-width:700px){
+.fw-reading{padding:18px 14px}.fw-reading-text{padding:12px;max-height:48vh}.fw-reading-text p{font-size:15px}
+.fw-skill-summary{grid-template-columns:1fr}
+.fw-feedback{padding:12px}
+}
