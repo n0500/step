@@ -209,15 +209,22 @@ async function open(){
    const chooseLocal=!!local&&localUpdated>remoteUpdated;
    const value=chooseLocal?local:(r&&r.assignmentKind===TASK?r:(local||defaultState()));
    const upToDate=Number(value.lessonVersion||0)===LESSON_VERSION;
-   state={...defaultState(),opening:value.opening||'',opinion:value.opinion||'',
-     readConfirmed:upToDate&&value.readConfirmed===true,
+   const oldCompleted=!!(value.completed&&Number(value.lessonVersion||0)<LESSON_VERSION);
+   state={...defaultState(),
+     opening:value.opening||'',opinion:upToDate?value.opinion||'':'',
      answers:upToDate&&value.answers&&typeof value.answers==='object'?{...value.answers}:{},
-     completed:upToDate&&value.completed===true&&hasCompletedCheck(value)};
-   // Older story completions remain recorded but require the new text + two reading checks.
-   state.step=state.completed?8:upToDate?Math.max(0,Math.min(7,Number(value.progressStep??value.step)||0)):value.completed?4:Math.max(0,Math.min(3,Number(value.progressStep??value.step)||0));
-   if(state.step>4&&!state.readConfirmed)state.step=4;
-   if(state.step>5&&!Number.isInteger(state.answers.q1))state.step=5;
-   if(state.step>6&&!Number.isInteger(state.answers.q2))state.step=6;
+     recovery:upToDate&&value.recovery&&typeof value.recovery==='object'?{...value.recovery}:{},
+     readSections:upToDate&&Array.isArray(value.readSections)?value.readSections.filter(n=>Number.isInteger(n)&&n>=0&&n<3):[],
+     legacyCompleted:!!(value.legacyCompleted||oldCompleted),
+     completed:upToDate&&value.completed===true&&completedCheck(value)
+   };
+   state.step=state.completed?11:upToDate?Math.min(10,Math.max(0,Number(value.progressStep??value.step)||0)):oldCompleted?1:0;
+   if(state.step>=2&&!state.readSections.includes(0))state.step=1;
+   if(state.step>=5&&!state.readSections.includes(1))state.step=4;
+   if(state.step>=8&&!state.readSections.includes(2))state.step=7;
+   for(const q of CHECKS){
+     if(q.step<state.step&&!isCheckResolved(q,state)){state.step=q.step;break;}
+   }
    modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The Forgotten Wallet');
    document.body.appendChild(modal);
    modal.addEventListener('click',click);render();
@@ -236,15 +243,16 @@ function persist(){
  localSet(ctx.uid,{...state,lessonVersion:LESSON_VERSION,updatedAt:now,version:1});
  const data={assignmentKind:TASK,studentId:ctx.uid,teacherId:ctx.teacherId,classId:ctx.classId,
    studentName:ctx.profile.displayName||'',opening:state.opening,opinion:state.opinion,
-   progressStep:state.step,readConfirmed:state.readConfirmed,answers:{...state.answers},
-   comprehensionAnswered:answeredCount(),comprehensionCorrect:correctCount(),lessonVersion:LESSON_VERSION,
-   completed:!!state.completed,updatedAt:now};
- if(state.completed&&state.step===8)data.completedAt=now;
+   progressStep:state.step,readSections:[...state.readSections],answers:{...state.answers},
+   recovery:{...state.recovery},comprehensionAnswered:answeredCount(),comprehensionCorrect:correctCount(),
+   recoveredCount:recoveredCount(),lessonVersion:LESSON_VERSION,legacyCompleted:!!state.legacyCompleted,
+   completed:!!state.completed,preparationStatus:state.completed?readiness({...state,lessonVersion:LESSON_VERSION}):'unfinished',updatedAt:now};
+ if(state.completed&&state.step===11)data.completedAt=now;
  const uid=ctx.uid;
  writeQueue=writeQueue.catch(()=>{}).then(async()=>{
    if(!db()||authStudent()!==uid)return;
    await db().collection('assignmentSubmissions').doc(storedId(uid)).set(data,{merge:true});
- }).catch(err=>{console.warn('Flipped Reading sync failed',err);showSyncNotice();});
+ }).catch(err=>{console.warn('Home reading sync failed',err);showSyncNotice();});
 }
 async function copyLink(classCode){
  const url=new URL(location.href);url.search='';url.searchParams.set('class',String(classCode||''));url.searchParams.set('flipped','u4');url.hash='';
