@@ -1667,7 +1667,7 @@
     const mission=unit?.missions?.find(m=>m.type==="reading");
     if(!unit||!mission)return null;
     const bank=(data.questions||[]).filter(q=>q.unit_id==="MG1_U4"&&q.mission===mission.source&&q.stage==="Mastery");
-    if(bank.length!==4)return null;
+    if(bank.length!==3)return null;
     const questions=bank.map(q=>{
       const choiceIds=[q.option_a_id,q.option_b_id,q.option_c_id,q.option_d_id];
       const answer=choiceIds.indexOf(q.correct_option_id);
@@ -1675,12 +1675,12 @@
       return {stem:q.prompt,choices:[q.option_a_text,q.option_b_text,q.option_c_text,q.option_d_text],
         answer,explanation:q.explanation||"",questionId:q.question_id};
     }).filter(Boolean);
-    if(questions.length!==4)return null;
+    if(questions.length!==3)return null;
     const paragraphs=String(unit.reading||"").split(/\n\s*\n/).filter(Boolean);
     if(paragraphs.length<5)return null;
     const safeText=paragraphs.slice(1).map(x=>"<p style=\"margin:0 0 16px\">"+esc(x)+"</p>").join("");
     return {id:"u4-reading-classmode",title:"The World of Plastic",
-      subtitle:"Unit 4 • Reading • 4 questions",type:"reading",durationSeconds:40,
+      subtitle:"Unit 4 • Reading • 3 questions",type:"reading",durationSeconds:40,
       passage:"<div style=\"max-height:67vh;overflow-y:auto;font-size:20px;line-height:1.75;text-align:left\">"+safeText+"</div>",
       rawPassage:paragraphs.slice(1).join("\n\n"),questions};
   }
