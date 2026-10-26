@@ -98,17 +98,33 @@ async function report(classId){
    const students=rosterSnap.docs.map(x=>({id:x.id,...x.data()})).filter(x=>x.role==='student'&&x.classId===classId)
      .sort((a,b)=>String(a.displayName||'').localeCompare(String(b.displayName||''),'ar'));
    const saved=new Map(subSnap.docs.map(x=>x.data()).filter(x=>x.assignmentKind===TASK&&x.classId===classId).map(x=>[x.studentId,x]));
-   const done=students.filter(s=>saved.get(s.id)?.completed).length;
-   const started=students.filter(s=>saved.has(s.id)&&!saved.get(s.id)?.completed).length;
+   const isReady=v=>v?.completed===true&&Number(v.lessonVersion)===LESSON_VERSION&&hasCompletedCheck(v);
+   const done=students.filter(st=>isReady(saved.get(st.id))).length;
+   const started=students.filter(st=>saved.has(st.id)&&!isReady(saved.get(st.id))).length;
    const notStarted=students.length-done-started;
+   const completed=students.map(st=>saved.get(st.id)).filter(v=>isReady(v));
+   const full=completed.filter(v=>CHECKS.every(q=>v.answers?.[q.id]===q.correct)).length;
+   const skillSummary=CHECKS.map(q=>{
+     const attempted=students.map(st=>saved.get(st.id)).filter(v=>Number(v?.lessonVersion)===LESSON_VERSION&&Number.isInteger(v?.answers?.[q.id]));
+     const correct=attempted.filter(v=>v.answers[q.id]===q.correct).length;
+     return '<div><strong>'+e(q.skill)+'</strong><span>'+correct+' / '+attempted.length+' correct</span></div>';
+   }).join('');
    const options={yes:'Yes — a mistake can lead to a great idea.',no:'No — one mistake is not enough.',maybe:'Maybe — it depends on what happens next.'};
-   el.innerHTML='<div class="fw-stats"><div><b>'+done+'</b><small>Completed</small></div><div><b>'+started+'</b><small>In progress</small></div><div><b>'+notStarted+'</b><small>Not started</small></div></div>'+
-   '<p class="fw-report-hint">Class discussion prompt: Can one mistake change the world?</p>'+
-   '<div class="fw-roster">'+(students.length?students.map(s=>{
-     const v=saved.get(s.id);const status=v?.completed?'Completed':v?'Started':'Not started';
-     return '<div><strong>'+e(s.displayName||'Student')+'</strong><span>'+e(status)+'</span><small>'+e(v?.opinion?options[v.opinion]||v.opinion:'')+'</small></div>';
+   el.innerHTML='<div class="fw-stats"><div><b>'+done+'</b><small>Ready for class</small></div><div><b>'+started+'</b><small>In progress</small></div><div><b>'+notStarted+'</b><small>Not started</small></div></div>'+
+   '<p class="fw-report-hint">Of those ready: '+full+' answered both reading questions correctly. These are learning indicators, not grades.</p>'+
+   '<div class="fw-skill-summary">'+skillSummary+'</div>'+
+   '<p class="fw-report-hint"><strong>Discussion prompt:</strong> Can one mistake change the world?</p>'+
+   '<div class="fw-roster">'+(students.length?students.map(st=>{
+      const v=saved.get(st.id);
+      const ready=isReady(v);
+      const status=ready?'Ready':v?.completed&&Number(v.lessonVersion)!==LESSON_VERSION?'New check needed':v?'In progress':'Not started';
+      const marks=Number(v?.lessonVersion)===LESSON_VERSION?CHECKS.map(q=>Number.isInteger(v?.answers?.[q.id])?(v.answers[q.id]===q.correct?'✓':'Review'):'—').join(' · '):'—';
+      return '<div><strong>'+e(st.displayName||'Student')+'</strong><span>'+e(status)+'</span><small>'+e(marks)+(v?.opinion?' · '+e(options[v.opinion]||v.opinion):'')+'</small></div>';
    }).join(''):'<p>No students found in this class.</p>')+'</div>';
- }catch(err){console.warn('Flipped Reading report',err);el.innerHTML='<p>Unable to load results. Check your connection and retry.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId).replace(/\"/g,'&quot;')+')">Retry</button>';}
+ }catch(err){
+   console.warn('Flipped Reading report',err);
+   el.innerHTML='<p>Unable to load results. Check your connection and retry.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId).replace(/"/g,'&quot;')+')">Retry</button>';
+ }
 }
 async function open(){
  if(modal)return;
