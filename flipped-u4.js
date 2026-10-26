@@ -5,11 +5,17 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-reading-check-1';
+const VERSION='20261026-reading-follow-1';
 const LESSON_VERSION=2;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
+// Sentence cues estimated from original recording pause boundaries, not word-for-word forced alignment.
+const READING_CUES=[9.469,15.347,20.013,22.407,35.815,41.619,45.980,51.034,
+ 64.520,69.223,76.183,83.534,94.912,105.783,111.500,117.600,127.000,
+ 134.000,140.000,146.300,151.000,156.000,160.862,168.665,175.880,
+ 180.397,183.350,187.645,193.698];
+const READING_END=201.016;
 const TASK='u4-forgotten-wallet-v1';
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const db=()=>window.firebase?.apps?.length?firebase.firestore():null;
@@ -30,6 +36,7 @@ const answeredCount=()=>CHECKS.filter(q=>Number.isInteger(state.answers?.[q.id])
 const correctCount=()=>CHECKS.filter(q=>state.answers?.[q.id]===q.correct).length;
 const hasCompletedCheck=v=>!!(v?.readConfirmed&&CHECKS.every(q=>Number.isInteger(v?.answers?.[q.id])));
 let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
+let followEnabled=true,lastFollowCue=-2;
 function authStudent(){return user()?.uid||'';}
 function localGet(uid){try{const raw=JSON.parse(localStorage.getItem(key(uid))||'null');return raw?.version===1?raw.data:null}catch(_){return null;}}
 function localSet(uid,data){try{localStorage.setItem(key(uid),JSON.stringify({version:1,data}));}catch(_){}}
@@ -216,6 +223,61 @@ function readingParagraphs(){
  if(parts.length!==6||!parts.every((p,i)=>p.startsWith((i+1)+'. ')))return [];
  return parts;
 }
+
+function splitReadSentences(paragraph){
+ const plain=paragraph.replace(/^\d+\.\s*/,'');
+ const pieces=plain.match(/[^.!?]+[.!?]+(?:[”"']|$)?|[^.!?]+$/g)||[];
+ return pieces.join('')===plain?pieces:[plain];
+}
+function readingFollowMarkup(paragraphs){
+ const fragments=paragraphs.flatMap(p=>splitReadSentences(p));
+ const valid=fragments.length===READING_CUES.length;
+ let cursor=0;
+ const html=paragraphs.map(p=>'<p>'+splitReadSentences(p).map(part=>{
+   const i=cursor++;
+   return valid?'<span class="fw-sentence" data-fw-cue="'+i+'">'+e(part)+'</span>':e(part);
+ }).join('')+'</p>').join('');
+ return {html,valid};
+}
+function readingCueAt(seconds){
+ if(!Number.isFinite(seconds)||seconds<READING_CUES[0]||seconds>=READING_END)return -1;
+ let lo=0,hi=READING_CUES.length-1;
+ while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(READING_CUES[mid]<=seconds)lo=mid;else hi=mid-1;}
+ return lo;
+}
+function refreshFollowAlong(forceScroll=false){
+ const area=modal?.querySelector('.fw-reading-text');
+ if(!area||!audio)return;
+ const spans=area.querySelectorAll('.fw-sentence');
+ if(spans.length!==READING_CUES.length)return;
+ const idx=followEnabled?readingCueAt(audio.currentTime):-1;
+ if(idx===lastFollowCue&&!forceScroll)return;
+ for(let i=0;i<spans.length;i++){
+   const active=i===idx;
+   spans[i].classList.toggle('fw-sentence-active',active);
+   if(active)spans[i].setAttribute('aria-current','true');
+   else spans[i].removeAttribute('aria-current');
+ }
+ lastFollowCue=idx;
+ if(idx<0||!followEnabled)return;
+ const node=spans[idx];
+ const delta=node.getBoundingClientRect().top-area.getBoundingClientRect().top;
+ const offset=delta-area.clientHeight*.33;
+ if(offset<-18||offset>area.clientHeight*.36){
+   const top=Math.max(0,area.scrollTop+offset);
+   if(typeof area.scrollTo==='function'){
+     const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+     area.scrollTo({top,behavior:reduced?'instant':'smooth'});
+   }else area.scrollTop=top;
+ }
+}
+function onReadingAudioTick(){refreshFollowAlong();}
+function toggleFollowReading(){
+ followEnabled=!followEnabled;
+ const btn=modal?.querySelector('[data-fw="toggleFollow"]');
+ if(btn){btn.textContent=followEnabled?'Follow audio: ON':'Follow audio: OFF';btn.setAttribute('aria-pressed',String(followEnabled));}
+ lastFollowCue=-2;refreshFollowAlong(true);
+}
 function render(){
  if(!modal)return;
  const steps=['Curiosity','Discover','Discover','Discover','Read & listen','Find a detail','Cause & effect','Your opinion','Ready'];
@@ -232,7 +294,7 @@ function render(){
    if(paras.length!==6){
      body='<div class="fw-scene"><h2>The textbook text is not available right now</h2><p>Refresh STEP UP and try again. This story cannot be marked ready without the original reading.</p><button class="fw-primary" type="button" data-fw="refresh">Retry</button></div>';
    }else{
-     body='<div class="fw-reading"><span class="fw-eyebrow">MEGA GOAL 1 · UNIT 4 · PAGE 60</span><h2>The World of Plastic</h2><p class="fw-reading-help">Read the original six paragraphs below. You can also play the textbook audio. Take your time!</p><div class="fw-reading-text">'+paras.map(x=>'<p>'+e(x)+'</p>').join('')+'</div><button class="fw-primary" type="button" data-fw="readingDone">'+(state.readConfirmed?'Continue to Quick Check':'I’ve explored the reading · 2 quick questions')+'</button><p class="fw-note">No timer, no grades. You can return to the text whenever you need it.</p></div>';
+     body='<div class="fw-reading"><span class="fw-eyebrow">MEGA GOAL 1 · UNIT 4 · PAGE 60</span><h2>The World of Plastic</h2><p class="fw-reading-help">Read the original six paragraphs below. You can also play the textbook audio. Take your time!</p><div class="fw-follow-bar"><span>Highlight the sentence while the recording plays</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div><div class="fw-reading-text">'+readingFollowMarkup(paras).html+'</div><button class="fw-primary" type="button" data-fw="readingDone">'+(state.readConfirmed?'Continue to Quick Check':'I’ve explored the reading · 2 quick questions')+'</button><p class="fw-note">No timer, no grades. You can return to the text whenever you need it.</p></div>';
    }
  }else if(state.step===5||state.step===6){
    const q=CHECKS[state.step-5],answered=Number.isInteger(state.answers[q.id]),picked=state.answers[q.id],correct=answered&&picked===q.correct;
@@ -246,9 +308,11 @@ function render(){
  if(!modal.querySelector('.fw-sheet')){
    modal.innerHTML='<div class="fw-sheet">'+head+audioSection+'<main class="fw-main">'+body+'</main><footer><span id="fwSync">Progress saved · No grades or certificates</span><span id="fwStepLabel">'+e(steps[state.step])+'</span></footer></div>';
    if(audioURL)attachAudio();
+   if(state.step===4){lastFollowCue=-2;refreshFollowAlong(true);}
  }else{
    const main=modal.querySelector('.fw-main');
    if(main)main.innerHTML=body;
+   if(state.step===4){lastFollowCue=-2;refreshFollowAlong(true);}
    const bar=modal.querySelector('.fw-progress');
    if(bar){bar.setAttribute('aria-valuenow',String(progress));const fill=bar.querySelector('span');if(fill)fill.style.width=progress+'%';}
    const label=modal.querySelector('#fwStepLabel');if(label)label.textContent=steps[state.step];
@@ -259,9 +323,11 @@ function attachAudio(){
  const host=modal?.querySelector('#fwAudioPlayer');if(!host)return;
  const previous=audio?.currentTime||0;const playing=audio?!audio.paused:false;
  // Preserve the playback element across story scenes rather than restarting the track.
- if(audio){host.appendChild(audio);audio.currentTime=previous;if(playing)audio.play().catch(()=>{});return;}
+ if(audio){host.appendChild(audio);audio.currentTime=previous;if(playing)audio.play().catch(()=>{});refreshFollowAlong(true);return;}
  audio=document.createElement('audio');audio.controls=true;audio.preload='metadata';audio.src=audioURL;
- audio.setAttribute('aria-label','Original Mega Goal 1 Unit 4 Reading audio');host.appendChild(audio);
+ audio.setAttribute('aria-label','Original Mega Goal 1 Unit 4 Reading audio');
+ ['timeupdate','seeked','playing','pause','ended','loadedmetadata'].forEach(name=>audio.addEventListener(name,onReadingAudioTick));
+ host.appendChild(audio);refreshFollowAlong(true);
 }
 async function showAudio(){
  const button=modal?.querySelector('#fwAudioButton');if(!button)return;
@@ -274,11 +340,12 @@ function click(event){
  const a=b.dataset.fw;
  if(a==='close')return close();
  if(a==='loadAudio')return showAudio();
+ if(a==='toggleFollow')return toggleFollowReading();
  if(a==='refresh'){render();return;}
  if(a==='opening'&&state.step===0){state.opening=b.dataset.choice;state.step=1;persist();render();return;}
  if(a==='next'&&state.step>=1&&state.step<4){state.step++;persist();render();return;}
  if(a==='back'&&state.step>1&&state.step<4){state.step--;persist();render();return;}
- if(a==='readingDone'&&state.step===4&&readingParagraphs().length===6){state.readConfirmed=true;state.step=5;persist();render();return;}
+ if(a==='readingDone'&&state.step===4&&readingParagraphs().length===6){if(audio&&!audio.paused)audio.pause();state.readConfirmed=true;state.step=5;persist();render();return;}
  if(a==='check'&&(state.step===5||state.step===6)){
    const q=CHECKS[state.step-5],choice=Number(b.dataset.choice);
    if(!state.readConfirmed||Number.isInteger(state.answers[q.id])||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;
@@ -299,5 +366,6 @@ function click(event){
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,preview,open,close,loadOriginalAudio,version:VERSION,
-  _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes};
+  _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
+ _cueTimes:READING_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
 })();
