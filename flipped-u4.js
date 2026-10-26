@@ -134,7 +134,54 @@ function teacherCard(cls){
  const enabled=cls.flippedU4Enabled===true;
  const arg=JSON.stringify(cls.id).replace(/\"/g,'&quot;');
  const codeArg=JSON.stringify(cls.code||'').replace(/\"/g,'&quot;');
- return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Pre-teach all six textbook paragraphs with 3 guided parts, 6 understanding checks, and instant support. Use the report to shorten your next lesson.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>6 guided checks · 3 short parts</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+ return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Pre-teach all six textbook paragraphs with 3 guided parts, 6 understanding checks, and instant support. Use the report to shorten your next lesson.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>6 guided checks · 3 short parts</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.classroom()">Start 12-Minute Class Discussion</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+}
+// Four teacher-led application slides: no student devices, no repeated home quiz.
+let classroomBox=null,classroomPage=0,classroomRevealed=false;
+const CLASSROOM=[
+ {tag:'2 MIN · ACTIVE RETRIEVAL',title:'Rebuild the timeline',
+  prompt:'What happened in 1949, 1950, 1952, and 1984?',
+  instruction:'Ask four students for the events. Do not reread the whole passage.',
+  evidence:'1949: wallet forgotten · 1950: first Diner’s Club Card · 1952: thousands of businesses and international franchises · 1984: first card-member rewards program'},
+ {tag:'3 MIN · FIND THE EVIDENCE',title:'Prove it with a sentence',
+  prompt:'Which exact sentence proves the idea spread beyond the United States?',
+  instruction:'Give students thinking time. Invite two answers with evidence.',
+  evidence:'“The Diner’s Club Card became the first international charge card in 1952 with franchises in Canada, France, and Cuba.” — Textbook, paragraph 3'},
+ {tag:'4 MIN · THINK DEEPER',title:'Cause and effect',
+  prompt:'Why was “charging it” an important change from paying in cash?',
+  instruction:'Ask students to explain the advantage and support it from paragraph 2.',
+  evidence:'“Soon the concept of ‘charging it’ was picked up by merchants as an alternative form of payment to the use of cash.” — Textbook, paragraph 2'},
+ {tag:'3 MIN · TRANSFER',title:'Think like an innovator',
+  prompt:'What everyday problem today could inspire a useful invention?',
+  instruction:'Think silently, write one sentence, then invite three students to share and explain.',
+  evidence:'Possible answer: “A small problem can become a useful invention when someone designs a practical solution.” (Model, not a textbook quote)'}
+];
+function drawClassroom(){
+ if(!classroomBox)return;
+ const sl=CLASSROOM[classroomPage];
+ classroomBox.innerHTML='<div class="fw-class-shell"><header><small>STEP UP · UNIT 4 · POST-FLIP CLASSROOM</small><button type="button" data-fw-class="close">✕ Exit</button></header><div class="fw-class-progress">'+(classroomPage+1)+' / '+CLASSROOM.length+'</div>'+
+ '<main><span>'+e(sl.tag)+'</span><h1>'+e(sl.title)+'</h1><h2>'+e(sl.prompt)+'</h2><p>'+e(sl.instruction)+'</p>'+
+ (classroomRevealed?'<div class="fw-class-evidence"><strong>Reveal & discuss</strong><p>'+e(sl.evidence)+'</p></div>':'')+'</main>'+
+ '<footer><button type="button" data-fw-class="prev" '+(classroomPage===0?'disabled':'')+'>Previous</button><button type="button" data-fw-class="reveal">'+(classroomRevealed?'Hide evidence':'Reveal evidence')+'</button><button class="next" type="button" data-fw-class="next">'+(classroomPage===CLASSROOM.length-1?'Finish':'Next prompt')+'</button></footer></div>';
+}
+function classroom(){
+ if(classroomBox)return;
+ classroomPage=0;classroomRevealed=false;
+ classroomBox=document.createElement('div');
+ classroomBox.className='fw-class-overlay';
+ classroomBox.setAttribute('role','dialog');classroomBox.setAttribute('aria-modal','true');
+ classroomBox.setAttribute('aria-label','Unit 4 post-flipped classroom');
+ classroomBox.addEventListener('click',event=>{
+   const target=event.target.closest('[data-fw-class]');if(!target||target.disabled)return;
+   const action=target.dataset.fwClass;
+   if(action==='close'||(action==='next'&&classroomPage===CLASSROOM.length-1)){classroomBox.remove();classroomBox=null;return;}
+   if(action==='prev')classroomPage=Math.max(0,classroomPage-1);
+   if(action==='next')classroomPage=Math.min(CLASSROOM.length-1,classroomPage+1);
+   if(action==='reveal')classroomRevealed=!classroomRevealed;
+   else classroomRevealed=false;
+   drawClassroom();
+ });
+ document.body.appendChild(classroomBox);drawClassroom();
 }
 async function setEnabled(classId,enabled){
  if(!user()||!db()){alert('Sign in to your teacher account.');return;}
@@ -511,6 +558,7 @@ function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,preview,open,close,loadOriginalAudio,version:VERSION,
  _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
+ classroom,_classroomPrompts:CLASSROOM,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
  _cueTimes:READING_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
 })();
