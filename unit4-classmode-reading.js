@@ -76,6 +76,13 @@ function onSoundTick(){
 }
 async function speak(){
  if(S.mode!=='read'||!S.box)return;
+ const chapterCues=paragraphStarts(),start=chapterCues[S.all?0:S.part],end=chapterCues[S.all?6:S.part+1];
+ // Keep the current recording position on Pause -> Play. This direct call also
+ // helps iPad Safari authorize playback after the audio was initially loaded.
+ if(S.audio?.paused&&S.audio.currentTime>=start+.08&&S.audio.currentTime<end-.18){
+   try{await S.audio.play();}catch(error){console.warn('Audio playback requires a tap',error);}
+   return;
+ }
  const button=S.box.querySelector('[data-act="audio"]'),seq=++S.audioSequence;
  if(button){button.disabled=true;button.textContent='Loading original recording…';}
  try{
