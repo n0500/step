@@ -75,6 +75,26 @@
   count(u.missions.find(x=>x.type==='reading'),'Mastery')===3&&
   count(u.missions.find(x=>x.type==='listening'),'Mastery')===3&&
   rows.length===28&&rows.filter(q=>q.source_type==='Teacher-supplied revision question').length===8;
+ // Only exact excerpts from the original textbook passage are displayed.
+ // No definition or correct choice is revealed before the student answers.
+ const contextEscape=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ function renderVocabContext(q){
+   const excerpt=String(q?.context_excerpt||''),needle=String(q?.context_match||'');
+   if(!excerpt||!needle)return '';
+   const pos=excerpt.toLowerCase().indexOf(needle.toLowerCase());
+   if(pos<0)return '';
+   const highlighted=contextEscape(excerpt.slice(0,pos))+
+     '<mark style="background:#fff0a6;color:#19344e;padding:2px 3px;border-radius:3px;font-weight:900">'+
+     contextEscape(excerpt.slice(pos,pos+needle.length))+'</mark>'+
+     contextEscape(excerpt.slice(pos+needle.length));
+   const paragraph=Number(q.context_paragraph);
+   return '<section class="u4-vocab-evidence" dir="ltr" style="margin:12px 0 16px;padding:16px 18px;border-radius:13px;border:1px solid #c5dce6;background:#f4fafb;text-align:left;color:#18344d;line-height:1.85">'+
+      '<small style="display:block;font-size:13px;font-weight:800;color:#226579">📖 The World of Plastic · Paragraph '+contextEscape(paragraph)+'</small>'+
+      '<p style="margin:8px 0;font-size:clamp(16px,2.2vw,21px);line-height:1.9">'+highlighted+'</p>'+
+      '<small style="display:block;color:#496b7e;font-size:13px">Find the clue in the sentence. What could the highlighted word mean?</small>'+
+      '</section>';
+ }
+ window.STEPUP_U4_CONTEXT={render:renderVocabContext};
  window.STEPUP_U4_READY=valid;
  window.STEPUP_U4_CONTENT={version:'20261026-vocab-after-reading-context-v1',ready:valid,bankCount:rows.length,
   sections:core.length+2,revisionQuestions:8,requiredQuestions:28,afterReadingVocabulary:7,realTalkQuestions:2,textbookPages:'54–65',
