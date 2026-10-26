@@ -2029,7 +2029,7 @@ Do not start a new lesson unless I ask.`;
   }
 
   function stopClassModeTimer(){if(state.classMode?.timer){clearInterval(state.classMode.timer);state.classMode.timer=null}}
-  function startClassMode(trainingId){const t=findTraining(trainingId);if(!t)return;stopClassModeTimer();state.classMode={training:t,index:0,revealed:false,paused:t.id==="u4-reading-classmode",remaining:t.durationSeconds,timer:null};runClassModeTimer();renderClassModeScreen()}
+  function startClassMode(trainingId){if(trainingId==="u4-reading-classmode"&&window.STEPUP_U4_CLASSMODE_READING?.open){window.STEPUP_U4_CLASSMODE_READING.open();return;}const t=findTraining(trainingId);if(!t)return;stopClassModeTimer();state.classMode={training:t,index:0,revealed:false,paused:t.id==="u4-reading-classmode",remaining:t.durationSeconds,timer:null};runClassModeTimer();renderClassModeScreen()}
   function runClassModeTimer(){stopClassModeTimer();if(!state.classMode||state.classMode.paused)return;state.classMode.timer=setInterval(()=>{if(!state.classMode||state.classMode.paused)return;state.classMode.remaining=Math.max(0,state.classMode.remaining-1);const el=document.getElementById("cmTimer");if(el)el.textContent=fmtTime(state.classMode.remaining);if(state.classMode.remaining<=0)stopClassModeTimer()},1000)}
 
   let unit4ClassAudio=null;
