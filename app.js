@@ -1039,7 +1039,7 @@
     const data=window.STEPUP_JOURNEY?.data;
     const unit=data?.units?.find(u=>u.id==="u4");
     if(!unit)return alert("Unit 4 content is not loaded. Refresh STEP UP and try again.");
-    const bank=(data.questions||[]).filter(q=>q.unit_id==="MG1_U4"&&q.stage==="Mastery"||q.unit_id==="MG1_U4"&&q.stage==="Final Challenge");
+    const bank=(data.questions||[]).filter(q=>q.unit_id==="MG1_U4"&&q.stage==="Mastery");
     const missions=unit.missions||[];
     const sections=[
       {heading:"1 · Vocabulary & Real Talk",id:"m1",desc:"Seven After Reading words and two Real Talk expressions."},
@@ -1047,8 +1047,7 @@
       {heading:"3 · Grammar: Comparisons & Sense Verbs",id:"m3",desc:"Comparative, superlative, as...as and sense verbs."},
       {heading:"4 · Form, Meaning & Function",id:"m4",desc:"Demonstratives, articles, imperatives, possessives, one/ones, too/enough."},
       {heading:"5 · Reading: The World of Plastic",id:"m5",desc:"Complete textbook reading and comprehension questions.",reading:true},
-      {heading:"6 · Listening: The Flying Helicopter Alarm",id:"m6",desc:"Original Conversation (Adnan and Omar) and four questions.",listening:true},
-      {heading:"7 · Final Challenge",id:"m7",desc:"One integrated question."}
+      {heading:"6 · Listening: The Flying Helicopter Alarm",id:"m6",desc:"Original Conversation (Adnan and Omar) and four questions.",listening:true}
     ];
     const actual=sections.map(s=>{
       const m=missions.find(x=>x.id===s.id);
@@ -1100,7 +1099,7 @@
     overlay.className="u4tp-overlay";overlay.id="stepupU4TeacherPreview";
     overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
     overlay.setAttribute("aria-label","Unit 4 teacher-only content preview");
-    overlay.innerHTML=`<div class="u4tp-panel"><header class="u4tp-head"><div><small>STEP UP · TEACHER PREVIEW</small><h2>Unit 4 · The Art of Advertising</h2></div><button class="u4tp-close" data-u4tp="close" type="button">✕ Close</button></header><main class="u4tp-content"><div class="u4tp-note"><strong>Preview only — not an assignment.</strong> Opening this panel does not open Unit 4 to any class, save attempts or affect mastery and certificates. Questions are shown in the currently published unit order.</div><div class="u4tp-tools"><span class="u4tp-count">${bank.length} questions · 7 sections</span><button class="u4tp-all" type="button" data-u4tp="answers">Show all answers</button></div>${content}</main></div>`;
+    overlay.innerHTML=`<div class="u4tp-panel"><header class="u4tp-head"><div><small>STEP UP · TEACHER PREVIEW</small><h2>Unit 4 · The Art of Advertising</h2></div><button class="u4tp-close" data-u4tp="close" type="button">✕ Close</button></header><main class="u4tp-content"><div class="u4tp-note"><strong>Preview only — not an assignment.</strong> Opening this panel does not open Unit 4 to any class, save attempts or affect mastery and certificates. STEP Practice is optional (6 review questions) and does not count toward the 80% certificate. Questions are shown in the currently published unit order.</div><div class="u4tp-tools"><span class="u4tp-count">${bank.length} required questions · 6 sections</span><button class="u4tp-all" type="button" data-u4tp="answers">Show all answers</button></div>${content}</main></div>`;
     overlay.addEventListener("click",event=>{
       const btn=event.target.closest("[data-u4tp]");
       if(btn?.dataset.u4tp==="close"){overlay.remove();return;}
