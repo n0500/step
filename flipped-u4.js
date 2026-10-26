@@ -118,7 +118,7 @@ async function loadOriginalAudio(){
  return audioLoading;
 }
 function stopAudio(){if(audio){audio.pause();audio.removeAttribute('src');audio.load();audio=null;}}
-function close(){stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
+function close(){chapterStopAt=0;stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
 function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flippedU4Enabled===true);}
 function studentCard(cls,profile){
  if(!checkClass(cls,profile?.id||authStudent(),profile?.role))return '';
@@ -428,37 +428,89 @@ async function showAudio(){
  try{await loadOriginalAudio();if(!modal)return;button.textContent='Ready to play';button.disabled=false;attachAudio();}
  catch(err){console.error('Original unit 4 reading audio failed',err);button.disabled=false;button.textContent='Retry audio';const msg=modal?.querySelector('#fwSync');if(msg)msg.textContent='Original audio could not load. Please retry with internet access.';}
 }
+async function playChapter(index){
+ const chapter=CHAPTERS[index];
+ if(!chapter||!modal)return;
+ const button=modal.querySelector('[data-fw="chapterAudio"]');
+ if(button){button.disabled=true;button.textContent='Loading the original audio…';}
+ try{
+   await loadOriginalAudio();
+   if(!modal||![1,4,7].includes(state.step))return;
+   attachAudio();
+   if(!audio)throw Error('Unable to initialize audio');
+   audio.currentTime=chapter.start;
+   chapterStopAt=chapter.end;
+   lastFollowCue=-2;
+   refreshFollowAlong(true);
+   try{await audio.play();}catch(e){
+     chapterStopAt=0;
+     const note=modal.querySelector('#fwSync');if(note)note.textContent='Audio is ready. Please press play in the audio bar.';
+   }
+ }catch(err){
+   console.warn('Original reading chapter audio',err);
+   const note=modal?.querySelector('#fwSync');if(note)note.textContent='Audio unavailable. The complete textbook text remains available to read.';
+ }finally{
+   const fresh=modal?.querySelector('[data-fw="chapterAudio"]');
+   if(fresh){fresh.disabled=false;fresh.textContent='▶ Listen to this part';}
+ }
+}
 function click(event){
  const b=event.target.closest('[data-fw]');if(!b||!modal?.contains(b)||b.disabled)return;
- const a=b.dataset.fw;
- if(a==='close')return close();
- if(a==='loadAudio')return showAudio();
- if(a==='toggleFollow')return toggleFollowReading();
- if(a==='refresh'){render();return;}
- if(a==='opening'&&state.step===0){state.opening=b.dataset.choice;state.step=1;persist();render();return;}
- if(a==='next'&&state.step>=1&&state.step<4){state.step++;persist();render();return;}
- if(a==='back'&&state.step>1&&state.step<4){state.step--;persist();render();return;}
- if(a==='readingDone'&&state.step===4&&readingParagraphs().length===6){if(audio&&!audio.paused)audio.pause();state.readConfirmed=true;state.step=5;persist();render();return;}
- if(a==='check'&&(state.step===5||state.step===6)){
-   const q=CHECKS[state.step-5],choice=Number(b.dataset.choice);
-   if(!state.readConfirmed||Number.isInteger(state.answers[q.id])||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;
-   state.answers[q.id]=choice;persist();render();return;
+ const action=b.dataset.fw;
+ if(action==='close')return close();
+ if(action==='loadAudio')return showAudio();
+ if(action==='toggleFollow')return toggleFollowReading();
+ if(action==='chapterAudio')return playChapter(Number(b.dataset.choice));
+ if(action==='refresh'){render();return;}
+ if(action==='opening'&&state.step===0){
+   state.opening=b.dataset.choice;state.step=1;persist();render();return;
  }
- if(a==='reviewText'&&(state.step===5||state.step===6)){state.step=4;persist();render();return;}
- if(a==='afterCheck'&&(state.step===5||state.step===6)){
-   const q=CHECKS[state.step-5];if(!Number.isInteger(state.answers[q.id]))return;
-   if(state.step===5){state.step=Number.isInteger(state.answers.q2)?7:6;}
-   else state.step=7;
+ if(action==='chapterDone'&&[1,4,7].includes(state.step)){
+   const idx=Number(b.dataset.choice);
+   if(idx!==(state.step===1?0:state.step===4?1:2)||readingParagraphs().length!==6)return;
+   if(!state.readSections.includes(idx))state.readSections.push(idx);
+   chapterStopAt=0;if(audio&&!audio.paused)audio.pause();
+   if(state.reviewReturn===11){state.step=11;delete state.reviewReturn;}
+   else state.step=nextStep(state.step);
    persist();render();return;
  }
- if(a==='opinion'&&state.step===7&&state.readConfirmed&&answeredCount()===2){
-   state.opinion=b.dataset.choice;state.step=8;state.completed=true;persist();render();return;
+ if(action==='check'&&getQuestion(state.step)){
+   const q=getQuestion(state.step),choice=Number(b.dataset.choice);
+   if(Number.isInteger(state.answers[q.id])||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;
+   state.answers[q.id]=choice;persist();render();return;
  }
- if(a==='restart'&&state.step===8){state.step=0;state.opening='';state.opinion='';if(!state.completed){state.readConfirmed=false;state.answers={};}render();return;}
+ if(action==='recover'&&getQuestion(state.step)){
+   const q=getQuestion(state.step),choice=Number(b.dataset.choice);
+   if(!needsRetry(q)||!Number.isInteger(choice)||choice<0||choice>=q.retryChoices.length)return;
+   state.recovery[q.id]=choice;persist();render();return;
+ }
+ if(action==='nextCheck'&&getQuestion(state.step)){
+   const q=getQuestion(state.step);
+   if(!isCheckResolved(q))return;
+   if(state.reviewReturn===11){state.step=11;state.completed=completedCheck(state);delete state.reviewReturn;}
+   else state.step=nextStep(state.step);
+   persist();render();return;
+ }
+ if(action==='opinion'&&state.step===10&&CHECKS.every(q=>isCheckResolved(q,state))&&state.readSections.length===3){
+   if(!['yes','maybe','no'].includes(b.dataset.choice))return;
+   state.opinion=b.dataset.choice;state.step=11;state.completed=completedCheck(state);persist();render();return;
+ }
+ if(action==='reviewWeak'&&state.step===11){
+   const q=CHECKS.find(x=>x.id===b.dataset.choice);
+   if(!q||state.answers[q.id]===q.correct||state.recovery[q.id]===q.retryCorrect)return;
+   delete state.recovery[q.id];state.step=q.step;state.reviewReturn=11;state.completed=false;
+   persist();render();return;
+ }
+ if(action==='restart'&&state.step===11){
+   state.step=1;state.reviewReturn=11;
+   // Keep the original first-try and recovery evidence intact during voluntary review.
+   render();return;
+ }
 }
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,preview,open,close,loadOriginalAudio,version:VERSION,
+ _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
  _cueTimes:READING_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
 })();
