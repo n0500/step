@@ -8,18 +8,99 @@ const paragraphs=()=>String(unit()?.reading||'').split(/\n\s*\n/).slice(1).map(p
 const questions=()=>{const m=unit()?.missions?.find(x=>x.type==='reading');return(window.STEPUP_JOURNEY?.data?.questions||[]).filter(q=>q.unit_id==='MG1_U4'&&q.mission===m?.source&&q.stage==='Mastery');};
 const answer=q=>['option_a_id','option_b_id','option_c_id','option_d_id'].findIndex(k=>q[k]===q.correct_option_id);
 const opts=q=>['option_a_text','option_b_text','option_c_text','option_d_text'].map(k=>q[k]);
-const S={box:null,mode:'read',part:0,all:false,index:0,selected:-1,reveal:false,time:40,running:false,timer:null};
+const S={box:null,mode:'read',part:0,all:false,index:0,selected:-1,reveal:false,time:40,running:false,timer:null,audio:null,audioLoading:false,audioSequence:0,activeCue:-1,syncShift:0};
 function stopTimer(){if(S.timer)clearInterval(S.timer);S.timer=null;S.running=false;}
-function stopAudio(){if('speechSynthesis'in window)speechSynthesis.cancel();}
+const sync=()=>window.STEPUP_FLIPPED_U4;
+const fallbackParagraphStarts=[9.469,35.912,105.784,160.864,175.880,187.645,201.013];
+const paragraphStarts=()=>sync()?._paragraphCues?.length===7?sync()._paragraphCues:fallbackParagraphStarts;
+const sentenceCues=()=>sync()?._cueTimes?.length===29?sync()._cueTimes:[];
+const sentenceParts=paragraph=>sync()?._splitSentences?.(paragraph)||[paragraph];
 function close(){stopTimer();stopAudio();S.box?.remove();S.box=null;}
-function speak(){
-  if(!('speechSynthesis'in window))return;
-  stopAudio();
-  const p=paragraphs();
-  const text=S.mode==='read'?(S.all?p.join(' '):p[S.part]):p[S.index===0?0:S.index===1?1:2];
-  if(!text)return;
-  const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';utterance.rate=.88;speechSynthesis.speak(utterance);
+function stopAudio(){
+ S.audioSequence++;
+ if(S.audio){S.audio.pause();S.audio=null;}
+ S.audioLoading=false;S.activeCue=-1;
 }
+function timeCue(seconds){
+ const cues=sentenceCues(),ends=paragraphStarts();
+ if(!cues.length||seconds<cues[0]||seconds>=ends[6])return -1;
+ let lo=0,hi=cues.length-1;
+ while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(cues[mid]<=seconds)lo=mid;else hi=mid-1;}
+ return lo;
+}
+function paragraphForTime(seconds){
+ const cue=paragraphStarts();
+ if(seconds<cue[0]||seconds>=cue[6])return -1;
+ for(let i=0;i<6;i++)if(seconds<cue[i+1])return i;
+ return -1;
+}
+function sourceParagraphMarkup(para,i){
+ const p=paragraphs();
+ const offset=p.slice(0,i).reduce((n,x)=>n+sentenceParts(x).length,0);
+ return '<p class="u4r-source-paragraph" data-u4r-paragraph="'+i+'"><small>Paragraph '+(i+1)+'</small>'+
+  sentenceParts(para).map((part,j)=>'<span class="u4r-sentence" data-u4r-cue="'+(offset+j)+'">'+esc(part)+'</span>').join('')+'</p>';
+}
+function updateHighlight(force=false){
+ if(!S.box||S.mode!=='read'||!S.audio)return;
+ const seconds=S.audio.currentTime+S.syncShift;
+ const active=timeCue(seconds);
+ if(!force&&active===S.activeCue)return;
+ S.activeCue=active;
+ const nodes=S.box.querySelectorAll('.u4r-sentence');
+ let visible=null;
+ nodes.forEach(n=>{
+   const marked=Number(n.dataset.u4rCue)===active;
+   n.classList.toggle('u4r-current',marked);
+   if(marked){n.setAttribute('aria-current','true');visible=n;}
+   else n.removeAttribute('aria-current');
+ });
+ const display=S.box.querySelector('.u4r-passage');
+ if(visible&&display){
+   const gap=visible.getBoundingClientRect().top-display.getBoundingClientRect().top;
+   if(gap<35||gap>display.clientHeight*.65){
+     const amount=Math.max(0,display.scrollTop+gap-display.clientHeight*.25);
+     if(display.scrollTo)display.scrollTo({top:amount,behavior:'auto'});
+     else display.scrollTop=amount;
+   }
+ }
+ const stamp=S.box.querySelector('#u4r-synced');
+ if(stamp)stamp.textContent=active>=0?'Following textbook recording · '+(paragraphForTime(seconds)+1)+'/6':'Ready to follow';
+}
+function onSoundTick(){
+ if(!S.audio||!S.box)return;
+ if(!S.all){
+   const next=paragraphStarts()[S.part+1];
+   if(S.audio.currentTime>=next-.035&&!S.audio.paused){S.audio.pause();}
+ }
+ updateHighlight();
+}
+async function speak(){
+ if(S.mode!=='read'||!S.box)return;
+ const button=S.box.querySelector('[data-act="audio"]'),seq=++S.audioSequence;
+ if(button){button.disabled=true;button.textContent='Loading original recording…';}
+ try{
+   const uri=await sync()?.loadOriginalAudio?.();
+   if(!uri||seq!==S.audioSequence||!S.box||S.mode!=='read')return;
+   if(!S.audio||S.audio.src!==uri){
+     if(S.audio)S.audio.pause();
+     S.audio=new Audio(uri);
+     for(const type of ['timeupdate','seeked','playing','pause','ended'])S.audio.addEventListener(type,onSoundTick);
+   }else S.audio.pause();
+   const start=paragraphStarts()[S.all?0:S.part],stop=paragraphStarts()[S.all?6:S.part+1];
+   S.audio.currentTime=start;
+   S.activeCue=-1;updateHighlight(true);
+   await S.audio.play();
+   if(!S.all&&S.audio.currentTime>=stop)S.audio.pause();
+ }catch(error){
+   console.warn('Unit 4 Class Mode original audio',error);
+   const status=S.box?.querySelector('#u4r-synced');
+   if(status)status.textContent='Original audio unavailable. Check your connection and retry.';
+ }finally{
+   const btn=S.box?.querySelector('[data-act="audio"]');
+   if(btn){btn.disabled=false;btn.textContent='▶ Play original recording';}
+ }
+}
+function pauseSound(){if(S.audio)S.audio.pause();}
 function screen(){
   if(!S.box)return;
   const p=paragraphs(),q=questions()[S.index];
@@ -30,14 +111,15 @@ function screen(){
   const tabs='<nav class="u4r-tabs"><button '+(S.mode==='read'?'class="active" ':'')+'data-act="read">Read Together</button><button '+(S.mode==='quiz'?'class="active" ':'')+'data-act="quiz">Comprehension Questions</button></nav>';
   let body='';
   if(S.mode==='read'){
-    const text=S.all?p.map((x,i)=>'<p><small>Paragraph '+(i+1)+'</small>'+esc(x)+'</p>').join(''):'<p><small>Paragraph '+(S.part+1)+' of '+p.length+'</small>'+esc(p[S.part])+'</p>';
-    body='<section class="u4r-card"><h2>Read · Understand · Discuss</h2><div class="u4r-passage">'+text+'</div><div class="u4r-controls"><button data-act="prevPart" '+(S.part===0?'disabled':'')+'>Previous</button><button data-act="audio">▶ Read Aloud</button><button data-act="stopAudio">■ Stop</button><button data-act="full">'+(S.all?'Single Paragraph':'Full Text')+'</button><button data-act="nextPart" '+(S.part===5?'disabled':'')+'>Next Paragraph</button><button data-act="quiz" class="primary">Start Questions</button></div></section>';
+    const text=S.all?p.map((x,i)=>sourceParagraphMarkup(x,i)).join(''):sourceParagraphMarkup(p[S.part],S.part);
+    body='<section class="u4r-card"><h2>Read · Understand · Discuss</h2><div class="u4r-passage">'+text+'</div><div class="u4r-controls"><button data-act="prevPart" '+(S.part===0?'disabled':'')+'>Previous</button><button data-act="audio">▶ Play original recording</button><button data-act="stopAudio">■ Pause</button><span class="u4r-synced" id="u4r-synced">Ready to follow</span><button data-act="full">'+(S.all?'Single Paragraph':'Full Text')+'</button><button data-act="nextPart" '+(S.part===5?'disabled':'')+'>Next Paragraph</button><button data-act="quiz" class="primary">Start Questions</button></div></section>';
   }else{
     const choices=opts(q).map((c,i)=>'<button class="u4r-opt '+(S.selected===i?'selected ':'')+(S.reveal&&answer(q)===i?'correct ':S.reveal&&S.selected===i?'wrong ':'')+'" data-act="choose" data-num="'+i+'" '+(S.reveal?'disabled':'')+'><b>'+String.fromCharCode(65+i)+'</b><span>'+esc(c)+'</span></button>').join('');
     const evidence=S.index===0?[p[0],p[5]]:S.index===1?[p[1]]:[p[2]];
     body='<div class="u4r-grid"><section class="u4r-card"><div class="u4r-qt"><h2>Reading Comprehension</h2><b>Question '+(S.index+1)+' / 3</b></div><h3>'+esc(q.prompt)+'</h3><div class="u4r-options">'+choices+'</div>'+(S.reveal?'<p class="u4r-result"><b>Correct: '+String.fromCharCode(65+answer(q))+'</b> · '+esc(q.explanation||'')+'</p>':'')+'<div class="u4r-controls"><button data-act="prevQ" '+(S.index===0?'disabled':'')+'>Previous</button><button data-act="reveal" '+(S.reveal?'disabled':'')+'>Reveal Answer</button><button data-act="nextQ" class="primary">'+(S.index===2?'Finish':'Next Question')+'</button></div></section><aside class="u4r-card evidence"><div class="u4r-timer"><strong id="u4rClock">'+S.time+'s</strong><button data-act="timer">'+(S.running?'Pause':'Start 40s')+'</button><button data-act="reset">Reset</button></div><h2>Find the Evidence</h2>'+evidence.map(x=>'<p>'+esc(x)+'</p>').join('')+'<button data-act="audio">▶ Read Evidence</button></aside></div>';
   }
-  S.box.innerHTML='<div class="u4r-wrap">'+head+tabs+body+'<footer>Teacher-led practice only · Student records and certificates are not changed.</footer></div>';
+  S.box.innerHTML='<div class="u4r-wrap">'+head+tabs+body+'<footer>Original textbook recording · Sentence highlighting follows the actual recording timeline · Student scores and certificates are unchanged.</footer></div>';
+  if(S.mode==='read'&&S.audio)updateHighlight(true);
 }
 function goQ(i){stopTimer();stopAudio();S.mode='quiz';S.index=i;S.selected=-1;S.reveal=false;S.time=40;screen();}
 function handle(e){
@@ -47,11 +129,11 @@ function handle(e){
   if(a==='close'){close();return;}
   if(a==='read'){stopTimer();stopAudio();S.mode='read';screen();return;}
   if(a==='quiz'){goQ(0);return;}
-  if(a==='prevPart'){stopAudio();S.part=Math.max(0,S.part-1);screen();return;}
-  if(a==='nextPart'){stopAudio();S.part=Math.min(5,S.part+1);screen();return;}
-  if(a==='full'){S.all=!S.all;screen();return;}
+  if(a==='prevPart'){pauseSound();S.part=Math.max(0,S.part-1);screen();return;}
+  if(a==='nextPart'){pauseSound();S.part=Math.min(5,S.part+1);screen();return;}
+  if(a==='full'){pauseSound();S.all=!S.all;screen();return;}
   if(a==='audio'){speak();return;}
-  if(a==='stopAudio'){stopAudio();return;}
+  if(a==='stopAudio'){pauseSound();return;}
   if(a==='choose'&&!S.reveal){S.selected=Number(b.dataset.num);screen();return;}
   if(a==='reveal'){stopTimer();S.reveal=true;screen();return;}
   if(a==='prevQ'){goQ(Math.max(0,S.index-1));return;}
@@ -90,6 +172,7 @@ function style(){
   '.u4r-options{display:grid;gap:11px}.u4r-opt{display:flex;align-items:center;text-align:left;gap:15px;width:100%;font-size:clamp(18px,1.8vw,25px);line-height:1.4;border:2px solid #dbe5ed;background:#f8fafc;padding:14px;color:#1b3b54}.u4r-opt b{display:grid;place-items:center;flex:none;width:35px;height:35px;border-radius:9px;background:#dfeaf3}.u4r-opt.selected{border-color:#2c81b4;background:#eaf6ff}.u4r-opt.correct{border-color:#16835a;background:#e9f8ef}.u4r-opt.wrong{border-color:#b94c4c;background:#fff0ef}.u4r-result{background:#e9f8ed;border-radius:12px;padding:14px;color:#176143;font-size:17px}',
   '.u4r-timer{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.u4r-timer strong{font-size:32px;color:#175d8d;min-width:72px}.u4r-card.evidence h2{margin-top:18px}.u4r-card.evidence p{font-size:18px;line-height:1.65;background:#f7fafc;border-radius:11px;padding:16px}.u4r-wrap footer{font-size:13px;margin:14px 0;color:#657b8e}@media(max-width:850px){.u4r-wrap{padding:14px}.u4r-grid{grid-template-columns:1fr}.u4r-launch{flex-wrap:wrap}.u4r-passage{max-height:none}.u4r-header{align-items:flex-start}.u4r-tabs{flex-wrap:wrap}}'
   ].join('\n');
+  s.textContent += "\n.u4r-sentence{border-radius:5px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}.u4r-sentence.u4r-current{background:#b9e5f3;color:#123c56;box-shadow:0 0 0 3px #b9e5f3;font-weight:800}.u4r-source-paragraph{scroll-margin-top:40px}.u4r-synced{font-size:15px;font-weight:800;color:#327594;align-self:center;padding:9px 12px;background:#e9f5fa;border-radius:10px}.u4r-passage{scroll-behavior:auto}.u4r-passage p{line-height:1.8}.u4r-controls button[data-act=audio]{background:#1b6189;color:#fff}";
   document.head.appendChild(s);
 }
 function init(){
@@ -98,5 +181,5 @@ function init(){
   window.addEventListener('pagehide',()=>{stopTimer();stopAudio();});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261026-1'};
+window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261026-original-audio-aligned-1',_sentenceMarkup:sourceParagraphMarkup,_timeCue:timeCue,_paragraphForTime:paragraphForTime};
 })();
