@@ -5,8 +5,8 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-reading-follow-1';
-const LESSON_VERSION=2;
+const VERSION='20261026-home-mastery-1';
+const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
@@ -23,18 +23,72 @@ const user=()=>window.firebase?.apps?.length?firebase.auth().currentUser:null;
 const ids=()=>Array.from({length:6},(_,i)=>MEDIA+String(i+1).padStart(2,'0')+'.bin');
 const storedId=uid=>TASK+'-'+uid;
 const key=uid=>'stepup-flipped-u4-'+uid;
-const defaultState=()=>({step:0,opening:'',opinion:'',readConfirmed:false,answers:{},completed:false});
-const CHECKS=[
- {id:'q1',skill:'Find a detail',prompt:'Why was Frank McNamara embarrassed at the restaurant?',
-  choices:['He arrived late for dinner.','He had left his wallet in another suit.','His credit card was rejected.'],
-  correct:1,explain:'Paragraph 2 says that Frank had left his wallet in the other suit.'},
- {id:'q2',skill:'Cause and effect',prompt:'What helped the new way of paying become popular?',
-  choices:['Restaurants stopped accepting cash.','Everyone got a credit card immediately.','Many merchants and businesses began accepting the card.'],
-  correct:2,explain:'Paragraph 2 explains that merchants adopted charging it, and thousands of businesses accepted the card by 1952.'}
+const defaultState=()=>({step:0,opening:'',opinion:'',answers:{},recovery:{},completed:false,readSections:[],legacyCompleted:false});
+const CHAPTERS=[
+ {title:'The Surprise That Started It',icon:'🍽️',range:[0,2],start:9.469,end:105.783,
+  goal:'Discover the problem, the solution and the first credit card.',
+  vocabulary:[['inconceivable','impossible to imagine','يصعب تصوره'],['impractical','not useful in daily life','غير عملي'],['charging it','paying by card instead of cash','الدفع بالبطاقة بدل النقد']]},
+ {title:'From One Restaurant to the World',icon:'🌍',range:[2,4],start:105.783,end:175.880,
+  goal:'Trace how the idea spread and why people valued the card.',
+  vocabulary:[['status symbol','something showing high social standing','رمز للمكانة الاجتماعية'],['franchise','a licensed business branch','امتياز تجاري'],['cashed in on','benefited financially from','استفاد ماديًا من']]},
+ {title:'Why the World Changed',icon:'💳',range:[4,6],start:175.880,end:201.016,
+  goal:'Identify customer rewards and explain the lasting impact.',
+  vocabulary:[['rewards program','special benefits given to customers','برنامج المكافآت'],['revolutionized','changed something in an important way','أحدث تغييرًا جذريًا']]}
 ];
-const answeredCount=()=>CHECKS.filter(q=>Number.isInteger(state.answers?.[q.id])).length;
-const correctCount=()=>CHECKS.filter(q=>state.answers?.[q.id]===q.correct).length;
-const hasCompletedCheck=v=>!!(v?.readConfirmed&&CHECKS.every(q=>Number.isInteger(v?.answers?.[q.id])));
+const CHECKS=[
+ {id:'q1',step:2,skill:'Problem and cause',paragraph:'2',
+  prompt:'What problem started the idea of paying without cash?',
+  choices:['Frank had left his wallet in his other suit.','The waiter asked everyone to use a card.','Restaurants refused to accept money.'],correct:0,
+  quote:'Frank realized that he had left his wallet in the other suit.',
+  support:'Frank was embarrassed because he could not pay with the cash he was carrying.',
+  retryPrompt:'Where had Frank left his wallet?',retryChoices:['At the airport.','In his other suit.','In the restaurant kitchen.'],retryCorrect:1},
+ {id:'q2',step:3,skill:'How the solution worked',paragraph:'2',
+  prompt:'How did Frank pay when he returned a year later?',
+  choices:['He used a cardboard Diner’s Club Card and signed the bill.','He paid with his new mobile phone.','He borrowed cash from the waiter.'],correct:0,
+  quote:'Frank handed the waiter a small cardboard card, a Diner’s Club Card, and signed for the meal.',
+  support:'The card offered an alternative to paying cash immediately.',
+  retryPrompt:'What did he do after handing over the card?',retryChoices:['Signed for his meal.','Changed suits.','Ordered another meal.'],retryCorrect:0},
+ {id:'q3',step:5,skill:'Timeline and expansion',paragraph:'3',
+  prompt:'What shows that the Diner’s Club idea spread internationally?',
+  choices:['It was accepted only in New York.','It created franchises in Canada, France, and Cuba.','No other businesses wanted to accept cards.'],correct:1,
+  quote:'The Diner’s Club Card became the first international charge card in 1952 with franchises in Canada, France, and Cuba.',
+  support:'The card moved beyond one country, one restaurant, and later beyond restaurants.',
+  retryPrompt:'In which year did the card become international?',retryChoices:['1949','1952','1984'],retryCorrect:1},
+ {id:'q4',step:6,skill:'Vocabulary in context',paragraph:'2',
+  prompt:'What does “status symbol” mean in this reading?',
+  choices:['A sign of high social standing.','An official passport.','A card that gives all meals free.'],correct:0,
+  quote:'It became a status symbol for those who carried it.',
+  support:'A status symbol shows prestige or social standing.',
+  retryPrompt:'Someone carries the card to show prestige. Prestige is closest to...',
+  retryChoices:['high social standing','low prices','a lost wallet'],retryCorrect:0},
+ {id:'q5',step:8,skill:'Benefits and details',paragraph:'5',
+  prompt:'What benefit is mentioned for customers in reward programs?',
+  choices:['Unlimited cash at restaurants.','Free airline miles or hotel discounts.','Free international passports.'],correct:1,
+  quote:'Now many reward programs offer free airline miles and discounts on hotels and other products.',
+  support:'Reward programs encourage loyal card users with special benefits.',
+  retryPrompt:'Which activity could a card reward help with?',retryChoices:['Booking a hotel at a discount.','Making a paper suitcase.','Replacing a passport.'],retryCorrect:0},
+ {id:'q6',step:9,skill:'Main idea and inference',paragraph:'6',
+  prompt:'What is the main message of The World of Plastic?',
+  choices:['Credit cards began from a problem and transformed payments worldwide.','Restaurants should never use credit cards.','The story is mainly about making movies.'],correct:0,
+  quote:'An entirely new business was created that revolutionized the way the world has paid for goods and services ever since.',
+  support:'The conclusion connects Frank’s experience with a major worldwide change.',
+  retryPrompt:'What did the invention change most?',retryChoices:['The way people pay for goods and services.','The way people travel by plane.','The way restaurants cook food.'],retryCorrect:0}
+];
+const getQuestion=step=>CHECKS.find(q=>q.step===step);
+const answeredCount=(v=state)=>CHECKS.filter(q=>Number.isInteger(v.answers?.[q.id])).length;
+const correctCount=(v=state)=>CHECKS.filter(q=>v.answers?.[q.id]===q.correct).length;
+const recoveredCount=(v=state)=>CHECKS.filter(q=>Number.isInteger(v.answers?.[q.id])&&v.answers[q.id]!==q.correct&&v.recovery?.[q.id]===q.retryCorrect).length;
+const needsRetry=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&v.answers[q.id]!==q.correct&&!Number.isInteger(v.recovery?.[q.id]);
+const isCheckResolved=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&(v.answers[q.id]===q.correct||Number.isInteger(v.recovery?.[q.id]));
+const completedCheck=v=>CHECKS.every(q=>isCheckResolved(q,v))&&v?.opinion&&Array.isArray(v.readSections)&&v.readSections.length===3;
+const readiness=v=>{
+ if(!v||Number(v.lessonVersion)!==LESSON_VERSION||!v.completed||!completedCheck(v))return 'unfinished';
+ const first=correctCount(v),remedial=CHECKS.filter(q=>v.answers[q.id]!==q.correct);
+ if(first>=5&&remedial.every(q=>v.recovery?.[q.id]===q.retryCorrect))return 'ready';
+ if(remedial.every(q=>v.recovery?.[q.id]===q.retryCorrect))return 'supported';
+ return 'review';
+};
+const nextStep=step=>step===0?1:step===1?2:step===2?3:step===3?4:step===4?5:step===5?6:step===6?7:step===7?8:step===8?9:step===9?10:11;
 let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
 let followEnabled=true,lastFollowCue=-2;
 function authStudent(){return user()?.uid||'';}
@@ -69,18 +123,18 @@ function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flip
 function studentCard(cls,profile){
  if(!checkClass(cls,profile?.id||authStudent(),profile?.role))return '';
  const cached=localGet(profile.id);
- const done=!!(cached?.completed&&cached?.lessonVersion===LESSON_VERSION&&hasCompletedCheck(cached));
+ const done=readiness(cached)==='ready'||readiness(cached)==='supported'||readiness(cached)==='review';
  if(!deepLinkHandled&&new URLSearchParams(location.search).get('flipped')==='u4'){
    deepLinkHandled=true;Promise.resolve().then(()=>open());
  }
- return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>Explore the real textbook story, listen if you wish, and try two quick reading questions. No grades.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
+ return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>Learn the complete textbook reading in 3 short parts. Understand it, check yourself and get help when needed.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
 }
 function teacherCard(cls){
  if(!cls)return '';
  const enabled=cls.flippedU4Enabled===true;
  const arg=JSON.stringify(cls.id).replace(/\"/g,'&quot;');
  const codeArg=JSON.stringify(cls.code||'').replace(/\"/g,'&quot;');
- return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Share the original Unit 4 reading before class with two light comprehension checks. Regular Unit 4 practice stays separate.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>2 reading comprehension checks</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+ return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Pre-teach all six textbook paragraphs with 3 guided parts, 6 understanding checks, and instant support. Use the report to shorten your next lesson.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>6 guided checks · 3 short parts</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
 }
 async function setEnabled(classId,enabled){
  if(!user()||!db()){alert('Sign in to your teacher account.');return;}
