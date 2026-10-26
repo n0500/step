@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-3';
+const VERSION='20261026-textbook-verbatim-1';
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
@@ -147,9 +147,27 @@ async function copyLink(classCode){
 }
 function showSyncNotice(){const x=modal?.querySelector('#fwSync');if(x)x.textContent='Saved on this device. Reopen online to sync.';}
 const scenes=[
- {ico:'👔',year:'1949',title:'A small mistake',text:'Frank McNamara was having dinner in New York. When the bill arrived, he realized he had left his wallet in another suit.',line:'One forgotten wallet. One big question.'},
- {ico:'💳',year:'1950',title:'A clever idea',text:'He returned with a Diners Club card. Instead of paying cash for his meal, he signed the bill.',line:'What if you could pay without cash?'},
- {ico:'🌍',year:'1952 and beyond',title:'An idea spreads',text:'More businesses accepted the card. Soon it was used beyond restaurants, and payment cards changed everyday life.',line:'A mistake became an opportunity.'}
+ {
+  "ico": "👔",
+  "year": "1949",
+  "title": "A small mistake",
+  "text": "When the waiter presented the check, Frank realized that he had left his wallet in the other suit.",
+  "line": "What would you do?"
+ },
+ {
+  "ico": "💳",
+  "year": "1950",
+  "title": "A clever idea",
+  "text": "When the check came, Frank handed the waiter a small cardboard card, a Diner’s Club Card, and signed for the meal.",
+  "line": "What if you could pay without cash?"
+ },
+ {
+  "ico": "🌍",
+  "year": "1952 and beyond",
+  "title": "An idea spreads",
+  "text": "The idea of the credit card quickly expanded outside the United States.",
+  "line": "One idea can change our lives."
+ }
 ];
 function render(){
  if(!modal)return;
@@ -158,7 +176,7 @@ function render(){
  const head='<header class="fw-head"><div><small>STEP UP · UNIT 4 · READING STORY</small><h1>The Forgotten Wallet</h1><p>One mistake. A big invention!</p></div><button type="button" data-fw="close" aria-label="Close activity">✕</button></header><div class="fw-progress" role="progressbar" aria-valuenow="'+progress+'" aria-valuemin="0" aria-valuemax="100"><span style="width:'+progress+'%"></span></div>';
  let body='';
  if(state.step===0){
-   body='<div class="fw-scene-art">🍽️ <span>🧥</span></div><div class="fw-scene"><span class="fw-eyebrow">NEW YORK · 1949</span><h2>Oh no! I forgot my wallet!</h2><p>The waiter brings the bill, but the customer has no money with him.</p><h3>What would you do?</h3><div class="fw-answers">'+[['borrow','Ask someone for help'],['return','Go home for my wallet'],['idea','Think of another way to pay']].map(x=>'<button type="button" data-fw="opening" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">There are no wrong answers. Just choose what you would do.</p></div>';
+   body='<div class="fw-scene-art">🍽️ <span>🧥</span></div><div class="fw-scene"><span class="fw-eyebrow">NEW YORK · 1949</span><h2>Oh no! I forgot my wallet!</h2><p>When the waiter presented the check, Frank realized that he had left his wallet in the other suit.</p><h3>What would you do?</h3><div class="fw-answers">'+[['borrow','Ask someone for help'],['return','Go home for my wallet'],['idea','Think of another way to pay']].map(x=>'<button type="button" data-fw="opening" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">There are no wrong answers. Just choose what you would do.</p></div>';
  }else if(state.step>=1&&state.step<=3){
    const s=scenes[state.step-1];
    body='<div class="fw-scene-art">'+s.ico+'</div><div class="fw-scene"><span class="fw-eyebrow">'+e(s.year)+' · PART '+state.step+' OF 3</span><h2>'+e(s.title)+'</h2><p>'+e(s.text)+'</p><div class="fw-quote">'+e(s.line)+'</div><div class="fw-nav"><button type="button" data-fw="back">Back</button><button class="fw-primary" type="button" data-fw="next">'+(state.step===3?'One Last Question':'See What Happens Next')+'</button></div></div>';
@@ -169,7 +187,7 @@ function render(){
  }
  const completeText=String(window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id==='u4')?.reading||'');
  const optionalReading=completeText.split(/\n\s*\n/).slice(1).filter(Boolean).map(p=>'<p>'+e(p)+'</p>').join('');
- const extra=optionalReading?'<details class="fw-extra"><summary>Read the full practice passage (optional)</summary><div><p class="fw-adapted">The lesson text is adapted; the audio is the original textbook recording.</p>'+optionalReading+'</div></details>':'';
+ const extra=optionalReading?'<details class="fw-extra"><summary>Read the exact textbook passage (page 60)</summary><div><p class="fw-adapted">Exact text from the 2025–1447 Student Book. Audio: original CD 2, Track 07.</p>'+optionalReading+'</div></details>':'';
  modal.innerHTML='<div class="fw-sheet">'+head+'<main class="fw-main">'+body+'</main>'+extra+'<section class="fw-audio"><div><b>🎧 Optional: Listen to the original Reading</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Show audio player':'Load original audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section><footer><span id="fwSync">Your progress is saved · No grades or certificates</span><span>'+e(steps[state.step])+'</span></footer></div>';
  if(audioURL)attachAudio();
 }
