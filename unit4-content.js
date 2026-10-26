@@ -22,6 +22,15 @@
    const m=u.missions.find(x=>x.id===row[0]);
    if(m){m.title=row[1];m.sub=row[2];}
  });
+ // Distribute Unit 4 reading answers (B, C, D, A). Preserve stable IDs.
+ const readTargets=[1,2,3,0];
+ const readingBank=DATA.q.filter(q=>q.m===5);
+ if(readingBank.length!==readTargets.length)throw Error('Unexpected Unit 4 reading bank size');
+ readingBank.forEach(function(q,i){
+   const correct=q.choices.splice(q.answer,1)[0];
+   q.choices.splice(readTargets[i],0,correct);
+   q.answer=readTargets[i];
+ });
  const opts=['opt_a','opt_b','opt_c','opt_d'];
  const rows=DATA.q.map(function(item,i){
    const m=u.missions[item.m-1];
