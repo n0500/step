@@ -17,7 +17,7 @@ const ids=()=>Array.from({length:6},(_,i)=>MEDIA+String(i+1).padStart(2,'0')+'.b
 const storedId=uid=>TASK+'-'+uid;
 const key=uid=>'stepup-flipped-u4-'+uid;
 const defaultState=()=>({step:0,opening:'',opinion:'',completed:false});
-let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve();
+let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
 function authStudent(){return user()?.uid||'';}
 function localGet(uid){try{const raw=JSON.parse(localStorage.getItem(key(uid))||'null');return raw?.version===1?raw.data:null}catch(_){return null;}}
 function localSet(uid,data){try{localStorage.setItem(key(uid),JSON.stringify({version:1,data}));}catch(_){}}
@@ -50,12 +50,17 @@ function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flip
 function studentCard(cls,profile){
  if(!checkClass(cls,profile?.id||authStudent(),profile?.role))return '';
  const done=!!localGet(profile.id)?.completed;
+ if(!deepLinkHandled&&new URLSearchParams(location.search).get('flipped')==='u4'){
+   deepLinkHandled=true;Promise.resolve().then(()=>open());
+ }
  return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>One mistake. A big invention! · A short story you can discover at your own pace.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
 }
 function teacherCard(cls){
  if(!cls)return '';
  const enabled=cls.flippedU4Enabled===true;
- return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Share a quick audio-supported story before class. Unit 4 does not have to be open for regular practice.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>No scores or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+JSON.stringify(cls.id)+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(cls.id)+')">View Participation</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+ const arg=JSON.stringify(cls.id).replace(/\"/g,'&quot;');
+ const codeArg=JSON.stringify(cls.code||'').replace(/\"/g,'&quot;');
+ return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Share a quick audio-supported story before class. Unit 4 does not have to be open for regular practice.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>No scores or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
 }
 async function setEnabled(classId,enabled){
  if(!user()||!db()){alert('Sign in to your teacher account.');return;}
@@ -90,7 +95,7 @@ async function report(classId){
      const v=saved.get(s.id);const status=v?.completed?'Completed':v?'Started':'Not started';
      return '<div><strong>'+e(s.displayName||'Student')+'</strong><span>'+e(status)+'</span><small>'+e(v?.opinion?options[v.opinion]||v.opinion:'')+'</small></div>';
    }).join(''):'<p>No students found in this class.</p>')+'</div>';
- }catch(err){console.warn('Flipped Reading report',err);el.innerHTML='<p>Unable to load results. Check your connection and retry.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId)+')">Retry</button>';}
+ }catch(err){console.warn('Flipped Reading report',err);el.innerHTML='<p>Unable to load results. Check your connection and retry.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId).replace(/\"/g,'&quot;')+')">Retry</button>';}
 }
 async function open(){
  if(modal)return;
@@ -124,6 +129,10 @@ function persist(){
    if(!db()||authStudent()!==uid)return;
    await db().collection('assignmentSubmissions').doc(storedId(uid)).set(data,{merge:true});
  }).catch(err=>{console.warn('Flipped Reading sync failed',err);showSyncNotice();});
+}
+async function copyLink(classCode){
+ const url=new URL(location.href);url.search='';url.searchParams.set('class',String(classCode||''));url.searchParams.set('flipped','u4');url.hash='';
+ try{await navigator.clipboard.writeText(url.toString());alert('Student link copied.');}catch(_){window.prompt('Copy student link:',url.toString());}
 }
 function showSyncNotice(){const x=modal?.querySelector('#fwSync');if(x)x.textContent='Saved on this device. Reopen online to sync.';}
 const scenes=[
@@ -173,10 +182,10 @@ function click(event){
  if(a==='next'&&state.step<4){state.step++;persist();render();return;}
  if(a==='back'&&state.step>1&&state.step<5){state.step--;persist();render();return;}
  if(a==='opinion'){state.opinion=b.dataset.choice;state.step=5;state.completed=true;persist();render();return;}
- if(a==='restart'){state.step=0;state.opening='';state.opinion='';state.completed=false;persist();render();return;}
+ if(a==='restart'){state.step=0;state.opening='';state.opinion='';localSet(ctx.uid,{...state,version:1});render();return;}
 }
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,open,close,loadOriginalAudio,version:VERSION,
+window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,open,close,loadOriginalAudio,version:VERSION,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes};
 })();
