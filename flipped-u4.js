@@ -90,7 +90,7 @@ const readiness=v=>{
 };
 const nextStep=step=>step===0?1:step===1?2:step===2?3:step===3?4:step===4?5:step===5?6:step===6?7:step===7?8:step===8?9:step===9?10:11;
 let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
-let followEnabled=true,lastFollowCue=-2;
+let followEnabled=true,lastFollowCue=-2,chapterStopAt=0;
 function authStudent(){return user()?.uid||'';}
 function localGet(uid){try{const raw=JSON.parse(localStorage.getItem(key(uid))||'null');return raw?.version===1?raw.data:null}catch(_){return null;}}
 function localSet(uid,data){try{localStorage.setItem(key(uid),JSON.stringify({version:1,data}));}catch(_){}}
@@ -295,10 +295,10 @@ function splitReadSentences(paragraph){
  const pieces=plain.match(/[^.!?]+[.!?]+(?:[”"']|$)?|[^.!?]+$/g)||[];
  return pieces.join('')===plain?pieces:[plain];
 }
-function readingFollowMarkup(paragraphs){
- const fragments=paragraphs.flatMap(p=>splitReadSentences(p));
- const valid=fragments.length===READING_CUES.length;
- let cursor=0;
+function readingFollowMarkup(paragraphs,baseIndex=0){
+ const all=readingParagraphs().flatMap(p=>splitReadSentences(p));
+ const valid=all.length===READING_CUES.length;
+ let cursor=baseIndex;
  const html=paragraphs.map(p=>'<p>'+splitReadSentences(p).map(part=>{
    const i=cursor++;
    return valid?'<span class="fw-sentence" data-fw-cue="'+i+'">'+e(part)+'</span>':e(part);
@@ -315,18 +315,19 @@ function refreshFollowAlong(forceScroll=false){
  const area=modal?.querySelector('.fw-reading-text');
  if(!area||!audio)return;
  const spans=area.querySelectorAll('.fw-sentence');
- if(spans.length!==READING_CUES.length)return;
+ if(!spans.length)return;
  const idx=followEnabled?readingCueAt(audio.currentTime):-1;
  if(idx===lastFollowCue&&!forceScroll)return;
  for(let i=0;i<spans.length;i++){
-   const active=i===idx;
+   const active=Number(spans[i].dataset.fwCue)===idx;
    spans[i].classList.toggle('fw-sentence-active',active);
    if(active)spans[i].setAttribute('aria-current','true');
    else spans[i].removeAttribute('aria-current');
  }
  lastFollowCue=idx;
  if(idx<0||!followEnabled)return;
- const node=spans[idx];
+ const node=Array.from(spans).find(sp=>Number(sp.dataset.fwCue)===idx);
+ if(!node)return;
  const delta=node.getBoundingClientRect().top-area.getBoundingClientRect().top;
  const offset=delta-area.clientHeight*.33;
  if(offset<-18||offset>area.clientHeight*.36){
@@ -337,53 +338,79 @@ function refreshFollowAlong(forceScroll=false){
    }else area.scrollTop=top;
  }
 }
-function onReadingAudioTick(){refreshFollowAlong();}
+function onReadingAudioTick(){if(audio&&chapterStopAt>0&&audio.currentTime>=chapterStopAt-.08&&!audio.paused){audio.pause();chapterStopAt=0;}refreshFollowAlong();}
 function toggleFollowReading(){
  followEnabled=!followEnabled;
  const btn=modal?.querySelector('[data-fw="toggleFollow"]');
  if(btn){btn.textContent=followEnabled?'Follow audio: ON':'Follow audio: OFF';btn.setAttribute('aria-pressed',String(followEnabled));}
  lastFollowCue=-2;refreshFollowAlong(true);
 }
+function chapterHtml(chapterIdx){
+ const chapter=CHAPTERS[chapterIdx],p=readingParagraphs();
+ if(p.length!==6)return '<div class="fw-scene"><h2>The original textbook text is unavailable</h2><p>Please reload STEP UP and try again before answering.</p><button class="fw-primary" data-fw="refresh">Retry</button></div>';
+ const chosen=p.slice(...chapter.range),base=p.slice(0,chapter.range[0]).reduce((n,x)=>n+splitReadSentences(x).length,0);
+ const help=chapter.vocabulary.map(v=>'<div class="fw-vocab-term"><b>'+e(v[0])+'</b><span>'+e(v[1])+'</span><small>'+e(v[2])+'</small></div>').join('');
+ return '<div class="fw-reading fw-home-chapter"><div class="fw-chapter-heading"><div class="fw-chapter-icon">'+chapter.icon+'</div><div><span class="fw-eyebrow">PART '+(chapterIdx+1)+' OF 3 · MEGA GOAL 1 · PAGE 60</span><h2>'+e(chapter.title)+'</h2><p>'+e(chapter.goal)+'</p></div></div>'+
+ '<div class="fw-follow-bar"><span>Follow the original book while listening</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div>'+
+ '<div class="fw-reading-text" aria-label="Textbook reading part '+(chapterIdx+1)+'">'+readingFollowMarkup(chosen,base).html+'</div>'+
+ '<div class="fw-chapter-helper"><button class="fw-audio-part" type="button" data-fw="chapterAudio" data-choice="'+chapterIdx+'">▶ Listen to this part</button><details><summary>Need help with a word?</summary><div class="fw-vocab-items">'+help+'</div></details></div>'+
+ '<div class="fw-timeline"><span>1949</span><i>→</i><span>1950</span><i>→</i><span>1952</span><i>→</i><span>1984</span></div>'+
+ '<button class="fw-primary" type="button" data-fw="chapterDone" data-choice="'+chapterIdx+'">I understand this part · Check my understanding</button>'+
+ '<p class="fw-note">Read at your pace. The audio follows the textbook but is optional.</p></div>';
+}
+function questionHtml(q){
+ const first=state.answers[q.id],answered=Number.isInteger(first);
+ const correct=answered&&first===q.correct;
+ const recovery=state.recovery[q.id],recovered=Number.isInteger(recovery);
+ const done=answered&&(correct||recovered);
+ const old=readingParagraphs()[Number(q.paragraph)-1]||'';
+ const evidence='<details class="fw-book-evidence"><summary>📖 See the evidence · textbook paragraph '+q.paragraph+'</summary><p>'+e(old.replace(/^\d+\.\s*/,''))+'</p></details>';
+ const options=q.choices.map((x,i)=>'<button type="button" data-fw="check" data-choice="'+i+'" '+(answered?'disabled ':'')+'class="'+(answered&&i===first?(correct?'fw-answer-right':'fw-answer-try'):'')+'">'+e(x)+'</button>').join('');
+ const followup=answered&&!correct?'<div class="fw-feedback"><strong>Find the evidence and try a new example</strong><p>'+e(q.support)+'</p><blockquote>'+e(q.quote)+'</blockquote><h3>'+e(q.retryPrompt)+'</h3><div class="fw-answers">'+q.retryChoices.map((x,i)=>'<button type="button" data-fw="recover" data-choice="'+i+'" '+(recovered?'disabled ':'')+'class="'+(recovered&&i===recovery?(recovery===q.retryCorrect?'fw-answer-right':'fw-answer-try'):'')+'">'+e(x)+'</button>').join('')+'</div>'+ (recovered?'<p>'+(recovery===q.retryCorrect?'Yes! You used the text to fix the idea.':'The answer is: '+e(q.retryChoices[q.retryCorrect])+'. You can revisit this idea at the end.')+'</p>':'<p class="fw-note">There is no penalty for needing a hint.</p>')+'</div>':answered?'<div class="fw-feedback"><strong>Exactly — your evidence is in paragraph '+q.paragraph+'.</strong><p>'+e(q.support)+'</p></div>':'<p class="fw-note">Think of the text. You may open the evidence if you need help.</p>';
+ return '<div class="fw-scene fw-home-question"><span class="fw-eyebrow">CHECK '+CHECKS.indexOf(q)+1+' OF 6 · '+e(q.skill)+'</span><h2>'+e(q.prompt)+'</h2><div class="fw-answers">'+options+'</div>'+evidence+followup+
+ (done?'<button type="button" class="fw-primary" data-fw="nextCheck">'+(q.step===9?'Share Your Opinion':getQuestion(q.step+1)?'Next Quick Check':'Continue the Story')+'</button>':'')+
+ '</div>';
+}
 function render(){
  if(!modal)return;
- const steps=['Curiosity','Discover','Discover','Discover','Read & listen','Find a detail','Cause & effect','Your opinion','Ready'];
- const progress=Math.round(Math.min(8,Math.max(0,state.step))/8*100);
- const head='<header class="fw-head"><div><small>STEP UP · UNIT 4 · TEXTBOOK READING</small><h1>The Forgotten Wallet</h1><p>One mistake. A big invention!</p></div><button type="button" data-fw="close" aria-label="Close activity">✕</button></header><div class="fw-progress" role="progressbar" aria-valuenow="'+progress+'" aria-valuemin="0" aria-valuemax="100"><span style="width:'+progress+'%"></span></div>';
+ const stepLabels=['Your prediction','How it began','Find a detail','How it worked','Growing worldwide','Expansion','Vocabulary','Rewards and impact','Benefits','Big idea','Your perspective','Preparation summary'];
+ const progress=Math.round(Math.min(11,Math.max(0,state.step))/11*100);
+ const head='<header class="fw-head"><div><small>STEP UP · UNIT 4 · HOME PREPARATION</small><h1>The World of Plastic</h1><p>3 short reading parts · 6 understanding checks · No grades</p></div><button type="button" data-fw="close" aria-label="Close activity">✕</button></header>'+
+ '<div class="fw-progress" role="progressbar" aria-valuenow="'+progress+'" aria-valuemin="0" aria-valuemax="100"><span style="width:'+progress+'%"></span></div>';
  let body='';
  if(state.step===0){
-   body='<div class="fw-scene-art">🍽️ <span>🧥</span></div><div class="fw-scene"><span class="fw-eyebrow">NEW YORK · 1949</span><h2>Oh no! I forgot my wallet!</h2><p>When the waiter presented the check, Frank realized that he had left his wallet in the other suit.</p><h3>What would you do?</h3><div class="fw-answers">'+[['borrow','Ask someone for help'],['return','Go home for my wallet'],['idea','Think of another way to pay']].map(x=>'<button type="button" data-fw="opening" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">No wrong answer. Just choose what you would do.</p></div>';
- }else if(state.step>=1&&state.step<=3){
-   const scene=scenes[state.step-1];
-   body='<div class="fw-scene-art">'+e(scene.ico)+'</div><div class="fw-scene"><span class="fw-eyebrow">'+e(scene.year)+' · DISCOVERY '+state.step+'/3</span><h2>'+e(scene.title)+'</h2><p>'+e(scene.text)+'</p><div class="fw-quote">'+e(scene.line)+'</div><div class="fw-nav"><button type="button" data-fw="back">Back</button><button class="fw-primary" type="button" data-fw="next">'+(state.step===3?'Explore the Full Reading':'What Happens Next?')+'</button></div></div>';
- }else if(state.step===4){
-   const paras=readingParagraphs();
-   if(paras.length!==6){
-     body='<div class="fw-scene"><h2>The textbook text is not available right now</h2><p>Refresh STEP UP and try again. This story cannot be marked ready without the original reading.</p><button class="fw-primary" type="button" data-fw="refresh">Retry</button></div>';
-   }else{
-     body='<div class="fw-reading"><span class="fw-eyebrow">MEGA GOAL 1 · UNIT 4 · PAGE 60</span><h2>The World of Plastic</h2><p class="fw-reading-help">Read the original six paragraphs below. You can also play the textbook audio. Take your time!</p><div class="fw-follow-bar"><span>Highlight the sentence while the recording plays</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div><div class="fw-reading-text">'+readingFollowMarkup(paras).html+'</div><button class="fw-primary" type="button" data-fw="readingDone">'+(state.readConfirmed?'Continue to Quick Check':'I’ve explored the reading · 2 quick questions')+'</button><p class="fw-note">No timer, no grades. You can return to the text whenever you need it.</p></div>';
-   }
- }else if(state.step===5||state.step===6){
-   const q=CHECKS[state.step-5],answered=Number.isInteger(state.answers[q.id]),picked=state.answers[q.id],correct=answered&&picked===q.correct;
-   body='<div class="fw-scene-art">🔎</div><div class="fw-scene"><span class="fw-eyebrow">QUICK CHECK '+(state.step-4)+'/2 · '+e(q.skill)+'</span><h2>'+e(q.prompt)+'</h2><div class="fw-answers">'+q.choices.map((txt,i)=>'<button type="button" '+(answered?'disabled ':'')+'data-fw="check" data-choice="'+i+'" class="'+(answered&&i===picked?(correct?'fw-answer-right':'fw-answer-try'):'')+'">'+e(txt)+'</button>').join('')+'</div>'+(answered?'<div class="fw-feedback"><strong>'+(correct?'Great reading!':'Good try! Here is the clue.')+'</strong><p>'+e(q.explain)+'</p></div><div class="fw-nav"><button type="button" data-fw="reviewText">Review the text</button><button class="fw-primary" type="button" data-fw="afterCheck">'+(state.step===5?'One More Question':'Share Your Opinion')+'</button></div>':'<p class="fw-note">Choose one answer. Use the story to help you.</p>')+'</div>';
- }else if(state.step===7){
-   body='<div class="fw-scene-art">💡 <span>🌎</span></div><div class="fw-scene"><span class="fw-eyebrow">THINK LIKE A READER</span><h2>Can one mistake change the world?</h2><p>There is no single right opinion. Share your idea and discuss it in class.</p><div class="fw-answers">'+[['yes','Yes, it can!'],['maybe','Maybe. It depends.'],['no','No, not by itself.']].map(x=>'<button type="button" data-fw="opinion" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">Your teacher will see the opinion and your two reading checks, not a grade.</p></div>';
- }else{
-   body='<div class="fw-scene-art">✨ 💳</div><div class="fw-scene"><span class="fw-eyebrow">YOU ARE READY</span><h2>Great! You’re ready for class!</h2><p>You read the original story and answered both reading questions.</p><div class="fw-quote">You completed both reading checks. Bring your ideas to class!</div><button class="fw-primary" type="button" data-fw="close">Done for Today</button><button class="fw-restart" type="button" data-fw="restart">Explore the story again</button></div>';
+    body='<div class="fw-scene-art">🍽️ 💳</div><div class="fw-scene"><span class="fw-eyebrow">A TRUE STORY · NEW YORK, 1949</span><h2>One forgotten wallet. A worldwide change.</h2><p>Your mission: discover how an embarrassing moment led to a new way of paying. By the end, you should be able to explain the story yourself.</p>'+
+    '<div class="fw-objectives"><strong>After this lesson, you can:</strong><p>Explain the problem and solution · Trace the spread · Understand key words · Tell why the invention mattered</p></div>'+
+    '<h3>What do you think happened when Frank forgot his wallet?</h3><div class="fw-answers">'+[['borrow','Someone paid for him.'],['idea','He invented a new way to pay.'],['leave','He never returned.']].map(x=>'<button type="button" data-fw="opening" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">Just a prediction — not a test.</p></div>';
+ }else if([1,4,7].includes(state.step))body=chapterHtml(state.step===1?0:state.step===4?1:2);
+ else if(getQuestion(state.step))body=questionHtml(getQuestion(state.step));
+ else if(state.step===10)body='<div class="fw-scene-art">💭</div><div class="fw-scene"><span class="fw-eyebrow">APPLY WHAT YOU LEARNED</span><h2>Can one mistake change the world?</h2><p>Choose your view. In class, you will support it with evidence from the reading.</p><div class="fw-answers">'+[['yes','Yes, it can.'],['maybe','Sometimes — it depends.'],['no','Not by itself.']].map(x=>'<button type="button" data-fw="opinion" data-choice="'+x[0]+'">'+e(x[1])+'</button>').join('')+'</div><p class="fw-note">There is no single correct opinion.</p></div>';
+ else{
+   const status=readiness({...state,lessonVersion:LESSON_VERSION});
+   const wrong=CHECKS.filter(q=>state.answers[q.id]!==q.correct);
+   const unresolved=wrong.filter(q=>state.recovery[q.id]!==q.retryCorrect);
+   const ok=status==='ready';
+   const title=ok?'Ready for class!':status==='supported'?'Prepared with support!':'One more small review will help';
+   const explanation=ok?'You showed independent understanding of the key reading ideas.':
+      status==='supported'?'You found and corrected the ideas you first missed. Your teacher will know where you needed help.':
+      'You have finished the reading, but one or more ideas need another look before the lesson.';
+   body='<div class="fw-scene-art">🌟 📖</div><div class="fw-scene"><span class="fw-eyebrow">HOME LESSON SUMMARY</span><h2>'+title+'</h2><p>'+explanation+'</p>'+
+     '<div class="fw-home-results"><div><b>'+correctCount()+'/6</b><small>First-try understanding</small></div><div><b>'+recoveredCount()+'</b><small>Ideas recovered</small></div></div>'+
+     (unresolved.length?'<div class="fw-review-list"><strong>Review these ideas:</strong>'+unresolved.map(q=>'<button type="button" data-fw="reviewWeak" data-choice="'+e(q.id)+'">'+e(q.skill)+'</button>').join('')+'</div>':'')+
+     '<div class="fw-objectives"><strong>In class, be ready to explain:</strong><p>1949 → 1950 → 1952 → 1984 · Why did one mistake change the world?</p></div>'+
+     '<button class="fw-primary" type="button" data-fw="close">Close · Go to STEP UP</button><button class="fw-restart" type="button" data-fw="restart">Review the lesson again</button></div>';
  }
- const audioSection='<section class="fw-audio"><div><b>🎧 Original textbook reading audio</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Audio is ready':'Load original audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section>';
+ const audioSection='<section class="fw-audio"><div><b>🎧 Original textbook recording</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Audio ready':'Load audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section>';
  if(!modal.querySelector('.fw-sheet')){
-   modal.innerHTML='<div class="fw-sheet">'+head+audioSection+'<main class="fw-main">'+body+'</main><footer><span id="fwSync">Progress saved · No grades or certificates</span><span id="fwStepLabel">'+e(steps[state.step])+'</span></footer></div>';
+   modal.innerHTML='<div class="fw-sheet">'+head+audioSection+'<main class="fw-main">'+body+'</main><footer><span id="fwSync">Progress saves automatically · Separate from mastery and certificates</span><span id="fwStepLabel">'+e(stepLabels[state.step])+'</span></footer></div>';
    if(audioURL)attachAudio();
-   if(state.step===4){lastFollowCue=-2;refreshFollowAlong(true);}
  }else{
-   const main=modal.querySelector('.fw-main');
-   if(main)main.innerHTML=body;
-   if(state.step===4){lastFollowCue=-2;refreshFollowAlong(true);}
-   const bar=modal.querySelector('.fw-progress');
-   if(bar){bar.setAttribute('aria-valuenow',String(progress));const fill=bar.querySelector('span');if(fill)fill.style.width=progress+'%';}
-   const label=modal.querySelector('#fwStepLabel');if(label)label.textContent=steps[state.step];
-   const scroller=modal.querySelector('.fw-modal')||modal;if(scroller)scroller.scrollTop=0;
+   const main=modal.querySelector('.fw-main');if(main)main.innerHTML=body;
+   const bar=modal.querySelector('.fw-progress');if(bar){bar.setAttribute('aria-valuenow',String(progress));const fill=bar.querySelector('span');if(fill)fill.style.width=progress+'%';}
+   const label=modal.querySelector('#fwStepLabel');if(label)label.textContent=stepLabels[state.step];
+   modal.scrollTop=0;
  }
+ if([1,4,7].includes(state.step)){lastFollowCue=-2;refreshFollowAlong(true);}
 }
 function attachAudio(){
  const host=modal?.querySelector('#fwAudioPlayer');if(!host)return;
