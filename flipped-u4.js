@@ -267,7 +267,7 @@ function refreshFollowAlong(forceScroll=false){
    const top=Math.max(0,area.scrollTop+offset);
    if(typeof area.scrollTo==='function'){
      const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-     area.scrollTo({top,behavior:reduced?'instant':'smooth'});
+     area.scrollTo({top,behavior:reduced?'auto':'smooth'});
    }else area.scrollTop=top;
  }
 }
