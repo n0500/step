@@ -140,3 +140,23 @@
 .fw-timeline{gap:5px}.fw-timeline span{padding:6px 9px;font-size:12px}
 .fw-chapter-helper{align-items:stretch}.fw-audio-part,.fw-chapter-helper details{flex:1 1 100%}
 }
+
+/* Teacher-led post-flip application: readable for 40 students on a projector. */
+.fw-class-overlay{position:fixed;inset:0;z-index:2100000;background:#edf3f8;color:#163f59;overflow:auto;direction:ltr;font-family:Arial,'Tajawal',sans-serif}
+.fw-class-shell{min-height:100vh;max-width:1300px;box-sizing:border-box;margin:auto;display:flex;flex-direction:column;padding:24px 32px;gap:22px}
+.fw-class-shell header,.fw-class-shell footer{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.fw-class-shell header small{font-size:14px;font-weight:900;letter-spacing:.08em;color:#367394}
+.fw-class-shell button{font-family:inherit;border:1px solid #c7d9e3;border-radius:13px;background:white;padding:15px 20px;font-size:18px;font-weight:800;color:#255873;cursor:pointer}
+.fw-class-shell button:disabled{opacity:.4;cursor:not-allowed}
+.fw-class-progress{align-self:flex-start;border-radius:30px;background:#dceaf3;padding:8px 17px;font-size:15px;font-weight:900}
+.fw-class-shell main{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:1150px}
+.fw-class-shell main>span{font-size:15px;color:#28748c;font-weight:900;letter-spacing:.09em}
+.fw-class-shell h1{font-size:clamp(31px,4.5vw,58px);margin:14px 0;color:#195170}
+.fw-class-shell h2{font-size:clamp(30px,4.1vw,51px);line-height:1.34;color:#1e4960;margin:0 0 20px}
+.fw-class-shell main>p{font-size:clamp(20px,2.1vw,28px);line-height:1.55;color:#4c6980}
+.fw-class-evidence{background:white;border:2px solid #c0dce7;border-left:7px solid #2d8cac;border-radius:15px;padding:24px;margin-top:10px}
+.fw-class-evidence strong{display:block;font-size:19px;color:#246581}
+.fw-class-evidence p{font-size:clamp(21px,2.5vw,31px);line-height:1.5;margin:12px 0 0;color:#244f69}
+.fw-class-shell footer{border-top:1px solid #d4e3ec;padding-top:18px;flex-wrap:wrap}
+.fw-class-shell footer button.next{background:#246e8e;color:white;border-color:#246e8e}
+@media(max-width:700px){.fw-class-shell{padding:16px;gap:13px}.fw-class-shell button{padding:12px 14px;font-size:15px}.fw-class-evidence{padding:16px}}
