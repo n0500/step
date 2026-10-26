@@ -923,6 +923,8 @@
         </div>
       </div>
 
+      ${window.STEPUP_FLIPPED_U4?.teacherCard(cls)||""}
+
       ${rec?`<div class="teacher-recommended card">
         <div>
           <div class="eyebrow">Recommended Class Practice</div>
@@ -1270,7 +1272,7 @@
   function studentHome(ctx){
     const firstName=esc((state.profile.displayName||"Student").trim().split(/\s+/)[0]);
     const journey=window.STEPUP_JOURNEY?.homeHTML?window.STEPUP_JOURNEY.homeHTML(ctx.attempts,ctx.openUnits,state.profile):"";
-    return `<div class="student-home-clean"><div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>${journey||`<section class="student-continue-card"><div class="continue-copy"><div class="section-kicker">Your next step</div><h2>Continue where you left off</h2><p>Your journey will appear here.</p></div><div class="continue-action"><button class="btn btn-primary" onclick="PROVE.setStudentTab('journey')">My Journey</button></div></section>`}${weeklyJourney(ctx.attempts)}<section class="student-home-section"><div class="student-section-head"><div><div class="section-kicker">Your pace</div><h2>Keep it light</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">My Progress</button></div><p class="muted">A short, focused session is enough. StepUp always shows the next useful step.</p></section></div>`;
+    return `<div class="student-home-clean"><div class="student-welcome"><div><div class="section-kicker">Welcome back</div><h1>Hi, ${firstName}</h1><p>${esc(ctx.cls?.name||state.profile.classCode||"Your class")} ${ctx.cls?.school?`• ${esc(ctx.cls.school)}`:""}</p></div></div>${window.STEPUP_FLIPPED_U4?.studentCard(ctx.cls,state.profile)||""}${journey||`<section class="student-continue-card"><div class="continue-copy"><div class="section-kicker">Your next step</div><h2>Continue where you left off</h2><p>Your journey will appear here.</p></div><div class="continue-action"><button class="btn btn-primary" onclick="PROVE.setStudentTab('journey')">My Journey</button></div></section>`}${weeklyJourney(ctx.attempts)}<section class="student-home-section"><div class="student-section-head"><div><div class="section-kicker">Your pace</div><h2>Keep it light</h2></div><button class="text-link" onclick="PROVE.setStudentTab('progress')">My Progress</button></div><p class="muted">A short, focused session is enough. StepUp always shows the next useful step.</p></section></div>`;
   }
 
   function studentJourney(ctx){
