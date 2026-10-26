@@ -924,6 +924,11 @@
         </div>
       </div>
 
+      <div class="teacher-practice-row" style="margin:14px 0 18px">
+        <div class="teacher-practice-icon">✍️</div>
+        <div class="teacher-practice-copy"><strong>Writing Coach · Whole-Class Practice</strong><span>Write together → get one hint → let students revise → check improvement. No grades.</span></div>
+        <button class="btn btn-primary" type="button" onclick="window.MG1Assistant?.openClassWritingCoach ? window.MG1Assistant.openClassWritingCoach() : alert('Writing Coach is loading. Please refresh the page.')">Start Writing Coach</button>
+      </div>
       ${window.STEPUP_FLIPPED_U4?.teacherCard(cls)||""}
 
       ${rec?`<div class="teacher-recommended card">
