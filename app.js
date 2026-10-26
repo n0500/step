@@ -901,6 +901,11 @@
         <button class="btn btn-primary" onclick="PROVE.startClassMode('${t.id}')">Start Class Mode</button>
       </div>`)).join("");
 
+
+    const u4ReadingRow=open.some(u=>u.id==="u4")&&window.STEPUP_U4_READY===true
+      ? '<div class="teacher-practice-row"><div class="teacher-practice-icon">📖</div><div class="teacher-practice-copy"><strong>Unit 4 • The World of Plastic</strong><span>Reading Class Mode • 4 comprehension questions • 40 seconds per question</span></div><button class="btn btn-primary" onclick="PROVE.startClassMode(&quot;u4-reading-classmode&quot;)">Teach Reading</button></div>'
+      : "";
+
     return `<section class="teacher-classmode-v2">
       <div class="teacher-section-head">
         <div>
@@ -929,7 +934,7 @@
 
       <div class="card">
         <div class="teacher-card-head"><div><div class="eyebrow">Available Content</div><h2>Practice in Open Units</h2></div></div>
-        <div class="teacher-practice-list">${items||"<p class='muted'>There are no open units yet.</p>"}</div>
+        <div class="teacher-practice-list">${(items+u4ReadingRow)||"<p class='muted'>There are no open units yet.</p>"}</div>
       </div>
     </section>`;
   }
@@ -1562,7 +1567,36 @@
     return alert("الصفحة تعمل بنسخة قديمة من تعديل الاسم. أغلقي تبويب STEP UP وافتحي الرابط مجددًا.");
   }
 
+
+  // Projector-only reading activity. Uses the current Unit 4 question bank;
+  // does not create student attempts or alter certificate/mastery data.
+  function buildUnit4ReadingClassTraining(){
+    if(window.STEPUP_U4_READY!==true)return null;
+    const data=window.STEPUP_JOURNEY?.data;
+    const unit=data?.units?.find(u=>u.id==="u4");
+    const mission=unit?.missions?.find(m=>m.type==="reading");
+    if(!unit||!mission)return null;
+    const bank=(data.questions||[]).filter(q=>q.unit_id==="MG1_U4"&&q.mission===mission.source&&q.stage==="Mastery");
+    if(bank.length!==4)return null;
+    const questions=bank.map(q=>{
+      const choiceIds=[q.option_a_id,q.option_b_id,q.option_c_id,q.option_d_id];
+      const answer=choiceIds.indexOf(q.correct_option_id);
+      if(answer<0)return null;
+      return {stem:q.prompt,choices:[q.option_a_text,q.option_b_text,q.option_c_text,q.option_d_text],
+        answer,explanation:q.explanation||"",questionId:q.question_id};
+    }).filter(Boolean);
+    if(questions.length!==4)return null;
+    const paragraphs=String(unit.reading||"").split(/\n\s*\n/).filter(Boolean);
+    if(paragraphs.length<5)return null;
+    const safeText=paragraphs.slice(1).map(x=>"<p style=\"margin:0 0 16px\">"+esc(x)+"</p>").join("");
+    return {id:"u4-reading-classmode",title:"The World of Plastic",
+      subtitle:"Unit 4 • Reading • 4 questions",type:"reading",durationSeconds:40,
+      passage:"<div style=\"max-height:67vh;overflow-y:auto;font-size:20px;line-height:1.75;text-align:left\">"+safeText+"</div>",
+      rawPassage:paragraphs.slice(1).join("\n\n"),questions};
+  }
+
   function findTraining(id){
+    if(id==="u4-reading-classmode")return buildUnit4ReadingClassTraining();
     for(const u of DATA.units){const t=u.trainings.find(x=>x.id===id);if(t)return {...t,unitId:u.id,unitNumber:u.number,unitTitle:u.title}}
     return null;
   }
@@ -1904,15 +1938,33 @@ Do not start a new lesson unless I ask.`;
   }
 
   function stopClassModeTimer(){if(state.classMode?.timer){clearInterval(state.classMode.timer);state.classMode.timer=null}}
-  function startClassMode(trainingId){const t=findTraining(trainingId);if(!t)return;stopClassModeTimer();state.classMode={training:t,index:0,revealed:false,paused:false,remaining:t.durationSeconds,timer:null};runClassModeTimer();renderClassModeScreen()}
+  function startClassMode(trainingId){const t=findTraining(trainingId);if(!t)return;stopClassModeTimer();state.classMode={training:t,index:0,revealed:false,paused:t.id==="u4-reading-classmode",remaining:t.durationSeconds,timer:null};runClassModeTimer();renderClassModeScreen()}
   function runClassModeTimer(){stopClassModeTimer();if(!state.classMode||state.classMode.paused)return;state.classMode.timer=setInterval(()=>{if(!state.classMode||state.classMode.paused)return;state.classMode.remaining=Math.max(0,state.classMode.remaining-1);const el=document.getElementById("cmTimer");if(el)el.textContent=fmtTime(state.classMode.remaining);if(state.classMode.remaining<=0)stopClassModeTimer()},1000)}
+
+  function readUnit4ClassPassage(){
+    const t=state.classMode?.training;
+    if(t?.id!=="u4-reading-classmode"||!("speechSynthesis" in window))return;
+    window.speechSynthesis.cancel();
+    const voice=new SpeechSynthesisUtterance(t.rawPassage||"");
+    voice.lang="en-US";voice.rate=0.9;
+    window.speechSynthesis.speak(voice);
+  }
+  function stopUnit4ClassPassage(){if("speechSynthesis" in window)window.speechSynthesis.cancel();}
+  function resetUnit4QuestionTimer(){
+    if(state.classMode?.training?.id!=="u4-reading-classmode")return;
+    state.classMode.remaining=state.classMode.training.durationSeconds;
+    state.classMode.paused=false;
+    stopUnit4ClassPassage();
+    runClassModeTimer();
+  }
+
   function classQuestionHtml(q,cm){return `<div class="eyebrow">Question ${cm.index+1}</div><div class="classmode-stem">${esc(q.stem)}</div>${q.choices.map((c,i)=>`<div class="classmode-choice ${cm.revealed&&i===q.answer?"correct":""}"><strong>${String.fromCharCode(65+i)}.</strong> ${esc(c)}</div>`).join("")}${cm.revealed?`<div class="classmode-explain"><strong>Answer: ${String.fromCharCode(65+q.answer)}</strong><br>${esc(q.explanation||"")}</div>`:""}<div class="exam-actions"><button class="btn btn-secondary" ${cm.index===0?"disabled":""} onclick="PROVE.classPrev()">Previous</button><div><button class="btn btn-secondary" onclick="PROVE.revealClassAnswer()">Reveal Answer</button> <button class="btn btn-primary" onclick="PROVE.classNext()">${cm.index===cm.training.questions.length-1?"Finish":"Next Question"}</button></div></div>`}
-  function renderClassModeScreen(){const cm=state.classMode,t=cm.training,q=t.questions[cm.index];app.innerHTML=`<div class="classmode-shell"><div class="classmode-toolbar"><div><strong>Class Mode • ${esc(t.title)}</strong><div style="font-size:12px;opacity:.8">Question ${cm.index+1} of ${t.questions.length}</div></div><div style="display:flex;gap:8px;align-items:center"><strong id="cmTimer">${fmtTime(cm.remaining)}</strong><button class="btn btn-outline" onclick="PROVE.toggleClassPause()">${cm.paused?"Resume":"Pause & Discuss"}</button><button class="btn btn-outline" onclick="PROVE.exitClassMode()">Exit</button></div></div><div class="classmode-content">${t.type==="reading"?`<div class="grid grid-2"><div class="classmode-card"><h2>Reading Passage</h2><div class="passage-text">${t.passage}</div></div><div class="classmode-card">${classQuestionHtml(q,cm)}</div></div>`:`<div class="classmode-card">${classQuestionHtml(q,cm)}</div>`}</div></div>`}
+  function renderClassModeScreen(){const cm=state.classMode,t=cm.training,q=t.questions[cm.index];app.innerHTML=`<div class="classmode-shell"><div class="classmode-toolbar"><div><strong>Class Mode • ${esc(t.title)}</strong><div style="font-size:12px;opacity:.8">Question ${cm.index+1} of ${t.questions.length}</div></div><div style="display:flex;gap:8px;align-items:center"><strong id="cmTimer">${fmtTime(cm.remaining)}</strong><button class="btn btn-outline" onclick="PROVE.toggleClassPause()">${cm.paused?"Resume":"Pause & Discuss"}</button><button class="btn btn-outline" onclick="PROVE.exitClassMode()">Exit</button></div></div><div class="classmode-content">${t.type==="reading"?`<div class="grid grid-2"><div class="classmode-card"><h2>Reading Passage</h2>${t.id==="u4-reading-classmode"?`<p style="font-size:14px">Read together, then select Resume to start the first 40-second question.</p><div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn btn-secondary" onclick="PROVE.readUnit4ClassPassage()">▶ Read Aloud</button><button class="btn btn-outline" onclick="PROVE.stopUnit4ClassPassage()">Stop Audio</button></div>`:""}<div class="passage-text">${t.passage}</div></div><div class="classmode-card">${classQuestionHtml(q,cm)}</div></div>`:`<div class="classmode-card">${classQuestionHtml(q,cm)}</div>`}</div></div>`}
   function toggleClassPause(){if(!state.classMode)return;state.classMode.paused=!state.classMode.paused;if(state.classMode.paused)stopClassModeTimer();else runClassModeTimer();renderClassModeScreen()}
-  function revealClassAnswer(){if(state.classMode){state.classMode.revealed=true;renderClassModeScreen()}}
-  function classPrev(){if(state.classMode&&state.classMode.index>0){state.classMode.index--;state.classMode.revealed=false;renderClassModeScreen()}}
-  function classNext(){if(!state.classMode)return;if(state.classMode.index<state.classMode.training.questions.length-1){state.classMode.index++;state.classMode.revealed=false;renderClassModeScreen()}else exitClassMode()}
-  function exitClassMode(){stopClassModeTimer();state.classMode=null;state.teacherTab="classmode";renderTeacher()}
+  function revealClassAnswer(){if(state.classMode){state.classMode.revealed=true;if(state.classMode.training.id==="u4-reading-classmode"){state.classMode.paused=true;stopClassModeTimer();}renderClassModeScreen()}}
+  function classPrev(){if(state.classMode&&state.classMode.index>0){state.classMode.index--;state.classMode.revealed=false;resetUnit4QuestionTimer();renderClassModeScreen()}}
+  function classNext(){if(!state.classMode)return;if(state.classMode.index<state.classMode.training.questions.length-1){state.classMode.index++;state.classMode.revealed=false;resetUnit4QuestionTimer();renderClassModeScreen()}else exitClassMode()}
+  function exitClassMode(){stopClassModeTimer();if(state.classMode?.training?.id==="u4-reading-classmode")stopUnit4ClassPassage();state.classMode=null;state.teacherTab="classmode";renderTeacher()}
 
 
   async function savePdfPages(pageHtmls, filename, orientation="portrait"){
@@ -2234,7 +2286,7 @@ Do not start a new lesson unless I ask.`;
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
     renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
-    startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,
+    startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,readUnit4ClassPassage,stopUnit4ClassPassage,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
   boot();
