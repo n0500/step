@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-2';
+const VERSION='20261026-3';
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
@@ -167,7 +167,10 @@ function render(){
  }else{
    body='<div class="fw-scene-art">✨ 💳</div><div class="fw-scene"><span class="fw-eyebrow">STORY COMPLETE</span><h2>You are ready for class!</h2><p>You discovered how one forgotten wallet inspired a new way to pay.</p><div class="fw-quote">There is one more question to explore together in class…</div><button class="fw-primary" type="button" data-fw="close">Done for Today</button><button class="fw-restart" type="button" data-fw="restart">Explore the story again</button></div>';
  }
- modal.innerHTML='<div class="fw-sheet">'+head+'<main class="fw-main">'+body+'</main><section class="fw-audio"><div><b>🎧 Listen to the original Reading</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Show audio player':'Load original audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section><footer><span id="fwSync">Your progress is saved · No grades or certificates</span><span>'+e(steps[state.step])+'</span></footer></div>';
+ const completeText=String(window.STEPUP_JOURNEY?.data?.units?.find(u=>u.id==='u4')?.reading||'');
+ const optionalReading=completeText.split(/\n\s*\n/).slice(1).filter(Boolean).map(p=>'<p>'+e(p)+'</p>').join('');
+ const extra=optionalReading?'<details class="fw-extra"><summary>Read the full practice passage (optional)</summary><div><p class="fw-adapted">The lesson text is adapted; the audio is the original textbook recording.</p>'+optionalReading+'</div></details>':'';
+ modal.innerHTML='<div class="fw-sheet">'+head+'<main class="fw-main">'+body+'</main>'+extra+'<section class="fw-audio"><div><b>🎧 Optional: Listen to the original Reading</b><small>Mega Goal 1 · Unit 4 · CD 2, Track 07 · 3:23</small></div><button type="button" id="fwAudioButton" data-fw="loadAudio">'+(audioURL?'Show audio player':'Load original audio')+'</button><div class="fw-audio-player" id="fwAudioPlayer"></div></section><footer><span id="fwSync">Your progress is saved · No grades or certificates</span><span>'+e(steps[state.step])+'</span></footer></div>';
  if(audioURL)attachAudio();
 }
 function attachAudio(){
