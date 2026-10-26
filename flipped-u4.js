@@ -5,7 +5,8 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-textbook-verbatim-1';
+const VERSION='20261026-reading-check-1';
+const LESSON_VERSION=2;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
@@ -16,7 +17,18 @@ const user=()=>window.firebase?.apps?.length?firebase.auth().currentUser:null;
 const ids=()=>Array.from({length:6},(_,i)=>MEDIA+String(i+1).padStart(2,'0')+'.bin');
 const storedId=uid=>TASK+'-'+uid;
 const key=uid=>'stepup-flipped-u4-'+uid;
-const defaultState=()=>({step:0,opening:'',opinion:'',completed:false});
+const defaultState=()=>({step:0,opening:'',opinion:'',readConfirmed:false,answers:{},completed:false});
+const CHECKS=[
+ {id:'q1',skill:'Find a detail',prompt:'Why was Frank McNamara embarrassed at the restaurant?',
+  choices:['He arrived late for dinner.','He had left his wallet in another suit.','His credit card was rejected.'],
+  correct:1,explain:'Paragraph 2 says that Frank had left his wallet in the other suit.'},
+ {id:'q2',skill:'Cause and effect',prompt:'What helped the new way of paying become popular?',
+  choices:['Restaurants stopped accepting cash.','Everyone got a credit card immediately.','Many merchants and businesses began accepting the card.'],
+  correct:2,explain:'Paragraph 2 explains that merchants adopted charging it, and thousands of businesses accepted the card by 1952.'}
+];
+const answeredCount=()=>CHECKS.filter(q=>Number.isInteger(state.answers?.[q.id])).length;
+const correctCount=()=>CHECKS.filter(q=>state.answers?.[q.id]===q.correct).length;
+const hasCompletedCheck=v=>!!(v?.readConfirmed&&CHECKS.every(q=>Number.isInteger(v?.answers?.[q.id])));
 let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
 function authStudent(){return user()?.uid||'';}
 function localGet(uid){try{const raw=JSON.parse(localStorage.getItem(key(uid))||'null');return raw?.version===1?raw.data:null}catch(_){return null;}}
@@ -49,18 +61,19 @@ function close(){stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
 function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flippedU4Enabled===true);}
 function studentCard(cls,profile){
  if(!checkClass(cls,profile?.id||authStudent(),profile?.role))return '';
- const done=!!localGet(profile.id)?.completed;
+ const cached=localGet(profile.id);
+ const done=!!(cached?.completed&&cached?.lessonVersion===LESSON_VERSION&&hasCompletedCheck(cached));
  if(!deepLinkHandled&&new URLSearchParams(location.search).get('flipped')==='u4'){
    deepLinkHandled=true;Promise.resolve().then(()=>open());
  }
- return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>One mistake. A big invention! · A short story you can discover at your own pace.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
+ return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>Explore the real textbook story, listen if you wish, and try two quick reading questions. No grades.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
 }
 function teacherCard(cls){
  if(!cls)return '';
  const enabled=cls.flippedU4Enabled===true;
  const arg=JSON.stringify(cls.id).replace(/\"/g,'&quot;');
  const codeArg=JSON.stringify(cls.code||'').replace(/\"/g,'&quot;');
- return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Share a quick audio-supported story before class. Unit 4 does not have to be open for regular practice.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>No scores or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+ return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Share the original Unit 4 reading before class with two light comprehension checks. Regular Unit 4 practice stays separate.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>2 reading comprehension checks</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
 }
 async function setEnabled(classId,enabled){
  if(!user()||!db()){alert('Sign in to your teacher account.');return;}
@@ -114,11 +127,20 @@ async function open(){
    const localUpdated=Date.parse(local?.updatedAt||'')||0;
    const chooseLocal=!!local&&localUpdated>remoteUpdated;
    const value=chooseLocal?local:(r&&r.assignmentKind===TASK?r:(local||defaultState()));
-   state={...defaultState(),step:Math.max(0,Math.min(5,Number(value.progressStep??value.step)||0)),opening:value.opening||'',opinion:value.opinion||'',completed:!!value.completed};
+   const upToDate=Number(value.lessonVersion||0)===LESSON_VERSION;
+   state={...defaultState(),opening:value.opening||'',opinion:value.opinion||'',
+     readConfirmed:upToDate&&value.readConfirmed===true,
+     answers:upToDate&&value.answers&&typeof value.answers==='object'?{...value.answers}:{},
+     completed:upToDate&&value.completed===true&&hasCompletedCheck(value)};
+   // Older story completions remain recorded but require the new text + two reading checks.
+   state.step=state.completed?8:upToDate?Math.max(0,Math.min(7,Number(value.progressStep??value.step)||0)):value.completed?4:Math.max(0,Math.min(3,Number(value.progressStep??value.step)||0));
+   if(state.step>4&&!state.readConfirmed)state.step=4;
+   if(state.step>5&&!Number.isInteger(state.answers.q1))state.step=5;
+   if(state.step>6&&!Number.isInteger(state.answers.q2))state.step=6;
    modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The Forgotten Wallet');
    document.body.appendChild(modal);
    modal.addEventListener('click',click);render();
-   if(chooseLocal)persist();
+   if(chooseLocal&&upToDate)persist();
  }catch(err){console.warn('Flipped Reading access',err);alert(err.message?.includes('not been assigned')?'This story is not open for your class yet.':'Could not start the story. Check your connection and try again.');}
 }
 function preview(){
@@ -130,10 +152,12 @@ function preview(){
 function persist(){
  if(!ctx)return;
  const now=new Date().toISOString();
- localSet(ctx.uid,{...state,updatedAt:now,version:1});
+ localSet(ctx.uid,{...state,lessonVersion:LESSON_VERSION,updatedAt:now,version:1});
  const data={assignmentKind:TASK,studentId:ctx.uid,teacherId:ctx.teacherId,classId:ctx.classId,
    studentName:ctx.profile.displayName||'',opening:state.opening,opinion:state.opinion,
-   progressStep:state.step,completed:!!state.completed,updatedAt:now};
+   progressStep:state.step,readConfirmed:state.readConfirmed,answers:{...state.answers},
+   comprehensionAnswered:answeredCount(),comprehensionCorrect:correctCount(),lessonVersion:LESSON_VERSION,
+   completed:!!state.completed,updatedAt:now};
  if(state.completed&&state.step===5)data.completedAt=now;
  const uid=ctx.uid;
  writeQueue=writeQueue.catch(()=>{}).then(async()=>{
@@ -214,7 +238,7 @@ function click(event){
  if(a==='next'&&state.step<4){state.step++;persist();render();return;}
  if(a==='back'&&state.step>1&&state.step<5){state.step--;persist();render();return;}
  if(a==='opinion'){state.opinion=b.dataset.choice;state.step=5;state.completed=true;persist();render();return;}
- if(a==='restart'){state.step=0;state.opening='';state.opinion='';if(ctx)localSet(ctx.uid,{...state,updatedAt:new Date().toISOString(),version:1});render();return;}
+ if(a==='restart'){state.step=0;state.opening='';state.opinion='';if(!state.completed){state.readConfirmed=false;state.answers={};}render();return;}
 }
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
