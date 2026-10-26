@@ -1,6 +1,7 @@
 /* StepUp · Unit 4 textbook-aligned content · 2026-10-20
    Prepares content only; access is controlled per class by the teacher.
-   Compact 20-question required bank with all eight teacher-supplied revision items.
+   36 required questions with all eight teacher-supplied revision items.
+   STEP Practice is optional and does not contribute to unit mastery or certificates.
    Other skills are filled from the uploaded Mega Goal 1 textbook.
    Reading is the exact, unabridged text from Mega Goal 1 Student Book 2025–1447, p. 60.
    Listening is based on the original Unit 4 Conversation recording about Omar's flying alarm.
