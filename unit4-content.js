@@ -25,7 +25,7 @@
    if(m){m.title=row[1];m.sub=row[2];}
  });
  // Distribute Unit 4 reading answers (B, C, D, A). Preserve stable IDs.
- const readTargets=[1,2,3,0];
+ const readTargets=[1,2,3];
  const readingBank=DATA.q.filter(q=>q.m===5);
  if(readingBank.length!==readTargets.length)throw Error('Unexpected Unit 4 reading bank size');
  readingBank.forEach(function(q,i){
