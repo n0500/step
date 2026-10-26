@@ -1,0 +1,54 @@
+/* The Forgotten Wallet — gentle, mobile-first flipped reading */
+.fw-entry{display:grid;grid-template-columns:100px minmax(0,1fr) auto;align-items:center;gap:20px;padding:24px;border:1px solid #d5e1ec;border-radius:24px;background:linear-gradient(115deg,#f5f9fe,#fff7ef);color:#16334a;margin:0 0 18px;box-shadow:0 6px 20px #34516c0b}
+.fw-entry-art{font-size:48px;letter-spacing:-12px;white-space:nowrap}.fw-entry-art span{font-size:34px}
+.fw-entry small,.fw-teacher-intro small{display:block;color:#476b85;font-size:11px;font-weight:900;letter-spacing:.1em;margin-bottom:6px}
+.fw-entry h2,.fw-teacher h2{font-size:24px;margin:3px 0 8px;line-height:1.25;color:#153e5d}
+.fw-entry p,.fw-teacher p{margin:0;color:#52697d;line-height:1.6;font-size:15px}
+.fw-entry>button,.fw-teacher-actions button{background:#255e87;color:#fff;border:0;border-radius:13px;padding:15px 20px;font-size:16px;font-weight:800;cursor:pointer;white-space:nowrap}
+.fw-entry>button:hover,.fw-teacher-actions button:hover{background:#16456b}
+.fw-teacher{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;background:linear-gradient(120deg,#f3f8fc,#fbf7f1);border:1px solid #d1e0ed;border-radius:20px;padding:20px 23px;margin:18px 0 22px;color:#17364e;direction:ltr}
+.fw-teacher-intro p{max-width:640px}.fw-teacher-pills{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 0}.fw-teacher-pills span{font-size:12px;background:white;border:1px solid #dbe6ee;border-radius:18px;padding:6px 11px;color:#49657b}
+.fw-teacher-actions{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;min-width:175px}
+.fw-teacher-actions .secondary{background:#fff;color:#20587f;border:1px solid #c2d3df}
+.fw-teacher-status{font-weight:800;color:#476f85;text-align:center;font-size:13px}
+.fw-report{grid-column:1/-1;padding-top:10px;border-top:1px solid #d7e0e7}
+.fw-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fw-stats>div{background:white;border-radius:14px;padding:14px;text-align:center}.fw-stats b{display:block;font-size:28px;color:#255e87}.fw-stats small{font-size:13px;color:#536d7f}
+.fw-report-hint{font-size:14px;margin:15px 0!important}.fw-roster{max-height:300px;overflow:auto;display:grid;gap:6px}
+.fw-roster>div{display:grid;grid-template-columns:minmax(100px,1fr) 110px minmax(120px,1.7fr);gap:10px;align-items:center;padding:11px 14px;background:#fff;border:1px solid #e1e8ec;border-radius:10px}
+.fw-roster strong{font-size:14px}.fw-roster span{font-size:13px;color:#2b6687}.fw-roster small{font-size:12px;color:#64788c;line-height:1.5}
+.fw-modal{position:fixed;inset:0;z-index:2000000;background:#eaf0f6;color:#183850;font-family:Arial,'Tajawal',sans-serif;direction:ltr;overflow:auto}
+.fw-sheet{max-width:800px;min-height:100vh;padding:20px 25px;box-sizing:border-box;margin:auto;display:flex;flex-direction:column;gap:14px}
+.fw-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.fw-head small{font-weight:800;letter-spacing:.09em;color:#38718c;font-size:11px}
+.fw-head h1{font-size:clamp(25px,4.2vw,36px);margin:7px 0 2px;line-height:1.18;color:#1d506e}
+.fw-head p{margin:0;font-size:14px;color:#758ba0;font-weight:600}
+.fw-head button{width:42px;height:42px;flex:none;display:grid;place-items:center;border:1px solid #d2dfe8;background:white;color:#315773;border-radius:12px;font-size:19px;cursor:pointer}
+.fw-progress{height:7px;background:#d4dfe8;border-radius:20px;overflow:hidden}.fw-progress span{display:block;height:100%;background:#428c9c;border-radius:20px;transition:width .3s}
+.fw-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:310px}
+.fw-scene-art{font-size:clamp(48px,10vw,84px);line-height:1.3;min-height:95px;text-align:center;display:flex;align-items:center;justify-content:center;gap:12px;filter:drop-shadow(0 8px 6px #31566a13)}
+.fw-scene-art span{font-size:.7em;position:relative;top:9px}
+.fw-scene{width:100%;max-width:680px;text-align:center;box-sizing:border-box;background:#fff;border:1px solid #dce5ed;border-radius:24px;padding:30px 34px;box-shadow:0 11px 30px #2445620b}
+.fw-eyebrow{display:inline-block;font-size:12px;color:#4c8096;font-weight:900;letter-spacing:.08em;margin:0 0 10px}
+.fw-scene h2{font-size:clamp(25px,4.6vw,36px);line-height:1.25;color:#1b4b67;margin:0 0 13px}
+.fw-scene h3{font-size:19px;margin:24px 0 13px;color:#254d63}
+.fw-scene p{font-size:clamp(17px,2.6vw,21px);line-height:1.7;color:#425e73;margin:0 auto 13px;max-width:550px}
+.fw-answers{display:grid;gap:10px;margin-top:14px}
+.fw-answers button{padding:16px 20px;border:1.5px solid #d4e1eb;border-radius:14px;background:#f6fafc;color:#254b64;font-size:18px;text-align:left;font-weight:700;cursor:pointer;transition:background .15s}
+.fw-answers button:hover,.fw-answers button:focus-visible{background:#e8f4fa;border-color:#64a0bb;outline:none}
+.fw-quote{font-size:17px;font-weight:700;color:#2c7686;background:#eff7f6;padding:16px;border-radius:13px;margin:20px 0}
+.fw-nav{display:flex;justify-content:space-between;gap:14px;margin-top:25px}
+.fw-nav button,.fw-scene>.fw-primary{border:1px solid #cbdde7;color:#355e76;background:#f4f8fb;font-size:17px;border-radius:13px;padding:15px 20px;font-weight:800;cursor:pointer}
+.fw-nav button.fw-primary,.fw-scene>.fw-primary{background:#276d83;color:#fff;border-color:#276d83}
+.fw-scene>.fw-primary{display:block;margin:20px auto 10px}.fw-scene .fw-restart{display:block;margin:10px auto;border:0;color:#527587;background:transparent;font-size:14px;text-decoration:underline;cursor:pointer}
+.fw-note{font-size:13px!important;color:#8596a7!important;margin-top:14px!important}
+.fw-audio{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:14px 17px;background:#fff;border:1px solid #dce5eb;border-radius:17px}
+.fw-audio b{display:block;font-size:15px;color:#1e4e69}.fw-audio small{display:block;font-size:12px;color:#76899b;margin-top:4px}
+.fw-audio>button{background:#ecf6f8;color:#22687b;border:1px solid #c2e1e8;border-radius:11px;font-size:13px;font-weight:800;padding:12px;cursor:pointer}
+.fw-audio>button:disabled{opacity:.6}.fw-audio-player{grid-column:1/-1}.fw-audio-player:empty{display:none}
+.fw-audio-player audio{width:100%;height:48px;display:block}.fw-sheet>footer{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;color:#79909f}
+@media(max-width:700px){.fw-entry{grid-template-columns:60px 1fr;gap:10px;padding:16px}.fw-entry-art{font-size:35px}.fw-entry>button{grid-column:1/-1;width:100%}.fw-entry h2{font-size:21px}
+.fw-teacher{grid-template-columns:1fr;padding:17px}.fw-teacher-actions{min-width:0}.fw-stats{gap:6px}.fw-roster>div{grid-template-columns:1fr 90px}.fw-roster small{grid-column:1/-1}
+.fw-sheet{padding:12px 14px;gap:12px}.fw-main{min-height:300px}.fw-scene{padding:22px 18px;border-radius:18px}.fw-scene-art{min-height:75px}
+.fw-answers button{font-size:16px;padding:14px}.fw-nav button{font-size:15px;padding:13px 12px}.fw-audio{padding:12px}.fw-audio>button{font-size:12px}.fw-sheet>footer{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.fw-answers button,.fw-progress span{transition:none}}
