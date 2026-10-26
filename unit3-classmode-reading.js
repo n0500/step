@@ -140,7 +140,7 @@
   function restartStudent(){if(state.context!=='student'||!activeLesson())return;state.step=0;state.selected={};state.checked={};state.afterOpen=[];state.revealed=false;render();scrollToLesson();}
   function next(){if(activeLesson()&&!state.saving&&!state.finishing&&canNext()&&state.step<steps().length-1){state.step++;state.revealed=false;state.error='';render();scrollToLesson();}}
   function prev(){if(activeLesson()&&!state.saving&&!state.finishing&&state.step>0){state.step--;state.revealed=false;state.error='';render();scrollToLesson();}}
-  function choose(i){const choice=Number(i),q=questionForStep(state.step);if(!activeLesson()||state.saving||state.finishing||state.checked[state.step]||!q||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;state.selected[state.step]=choice;state.checked[state.step]=false;state.revealed=false;state.error='';render();}
+  function choose(i){const choice=Number(i),q=questionForStep(state.step);if(!activeLesson()||state.saving||state.finishing||(state.context==='student'&&state.checked[state.step])||!q||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;state.selected[state.step]=choice;state.checked[state.step]=false;state.revealed=false;state.error='';render();}
   async function check(){
     const step=state.step,q=questionForStep(step),choice=state.selected[step],student=state.context==='student';
     if(!activeLesson()||state.saving||state.finishing||state.checked[step]||!q||!Number.isInteger(choice))return;
