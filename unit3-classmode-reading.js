@@ -1,7 +1,7 @@
 // StepUp • Unit 3 shared reading lesson for Class Mode and students.
 (() => {
   'use strict';
-  const state={context:'teacher',step:0,selected:{},checked:{},afterOpen:[],revealed:false,rate:.9,speechToken:0,observer:null,active:false,host:null,studentId:'',storageKey:'',storageAvailable:true};
+  const state={context:'teacher',step:0,selected:{},checked:{},afterOpen:[],revealed:false,rate:.9,speechToken:0,observer:null,active:false,host:null,studentId:'',storageKey:'',storageAvailable:true,saving:false,finishing:false,error:''};
   const esc=(s='')=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   const unit=()=> (window.STEPUP_JOURNEY?.data?.units||[]).find(u=>u.id==='u3'||Number(u.number)===3);
   const paragraphs=()=>String(unit()?.reading||'').split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
@@ -31,8 +31,19 @@
     }
     return context;
   }
+  // Teacher-led examples remain independent; students answer the seven
+  // grade-bearing reading questions from Unit 3 exactly once in this lesson.
+  const DETAIL_IDS=['U3R-READ-M1','U3R-READ-M2','U3R-READ-M3','U3R-READ-M4'];
+  const STRATEGY_IDS=['U3R-READ-S1','U3R-READ-S2','U3R-READ-S3'];
   function questionForStep(index){
     const count=paragraphs().length;
+    if(state.context==='student'){
+      const id=index>=2&&index<count+2?DETAIL_IDS[index-2]:
+        index>=count+2&&index<count+5?STRATEGY_IDS[index-count-2]:null;
+      if(!id)return null; // Paragraph five is an ungraded reflection stop.
+      const item=(window.STEPUP_U3_REVIEW?.getMasteryBank?.()||[]).find(q=>q.id===id&&q.section==='reading');
+      return item?{id,stem:item.prompt,choices:item.choices,answer:item.answer,explanation:item.explanation||''}:null;
+    }
     if(index>=2&&index<count+2)return QUICK[index-2]||null;
     if(index>=count+2&&index<count+5)return STRATEGIES[index-count-2]||null;
     return null;
@@ -45,7 +56,7 @@
   function saveProgress(){
     if(state.context!=='student'||!state.storageKey)return;
     try{
-      localStorage.setItem(state.storageKey,JSON.stringify({version:1,step:state.step,selected:state.selected,checked:state.checked,afterOpen:state.afterOpen}));
+      localStorage.setItem(state.storageKey,JSON.stringify({version:2,step:state.step,selected:state.selected,checked:state.checked,afterOpen:state.afterOpen}));
       state.storageAvailable=true;
     }catch(_){state.storageAvailable=false;}
   }
@@ -53,7 +64,7 @@
     if(!state.storageKey)return;
     try{
       const saved=JSON.parse(localStorage.getItem(state.storageKey)||'null');
-      if(saved?.version!==1)return;
+      if(saved?.version!==2)return;
       if(Number.isInteger(saved.step)&&saved.step>=0&&saved.step<steps().length)state.step=saved.step;
       Object.entries(saved.selected||{}).forEach(([key,value])=>{
         const index=Number(key),q=questionForStep(index);
@@ -86,10 +97,10 @@
   }
   function questionHTML(q,label='Quick Check'){
     const sel=state.selected[state.step],has=Number.isInteger(sel);
-    return `<div class="u3tr-q"><span class="u3tr-strategy">${esc(label)}</span><h2 dir="ltr">${esc(q.stem)}</h2><div class="u3tr-choices">${q.choices.map((c,i)=>`<button type="button" aria-pressed="${has&&sel===i}" class="${has&&sel===i?'selected':''} ${state.revealed&&i===q.answer?'correct':''} ${state.revealed&&has&&sel===i&&i!==q.answer?'wrong':''}" onclick="STEPUP_U3_TEACH_READING.choose(${i})"><span>${String.fromCharCode(65+i)}</span><b>${esc(c)}</b></button>`).join('')}</div>${has?`<button type="button" class="u3tr-check" onclick="STEPUP_U3_TEACH_READING.check()" ${state.revealed?'disabled':''}>${state.revealed?'Checked ✓':'Check Answer'}</button>`:'<button type="button" class="u3tr-check" disabled>Choose an answer first</button>'}${state.revealed?`<div class="u3tr-feedback" role="status"><b>${sel===q.answer?'✓ Correct':'Correct answer: '+String.fromCharCode(65+q.answer)}</b><p>${esc(q.explanation)}</p></div>`:''}</div>`;
+    return `<div class="u3tr-q"><span class="u3tr-strategy">${esc(label)}</span><h2 dir="ltr">${esc(q.stem)}</h2><div class="u3tr-choices">${q.choices.map((c,i)=>`<button type="button" aria-pressed="${has&&sel===i}" class="${has&&sel===i?'selected':''} ${state.revealed&&i===q.answer?'correct':''} ${state.revealed&&has&&sel===i&&i!==q.answer?'wrong':''}" onclick="STEPUP_U3_TEACH_READING.choose(${i})"><span>${String.fromCharCode(65+i)}</span><b>${esc(c)}</b></button>`).join('')}</div>${has?`<button type="button" class="u3tr-check" onclick="STEPUP_U3_TEACH_READING.check()" ${state.revealed||state.saving?'disabled':''}>${state.revealed?'Checked ✓':state.saving?'Saving…':'Check Answer'}</button>`:'<button type="button" class="u3tr-check" disabled>Choose an answer first</button>'}${state.revealed?`<div class="u3tr-feedback" role="status"><b>${sel===q.answer?'✓ Correct':'Correct answer: '+String.fromCharCode(65+q.answer)}</b><p>${esc(q.explanation)}</p></div>`:''}</div>`;
   }
-  function paragraphHTML(i){const ps=paragraphs(),p=ps[i]||'';return `<div class="u3tr-audio"><button type="button" onclick="STEPUP_U3_TEACH_READING.readParagraph(${i})">🔊 Read Paragraph ${i+1}</button><button type="button" onclick="STEPUP_U3_TEACH_READING.stop()">■ Stop</button></div><p id="u3trAudioStatus" class="u3tr-audio-status" role="status" aria-live="polite">Read the paragraph or tap Read Paragraph to listen.</p><article class="u3tr-passage" dir="ltr"><span>Paragraph ${i+1}</span><p>${esc(p)}</p></article>${questionHTML(QUICK[i])}`;}
-  function strategyHTML(i){const q=STRATEGIES[i];return `<div class="u3tr-strategy-card"><div><span>STEP Reading Strategy</span><h2>${esc(q.name)}</h2><p>${esc(q.tip)}</p></div><div class="u3tr-rule">${i===0?'Read the question → think about the whole passage → reject narrow details':i===1?'Find the pronoun → look backward → test the nearest logical noun':'Find two clues → connect them → reject unsupported choices'}</div></div>${questionHTML(q,q.name)}`;}
+  function paragraphHTML(i){const ps=paragraphs(),p=ps[i]||'';return `<div class="u3tr-audio"><button type="button" onclick="STEPUP_U3_TEACH_READING.readParagraph(${i})">🔊 Read Paragraph ${i+1}</button><button type="button" onclick="STEPUP_U3_TEACH_READING.stop()">■ Stop</button></div><p id="u3trAudioStatus" class="u3tr-audio-status" role="status" aria-live="polite">Read the paragraph or tap Read Paragraph to listen.</p><article class="u3tr-passage" dir="ltr"><span>Paragraph ${i+1}</span><p>${esc(p)}</p></article>${state.context==='student'?(questionForStep(state.step)?questionHTML(questionForStep(state.step)):'<p class="u3tr-note">Reflect: What did the people feel when the car was uncovered?</p>'):questionHTML(QUICK[i])}`;}
+  function strategyHTML(i){const q=STRATEGIES[i];return `<div class="u3tr-strategy-card"><div><span>STEP Reading Strategy</span><h2>${esc(q.name)}</h2><p>${esc(q.tip)}</p></div><div class="u3tr-rule">${i===0?'Read the question → think about the whole passage → reject narrow details':i===1?'Find the pronoun → look backward → test the nearest logical noun':'Find two clues → connect them → reject unsupported choices'}</div></div>${questionHTML(state.context==='student'?(questionForStep(state.step)||q):q,q.name)}`;}
   function afterReadingHTML(){
     const rows=[
       ['1','What was the purpose of burying the car for 50 years?','To show future people who they were and how they lived in Tulsa in 1957.'],
@@ -108,7 +119,7 @@
       {k:'STEP Strategy 2',t:'Reference',b:strategyHTML(1)},
       {k:'STEP Strategy 3',t:'Inference',b:strategyHTML(2)},
       {k:'After Reading',t:'Use evidence from the textbook',b:afterReadingHTML()},
-      {k:'Finish',t:state.context==='student'?'Ready for reading practice':'Ready for Student Mode',b:`<div class="u3tr-finish"><span>✓</span><h2>Reading Lesson Complete</h2><p>${state.context==='student'?'You have':'Students have'} read the original text, checked each paragraph, and practised <b>Main Idea, Reference, and Inference</b>.</p><div><b>Next:</b> ${state.context==='student'?'Continue your saved reading practice. Your previous answers are kept.':'Student Mode • 7 Reading questions'}</div>${state.context==='student'?'<button type="button" class="u3tr-restart" onclick="STEPUP_U3_TEACH_READING.restartStudent()">Review the lesson from the beginning</button>':''}</div>`}
+      {k:'Finish',t:state.context==='student'?'Ready for reading practice':'Ready for Student Mode',b:`<div class="u3tr-finish"><span>✓</span><h2>Reading Lesson Complete</h2><p>${state.context==='student'?'You have':'Students have'} read the original text, checked each paragraph, and practised <b>Main Idea, Reference, and Inference</b>.</p><div><b>Next:</b> ${state.context==='student'?'Finish Reading once. All seven answers count towards your unit progress.':'Student Mode • 7 Reading questions'}</div>${state.context==='student'?'<button type="button" class="u3tr-restart" onclick="STEPUP_U3_TEACH_READING.restartStudent()">Review the lesson from the beginning</button>':''}</div>`}
     ];
   }
   function render(){
@@ -117,30 +128,57 @@
     if(isStudent&&studentContext()?.studentId!==state.studentId)return;
     if(isStudent){state.revealed=state.checked[state.step]===true;saveProgress();}
     const ss=steps(),s=ss[state.step]||ss[0],pct=Math.round((state.step+1)/ss.length*100);
-    app.innerHTML=`<div class="u3tr-shell ${isStudent?'u3tr-student-shell':''}" dir="ltr"><header><div><strong>StepUp • ${isStudent?'Reading Lesson':'Teach Reading'}</strong><small>Unit 3 • What Will Be, Will Be</small>${isStudent?`<small class="u3tr-save-note">${state.storageAvailable?'Your place is saved on this device.':'Keep this page open to keep your place.'}</small>`:''}</div><div><b aria-label="Lesson stop ${state.step+1} of ${ss.length}">${state.step+1}/${ss.length}</b><button type="button" onclick="STEPUP_U3_TEACH_READING.exit()">${isStudent?'Back to Unit 3':'Exit Lesson'}</button></div></header><div class="u3tr-progress" aria-hidden="true"><i style="width:${pct}%"></i></div><main><div class="u3tr-head"><div><span>${esc(s.k)}</span><h1>${esc(s.t)}</h1></div></div><section class="u3tr-content">${s.b}</section><footer><button type="button" onclick="STEPUP_U3_TEACH_READING.prev()" ${state.step===0?'disabled':''}>← Back</button><div aria-hidden="true">${ss.map((_,i)=>`<i class="${i===state.step?'active':i<state.step?'done':''}"></i>`).join('')}</div>${state.step<ss.length-1?`<button type="button" class="primary" onclick="STEPUP_U3_TEACH_READING.next()" ${canNext()?'':'disabled'}>Next →</button>`:`<button type="button" class="primary" onclick="STEPUP_U3_TEACH_READING.finish()">${isStudent?'Finish & Practice':'Finish Lesson ✓'}</button>`}</footer>${isStudent&&!canNext()?'<p class="u3tr-nav-note">Choose an answer and tap Check Answer before continuing.</p>':''}</main></div>`;
+    app.innerHTML=`<div class="u3tr-shell ${isStudent?'u3tr-student-shell':''}" dir="ltr"><header><div><strong>StepUp • ${isStudent?'Reading Lesson':'Teach Reading'}</strong><small>Unit 3 • What Will Be, Will Be</small>${isStudent?`<small class="u3tr-save-note">${state.storageAvailable?'Your place is saved on this device.':'Keep this page open to keep your place.'}</small>`:''}</div><div><b aria-label="Lesson stop ${state.step+1} of ${ss.length}">${state.step+1}/${ss.length}</b><button type="button" onclick="STEPUP_U3_TEACH_READING.exit()">${isStudent?'Back to Unit 3':'Exit Lesson'}</button></div></header><div class="u3tr-progress" aria-hidden="true"><i style="width:${pct}%"></i></div><main><div class="u3tr-head"><div><span>${esc(s.k)}</span><h1>${esc(s.t)}</h1></div></div><section class="u3tr-content">${s.b}</section><footer><button type="button" onclick="STEPUP_U3_TEACH_READING.prev()" ${state.step===0?'disabled':''}>← Back</button><div aria-hidden="true">${ss.map((_,i)=>`<i class="${i===state.step?'active':i<state.step?'done':''}"></i>`).join('')}</div>${state.step<ss.length-1?`<button type="button" class="primary" onclick="STEPUP_U3_TEACH_READING.next()" ${canNext()?'':'disabled'}>Next →</button>`:`<button type="button" class="primary" onclick="STEPUP_U3_TEACH_READING.finish()" ${state.finishing?'disabled':''}>${isStudent?(state.finishing?'Saving Reading…':'Finish Reading ✓'):'Finish Lesson ✓'}</button>`}</footer>${state.error?'<p class="u3tr-nav-note" role="alert">'+esc(state.error)+'</p>':isStudent&&(state.saving||!canNext())?'<p class="u3tr-nav-note">'+(state.saving?'Saving answer…':'Choose an answer and tap Check Answer before continuing.')+'</p>':''}</main></div>`;
   }
-  function resetLesson(){state.step=0;state.selected={};state.checked={};state.afterOpen=[];state.revealed=false;state.storageKey='';state.studentId='';state.storageAvailable=true;}
+  function resetLesson(){state.step=0;state.selected={};state.checked={};state.afterOpen=[];state.revealed=false;state.storageKey='';state.studentId='';state.storageAvailable=true;state.saving=false;state.finishing=false;state.error='';}
   function start(){if(!document.querySelector('.teacher-classmode-v2')){alert('Open Teacher > Class Mode first.');return;}stopSpeech();resetLesson();state.context='teacher';state.host=document.getElementById('app');state.active=true;render();}
   function startStudent(){
     const host=document.querySelector('.student-view'),context=studentContext();if(!host||!context)return;
-    stopSpeech();resetLesson();state.context='student';state.host=host;state.studentId=context.studentId;state.storageKey=context.studentId?'stepup:u3-reading-lesson:v1:'+context.studentId:'';state.storageAvailable=!!state.storageKey;state.active=true;
+    stopSpeech();resetLesson();state.context='student';state.host=host;state.studentId=context.studentId;state.storageKey=context.studentId?'stepup:u3-reading-lesson:v2:'+context.studentId:'';state.storageAvailable=!!state.storageKey;state.active=true;
     restoreProgress();render();scrollToLesson();
   }
   function restartStudent(){if(state.context!=='student'||!activeLesson())return;state.step=0;state.selected={};state.checked={};state.afterOpen=[];state.revealed=false;render();scrollToLesson();}
-  function next(){if(activeLesson()&&canNext()&&state.step<steps().length-1){state.step++;state.revealed=false;render();scrollToLesson();}}
-  function prev(){if(activeLesson()&&state.step>0){state.step--;state.revealed=false;render();scrollToLesson();}}
-  function choose(i){const choice=Number(i),q=questionForStep(state.step);if(!activeLesson()||!q||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;state.selected[state.step]=choice;state.checked[state.step]=false;state.revealed=false;render();}
-  function check(){if(!activeLesson()||!questionForStep(state.step)||!Number.isInteger(state.selected[state.step]))return;state.checked[state.step]=true;state.revealed=true;render();if(state.context==='student')state.host?.querySelector('.u3tr-feedback')?.scrollIntoView?.({block:'nearest',behavior:'auto'});}
+  function next(){if(activeLesson()&&!state.saving&&!state.finishing&&canNext()&&state.step<steps().length-1){state.step++;state.revealed=false;state.error='';render();scrollToLesson();}}
+  function prev(){if(activeLesson()&&!state.saving&&!state.finishing&&state.step>0){state.step--;state.revealed=false;state.error='';render();scrollToLesson();}}
+  function choose(i){const choice=Number(i),q=questionForStep(state.step);if(!activeLesson()||state.saving||state.finishing||state.checked[state.step]||!q||!Number.isInteger(choice)||choice<0||choice>=q.choices.length)return;state.selected[state.step]=choice;state.checked[state.step]=false;state.revealed=false;state.error='';render();}
+  async function check(){
+    const step=state.step,q=questionForStep(step),choice=state.selected[step],student=state.context==='student';
+    if(!activeLesson()||state.saving||state.finishing||state.checked[step]||!q||!Number.isInteger(choice))return;
+    if(student){
+      if(!q.id||!window.STEPUP_U3_REVIEW?.recordLessonReadingAnswer){state.error='Reading saving unavailable. Reopen Unit 3.';render();return;}
+      state.saving=true;state.error='';render();
+      try{
+        await window.STEPUP_U3_REVIEW.recordLessonReadingAnswer(q.id,choice);
+        if(!activeLesson()||state.step!==step)return;
+      }catch(e){
+        console.warn('Reading answer was not saved',e);
+        if(activeLesson()&&state.step===step)state.error='Answer not saved. Check your connection, then tap Check Answer again.';
+        return;
+      }finally{state.saving=false;if(state.error&&activeLesson()&&state.step===step)render();}
+    }
+    if(!activeLesson()||state.step!==step){if(state.context==='student')state.error='';return;}
+    state.checked[step]=true;state.revealed=true;state.error='';render();
+    if(student)state.host?.querySelector('.u3tr-feedback')?.scrollIntoView?.({block:'nearest',behavior:'auto'});
+  }
   function exitLesson(){
     if(!activeLesson())return;saveProgress();stopSpeech();state.active=false;
     if(state.context==='student')return window.STEPUP_U3_REVIEW?.open?.();
     if(window.PROVE?.setTeacherTab)return window.PROVE.setTeacherTab('classmode');
   }
-  function finish(){
-    if(!activeLesson())return;
+  async function finish(){
+    if(!activeLesson()||state.saving||state.finishing)return;
     if(state.context==='student'){
       if(state.step!==steps().length-1)return;
-      saveProgress();stopSpeech();state.active=false;return window.STEPUP_U3_REVIEW?.practiceReading?.();
+      state.finishing=true;state.error='';render();
+      try{
+        if(!window.STEPUP_U3_REVIEW?.finishReadingLesson)throw new Error('Reading completion unavailable');
+        await window.STEPUP_U3_REVIEW.finishReadingLesson();
+        saveProgress();stopSpeech();state.active=false;
+      }catch(e){
+        state.finishing=false;state.error='Could not complete Reading. Check your connection and try again.';
+        console.warn('Reading completion was not saved',e);render();
+      }
+      return;
     }
     return exitLesson();
   }

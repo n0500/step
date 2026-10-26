@@ -28,6 +28,7 @@
   let session = null;
   let saving = false;
   let listeningAudioToken = 0;
+  const lessonReadingPending = new Map();
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -301,6 +302,52 @@
       ${next ? `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${next}')">${nextMissingSection()?'Continue missing review questions':'Review missed answers'} →</button>` : certificateEligible() ? `<div class="u3-review-done">🏆 Your unit certificate is unlocked. You can practise any skill again.</div>` : `<button class="u3-review-continue" onclick="STEPUP_U3_REVIEW.start('${weakestSection()}')">Practise your weakest section →</button>`}`;
   }
 
+  // Guided Reading is the assessed seven-question Reading route.
+  // Keep question IDs stable and never delete earlier scores or certificates.
+  async function recordLessonReadingAnswer(questionId, choice){
+    if(!unitOpen())throw new Error('Unit 3 is not open');
+    const q=sections.reading.questions.find(x=>x.question_id===String(questionId));
+    const selected=Number(choice);
+    if(!q||!Number.isInteger(selected)||selected<0||selected>=qChoices(q).length)throw new Error('Invalid reading choice');
+    await currentStudent();
+    const prior=latestQuestion('reading',q.question_id);
+    if(prior&&(prior.correct===true||prior.bestCorrect===true||(prior.correct===false&&Number(prior.selected)===selected)))return prior;
+    if(lessonReadingPending.has(q.question_id))return lessonReadingPending.get(q.question_id);
+    const task=saveQuestion('reading',q,selected,'u3-guided-reading-lesson');
+    lessonReadingPending.set(q.question_id,task);
+    try{return await task;}finally{if(lessonReadingPending.get(q.question_id)===task)lessonReadingPending.delete(q.question_id);}
+  }
+
+  async function finishReadingLesson(){
+    if(!unitOpen())throw new Error('Unit 3 is not open');
+    await currentStudent();
+    let progress=sectionProgress('reading');
+    if(progress.answered!==progress.total){
+      // Only show missing questions after a failed write or legacy incomplete run.
+      return startSection('reading');
+    }
+    const summaries=stageAttempts(sections.reading.trainingId);
+    const lastSummary=summaries.reduce((latest,x)=>Math.max(latest,Date.parse(x.submittedAt||'')||0),0);
+    const latestReading=sections.reading.questions.reduce((latest,q)=>
+      Math.max(latest,Date.parse(latestQuestion('reading',q.question_id)?.submittedAt||'')||0),0);
+    const guidedRecorded=attempts.some(a=>a.recordKind==='question'&&a.examUnit==='u3'&&a.examSection==='reading'&&a.studyMethod==='u3-guided-reading-lesson');
+    if(guidedRecorded&&(!summaries.length||latestReading>lastSummary))await saveSectionSummary('reading');
+    progress=sectionProgress('reading');
+    const next=nextMissingSection(); // never automatically repeat a completed section
+    const h=document.querySelector('.student-view');if(!h)return;
+    const action=next?"STEPUP_U3_REVIEW.start('"+next+"',false,true)":"STEPUP_U3_REVIEW.open()";
+    const label=next?'Continue to '+sections[next].title:'Back to Unit 3';
+    h.innerHTML='<section class="journey-result good" data-review-run-result="1">'+
+      '<div class="journey-result-score">'+progress.answered+'<span>/'+progress.total+'</span></div>'+
+      '<h2>Reading complete ✓</h2>'+
+      '<p>The seven Reading answers from your lesson are saved. No second Reading quiz is needed.</p>'+
+      '<p>'+progress.reviewCorrect+'/'+progress.total+' correct on the latest checks. Review mistakes whenever you choose.</p>'+
+      '<div class="journey-result-actions">'+
+      '<button class="journey-main-btn" onclick="'+action+'">'+esc(label)+' →</button>'+
+      '<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.open()">Unit 3 overview</button>'+
+      '</div></section>';
+  }
+
   function readingLesson(){
     stopListening();
     if(!unitOpen())return openUnit3();
@@ -425,7 +472,7 @@
     return {user,p};
   }
 
-  async function saveQuestion(sectionKey, q, selected){
+  async function saveQuestion(sectionKey, q, selected, studyMethod='u3-full-review-question'){
     const {user,p} = await currentStudent();
     const answer = qAnswer(q);
     const choices = qChoices(q);
@@ -442,7 +489,7 @@
       selected, selectedText:choices[selected] || '', correctAnswer:answer, correctText:choices[answer] || '', correct,
       score:correct?1:0, total:1, percentage:correct?100:0,
       bestCorrect:priorBest || correct, bestScore:(priorBest || correct)?1:0, bestPercentage:(priorBest || correct)?100:0,
-      source:q.source_ref || '', studyMethod:'u3-full-review-question', submittedAt:now
+      source:q.source_ref || '', studyMethod, submittedAt:now
     };
     await firebase.firestore().collection('attempts').add(record);
     attempts.push(record);
@@ -553,7 +600,7 @@
     const h = document.querySelector('.student-view');
     session = null;
     if (!h) return;
-    const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextReviewSection();
+    const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextMissingSection();
     const improveKey = !fullReview && !nextKey && !certificateEligible() ? weakestSection() : null;
     const nextAction=fullReview ? "STEPUP_SMART.advance('u3')" :
       nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" :
@@ -625,6 +672,8 @@
     open:openUnit3,
     start:startReview,
     readingLesson,
+    recordLessonReadingAnswer,
+    finishReadingLesson,
     practiceReading:()=>startSection('reading'),
     getReadingLessonContext:()=>unitOpen()&&profile?.role==='student'?{studentId:String(profile.id||profile.uid||''),classId:String(profile.classId||'')}:null,
     answer,
