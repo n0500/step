@@ -1943,15 +1943,25 @@ Do not start a new lesson unless I ask.`;
   function startClassMode(trainingId){const t=findTraining(trainingId);if(!t)return;stopClassModeTimer();state.classMode={training:t,index:0,revealed:false,paused:t.id==="u4-reading-classmode",remaining:t.durationSeconds,timer:null};runClassModeTimer();renderClassModeScreen()}
   function runClassModeTimer(){stopClassModeTimer();if(!state.classMode||state.classMode.paused)return;state.classMode.timer=setInterval(()=>{if(!state.classMode||state.classMode.paused)return;state.classMode.remaining=Math.max(0,state.classMode.remaining-1);const el=document.getElementById("cmTimer");if(el)el.textContent=fmtTime(state.classMode.remaining);if(state.classMode.remaining<=0)stopClassModeTimer()},1000)}
 
-  function readUnit4ClassPassage(){
+  let unit4ClassAudio=null;
+  async function readUnit4ClassPassage(){
     const t=state.classMode?.training;
-    if(t?.id!=="u4-reading-classmode"||!("speechSynthesis" in window))return;
-    window.speechSynthesis.cancel();
-    const voice=new SpeechSynthesisUtterance(t.rawPassage||"");
-    voice.lang="en-US";voice.rate=0.9;
-    window.speechSynthesis.speak(voice);
+    if(t?.id!=="u4-reading-classmode")return;
+    try{
+      const url=await window.STEPUP_FLIPPED_U4?.loadOriginalAudio?.();
+      if(!url)throw new Error("Original audiobook URL is not available");
+      if(state.classMode?.training?.id!=="u4-reading-classmode")return;
+      if(!unit4ClassAudio)unit4ClassAudio=new Audio(url);
+      else if(unit4ClassAudio.src!==url)unit4ClassAudio.src=url;
+      await unit4ClassAudio.play();
+    }catch(error){
+      console.warn("Unit 4 textbook reading audio",error);
+      alert("The original reading recording could not load. Check your internet connection and try again.");
+    }
   }
-  function stopUnit4ClassPassage(){if("speechSynthesis" in window)window.speechSynthesis.cancel();}
+  function stopUnit4ClassPassage(){
+    if(unit4ClassAudio)unit4ClassAudio.pause();
+  }
   function resetUnit4QuestionTimer(){
     if(state.classMode?.training?.id!=="u4-reading-classmode")return;
     state.classMode.remaining=state.classMode.training.durationSeconds;
