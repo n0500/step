@@ -1855,9 +1855,167 @@ RESPONSE STYLE: friendly, reassuring, and very clear for a Grade 10 student. Use
 injectStyles();
 const observer=new MutationObserver(()=>addTabs());
 observer.observe(document.body,{childList:true,subtree:true});
+
+const CLASS_WRITING_SAMPLE = "In 1973, Martin Cooper make the first portable cell phone call.\nLater, mobile phones became smaller.\nToday, many people use smartphones.";
+const classWritingState = {session:0,draft:'',referenceDraft:'',lastFeedback:'',feedback:'',history:[],busy:false};
+function injectClassWritingStyles(){
+  if(document.getElementById("stepupWritingClassStyles"))return;
+  const el=document.createElement("style");el.id="stepupWritingClassStyles";
+  el.textContent=`
+  .cw-live{min-height:100vh;padding:22px clamp(15px,3vw,44px);background:#f1f5fa;color:#152f49;font-family:inherit}
+  .cw-live *{box-sizing:border-box}
+  .cw-toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:18px}
+  .cw-toolbar strong{font-size:clamp(23px,2.4vw,35px);line-height:1.3}
+  .cw-toolbar span{font-size:15px;color:#415b71}
+  .cw-exit,.cw-btn{border:0;border-radius:12px;cursor:pointer;font:inherit;font-weight:800;padding:12px 22px;min-height:49px}
+  .cw-exit{background:#fff;border:1px solid #cbd8e7;color:#173753}
+  .cw-steps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .cw-steps span{background:#e2edfa;color:#164976;font-size:clamp(15px,1.5vw,20px);font-weight:750;padding:8px 13px;border-radius:10px}
+  .cw-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:21px}
+  .cw-panel{background:#fff;border:1px solid #d0dfed;border-radius:21px;padding:clamp(17px,2vw,30px);box-shadow:0 7px 24px #20415d0a;min-width:0}
+  .cw-panel h2{font-size:clamp(22px,2.25vw,34px);margin:0 0 8px;color:#123454}
+  .cw-panel p{font-size:clamp(16px,1.4vw,20px);line-height:1.55;margin:0 0 16px;color:#53697f}
+  .cw-draft{width:100%;min-height:260px;resize:vertical;background:#f9fbfe;border:2px solid #b7cbe0;border-radius:15px;padding:21px;color:#102f4c;font:600 clamp(21px,2vw,28px)/1.72 inherit;line-height:1.75;direction:ltr;text-align:left}
+  .cw-draft:focus{outline:3px solid #9bc4ed;outline-offset:2px}
+  .cw-actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:17px}
+  .cw-btn{font-size:clamp(15px,1.4vw,20px);background:#195fa1;color:#fff}
+  .cw-btn.secondary{background:#e8f0fa;color:#1d4970}
+  .cw-btn:disabled{opacity:.5;cursor:not-allowed}
+  .cw-feedback{white-space:pre-wrap;overflow-wrap:anywhere;min-height:260px;font-size:clamp(22px,2vw,29px);line-height:1.67;font-weight:600;color:#173653;background:#f5faff;border-left:6px solid #5e9bd2;border-radius:14px;padding:20px}
+  .cw-feedback[data-status="error"]{border-left-color:#c26a5c;background:#fff7f4}
+  .cw-feedback[data-status="loading"]{border-left-color:#d6a64b}
+  .cw-bottom{margin-top:18px;background:#e5edf7;border-radius:13px;padding:13px 18px;color:#264866;font-size:clamp(15px,1.25vw,19px);line-height:1.55}
+  @media(max-width:900px){.cw-layout{grid-template-columns:1fr}.cw-draft,.cw-feedback{min-height:180px}.cw-live{padding:14px}}
+  `;
+  document.head.appendChild(el);
+}
+
+function renderClassWritingCoach(){
+  if(!document.querySelector('.teacher-classmode-v2'))return;
+  injectClassWritingStyles();
+  classWritingState.session+=1;
+  classWritingState.referenceDraft="";
+  classWritingState.lastFeedback="";
+  classWritingState.feedback="";
+  classWritingState.history=[];
+  classWritingState.busy=false;
+  classWritingState.draft=CLASS_WRITING_SAMPLE;
+  const root=document.getElementById("app");if(!root)return;
+  root.innerHTML=`
+   <main class="cw-live" aria-label="Writing Coach Class Mode">
+     <div class="cw-toolbar">
+       <div><strong>✍️ Class Mode • Writing Coach</strong><div><span>MegaGoal 1 · Unit 4 · The History of a Product</span></div></div>
+       <button type="button" class="cw-exit" id="cwExit">Exit Class Mode</button>
+     </div>
+     <div class="cw-steps"><span>1 · Read together</span><span>2 · Ask Coach</span><span>3 · Students suggest a fix</span><span>4 · Check revision</span></div>
+     <div class="cw-layout">
+       <section class="cw-panel" aria-label="Class writing draft">
+         <h2>Our class draft</h2>
+         <p>Read the text. Let students suggest the change, then edit it together.</p>
+         <textarea class="cw-draft" id="cwDraft" spellcheck="false" aria-label="Editable class writing draft"></textarea>
+         <div class="cw-actions">
+           <button type="button" class="cw-btn" id="cwAsk">Ask Coach</button>
+           <button type="button" class="cw-btn secondary" id="cwCheck" disabled>Check Revision</button>
+         </div>
+         <div class="cw-actions">
+           <button type="button" class="cw-btn secondary" id="cwNew">New Draft</button>
+           <button type="button" class="cw-btn secondary" id="cwExample">Load Example</button>
+         </div>
+       </section>
+       <section class="cw-panel" aria-label="AI writing feedback">
+         <h2>Coach's feedback</h2>
+         <p>One writing point at a time. Students do the correcting.</p>
+         <div class="cw-feedback" id="cwFeedback" role="status" aria-live="polite">Click Ask Coach to get one helpful hint. Then let students improve the text.</div>
+       </section>
+     </div>
+     <div class="cw-bottom">At home: Assistant → Writing Coach → Write your own short paragraph → Improve it using the coach's feedback. Class practice is not graded and does not affect unit mastery.</div>
+   </main>`;
+  document.getElementById("cwDraft").value=classWritingState.draft;
+  document.getElementById("cwExit").addEventListener("click",()=>{
+    classWritingState.session+=1;
+    window.PROVE?.exitClassMode?.();
+  });
+  document.getElementById("cwAsk").addEventListener("click",()=>classWritingAsk("ask"));
+  document.getElementById("cwCheck").addEventListener("click",()=>classWritingAsk("check"));
+  document.getElementById("cwDraft").addEventListener("input",()=>{
+    const v=document.getElementById("cwDraft")?.value||"";
+    classWritingState.draft=v;
+    const check=document.getElementById("cwCheck");
+    if(check)check.disabled=classWritingState.busy||!classWritingState.lastFeedback||v.trim()===classWritingState.referenceDraft;
+  });
+  document.getElementById("cwNew").addEventListener("click",()=>classWritingReset(""));
+  document.getElementById("cwExample").addEventListener("click",()=>classWritingReset(CLASS_WRITING_SAMPLE));
+}
+
+function classWritingReset(draft){
+  if(classWritingState.busy)return;
+  classWritingState.session+=1;
+  classWritingState.draft=draft;
+  classWritingState.referenceDraft="";
+  classWritingState.lastFeedback="";
+  classWritingState.history=[];
+  const input=document.getElementById("cwDraft");
+  if(input){input.value=draft;input.focus();}
+  const out=document.getElementById("cwFeedback");
+  if(out){out.textContent="Write together, then click Ask Coach. The coach gives one hint—not the full answer.";out.removeAttribute("data-status");}
+  const check=document.getElementById("cwCheck");if(check)check.disabled=true;
+}
+
+async function classWritingAsk(action){
+  if(classWritingState.busy)return;
+  const input=document.getElementById("cwDraft");
+  const draft=(input?.value||"").trim();
+  const out=document.getElementById("cwFeedback");
+  if(!out)return;
+  if(!draft){out.textContent="Write a sentence or short paragraph first.";return;}
+  if(action==="check"&&(!classWritingState.lastFeedback||draft===classWritingState.referenceDraft)){
+    out.textContent="First edit the text using a student's suggestion, then check the revision.";return;
+  }
+  if(!assistantState.aiReady||!assistantState.writingModel){
+    out.textContent="Writing Coach is not ready. Check the AI configuration and try again.";
+    out.dataset.status="error";return;
+  }
+  const before=classWritingState.referenceDraft;
+  const last=classWritingState.lastFeedback;
+  const prompt=action==="ask"
+    ? `This is a teacher-led shared-writing activity for Saudi Grade 10 students, MegaGoal 1. Topic: the history of a product. Read the following class draft. Respond in English, briefly. Identify exactly ONE high-priority, specific writing issue. Give a short hint and ask students to propose the correction. Do not write a corrected sentence or rewrite the paragraph. Format: Focus: ...\\nHint: ...\\nYour turn: ...\\n\\nCLASS DRAFT:\\n${draft}`
+    : `Teacher-led Grade 10 Writing Coach: the class revised its own draft. Check only the attempted improvement from the previous draft. If corrected, praise briefly, then optionally suggest ONE next issue without its answer. If it still needs work, offer a short hint, not the correction. Do not rewrite the text.\\n\\nBEFORE:\\n${before}\\n\\nCOACH'S PREVIOUS HINT:\\n${last}\\n\\nCLASS REVISION:\\n${draft}`;
+  classWritingState.busy=true;
+  const session=classWritingState.session;
+  for(const id of ["cwAsk","cwCheck","cwNew","cwExample"]){const b=document.getElementById(id);if(b)b.disabled=true;}
+  out.dataset.status="loading";out.textContent="Writing Coach is checking the class draft…";
+  try{
+    if(!assistantState.appCheck)throw new Error("APP_CHECK");
+    const token=await getToken(assistantState.appCheck,false);
+    if(!token?.token)throw new Error("APP_CHECK");
+    const result=await generateWritingWithResilience(prompt);
+    const reply=(await result.response).text().trim();
+    if(session!==classWritingState.session||!document.getElementById("cwFeedback"))return;
+    if(!reply)throw new Error("Empty AI response");
+    classWritingState.referenceDraft=draft;
+    classWritingState.lastFeedback=reply;
+    classWritingState.history.push({action,draft,reply});
+    out.textContent=reply;out.removeAttribute("data-status");
+  }catch(err){
+    if(session!==classWritingState.session||!document.getElementById("cwFeedback"))return;
+    out.dataset.status="error";
+    out.textContent=String(err?.message||err).includes("APP_CHECK")
+      ?"Writing Coach couldn't verify App Check. Refresh and try again."
+      :"Writing Coach is temporarily unavailable. Try again; the class draft is still here.";
+    console.warn("Class Writing Coach failed",err);
+  }finally{
+    if(session===classWritingState.session){
+      classWritingState.busy=false;
+      for(const id of ["cwAsk","cwNew","cwExample"]){const b=document.getElementById(id);if(b)b.disabled=false;}
+      const b=document.getElementById("cwCheck");
+      if(b)b.disabled=!classWritingState.lastFeedback||(document.getElementById("cwDraft")?.value||"").trim()===classWritingState.referenceDraft;
+    }
+  }
+}
+
 addTabs();
 
-window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,openDictionary:renderDictionary,startQuickPractice,choosePracticeAnswer};
+window.MG1Assistant={render:renderAssistant,openWritingCoach:renderWritingCoach,openClassWritingCoach:renderClassWritingCoach,openDictionary:renderDictionary,startQuickPractice,choosePracticeAnswer};
 window.StepUpAI={evaluateWriting:evaluateWritingRubric};
 window.StepUpDictionary={render:renderDictionary,lookup:lookupDictionaryCurrent,speak:speakDictionaryWord};
 
