@@ -18,11 +18,13 @@ function unitState(u){
   const read=passed(bestStage(last.attempts,attemptId(u,'reading')),'reading');
   const listen=passed(bestStage(last.attempts,attemptId(u,'listening')),'listening');
   const step=!!latest(last.attempts,attemptId(u,'step'));
-  const final=passed(bestStage(last.attempts,attemptId(u,'final')),'final');
-  const stops=[coreDone===cores.length,read,listen,final];
-  // STEP is optional enrichment and never blocks the unit journey or certificate.
+  const finalRequired=u.missions.some(m=>m.type==='final');
+  const final=finalRequired&&passed(bestStage(last.attempts,attemptId(u,'final')),'final');
+  const stops=[coreDone===cores.length,read,listen,...(finalRequired?[final]:[])];
+  // STEP Practice is optional and does not affect completion or certificate mastery.
   const done=stops.filter(Boolean).length;
-  const partial=done+(coreDone<cores.length&&cores.length?coreDone/cores.length:0);return {cores,coreDone,read,listen,step,final,done,started:done>0||coreDone>0||step,pct:Math.round(partial/4*100),complete:done===4};
+  const partial=done+(coreDone<cores.length&&cores.length?coreDone/cores.length:0);
+  return {cores,coreDone,read,listen,step,final,finalRequired,requiredStages:stops.length,done,started:done>0||coreDone>0||step,pct:Math.round(partial/stops.length*100),complete:done===stops.length};
 }
 function nextAction(){
   for(const u of DATA.units){
@@ -32,7 +34,7 @@ function nextAction(){
     if(st.coreDone<st.cores.length)return {u,key:`core-${st.coreDone+1}`,label:`Master • ${st.cores[st.coreDone].title}`,desc:'A short adaptive check. Support appears only if you need it.'};
     if(!st.read)return {u,key:'reading',label:'Read',desc:'Read, find evidence, and move on.'};
     if(!st.listen)return {u,key:'listening',label:'Listen',desc:'Listen for the main idea and key details.'};
-    if(!st.final)return {u,key:'final',label:'Final Challenge',desc:'One last challenge to finish the unit journey.'};
+    if(st.finalRequired&&!st.final)return {u,key:'final',label:'Final Challenge',desc:'One last challenge to finish the unit journey.'};
   }
   return null;
 }
@@ -59,7 +61,7 @@ function openUnit(id){
   const masterSubs=cores.map((m,i)=>{const a=bestStage(last.attempts,attemptId(u,`core-${i+1}`));const done=passed(a,'core');const unlock=i===0||passed(bestStage(last.attempts,attemptId(u,`core-${i}`)),'core');return `<button class="journey-subtask ${done?'done':''} ${!unlock?'locked':''}" ${unlock?`onclick="STEPUP_JOURNEY.startCore('${u.id}',${i})"`:''}><span>${done?'✓':i+1}</span><div><b>${esc(m.title)}</b><small>${done?'Mastered':unlock?'Quick adaptive check':'Unlocks next'}</small></div></button>`}).join('');
   const masterDone=st.coreDone===cores.length;
   const readUnlock=(u.id==='u4'||masterDone),listenUnlock=st.read,stepUnlock=st.listen,finalUnlock=st.listen;
-  host.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit ${u.number}</b></div><section class="journey-unit-hero"><span class="journey-kicker">Unit ${u.number}</span><h1>${esc(u.title)}</h1><p>${esc(u.objective)}</p><div class="journey-mini-progress"><i style="width:${st.pct}%"></i></div><small>${st.done}/4 required stages complete</small></section><section class="journey-master-card"><div class="journey-stage-title"><span>01</span><div><h2>Master the Unit</h2><p>StepUp checks what you know and gives support only when needed.</p></div><b>${st.coreDone}/${cores.length}</b></div><div class="journey-subtasks">${masterSubs}</div></section><div class="journey-stops">${station('Read','📖',st.read,readUnlock,`STEPUP_JOURNEY.startReading('${u.id}')`,'Find evidence in a short reading.',!st.read&&readUnlock)}${station('Listen','🎧',st.listen,listenUnlock,`STEPUP_JOURNEY.startListening('${u.id}')`,'Listen for the idea and key details.',!st.listen&&listenUnlock)}${station('STEP Practice','⚡',st.step,stepUnlock,`STEPUP_JOURNEY.startStep('${u.id}')`,'6 quick questions • strategy first.',!st.step&&stepUnlock)}${station('Final Challenge','🏁',st.final,finalUnlock,`STEPUP_JOURNEY.startFinal('${u.id}')`,'Finish the unit with confidence.',!st.final&&finalUnlock)}</div>${st.complete?`<section class="journey-celebrate"><span>✨</span><div><b>Unit ${u.number} complete!</b><p>You finished the full journey. Nice work.</p></div></section>`:''}`;
+  host.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit ${u.number}</b></div><section class="journey-unit-hero"><span class="journey-kicker">Unit ${u.number}</span><h1>${esc(u.title)}</h1><p>${esc(u.objective)}</p><div class="journey-mini-progress"><i style="width:${st.pct}%"></i></div><small>${st.done}/${st.requiredStages} required stages complete</small></section><section class="journey-master-card"><div class="journey-stage-title"><span>01</span><div><h2>Master the Unit</h2><p>StepUp checks what you know and gives support only when needed.</p></div><b>${st.coreDone}/${cores.length}</b></div><div class="journey-subtasks">${masterSubs}</div></section><div class="journey-stops">${station('Read','📖',st.read,readUnlock,`STEPUP_JOURNEY.startReading('${u.id}')`,'Find evidence in a short reading.',!st.read&&readUnlock)}${station('Listen','🎧',st.listen,listenUnlock,`STEPUP_JOURNEY.startListening('${u.id}')`,'Listen for the idea and key details.',!st.listen&&listenUnlock)}${station('STEP Practice','⚡',st.step,stepUnlock,`STEPUP_JOURNEY.startStep('${u.id}')`,'6 quick questions • strategy first.',!st.step&&stepUnlock)}${st.finalRequired?station('Final Challenge','🏁',st.final,finalUnlock,`STEPUP_JOURNEY.startFinal('${u.id}')`,'Finish the unit with confidence.',!st.final&&finalUnlock):''}</div>${st.complete?`<section class="journey-celebrate"><span>✨</span><div><b>Unit ${u.number} complete!</b><p>You finished the full journey. Nice work.</p></div></section>`:''}`;
 }
 function go(uid,key){const u=unitById(uid);if(!u)return;if(key.startsWith('core-'))return startCore(uid,Number(key.split('-')[1])-1);if(key==='reading')return startReading(uid);if(key==='listening')return startListening(uid);if(key==='step')return startStep(uid);if(key==='final')return startFinal(uid);openUnit(uid);}
 function host(){return $('.student-view');}
