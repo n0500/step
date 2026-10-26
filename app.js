@@ -863,6 +863,7 @@
               <div class="teacher-unit-actions">
                 <span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"Open":"Closed"}</span>
                 ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"Close":"Open Unit"}</button>`:""}
+                ${u.id==="u4"&&ready?`<button type="button" class="btn btn-secondary" onclick="PROVE.previewUnit4()">Preview Content</button>`:""}
               </div>
             </div>`;
           }).join("")}
@@ -1032,6 +1033,89 @@
       c.id=uid();local.saveClass(c);state.selectedClassId=c.id;
     }
     renderTeacher();
+  }
+  function previewUnit4(){
+    if(state.profile?.role!=="teacher")return;
+    const data=window.STEPUP_JOURNEY?.data;
+    const unit=data?.units?.find(u=>u.id==="u4");
+    if(!unit)return alert("Unit 4 content is not loaded. Refresh STEP UP and try again.");
+    const bank=(data.questions||[]).filter(q=>q.unit_id==="MG1_U4"&&q.stage==="Mastery"||q.unit_id==="MG1_U4"&&q.stage==="Final Challenge");
+    const missions=unit.missions||[];
+    const sections=[
+      {heading:"1 · Vocabulary & Real Talk",id:"m1",desc:"Seven After Reading words and two Real Talk expressions."},
+      {heading:"2 · Grammar: The Passive",id:"m2",desc:"Present, past, present perfect and future passive."},
+      {heading:"3 · Grammar: Comparisons & Sense Verbs",id:"m3",desc:"Comparative, superlative, as...as and sense verbs."},
+      {heading:"4 · Form, Meaning & Function",id:"m4",desc:"Demonstratives, articles, imperatives, possessives, one/ones, too/enough."},
+      {heading:"5 · Reading: The World of Plastic",id:"m5",desc:"Complete textbook reading and comprehension questions.",reading:true},
+      {heading:"6 · Listening: The Flying Helicopter Alarm",id:"m6",desc:"Original Conversation (Adnan and Omar) and four questions.",listening:true},
+      {heading:"7 · Final Challenge",id:"m7",desc:"One integrated question."}
+    ];
+    const actual=sections.map(s=>{
+      const m=missions.find(x=>x.id===s.id);
+      return {...s,qs:bank.filter(q=>q.mission===m?.source)};
+    });
+    const h=s=>esc(String(s??""));
+    const questionHTML=(q,idx)=>{
+      const ids=["option_a_id","option_b_id","option_c_id","option_d_id"];
+      const keys=["option_a_text","option_b_text","option_c_text","option_d_text"];
+      const n=ids.findIndex(k=>q[k]===q.correct_option_id);
+      return `<details class="u4tp-question"><summary><span>${idx+1}.</span> ${h(q.prompt)} <small>View answer</small></summary><div class="u4tp-options">`+
+        keys.map((k,i)=>`<div class="${i===n?"u4tp-correct":""}"><b>${"ABCD"[i]}.</b> ${h(q[k])}${i===n?' <strong>✓ Correct</strong>':""}</div>`).join("")+
+        `</div>${q.explanation?`<p class="u4tp-explain">${h(q.explanation)}</p>`:""}</details>`;
+    };
+    const reading=String(unit.reading||"").split(/\n\s*\n/).filter(Boolean);
+    const readingHTML=reading.length>1?
+      `<details class="u4tp-original"><summary>Read the complete textbook passage (${reading.length-1} paragraphs)</summary>`+
+      reading.slice(1).map(p=>`<p>${h(p)}</p>`).join("")+`</details>`:"";
+    const listeningHTML=`<div class="u4tp-audio"><b>Original Conversation Audio</b><audio controls preload="none" src="assets/audio/mega-goal-1/unit-04/conversation.mp3"></audio><p>${h(unit.listening||"")}</p></div>`;
+    const content=actual.map(s=>`<details class="u4tp-section"><summary><span>${h(s.heading)}</span><b>${s.qs.length} questions</b></summary><div class="u4tp-section-body"><p>${h(s.desc)}</p>${s.reading?readingHTML:""}${s.listening?listeningHTML:""}${s.qs.map(questionHTML).join("")}</div></details>`).join("");
+    let style=document.getElementById("u4TeacherPreviewStyle");
+    if(!style){
+      style=document.createElement("style");style.id="u4TeacherPreviewStyle";
+      style.textContent=`
+  .u4tp-overlay{position:fixed;inset:0;z-index:100100;display:flex;justify-content:center;align-items:center;background:rgba(12,28,49,.75);padding:12px}
+  .u4tp-panel{background:#fff;color:#18344d;width:min(1050px,100%);max-height:94dvh;overflow:auto;overscroll-behavior:contain;border-radius:18px;box-shadow:0 16px 60px #0004;direction:ltr;font-family:Arial,sans-serif}
+  .u4tp-head{position:sticky;top:0;z-index:2;background:#f2f8fc;border-bottom:1px solid #ceddea;padding:17px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .u4tp-head h2{margin:3px 0;font-size:clamp(20px,3vw,28px)}.u4tp-head small{color:#45677d;font-weight:700}
+  .u4tp-close,.u4tp-all{border:1px solid #b6cbdc;border-radius:10px;background:#fff;color:#17486b;font-size:15px;font-weight:700;padding:10px 14px;cursor:pointer}
+  .u4tp-content{padding:18px 20px 26px;display:grid;gap:12px}.u4tp-note{background:#e6f5f1;border:1px solid #bfdfd7;padding:12px;border-radius:12px;font-size:15px;line-height:1.55}
+  .u4tp-tools{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.u4tp-count{font-weight:800;font-size:17px}
+  .u4tp-section{border:1px solid #d1e0ea;border-radius:13px;overflow:hidden}.u4tp-section>summary{list-style:none;cursor:pointer;padding:17px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f4f8fc;font-weight:800;font-size:17px}
+  .u4tp-section>summary::-webkit-details-marker{display:none}.u4tp-section>summary b{font-size:13px;white-space:nowrap;color:#426683;background:#fff;padding:6px 9px;border-radius:10px}
+  .u4tp-section-body{padding:14px;display:grid;gap:11px}.u4tp-section-body>p{margin:0 0 5px;color:#42647c;font-size:14px}
+  .u4tp-question{border:1px solid #dbe5ec;border-radius:10px;background:#fff;overflow:hidden}
+  .u4tp-question>summary{list-style:none;cursor:pointer;padding:13px 12px;line-height:1.55;font-size:16px;font-weight:650}
+  .u4tp-question>summary::-webkit-details-marker{display:none}.u4tp-question>summary>span{color:#147d83}.u4tp-question>summary>small{color:#557488;float:right;margin-left:10px;font-size:12px}
+  .u4tp-options{padding:3px 12px 8px;display:grid;gap:5px}.u4tp-options>div{background:#f5f7fa;border-radius:7px;padding:9px 10px;font-size:15px;line-height:1.4}
+  .u4tp-options>div.u4tp-correct{background:#e1f4e9;color:#176641;border:1px solid #a5d9bc}.u4tp-options b{margin-right:6px}.u4tp-options strong{font-size:12px}
+  .u4tp-explain{padding:0 14px 12px;margin:0;font-size:14px;color:#42647c}
+  .u4tp-original{background:#f9fbff;border:1px solid #e0e8f0;padding:12px;border-radius:10px}.u4tp-original>summary{cursor:pointer;font-weight:750}.u4tp-original p{line-height:1.75;margin:14px 0;font-size:16px}
+  .u4tp-audio{display:grid;gap:7px;padding:12px;border:1px solid #d2e4ee;border-radius:10px}.u4tp-audio audio{width:100%}.u4tp-audio p{font-size:14px;line-height:1.7}
+  @media(max-width:600px){.u4tp-panel{max-height:96dvh}.u4tp-head{padding:13px}.u4tp-content{padding:12px}.u4tp-section>summary{padding:12px;font-size:15px}.u4tp-question>summary{font-size:15px}}
+  `;
+      document.head.appendChild(style);
+    }
+    document.getElementById("stepupU4TeacherPreview")?.remove();
+    const overlay=document.createElement("div");
+    overlay.className="u4tp-overlay";overlay.id="stepupU4TeacherPreview";
+    overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
+    overlay.setAttribute("aria-label","Unit 4 teacher-only content preview");
+    overlay.innerHTML=`<div class="u4tp-panel"><header class="u4tp-head"><div><small>STEP UP · TEACHER PREVIEW</small><h2>Unit 4 · The Art of Advertising</h2></div><button class="u4tp-close" data-u4tp="close" type="button">✕ Close</button></header><main class="u4tp-content"><div class="u4tp-note"><strong>Preview only — not an assignment.</strong> Opening this panel does not open Unit 4 to any class, save attempts or affect mastery and certificates. Questions are shown in the currently published unit order.</div><div class="u4tp-tools"><span class="u4tp-count">${bank.length} questions · 7 sections</span><button class="u4tp-all" type="button" data-u4tp="answers">Show all answers</button></div>${content}</main></div>`;
+    overlay.addEventListener("click",event=>{
+      const btn=event.target.closest("[data-u4tp]");
+      if(btn?.dataset.u4tp==="close"){overlay.remove();return;}
+      if(btn?.dataset.u4tp==="answers"){
+        const items=Array.from(overlay.querySelectorAll(".u4tp-section,.u4tp-question,.u4tp-original"));
+        const shouldOpen=items.some(d=>!d.open);
+        items.forEach(d=>d.open=shouldOpen);
+        btn.textContent=shouldOpen?"Collapse all":"Show all answers";
+      }
+      if(event.target===overlay)overlay.remove();
+    });
+    const key=e=>{if(e.key==="Escape"){overlay.remove();document.removeEventListener("keydown",key);}};
+    document.addEventListener("keydown",key);
+    document.body.appendChild(overlay);
+    overlay.querySelector(".u4tp-close")?.focus();
   }
   function selectClass(id){state.selectedClassId=id;teacherPreferCache=true;return renderTeacher().finally(()=>{teacherPreferCache=false;})}
   async function toggleUnit(classId,unitId,open){
@@ -2297,7 +2381,7 @@ Do not start a new lesson unless I ask.`;
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,previewUnit4,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,readUnit4ClassPassage,stopUnit4ClassPassage,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
