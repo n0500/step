@@ -26,7 +26,7 @@ function screen(){
   if(p.length!==6||questions().length!==4||questions().some(x=>answer(x)<0)){
     S.box.innerHTML='<div class="u4r-wrap"><button data-act="close">Exit</button><h2>Reading content is unavailable.</h2></div>';return;
   }
-  const head='<header class="u4r-header"><div><small>STEP UP · UNIT 4 · CLASS MODE</small><h1>The World of Plastic</h1><p>Mega Goal 1 · Reading pp. 60–61 · adapted teaching text</p></div><button data-act="close">Exit Class Mode</button></header>';
+  const head='<header class="u4r-header"><div><small>STEP UP · UNIT 4 · CLASS MODE</small><h1>The World of Plastic</h1><p>Mega Goal 1 · Reading pp. 60–61 · original textbook reading text</p></div><button data-act="close">Exit Class Mode</button></header>';
   const tabs='<nav class="u4r-tabs"><button '+(S.mode==='read'?'class="active" ':'')+'data-act="read">Read Together</button><button '+(S.mode==='quiz'?'class="active" ':'')+'data-act="quiz">Comprehension Questions</button></nav>';
   let body='';
   if(S.mode==='read'){
