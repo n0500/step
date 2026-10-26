@@ -23,7 +23,7 @@ function speak(){
 function screen(){
   if(!S.box)return;
   const p=paragraphs(),q=questions()[S.index];
-  if(p.length!==6||questions().length!==4||questions().some(x=>answer(x)<0)){
+  if(p.length!==6||questions().length!==3||questions().some(x=>answer(x)<0)){
     S.box.innerHTML='<div class="u4r-wrap"><button data-act="close">Exit</button><h2>Reading content is unavailable.</h2></div>';return;
   }
   const head='<header class="u4r-header"><div><small>STEP UP · UNIT 4 · CLASS MODE</small><h1>The World of Plastic</h1><p>Mega Goal 1 · Reading p. 60 · exact 2025 Student Book text</p></div><button data-act="close">Exit Class Mode</button></header>';
@@ -35,7 +35,7 @@ function screen(){
   }else{
     const choices=opts(q).map((c,i)=>'<button class="u4r-opt '+(S.selected===i?'selected ':'')+(S.reveal&&answer(q)===i?'correct ':S.reveal&&S.selected===i?'wrong ':'')+'" data-act="choose" data-num="'+i+'" '+(S.reveal?'disabled':'')+'><b>'+String.fromCharCode(65+i)+'</b><span>'+esc(c)+'</span></button>').join('');
     const evidence=S.index===0?[p[0],p[5]]:S.index===1?[p[1]]:[p[2]];
-    body='<div class="u4r-grid"><section class="u4r-card"><div class="u4r-qt"><h2>Reading Comprehension</h2><b>Question '+(S.index+1)+' / 4</b></div><h3>'+esc(q.prompt)+'</h3><div class="u4r-options">'+choices+'</div>'+(S.reveal?'<p class="u4r-result"><b>Correct: '+String.fromCharCode(65+answer(q))+'</b> · '+esc(q.explanation||'')+'</p>':'')+'<div class="u4r-controls"><button data-act="prevQ" '+(S.index===0?'disabled':'')+'>Previous</button><button data-act="reveal" '+(S.reveal?'disabled':'')+'>Reveal Answer</button><button data-act="nextQ" class="primary">'+(S.index===3?'Finish':'Next Question')+'</button></div></section><aside class="u4r-card evidence"><div class="u4r-timer"><strong id="u4rClock">'+S.time+'s</strong><button data-act="timer">'+(S.running?'Pause':'Start 40s')+'</button><button data-act="reset">Reset</button></div><h2>Find the Evidence</h2>'+evidence.map(x=>'<p>'+esc(x)+'</p>').join('')+'<button data-act="audio">▶ Read Evidence</button></aside></div>';
+    body='<div class="u4r-grid"><section class="u4r-card"><div class="u4r-qt"><h2>Reading Comprehension</h2><b>Question '+(S.index+1)+' / 3</b></div><h3>'+esc(q.prompt)+'</h3><div class="u4r-options">'+choices+'</div>'+(S.reveal?'<p class="u4r-result"><b>Correct: '+String.fromCharCode(65+answer(q))+'</b> · '+esc(q.explanation||'')+'</p>':'')+'<div class="u4r-controls"><button data-act="prevQ" '+(S.index===0?'disabled':'')+'>Previous</button><button data-act="reveal" '+(S.reveal?'disabled':'')+'>Reveal Answer</button><button data-act="nextQ" class="primary">'+(S.index===2?'Finish':'Next Question')+'</button></div></section><aside class="u4r-card evidence"><div class="u4r-timer"><strong id="u4rClock">'+S.time+'s</strong><button data-act="timer">'+(S.running?'Pause':'Start 40s')+'</button><button data-act="reset">Reset</button></div><h2>Find the Evidence</h2>'+evidence.map(x=>'<p>'+esc(x)+'</p>').join('')+'<button data-act="audio">▶ Read Evidence</button></aside></div>';
   }
   S.box.innerHTML='<div class="u4r-wrap">'+head+tabs+body+'<footer>Teacher-led practice only · Student records and certificates are not changed.</footer></div>';
 }
@@ -55,7 +55,7 @@ function handle(e){
   if(a==='choose'&&!S.reveal){S.selected=Number(b.dataset.num);screen();return;}
   if(a==='reveal'){stopTimer();S.reveal=true;screen();return;}
   if(a==='prevQ'){goQ(Math.max(0,S.index-1));return;}
-  if(a==='nextQ'){S.index===3?close():goQ(S.index+1);return;}
+  if(a==='nextQ'){S.index===2?close():goQ(S.index+1);return;}
   if(a==='reset'){stopTimer();S.time=40;screen();return;}
   if(a==='timer'){
     if(S.running){stopTimer();screen();return;}
@@ -67,7 +67,7 @@ function handle(e){
 }
 function open(){
   if(S.box)return;
-  if(!unit()||paragraphs().length!==6||questions().length!==4){alert('Unit 4 Reading is not available.');return;}
+  if(!unit()||paragraphs().length!==6||questions().length!==3){alert('Unit 4 Reading is not available.');return;}
   stopTimer();stopAudio();S.mode='read';S.part=0;S.all=false;S.index=0;S.time=40;S.selected=-1;S.reveal=false;
   S.box=document.createElement('div');S.box.className='u4r-overlay';S.box.addEventListener('click',handle);document.body.appendChild(S.box);screen();
 }
@@ -75,7 +75,7 @@ function panel(){
   const page=document.querySelector('.teacher-classmode-v2');
   if(!page||page.querySelector('.u4r-launch'))return;
   const box=document.createElement('section');box.className='u4r-launch';
-  box.innerHTML='<div><small>UNIT 4 · READING CLASS MODE</small><h2>The World of Plastic</h2><p>Six paragraphs · audio · four comprehension questions · 40-second timer</p></div><button type="button">Teach Reading</button>';
+  box.innerHTML='<div><small>UNIT 4 · READING CLASS MODE</small><h2>The World of Plastic</h2><p>Six paragraphs · audio · three comprehension questions · 40-second timer</p></div><button type="button">Teach Reading</button>';
   box.querySelector('button').addEventListener('click',open);
   page.insertBefore(box,page.children[1]||null);
 }
