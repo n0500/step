@@ -110,11 +110,15 @@ async function open(){
    const remote=await db().collection('assignmentSubmissions').doc(storedId(uid)).get().catch(()=>null);
    const r=remote?.exists?remote.data():null;
    const local=localGet(uid);
-   const value=r&&r.assignmentKind===TASK?r:(local||defaultState());
+   const remoteUpdated=Date.parse(r?.updatedAt||'')||0;
+   const localUpdated=Date.parse(local?.updatedAt||'')||0;
+   const chooseLocal=!!local&&localUpdated>remoteUpdated;
+   const value=chooseLocal?local:(r&&r.assignmentKind===TASK?r:(local||defaultState()));
    state={...defaultState(),step:Math.max(0,Math.min(5,Number(value.progressStep??value.step)||0)),opening:value.opening||'',opinion:value.opinion||'',completed:!!value.completed};
    modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The Forgotten Wallet');
    document.body.appendChild(modal);
    modal.addEventListener('click',click);render();
+   if(chooseLocal)persist();
  }catch(err){console.warn('Flipped Reading access',err);alert(err.message?.includes('not been assigned')?'This story is not open for your class yet.':'Could not start the story. Check your connection and try again.');}
 }
 function preview(){
@@ -125,11 +129,12 @@ function preview(){
 }
 function persist(){
  if(!ctx)return;
- localSet(ctx.uid,{...state,version:1});
+ const now=new Date().toISOString();
+ localSet(ctx.uid,{...state,updatedAt:now,version:1});
  const data={assignmentKind:TASK,studentId:ctx.uid,teacherId:ctx.teacherId,classId:ctx.classId,
    studentName:ctx.profile.displayName||'',opening:state.opening,opinion:state.opinion,
-   progressStep:state.step,completed:!!state.completed,updatedAt:new Date().toISOString()};
- if(state.completed)data.completedAt=new Date().toISOString();
+   progressStep:state.step,completed:!!state.completed,updatedAt:now};
+ if(state.completed&&state.step===5)data.completedAt=now;
  const uid=ctx.uid;
  writeQueue=writeQueue.catch(()=>{}).then(async()=>{
    if(!db()||authStudent()!==uid)return;
@@ -188,7 +193,7 @@ function click(event){
  if(a==='next'&&state.step<4){state.step++;persist();render();return;}
  if(a==='back'&&state.step>1&&state.step<5){state.step--;persist();render();return;}
  if(a==='opinion'){state.opinion=b.dataset.choice;state.step=5;state.completed=true;persist();render();return;}
- if(a==='restart'){state.step=0;state.opening='';state.opinion='';if(ctx)localSet(ctx.uid,{...state,version:1});render();return;}
+ if(a==='restart'){state.step=0;state.opening='';state.opinion='';if(ctx)localSet(ctx.uid,{...state,updatedAt:new Date().toISOString(),version:1});render();return;}
 }
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
