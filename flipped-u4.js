@@ -5,17 +5,21 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-home-mastery-1';
+const VERSION='20261026-verified-paragraph-cues-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
 const AUDIO_SHA256='1cc207b7fe39a61bcc8666cfd603769517c7beeecc076c7df2f27dab71cae411';
 // Sentence cues estimated from original recording pause boundaries, not word-for-word forced alignment.
-const READING_CUES=[9.469,15.347,20.013,22.407,35.815,41.619,45.980,51.034,
- 64.520,69.223,76.183,83.534,94.912,105.783,111.500,117.600,127.000,
- 134.000,140.000,146.300,151.000,156.000,160.862,168.665,175.880,
- 180.397,183.350,187.645,193.698];
-const READING_END=201.016;
+// Source: detected pauses in the actual 203.45-second CD 2 Track 07 recording.
+// Paragraph boundaries are acoustically anchored; individual sentence starts are
+// calibrated to adjacent pauses and sentence lengths (not ASR forced alignment).
+const READING_CUES=[9.469,15.347,22.407,26.385,35.912,41.635,45.980,55.098,
+ 67.559,71.455,79.190,85.273,94.914,105.784,108.199,114.552,126.294,
+ 131.500,135.152,141.558,147.110,153.552,160.864,168.665,175.880,
+ 180.398,183.733,187.645,193.771];
+const READING_PARAGRAPH_CUES=[9.469,35.912,105.784,160.864,175.880,187.645,201.013];
+const READING_END=201.013;
 const TASK='u4-forgotten-wallet-v1';
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const db=()=>window.firebase?.apps?.length?firebase.firestore():null;
@@ -560,5 +564,5 @@ window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,pre
  _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
  classroom,_classroomPrompts:CLASSROOM,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
- _cueTimes:READING_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
+ _cueTimes:READING_CUES,_paragraphCues:READING_PARAGRAPH_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
 })();
