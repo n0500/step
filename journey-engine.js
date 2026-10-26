@@ -132,7 +132,7 @@ async function finishQuiz(){
     : s.kind==='step'?'Practice stop complete ⚡':positive?'Stop complete ✨':'A quick review will do';
   const desc=isU4Step
     ? !saved ? 'Your result was not confirmed as saved. The STEP Seal appears only after a qualifying saved attempt.'
-      : seal ? `You earned the independent STEP Seal with ${score}/${total} on this attempt, or an earlier qualifying attempt. This seal does not affect your 80% unit certificate.`
+      : seal ? `STEP Seal achieved from a qualifying saved attempt. This attempt: ${score}/${total}. The seal stays earned even after retries and never affects your 80% unit certificate.`
       : `You scored ${score}/${total}. Reach at least 5/6 to earn your independent STEP Seal. This practice does not affect your unit certificate.`
     : s.kind==='step'?`You got ${score}/${total}. This practice is here to build strategy, not add pressure.`
     : positive?`You got ${score}/${total}. Nice progress.`
