@@ -1875,7 +1875,7 @@ function injectClassWritingStyles(){
   .cw-panel{background:#fff;border:1px solid #d0dfed;border-radius:21px;padding:clamp(17px,2vw,30px);box-shadow:0 7px 24px #20415d0a;min-width:0}
   .cw-panel h2{font-size:clamp(22px,2.25vw,34px);margin:0 0 8px;color:#123454}
   .cw-panel p{font-size:clamp(16px,1.4vw,20px);line-height:1.55;margin:0 0 16px;color:#53697f}
-  .cw-draft{width:100%;min-height:260px;resize:vertical;background:#f9fbfe;border:2px solid #b7cbe0;border-radius:15px;padding:21px;color:#102f4c;font:600 clamp(21px,2vw,28px)/1.72 inherit;line-height:1.75;direction:ltr;text-align:left}
+  .cw-draft{width:100%;min-height:260px;resize:vertical;background:#f9fbfe;border:2px solid #b7cbe0;border-radius:15px;padding:21px;color:#102f4c;font-family:inherit;font-size:clamp(21px,2vw,28px);font-weight:600;line-height:1.75;direction:ltr;text-align:left}
   .cw-draft:focus{outline:3px solid #9bc4ed;outline-offset:2px}
   .cw-actions{display:flex;gap:11px;flex-wrap:wrap;margin-top:17px}
   .cw-btn{font-size:clamp(15px,1.4vw,20px);background:#195fa1;color:#fff}
