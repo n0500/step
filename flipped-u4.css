@@ -92,3 +92,51 @@
 .fw-reading-text .fw-sentence-active{background:#d1ebf5;color:#123f59;box-shadow:0 0 0 2px #d1ebf5;font-weight:650}
 @media (prefers-reduced-motion:reduce){.fw-reading-text .fw-sentence{transition:none}}
 @media (max-width:700px){.fw-follow-bar{font-size:12px;gap:8px}.fw-follow-bar button{padding:9px 10px}}
+
+/* Full but light home preparation — three authentic textbook chapters. */
+.fw-home-chapter{text-align:left}
+.fw-chapter-heading{display:flex;gap:15px;align-items:flex-start;margin-bottom:18px}
+.fw-chapter-heading h2{margin:4px 0 7px}.fw-chapter-heading p{line-height:1.55;font-size:15px;margin:0;color:#557286}
+.fw-chapter-icon{width:60px;height:60px;display:grid;place-items:center;border-radius:16px;background:#e8f4f9;font-size:34px;flex:none}
+.fw-chapter-helper{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0 18px}
+.fw-audio-part{border:0;border-radius:11px;background:#22677f;color:white;padding:12px 16px;font-size:14px;font-weight:750;cursor:pointer}
+.fw-audio-part:disabled{opacity:.6}
+.fw-chapter-helper details{flex:1 1 205px;border:1px solid #dbe7ef;border-radius:11px;background:#f7fafb}
+.fw-chapter-helper summary{padding:12px 15px;color:#305e78;font-size:14px;font-weight:750;cursor:pointer}
+.fw-vocab-items{display:grid;gap:8px;padding:4px 12px 13px}
+.fw-vocab-term{display:grid;grid-template-columns:minmax(85px,.7fr) minmax(130px,1.6fr);gap:5px 12px;padding:9px 11px;border:1px solid #e1e9ee;background:#fff;border-radius:10px}
+.fw-vocab-term b{font-size:14px;color:#255a73}
+.fw-vocab-term span{font-size:13px;color:#3b586d}
+.fw-vocab-term small{grid-column:2;font-size:12px;color:#7a8d9e;direction:rtl;text-align:right}
+.fw-timeline{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:9px;margin:15px 0 18px;font-size:14px;font-weight:800;color:#2d6c83}
+.fw-timeline span{background:#e6f3f8;border-radius:12px;padding:8px 14px}.fw-timeline i{font-style:normal;color:#7799a8}
+.fw-home-question{max-width:680px;text-align:left}
+.fw-home-question h2{text-align:left;font-size:clamp(22px,3.5vw,30px)}
+.fw-home-question .fw-answers button{width:100%}
+.fw-home-question>.fw-primary{width:100%;margin:17px 0 0;padding:14px;border-radius:12px}
+.fw-book-evidence{background:#f5f9fc;border:1px solid #dce8ee;border-radius:12px;margin-top:13px;text-align:left}
+.fw-book-evidence summary{padding:13px 15px;color:#376682;font-weight:700;font-size:13px;cursor:pointer}
+.fw-book-evidence p{font-size:14px;line-height:1.7;padding:0 15px 14px;margin:0;color:#53697b;text-align:left}
+.fw-home-question .fw-feedback blockquote{font-size:14px;line-height:1.7;border-left:3px solid #7eafbf;padding:8px 13px;background:#f5fbfd;border-radius:5px;margin:10px 0;color:#285973}
+.fw-home-question .fw-feedback h3{font-size:16px;margin:13px 0 8px}
+.fw-objectives{padding:14px 17px;border-radius:13px;background:#eff7f9;border:1px solid #d4e6ec;margin:15px 0;color:#315d73;text-align:left}
+.fw-objectives strong{font-size:15px}.fw-objectives p{font-size:15px!important;line-height:1.6!important;margin:5px 0 0!important}
+.fw-home-results{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:17px 0}
+.fw-home-results>div{background:#f1f8fa;border-radius:13px;padding:15px;text-align:center}
+.fw-home-results b{display:block;color:#205e79;font-size:29px}.fw-home-results small{display:block;font-size:12px;color:#617b8b;margin-top:5px}
+.fw-review-list{padding:15px;border:1px solid #ead8b3;border-radius:14px;background:#fffaf1;margin:14px 0}
+.fw-review-list strong{display:block;margin-bottom:10px;color:#7c602f}
+.fw-review-list button{display:block;width:100%;border-radius:10px;border:1px solid #dbc497;background:white;padding:12px;margin:6px 0;color:#665029;text-align:left;cursor:pointer}
+.fw-lesson-tip{padding:16px;border:1px solid #d5e4ed;border-radius:12px;background:#f7fbfd;margin:12px 0}
+.fw-lesson-tip strong{font-size:15px;color:#255c77}
+.fw-lesson-tip p{font-size:14px;line-height:1.6;margin:8px 0;color:#435f73}
+.fw-lesson-tip small{font-size:12px;color:#5d7889}
+.fw-skill-summary .fw-skill-alert{border-color:#f0ddbc;background:#fffbf2}
+@media(max-width:700px){
+.fw-chapter-heading{gap:11px}.fw-chapter-icon{width:46px;height:46px;font-size:27px}
+.fw-chapter-heading h2{font-size:23px}
+.fw-home-chapter .fw-reading-text{max-height:48vh}
+.fw-vocab-term{grid-template-columns:1fr}.fw-vocab-term small{grid-column:1}
+.fw-timeline{gap:5px}.fw-timeline span{padding:6px 9px;font-size:12px}
+.fw-chapter-helper{align-items:stretch}.fw-audio-part,.fw-chapter-helper details{flex:1 1 100%}
+}
