@@ -29,6 +29,7 @@
       result.push({section,sectionTitle:mission.title||section,id:q.question_id,prompt:q.prompt,
         choices:[q.option_a_text,q.option_b_text,q.option_c_text,q.option_d_text],answer,
         context:section==='reading'?String(u.reading||''):'',
+        context_excerpt:q.context_excerpt||'',context_match:q.context_match||'',context_paragraph:q.context_paragraph||null,
         audio:section==='listening'?String(u.listening||''):''});
     }
     return result;
@@ -435,6 +436,7 @@
   // The standalone mastery test has been retired.
   function start(id){openUnit(id);}
   function contextHTML(q){
+    if(q.context_excerpt&&window.STEPUP_U4_CONTEXT?.render)return window.STEPUP_U4_CONTEXT.render(q);
     if(q.section==='reading'&&q.context){
       return '<details open><summary>📖 Reading passage</summary><div class="sum-context" dir="ltr">'+esc(q.context)+'</div></details>';
     }
