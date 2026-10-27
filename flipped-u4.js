@@ -485,7 +485,7 @@ function chapterHtml(chapterIdx){
  return '<div class="fw-reading fw-home-chapter"><div class="fw-chapter-heading"><div class="fw-chapter-icon">'+chapter.icon+'</div><div><span class="fw-eyebrow">PART '+(chapterIdx+1)+' OF 3 · MEGA GOAL 1 · PAGE 60</span><h2>'+e(chapter.title)+'</h2><p>'+e(chapter.goal)+'</p></div></div>'+
  '<div class="fw-follow-bar"><span>Tap any word to hear it · Follow the original book while listening</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div>'+
  '<div class="fw-reading-text" aria-label="Textbook reading part '+(chapterIdx+1)+'">'+readingFollowMarkup(chosen,base).html+'</div><div class="fw-word-feedback" id="fwWordHelp" hidden></div>'+
- '<div class="fw-chapter-helper"><button class="fw-audio-part" type="button" data-fw="chapterAudio" data-choice="'+chapterIdx+'">▶ Listen to this part</button><details><summary>Need help with a word?</summary><div class="fw-vocab-items">'+help+'</div></details></div>'+
+ '<div class="fw-chapter-helper"><button class="fw-audio-part" type="button" data-fw="chapterAudio" data-choice="'+chapterIdx+'">▶ Listen to this part</button><details><summary>🔊 Vocabulary · meanings & pronunciation</summary><div class="fw-vocab-items">'+help+'</div></details></div>'+
  '<div class="fw-timeline"><span>1949</span><i>→</i><span>1950</span><i>→</i><span>1952</span><i>→</i><span>1984</span></div>'+
  '<button class="fw-primary" type="button" data-fw="chapterDone" data-choice="'+chapterIdx+'">I understand this part · Check my understanding</button>'+
  '<p class="fw-note">Read at your pace. The audio follows the textbook but is optional.</p></div>';
