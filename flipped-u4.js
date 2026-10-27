@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-preparation-reports-1';
+const VERSION='20261028-reading-sync-diagnostics-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -247,8 +247,10 @@ async function report(classId){
    });
    const needs=skillSummary.filter(x=>x.total>=1&&x.accuracy<.75).sort((a,b)=>a.accuracy-b.accuracy);
    const options={yes:'Yes',maybe:'Maybe',no:'No'};
+   const savedCount=statuses.filter(x=>!!x.record).length;
    el.innerHTML='<div class="fw-stats"><div><b>'+(counts.ready+counts.supported+counts.review)+'</b><small>Completed</small></div><div><b>'+counts.unfinished+'</b><small>In progress</small></div><div><b>'+counts.notStarted+'</b><small>Not started</small></div><div><b>'+students.length+'</b><small>Class total</small></div></div>'+
-    '<p class="fw-report-hint">'+counts.ready+' ready independently · '+counts.supported+' ready after support · '+counts.review+' need review. Preparation only; not unit grades or certificates.</p>'+
+    '<p class="fw-report-hint">'+counts.ready+' ready independently · '+counts.supported+' ready after support · '+counts.review+' need review. Preparation only; not unit grades or certificates.</p>'+ 
+    (savedCount===0&&students.length?'<p class="fw-report-hint" role="status"><strong>No reading submissions have reached the teacher report yet.</strong> Ask one student to open Unit 4 Home Lesson, complete a check and confirm the message “Progress saved to your teacher report.” Then refresh this page. If the student sees a sync warning, check network access and the published Firestore rules.</p>':'')+
     '<div class="fw-skill-summary">'+skillSummary.map(x=>'<div class="'+(x.total&&x.accuracy<.75?'fw-skill-alert':'')+'"><strong>'+e(x.q.skill)+'</strong><span>'+x.first+'/'+x.total+' first try</span></div>').join('')+'</div>'+
     '<div class="fw-lesson-tip"><strong>Suggested classroom focus</strong><p>'+
       (needs.length?'Start with '+e(needs.slice(0,2).map(x=>x.q.skill).join(' + '))+'. Let prepared students cite evidence while you give focused support to others.':'Start with a 2-minute timeline retrieval, then move to evidence-based discussion. Re-teach only if the answers reveal a gap.')+
@@ -265,7 +267,7 @@ async function report(classId){
     }).join(''):'<p>No students found in this class.</p>')+'</div>';
  }catch(err){
    console.warn('Home reading report',err);
-   el.innerHTML='<p>Unable to load results. Please try again.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId).replace(/"/g,'&quot;')+')">Retry</button>';
+   el.innerHTML='<p>Reading progress could not be loaded. Check your teacher sign-in and Firestore permissions, then retry. No student results have been changed.</p><button type="button" onclick="STEPUP_FLIPPED_U4.report('+JSON.stringify(classId).replace(/"/g,'&quot;')+')">Retry</button>';
  }
 }
 async function open(){
@@ -329,13 +331,15 @@ function persist(){
  writeQueue=writeQueue.catch(()=>{}).then(async()=>{
    if(!db()||authStudent()!==uid)return;
    await db().collection('assignmentSubmissions').doc(storedId(uid)).set(data,{merge:true});
+   const syncNote=modal?.querySelector('#fwSync');
+   if(syncNote)syncNote.textContent='Progress saved to your teacher report.';
  }).catch(err=>{console.warn('Home reading sync failed',err);showSyncNotice();});
 }
 async function copyLink(classCode){
  const url=new URL(location.href);url.search='';url.searchParams.set('class',String(classCode||''));url.searchParams.set('flipped','u4');url.hash='';
  try{await navigator.clipboard.writeText(url.toString());alert('Student link copied.');}catch(_){window.prompt('Copy student link:',url.toString());}
 }
-function showSyncNotice(){const x=modal?.querySelector('#fwSync');if(x)x.textContent='Saved on this device. Reopen online to sync.';}
+function showSyncNotice(){const x=modal?.querySelector('#fwSync');if(x)x.textContent='Saved on this device only. Teacher report has NOT synced; check your connection and reopen this lesson to retry.';}
 const scenes=[
  {
   "ico": "👔",
