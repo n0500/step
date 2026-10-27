@@ -678,6 +678,11 @@
     app.innerHTML=shell(`<main class="container teacher-workspace-shell" dir="ltr" lang="en">${teacherTabs()}${body}</main>`,"Teacher");
     window.STEPUP_TEACHER_WORKSPACE?.bind();
     if(state.teacherTab==="pins")bindPinSearch();
+    // The flipped-classroom report is loaded automatically for the selected
+    // class, without relying on a separate button in Class Mode.
+    if(state.teacherTab==="reports"&&cls?.id){
+      window.STEPUP_FLIPPED_U4?.report?.(cls.id);
+    }
   }
   async function teacherPins(classes,cls){
     if(!cls)return `<section class="teacher-pins"><div class="notice">Create a class first to view student access.</div></section>`;
