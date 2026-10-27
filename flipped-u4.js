@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-home-ready-2';
+const VERSION='20261027-word-pronunciation-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -95,6 +95,7 @@ const readiness=v=>{
 const nextStep=step=>step===0?1:step===1?2:step===2?3:step===3?4:step===4?5:step===5?6:step===6?7:step===7?8:step===8?9:step===9?10:11;
 let state=defaultState(),ctx=null,modal=null,audio=null,audioURL='',audioLoading=null,writeQueue=Promise.resolve(),deepLinkHandled=false;
 let followEnabled=true,lastFollowCue=-2,chapterStopAt=0;
+let wordSpeechToken=0,resumeAfterWord=false,lastPronounced='';
 function authStudent(){return user()?.uid||'';}
 function localGet(uid){try{const raw=JSON.parse(localStorage.getItem(key(uid))||'null');return raw?.version===1?raw.data:null}catch(_){return null;}}
 function localSet(uid,data){try{localStorage.setItem(key(uid),JSON.stringify({version:1,data}));}catch(_){}}
@@ -122,7 +123,7 @@ async function loadOriginalAudio(){
  return audioLoading;
 }
 function stopAudio(){if(audio){audio.pause();audio.removeAttribute('src');audio.load();audio=null;}}
-function close(){chapterStopAt=0;stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
+function close(){chapterStopAt=0;stopWordSpeech();stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
 function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flippedU4Enabled===true);}
 function studentCard(cls,profile){
  const studentId=profile?.id||authStudent();
@@ -347,13 +348,92 @@ function splitReadSentences(paragraph){
  const pieces=plain.match(/[^.!?]+[.!?]+(?:[”"']|$)?|[^.!?]+$/g)||[];
  return pieces.join('')===plain?pieces:[plain];
 }
+
+// All textbook characters (including spaces and punctuation) are preserved.
+// Each English word becomes tappable without altering the printed passage.
+function wordMarkup(part){
+ const re=/[A-Za-z]+(?:[’'-][A-Za-z]+)*/g;
+ let result='',pos=0,match;
+ while((match=re.exec(part))){
+   result+=e(part.slice(pos,match.index));
+   result+='<button type="button" class="fw-word" data-fw="word" data-word="'+e(match[0])+'" aria-label="Hear '+e(match[0])+' pronounced">'+e(match[0])+'</button>';
+   pos=match.index+match[0].length;
+ }
+ return result+e(part.slice(pos));
+}
+function glossaryFor(value){
+ const normalized=String(value||'').trim().toLowerCase().replace(/[’]/g,"'");
+ return CHAPTERS.flatMap(ch=>ch.vocabulary).find(item=>item[0].toLowerCase().replace(/[’]/g,"'")===normalized)||null;
+}
+function stopWordSpeech(){
+ wordSpeechToken++;
+ resumeAfterWord=false;
+ lastPronounced='';
+ try{window.speechSynthesis?.cancel?.();}catch(_){}
+}
+function wordNotice(message){
+ const el=modal?.querySelector('#fwWordNotice');
+ if(el)el.textContent=message||'';
+}
+function wordInfo(term){
+ const host=modal?.querySelector('#fwWordHelp');
+ if(!host)return;
+ const item=glossaryFor(term);
+ host.hidden=false;
+ host.innerHTML='<div class="fw-word-selected"><span class="fw-word-sound" aria-hidden="true">🔊</span><strong>'+e(term)+'</strong><button type="button" data-fw="replayWord">Hear again</button></div>'+
+   (item?'<div class="fw-word-meaning"><span>'+e(item[1])+'</span><span lang="ar" dir="rtl">'+e(item[2])+'</span></div>':'')+
+   '<small id="fwWordNotice" role="status" aria-live="polite">English pronunciation · device voice</small>';
+}
+function pronounceWord(raw){
+ const term=String(raw||'').trim();
+ if(!/^[A-Za-z][A-Za-z ’'-]{0,90}$/.test(term))return;
+ const previousPlaying=!!audio&&!audio.paused;
+ if(previousPlaying){resumeAfterWord=true;audio.pause();}
+ const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
+ lastPronounced=term;
+ wordInfo(term);
+ const token=++wordSpeechToken;
+ if(!synth?.speak||typeof Utterance!=='function'){
+   resumeAfterWord=false;
+   wordNotice('Word pronunciation is not supported by this browser.');
+   return;
+ }
+ try{
+   synth.cancel();
+   const spoken=new Utterance(term);
+   spoken.lang='en-US';
+   spoken.rate=.84;
+   spoken.pitch=1;
+   const voice=window.STEPUP_SPEECH?.pickEnglish?.(1)?.[0];
+   if(voice)spoken.voice=voice;
+   spoken.onend=()=>{
+     if(token!==wordSpeechToken)return;
+     wordNotice('Tap another word or listen again.');
+     const restart=resumeAfterWord;resumeAfterWord=false;
+     if(restart&&audio&&modal&&[1,4,7].includes(state.step)){
+       audio.play().catch(()=>wordNotice('Tap Play on the original audio bar to continue reading.'));
+     }
+   };
+   spoken.onerror=()=>{
+     if(token!==wordSpeechToken)return;
+     resumeAfterWord=false;
+     wordNotice('Could not play this word. Try again or check your device sound.');
+   };
+   // iPad Safari requires speak() to run directly within the tap.
+   synth.speak(spoken);
+ }catch(err){
+   resumeAfterWord=false;
+   console.warn('Word pronunciation unavailable',err);
+   wordNotice('Could not play this word. Try again.');
+ }
+}
 function readingFollowMarkup(paragraphs,baseIndex=0){
  const all=readingParagraphs().flatMap(p=>splitReadSentences(p));
  const valid=all.length===READING_CUES.length;
  let cursor=baseIndex;
  const html=paragraphs.map(p=>'<p>'+splitReadSentences(p).map(part=>{
    const i=cursor++;
-   return valid?'<span class="fw-sentence" data-fw-cue="'+i+'">'+e(part)+'</span>':e(part);
+   return valid?'<span class="fw-sentence" data-fw-cue="'+i+'">'+wordMarkup(part)+'</span>':wordMarkup(part);
  }).join('')+'</p>').join('');
  return {html,valid};
 }
@@ -401,10 +481,10 @@ function chapterHtml(chapterIdx){
  const chapter=CHAPTERS[chapterIdx],p=readingParagraphs();
  if(p.length!==6)return '<div class="fw-scene"><h2>The original textbook text is unavailable</h2><p>Please reload STEP UP and try again before answering.</p><button class="fw-primary" data-fw="refresh">Retry</button></div>';
  const chosen=p.slice(...chapter.range),base=p.slice(0,chapter.range[0]).reduce((n,x)=>n+splitReadSentences(x).length,0);
- const help=chapter.vocabulary.map(v=>'<div class="fw-vocab-term"><b>'+e(v[0])+'</b><span>'+e(v[1])+'</span><small>'+e(v[2])+'</small></div>').join('');
+ const help=chapter.vocabulary.map(v=>'<div class="fw-vocab-term"><button type="button" class="fw-vocab-pronounce" data-fw="vocab" data-word="'+e(v[0])+'" aria-label="Hear '+e(v[0])+' pronounced"><span aria-hidden="true">🔊</span> '+e(v[0])+'</button><span>'+e(v[1])+'</span><small lang="ar" dir="rtl">'+e(v[2])+'</small></div>').join('');
  return '<div class="fw-reading fw-home-chapter"><div class="fw-chapter-heading"><div class="fw-chapter-icon">'+chapter.icon+'</div><div><span class="fw-eyebrow">PART '+(chapterIdx+1)+' OF 3 · MEGA GOAL 1 · PAGE 60</span><h2>'+e(chapter.title)+'</h2><p>'+e(chapter.goal)+'</p></div></div>'+
- '<div class="fw-follow-bar"><span>Follow the original book while listening</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div>'+
- '<div class="fw-reading-text" aria-label="Textbook reading part '+(chapterIdx+1)+'">'+readingFollowMarkup(chosen,base).html+'</div>'+
+ '<div class="fw-follow-bar"><span>Tap any word to hear it · Follow the original book while listening</span><button type="button" data-fw="toggleFollow" aria-pressed="'+String(followEnabled)+'">'+(followEnabled?'Follow audio: ON':'Follow audio: OFF')+'</button></div>'+
+ '<div class="fw-reading-text" aria-label="Textbook reading part '+(chapterIdx+1)+'">'+readingFollowMarkup(chosen,base).html+'</div><div class="fw-word-feedback" id="fwWordHelp" hidden></div>'+
  '<div class="fw-chapter-helper"><button class="fw-audio-part" type="button" data-fw="chapterAudio" data-choice="'+chapterIdx+'">▶ Listen to this part</button><details><summary>Need help with a word?</summary><div class="fw-vocab-items">'+help+'</div></details></div>'+
  '<div class="fw-timeline"><span>1949</span><i>→</i><span>1950</span><i>→</i><span>1952</span><i>→</i><span>1984</span></div>'+
  '<button class="fw-primary" type="button" data-fw="chapterDone" data-choice="'+chapterIdx+'">I understand this part · Check my understanding</button>'+
@@ -481,6 +561,7 @@ async function showAudio(){
  catch(err){console.error('Original unit 4 reading audio failed',err);button.disabled=false;button.textContent='Retry audio';const msg=modal?.querySelector('#fwSync');if(msg)msg.textContent='Original audio could not load. Please retry with internet access.';}
 }
 async function playChapter(index){
+ stopWordSpeech();
  const chapter=CHAPTERS[index];
  if(!chapter||!modal)return;
  const button=modal.querySelector('[data-fw="chapterAudio"]');
@@ -512,6 +593,8 @@ function click(event){
  if(action==='close')return close();
  if(action==='loadAudio')return showAudio();
  if(action==='toggleFollow')return toggleFollowReading();
+ if(action==='word'||action==='vocab')return pronounceWord(b.dataset.word||'');
+ if(action==='replayWord')return pronounceWord(lastPronounced);
  if(action==='chapterAudio')return playChapter(Number(b.dataset.choice));
  if(action==='refresh'){render();return;}
  if(action==='opening'&&state.step===0){
@@ -521,7 +604,7 @@ function click(event){
    const idx=Number(b.dataset.choice);
    if(idx!==(state.step===1?0:state.step===4?1:2)||readingParagraphs().length!==6)return;
    if(!state.readSections.includes(idx))state.readSections.push(idx);
-   chapterStopAt=0;if(audio&&!audio.paused)audio.pause();
+   stopWordSpeech();chapterStopAt=0;if(audio&&!audio.paused)audio.pause();
    if(state.reviewReturn===11){state.step=11;delete state.reviewReturn;}
    else state.step=nextStep(state.step);
    persist();render();return;
@@ -565,5 +648,5 @@ window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,pre
  _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
  classroom,_classroomPrompts:CLASSROOM,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
- _cueTimes:READING_CUES,_paragraphCues:READING_PARAGRAPH_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup};
+ _cueTimes:READING_CUES,_paragraphCues:READING_PARAGRAPH_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup,_wordMarkup:wordMarkup,_glossary:glossaryFor};
 })();
