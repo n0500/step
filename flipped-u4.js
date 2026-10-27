@@ -352,7 +352,7 @@ function splitReadSentences(paragraph){
 // All textbook characters (including spaces and punctuation) are preserved.
 // Each English word becomes tappable without altering the printed passage.
 function wordMarkup(part){
- const re=/[A-Za-z]+(?:[’'-][A-Za-z]+)*/g;
+ const re=/[A-Za-z0-9]+(?:[’'-][A-Za-z0-9]+)*/g;
  let result='',pos=0,match;
  while((match=re.exec(part))){
    result+=e(part.slice(pos,match.index));
@@ -386,7 +386,7 @@ function wordInfo(term){
 }
 function pronounceWord(raw){
  const term=String(raw||'').trim();
- if(!/^[A-Za-z][A-Za-z ’'-]{0,90}$/.test(term))return;
+ if(!/^[A-Za-z0-9][A-Za-z0-9 ’'-]{0,90}$/.test(term))return;
  const previousPlaying=!!audio&&!audio.paused;
  if(previousPlaying){resumeAfterWord=true;audio.pause();}
  const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
