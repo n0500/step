@@ -131,14 +131,14 @@ function studentCard(cls,profile){
  if(!deepLinkHandled&&new URLSearchParams(location.search).get('flipped')==='u4'){
    deepLinkHandled=true;Promise.resolve().then(()=>open());
  }
- return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The Forgotten Wallet</h2><p>Learn the complete textbook reading in 3 short parts. Understand it, check yourself and get help when needed.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Explore Again':'Discover the Story')+'</button></section>';
+ return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The World of Plastic</h2><p>Learn the complete textbook reading in 3 short parts. Understand it, check yourself and get help when needed.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Review Home Lesson':'Start Home Lesson')+'</button></section>';
 }
 function teacherCard(cls){
  if(!cls)return '';
  const enabled=cls.flippedU4Enabled===true;
  const arg=JSON.stringify(cls.id).replace(/\"/g,'&quot;');
  const codeArg=JSON.stringify(cls.code||'').replace(/\"/g,'&quot;');
- return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The Forgotten Wallet</h2><p>Pre-teach all six textbook paragraphs with 3 guided parts, 6 understanding checks, and instant support. Use the report to shorten your next lesson.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>6 guided checks · 3 short parts</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Story</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.classroom()">Start 12-Minute Class Discussion</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Participation</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
+ return '<section class="fw-teacher" data-fw-class="'+e(cls.id)+'"><div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED CLASSROOM</small><h2>The World of Plastic</h2><p>Pre-teach all six textbook paragraphs with 3 guided parts, 6 understanding checks, and instant support. Use the report to shorten your next lesson.</p><div class="fw-teacher-pills"><span>Original textbook recording</span><span>6 guided checks · 3 short parts</span><span>No grades or certificates</span><span>Student progress saved</span></div></div><div class="fw-teacher-actions"><span class="fw-teacher-status">'+(enabled?'Available to this class':'Not assigned yet')+'</span><button type="button" onclick="STEPUP_FLIPPED_U4.setEnabled('+arg+','+(!enabled)+')">'+(enabled?'Close Assignment':'Assign to This Class')+'</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.preview()">Preview Home Lesson</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.classroom()">Start 12-Minute Class Discussion</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">View Preparation Report</button><button class="secondary" type="button" onclick="STEPUP_FLIPPED_U4.copyLink('+codeArg+')">Copy Student Link</button></div><div class="fw-report" id="fw-report-'+e(cls.id)+'" hidden></div></section>';
 }
 // Four teacher-led application slides: no student devices, no repeated home quiz.
 let classroomBox=null,classroomPage=0,classroomRevealed=false;
@@ -276,7 +276,7 @@ async function open(){
    for(const q of CHECKS){
      if(q.step<state.step&&!isCheckResolved(q,state)){state.step=q.step;break;}
    }
-   modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The Forgotten Wallet');
+   modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The World of Plastic · Unit 4');
    document.body.appendChild(modal);
    modal.addEventListener('click',click);render();
    if(chooseLocal&&upToDate)persist();
@@ -285,7 +285,7 @@ async function open(){
 function preview(){
  if(modal)return;
  ctx=null;state=defaultState();
- modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The Forgotten Wallet Preview');
+ modal=document.createElement('div');modal.className='fw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','The World of Plastic · Home Lesson Preview');
  document.body.appendChild(modal);modal.addEventListener('click',click);render();
 }
 function persist(){
