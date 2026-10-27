@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-home-ready-1';
+const VERSION='20261027-home-ready-2';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -29,13 +29,13 @@ const storedId=uid=>TASK+'-'+uid;
 const key=uid=>'stepup-flipped-u4-'+uid;
 const defaultState=()=>({step:0,opening:'',opinion:'',answers:{},recovery:{},completed:false,readSections:[],legacyCompleted:false});
 const CHAPTERS=[
- {title:'The Surprise That Started It',icon:'🍽️',range:[0,2],start:9.469,end:105.783,
+ {title:'The Surprise That Started It',icon:'🍽️',range:[0,2],start:READING_PARAGRAPH_CUES[0],end:READING_PARAGRAPH_CUES[2],
   goal:'Discover the problem, the solution and the first credit card.',
   vocabulary:[['inconceivable','impossible to imagine','يصعب تصوره'],['impractical','not useful in daily life','غير عملي'],['charging it','paying by card instead of cash','الدفع بالبطاقة بدل النقد']]},
- {title:'From One Restaurant to the World',icon:'🌍',range:[2,4],start:105.783,end:175.880,
+ {title:'From One Restaurant to the World',icon:'🌍',range:[2,4],start:READING_PARAGRAPH_CUES[2],end:READING_PARAGRAPH_CUES[4],
   goal:'Trace how the idea spread and why people valued the card.',
   vocabulary:[['status symbol','something showing high social standing','رمز للمكانة الاجتماعية'],['franchise','a licensed business branch','امتياز تجاري'],['cashed in on','benefited financially from','استفاد ماديًا من']]},
- {title:'Why the World Changed',icon:'💳',range:[4,6],start:175.880,end:201.016,
+ {title:'Why the World Changed',icon:'💳',range:[4,6],start:READING_PARAGRAPH_CUES[4],end:READING_PARAGRAPH_CUES[6],
   goal:'Identify customer rewards and explain the lasting impact.',
   vocabulary:[['rewards program','special benefits given to customers','برنامج المكافآت'],['revolutionized','changed something in an important way','أحدث تغييرًا جذريًا']]}
 ];
@@ -61,7 +61,7 @@ const CHECKS=[
  {id:'q4',step:6,skill:'Vocabulary in context',paragraph:'2',
   prompt:'What does “status symbol” mean in this reading?',
   choices:['A sign of high social standing.','An official passport.','A card that gives all meals free.'],correct:0,
-  quote:'It became a status symbol for those who carried it.',
+  quote:'it became a status symbol for those who carried it.',
   support:'A status symbol shows prestige or social standing.',
   retryPrompt:'Someone carries the card to show prestige. Prestige is closest to...',
   retryChoices:['high social standing','low prices','a lost wallet'],retryCorrect:0},
@@ -125,8 +125,9 @@ function stopAudio(){if(audio){audio.pause();audio.removeAttribute('src');audio.
 function close(){chapterStopAt=0;stopAudio();if(modal){modal.remove();modal=null;}ctx=null;}
 function checkClass(cls,uid,role){return !!(cls&&uid&&role==='student'&&cls.flippedU4Enabled===true);}
 function studentCard(cls,profile){
- if(!checkClass(cls,profile?.id||authStudent(),profile?.role))return '';
- const cached=localGet(profile.id);
+ const studentId=profile?.id||authStudent();
+ if(!checkClass(cls,studentId,profile?.role))return '';
+ const cached=localGet(studentId);
  const done=readiness(cached)==='ready'||readiness(cached)==='supported'||readiness(cached)==='review';
  if(!deepLinkHandled&&new URLSearchParams(location.search).get('flipped')==='u4'){
    deepLinkHandled=true;Promise.resolve().then(()=>open());
