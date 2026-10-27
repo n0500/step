@@ -160,3 +160,21 @@
 .fw-class-shell footer{border-top:1px solid #d4e3ec;padding-top:18px;flex-wrap:wrap}
 .fw-class-shell footer button.next{background:#246e8e;color:white;border-color:#246e8e}
 @media(max-width:700px){.fw-class-shell{padding:16px;gap:13px}.fw-class-shell button{padding:12px 14px;font-size:15px}.fw-class-evidence{padding:16px}}
+
+/* Unit 4 home Reading: tappable pronunciation without altering textbook content. */
+.fw-reading-text .fw-word{appearance:none;-webkit-appearance:none;display:inline;font:inherit;line-height:inherit;letter-spacing:inherit;font-weight:inherit;color:inherit;background:transparent;border:0;border-radius:3px;margin:0;padding:0;text-align:inherit;vertical-align:baseline;cursor:pointer;touch-action:manipulation}
+.fw-reading-text .fw-word:hover,.fw-reading-text .fw-word:focus-visible{background:#b4e1ef;color:#164967;outline:2px solid #78b8d1;outline-offset:1px}
+.fw-reading-text .fw-sentence-active .fw-word{color:inherit}
+.fw-vocab-pronounce{appearance:none;display:inline-flex;align-items:center;gap:7px;justify-content:flex-start;min-height:39px;border:1px solid #c3dbe8;border-radius:9px;background:#eff7fb;color:#225a77;font-size:14px;font-weight:800;text-align:left;cursor:pointer;padding:7px 10px;touch-action:manipulation}
+.fw-vocab-pronounce:hover,.fw-vocab-pronounce:focus-visible{background:#dceef7;border-color:#79b7d1}
+.fw-vocab-pronounce span{color:inherit!important;font-size:15px!important}
+.fw-word-feedback{padding:11px 14px;margin:11px 0 12px;border-radius:12px;border:1px solid #c8e0ed;background:#f1f8fc;color:#2c546c;text-align:left}
+.fw-word-feedback[hidden]{display:none!important}
+.fw-word-selected{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.fw-word-selected strong{font-size:18px;color:#194d69;line-height:1.3}
+.fw-word-selected .fw-word-sound{font-size:21px}
+.fw-word-selected button{margin-left:auto;min-height:36px;background:#246e8d;color:white;border:0;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:750;cursor:pointer}
+.fw-word-meaning{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:7px 0 4px;font-size:13px;line-height:1.5}
+.fw-word-meaning span:last-child{color:#4c6c7e}
+.fw-word-feedback small{display:block;margin-top:4px;color:#678598;font-size:12px}
+@media(max-width:700px){.fw-word-meaning{align-items:flex-start;flex-direction:column;gap:4px}.fw-vocab-pronounce{min-height:40px}.fw-word-selected button{font-size:12px}}
