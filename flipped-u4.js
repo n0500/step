@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-reading-follow-cue-correction-1';
+const VERSION='20261027-skip-unsounded-opening-sentence-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -20,16 +20,14 @@ const READING_CUES=[9.469,15.347,22.407,26.385,35.912,41.635,45.980,55.098,
  180.398,183.733,187.645,193.771];
 const READING_PARAGRAPH_CUES=[9.469,35.912,105.784,160.864,175.880,187.645,201.013];
 const READING_END=201.013;
-// The original approximate sentence timings trailed the spoken narration.
-// Keep recording-based paragraph starts exact, and advance only each internal
-// sentence cue (bounded to prevent skipping short sentences).
-const SENTENCE_FOLLOW_LEAD=3.0;
-const PARAGRAPH_OPENINGS=new Set(READING_PARAGRAPH_CUES.slice(0,-1));
-const READING_FOLLOW_CUES=READING_CUES.map((start,i)=>{
-  if(i===0||PARAGRAPH_OPENINGS.has(start))return start;
-  const interval=start-READING_CUES[i-1];
-  return start-Math.min(SENTENCE_FOLLOW_LEAD,interval*0.45);
-});
+// The original audio skips the textbook's opening question ("Can you imagine
+// a world without credit cards?"). Preserve that sentence in the printed
+// passage, but follow the first *spoken* sentence beginning at audio cue 0.
+// The fourth approximate pause in paragraph 1 belongs to its final sentence;
+// paragraph 2 and all later sentence/paragraph anchors remain unchanged.
+const READING_AUDIO_SENTENCE_MAP=READING_CUES.map((_,i)=>
+  i===0?1:i===1?2:i===2||i===3?3:i
+);
 const TASK='u4-forgotten-wallet-v1';
 const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const db=()=>window.firebase?.apps?.length?firebase.firestore():null;
@@ -448,10 +446,10 @@ function readingFollowMarkup(paragraphs,baseIndex=0){
  return {html,valid};
 }
 function readingCueAt(seconds){
- if(!Number.isFinite(seconds)||seconds<READING_FOLLOW_CUES[0]||seconds>=READING_END)return -1;
- let lo=0,hi=READING_FOLLOW_CUES.length-1;
- while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(READING_FOLLOW_CUES[mid]<=seconds)lo=mid;else hi=mid-1;}
- return lo;
+  if(!Number.isFinite(seconds)||seconds<READING_CUES[0]||seconds>=READING_END)return -1;
+  let lo=0,hi=READING_CUES.length-1;
+  while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(READING_CUES[mid]<=seconds)lo=mid;else hi=mid-1;}
+  return READING_AUDIO_SENTENCE_MAP[lo];
 }
 function refreshFollowAlong(forceScroll=false){
  const area=modal?.querySelector('.fw-reading-text');
@@ -658,5 +656,5 @@ window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,pre
  _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
  classroom,_classroomPrompts:CLASSROOM,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
- _cueTimes:READING_CUES,_alignedCueTimes:READING_FOLLOW_CUES,_paragraphCues:READING_PARAGRAPH_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup,_wordMarkup:wordMarkup,_glossary:glossaryFor};
+ _cueTimes:READING_CUES,_audioSentenceMap:READING_AUDIO_SENTENCE_MAP,_paragraphCues:READING_PARAGRAPH_CUES,_cueAt:readingCueAt,_splitSentences:splitReadSentences,_readingMarkup:readingFollowMarkup,_wordMarkup:wordMarkup,_glossary:glossaryFor};
 })();
