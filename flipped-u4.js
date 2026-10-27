@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261026-verified-paragraph-cues-1';
+const VERSION='20261027-home-ready-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -82,14 +82,14 @@ const getQuestion=step=>CHECKS.find(q=>q.step===step);
 const answeredCount=(v=state)=>CHECKS.filter(q=>Number.isInteger(v.answers?.[q.id])).length;
 const correctCount=(v=state)=>CHECKS.filter(q=>v.answers?.[q.id]===q.correct).length;
 const recoveredCount=(v=state)=>CHECKS.filter(q=>Number.isInteger(v.answers?.[q.id])&&v.answers[q.id]!==q.correct&&v.recovery?.[q.id]===q.retryCorrect).length;
-const needsRetry=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&v.answers[q.id]!==q.correct&&!Number.isInteger(v.recovery?.[q.id]);
-const isCheckResolved=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&(v.answers[q.id]===q.correct||Number.isInteger(v.recovery?.[q.id]));
-const completedCheck=v=>CHECKS.every(q=>isCheckResolved(q,v))&&v?.opinion&&Array.isArray(v.readSections)&&v.readSections.length===3;
+const needsRetry=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&v.answers[q.id]!==q.correct&&v.recovery?.[q.id]!==q.retryCorrect;
+const isCheckResolved=(q,v=state)=>Number.isInteger(v.answers?.[q.id])&&(v.answers[q.id]===q.correct||v.recovery?.[q.id]===q.retryCorrect);
+const completedCheck=v=>!!(CHECKS.every(q=>isCheckResolved(q,v))&&['yes','maybe','no'].includes(v?.opinion)&&Array.isArray(v.readSections)&&[0,1,2].every(n=>v.readSections.includes(n)));
 const readiness=v=>{
  if(!v||Number(v.lessonVersion)!==LESSON_VERSION||!v.completed||!completedCheck(v))return 'unfinished';
  const first=correctCount(v),remedial=CHECKS.filter(q=>v.answers[q.id]!==q.correct);
  if(first>=5&&remedial.every(q=>v.recovery?.[q.id]===q.retryCorrect))return 'ready';
- if(remedial.every(q=>v.recovery?.[q.id]===q.retryCorrect))return 'supported';
+ if(first>=3&&remedial.every(q=>v.recovery?.[q.id]===q.retryCorrect))return 'supported';
  return 'review';
 };
 const nextStep=step=>step===0?1:step===1?2:step===2?3:step===3?4:step===4?5:step===5?6:step===6?7:step===7?8:step===8?9:step===9?10:11;
@@ -412,12 +412,12 @@ function chapterHtml(chapterIdx){
 function questionHtml(q){
  const first=state.answers[q.id],answered=Number.isInteger(first);
  const correct=answered&&first===q.correct;
- const recovery=state.recovery[q.id],recovered=Number.isInteger(recovery);
- const done=answered&&(correct||recovered);
+ const recovery=state.recovery[q.id],recovered=Number.isInteger(recovery),retryCorrect=recovery===q.retryCorrect;
+ const done=answered&&(correct||recovery===q.retryCorrect);
  const old=readingParagraphs()[Number(q.paragraph)-1]||'';
  const evidence='<details class="fw-book-evidence"><summary>📖 See the evidence · textbook paragraph '+q.paragraph+'</summary><p>'+e(old.replace(/^\d+\.\s*/,''))+'</p></details>';
  const options=q.choices.map((x,i)=>'<button type="button" data-fw="check" data-choice="'+i+'" '+(answered?'disabled ':'')+'class="'+(answered&&i===first?(correct?'fw-answer-right':'fw-answer-try'):'')+'">'+e(x)+'</button>').join('');
- const followup=answered&&!correct?'<div class="fw-feedback"><strong>Find the evidence and try a new example</strong><p>'+e(q.support)+'</p><blockquote>'+e(q.quote)+'</blockquote><h3>'+e(q.retryPrompt)+'</h3><div class="fw-answers">'+q.retryChoices.map((x,i)=>'<button type="button" data-fw="recover" data-choice="'+i+'" '+(recovered?'disabled ':'')+'class="'+(recovered&&i===recovery?(recovery===q.retryCorrect?'fw-answer-right':'fw-answer-try'):'')+'">'+e(x)+'</button>').join('')+'</div>'+ (recovered?'<p>'+(recovery===q.retryCorrect?'Yes! You used the text to fix the idea.':'The answer is: '+e(q.retryChoices[q.retryCorrect])+'. You can revisit this idea at the end.')+'</p>':'<p class="fw-note">There is no penalty for needing a hint.</p>')+'</div>':answered?'<div class="fw-feedback"><strong>Exactly — your evidence is in paragraph '+q.paragraph+'.</strong><p>'+e(q.support)+'</p></div>':'<p class="fw-note">Think of the text. You may open the evidence if you need help.</p>';
+ const followup=answered&&!correct?'<div class="fw-feedback"><strong>Find the evidence and try a new example</strong><p>'+e(q.support)+'</p><blockquote>'+e(q.quote)+'</blockquote><h3>'+e(q.retryPrompt)+'</h3><div class="fw-answers">'+q.retryChoices.map((x,i)=>'<button type="button" data-fw="recover" data-choice="'+i+'" '+(retryCorrect?'disabled ':'')+'class="'+(recovered&&i===recovery?(retryCorrect?'fw-answer-right':'fw-answer-try'):'')+'">'+e(x)+'</button>').join('')+'</div>'+ (recovered?'<p>'+(retryCorrect?'Yes! You used the text to fix the idea.':'Not yet — use the evidence above and choose another answer.')+'</p>':'<p class="fw-note">There is no penalty for needing a hint.</p>')+'</div>':answered?'<div class="fw-feedback"><strong>Exactly — your evidence is in paragraph '+q.paragraph+'.</strong><p>'+e(q.support)+'</p></div>':'<p class="fw-note">Think of the text. You may open the evidence if you need help.</p>';
  return '<div class="fw-scene fw-home-question"><span class="fw-eyebrow">CHECK '+CHECKS.indexOf(q)+1+' OF 6 · '+e(q.skill)+'</span><h2>'+e(q.prompt)+'</h2><div class="fw-answers">'+options+'</div>'+evidence+followup+
  (done?'<button type="button" class="fw-primary" data-fw="nextCheck">'+(q.step===9?'Share Your Opinion':getQuestion(q.step+1)?'Next Quick Check':'Continue the Story')+'</button>':'')+
  '</div>';
@@ -553,8 +553,8 @@ function click(event){
    persist();render();return;
  }
  if(action==='restart'&&state.step===11){
-   state.step=1;state.reviewReturn=11;
-   // Keep the original first-try and recovery evidence intact during voluntary review.
+   // Revisit all three reading chapters without resetting first-try results.
+   state.step=1;delete state.reviewReturn;
    render();return;
  }
 }
