@@ -11,7 +11,7 @@ const opts=q=>['option_a_text','option_b_text','option_c_text','option_d_text'].
 const S={box:null,mode:'read',part:0,all:false,index:0,selected:-1,reveal:false,time:40,running:false,timer:null,audio:null,audioLoading:false,audioSequence:0,activeCue:-1,syncShift:0};
 function stopTimer(){if(S.timer)clearInterval(S.timer);S.timer=null;S.running=false;}
 const sync=()=>window.STEPUP_FLIPPED_U4;
-const fallbackParagraphStarts=[9.469,35.912,105.784,160.864,175.880,187.645,201.013];
+const fallbackParagraphStarts=[0,35.912,105.784,160.864,175.880,187.645,201.013];
 const paragraphStarts=()=>sync()?._paragraphCues?.length===7?sync()._paragraphCues:fallbackParagraphStarts;
 const sentenceCues=()=>sync()?._cueTimes?.length===29?sync()._cueTimes:[];
 const sentenceParts=paragraph=>sync()?._splitSentences?.(paragraph)||[paragraph];
@@ -191,5 +191,5 @@ function init(){
   window.addEventListener('pagehide',()=>{stopTimer();stopAudio();});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261027-sentence-sync-shared-1',_sentenceMarkup:sourceParagraphMarkup,_timeCue:timeCue,_paragraphForTime:paragraphForTime};
+window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261027-audio-first-sentence-1',_sentenceMarkup:sourceParagraphMarkup,_timeCue:timeCue,_paragraphForTime:paragraphForTime};
 })();
