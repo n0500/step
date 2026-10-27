@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-skip-unsounded-opening-sentence-1';
+const VERSION='20261027-play-audio-from-zero-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -18,13 +18,13 @@ const READING_CUES=[9.469,15.347,22.407,26.385,35.912,41.635,45.980,55.098,
  67.559,71.455,79.190,85.273,94.914,105.784,108.199,114.552,126.294,
  131.500,135.152,141.558,147.110,153.552,160.864,168.665,175.880,
  180.398,183.733,187.645,193.771];
-const READING_PARAGRAPH_CUES=[9.469,35.912,105.784,160.864,175.880,187.645,201.013];
+const READING_PARAGRAPH_CUES=[0,35.912,105.784,160.864,175.880,187.645,201.013];
 const READING_END=201.013;
-// The original audio skips the textbook's opening question ("Can you imagine
-// a world without credit cards?"). Preserve that sentence in the printed
-// passage, but follow the first *spoken* sentence beginning at audio cue 0.
-// The fourth approximate pause in paragraph 1 belongs to its final sentence;
-// paragraph 2 and all later sentence/paragraph anchors remain unchanged.
+// The original recording includes its opening BEFORE the 9.469-second cue.
+// Previous chapter playback incorrectly sought to 9.469 and cut off the first
+// textbook sentence. Always start paragraph 1 at 0 and highlight sentence 1
+// until the first known audio transition. Remaining paragraph starts unchanged.
+// The extra pause at 26.385 belongs to the fourth printed sentence.
 const READING_AUDIO_SENTENCE_MAP=READING_CUES.map((_,i)=>
   i===0?1:i===1?2:i===2||i===3?3:i
 );
@@ -446,7 +446,8 @@ function readingFollowMarkup(paragraphs,baseIndex=0){
  return {html,valid};
 }
 function readingCueAt(seconds){
-  if(!Number.isFinite(seconds)||seconds<READING_CUES[0]||seconds>=READING_END)return -1;
+  if(!Number.isFinite(seconds)||seconds<0||seconds>=READING_END)return -1;
+  if(seconds<READING_CUES[0])return 0;
   let lo=0,hi=READING_CUES.length-1;
   while(lo<hi){const mid=Math.ceil((lo+hi)/2);if(READING_CUES[mid]<=seconds)lo=mid;else hi=mid-1;}
   return READING_AUDIO_SENTENCE_MAP[lo];
