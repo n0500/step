@@ -22,6 +22,9 @@ function stopAudio(){
  S.audioLoading=false;S.activeCue=-1;
 }
 function timeCue(seconds){
+ // Keep Class Mode highlighting aligned with the same corrected home-reading cues.
+ const shared=sync()?._cueAt?.(seconds);
+ if(Number.isInteger(shared))return shared;
  const cues=sentenceCues(),ends=paragraphStarts();
  if(!cues.length||seconds<cues[0]||seconds>=ends[6])return -1;
  let lo=0,hi=cues.length-1;
@@ -188,5 +191,5 @@ function init(){
   window.addEventListener('pagehide',()=>{stopTimer();stopAudio();});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261026-original-audio-aligned-1',_sentenceMarkup:sourceParagraphMarkup,_timeCue:timeCue,_paragraphForTime:paragraphForTime};
+window.STEPUP_U4_CLASSMODE_READING={open,close,paragraphs,questions,version:'20261027-sentence-sync-shared-1',_sentenceMarkup:sourceParagraphMarkup,_timeCue:timeCue,_paragraphForTime:paragraphForTime};
 })();
