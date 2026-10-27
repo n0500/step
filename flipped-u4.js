@@ -5,7 +5,7 @@
  */
 (function(){
 'use strict';
-const VERSION='20261027-play-audio-from-zero-1';
+const VERSION='20261027-preparation-reports-1';
 const LESSON_VERSION=3;
 const MEDIA='assets/audio/mega-goal-1/unit-04/reading-original-part-';
 const AUDIO_SIZE=3256291;
@@ -143,6 +143,18 @@ function studentCard(cls,profile){
  }
  return '<section class="fw-entry"><div class="fw-entry-art" aria-hidden="true">🍽️ <span>💳</span></div><div class="fw-entry-copy"><small>UNIT 4 · FLIPPED READING</small><h2>The World of Plastic</h2><p>Learn the complete textbook reading in 3 short parts. Understand it, check yourself and get help when needed.</p></div><button type="button" onclick="STEPUP_FLIPPED_U4.open()">'+(done?'Review Home Lesson':'Start Home Lesson')+'</button></section>';
 }
+// Preparation progress belongs in teacher reports, not only Class Mode.
+function reportPanel(cls){
+  if(!cls)return '';
+  const arg=JSON.stringify(cls.id).replace(/"/g,'&quot;');
+  return '<section class="fw-teacher fw-teacher-report-only" data-fw-class="'+e(cls.id)+'">'+
+   '<div class="fw-teacher-intro"><small>UNIT 4 · FLIPPED READING REPORT</small>'+
+   '<h2>The World of Plastic · Preparation Progress</h2>'+
+   '<p>Preparation status for '+e(cls.name||'this class')+'. Track three reading parts, six checks and the last saved activity per student. Separate from mastery and certificates.</p></div>'+
+   '<div class="fw-teacher-actions"><button type="button" onclick="STEPUP_FLIPPED_U4.report('+arg+')">↻ Refresh Reading Progress</button></div>'+
+   '<div class="fw-report" id="fw-report-'+e(cls.id)+'" aria-live="polite"><p>Loading student preparation…</p></div>'+
+   '</section>';
+}
 function teacherCard(cls){
  if(!cls)return '';
  const enabled=cls.flippedU4Enabled===true;
@@ -235,17 +247,21 @@ async function report(classId){
    });
    const needs=skillSummary.filter(x=>x.total>=1&&x.accuracy<.75).sort((a,b)=>a.accuracy-b.accuracy);
    const options={yes:'Yes',maybe:'Maybe',no:'No'};
-   el.innerHTML='<div class="fw-stats"><div><b>'+counts.ready+'</b><small>Ready independently</small></div><div><b>'+counts.supported+'</b><small>Ready after support</small></div><div><b>'+counts.review+'</b><small>Needs follow-up</small></div></div>'+
-    '<p class="fw-report-hint">'+counts.unfinished+' started but unfinished · '+counts.notStarted+' not started. Ready is a lesson-preparation indicator, not a certificate or guaranteed mastery.</p>'+
+   el.innerHTML='<div class="fw-stats"><div><b>'+(counts.ready+counts.supported+counts.review)+'</b><small>Completed</small></div><div><b>'+counts.unfinished+'</b><small>In progress</small></div><div><b>'+counts.notStarted+'</b><small>Not started</small></div><div><b>'+students.length+'</b><small>Class total</small></div></div>'+
+    '<p class="fw-report-hint">'+counts.ready+' ready independently · '+counts.supported+' ready after support · '+counts.review+' need review. Preparation only; not unit grades or certificates.</p>'+
     '<div class="fw-skill-summary">'+skillSummary.map(x=>'<div class="'+(x.total&&x.accuracy<.75?'fw-skill-alert':'')+'"><strong>'+e(x.q.skill)+'</strong><span>'+x.first+'/'+x.total+' first try</span></div>').join('')+'</div>'+
     '<div class="fw-lesson-tip"><strong>Suggested classroom focus</strong><p>'+
       (needs.length?'Start with '+e(needs.slice(0,2).map(x=>x.q.skill).join(' + '))+'. Let prepared students cite evidence while you give focused support to others.':'Start with a 2-minute timeline retrieval, then move to evidence-based discussion. Re-teach only if the answers reveal a gap.')+
     '</p><small>Suggested discussion: Which single event most changed how people pay, and what is your evidence?</small></div>'+
     '<div class="fw-roster">'+(students.length?statuses.map(({student,record,status})=>{
       const label=!record?'Not started':status==='ready'?'Ready':status==='supported'?'With support':status==='review'?'Needs review':'In progress';
+      const parts=Array.isArray(record?.readSections)?new Set(record.readSections.filter(n=>Number.isInteger(n)&&n>=0&&n<3)).size:0;
+      const answered=record&&Number(record.lessonVersion)===LESSON_VERSION?Math.min(6,CHECKS.filter(q=>Number.isInteger(record.answers?.[q.id])).length):0;
+      const at=record?.updatedAt&&Number.isFinite(Date.parse(record.updatedAt))?new Date(record.updatedAt).toLocaleString('en-GB',{timeZone:'Asia/Riyadh',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      const activity=record?parts+'/3 reading parts · '+answered+'/6 checks'+(at?' · Last activity '+at:''):'No saved activity';
       const mark=Number(record?.lessonVersion)===LESSON_VERSION?correctCount(record)+'/6 first try · '+recoveredCount(record)+' recovered':'—';
       const trouble=record&&Number(record.lessonVersion)===LESSON_VERSION?CHECKS.filter(q=>record.answers?.[q.id]!==q.correct&&Number.isInteger(record.answers?.[q.id])).map(q=>q.skill).join(', '):'';
-      return '<div><strong>'+e(student.displayName||'Student')+'</strong><span>'+e(label)+'</span><small>'+e(mark)+(trouble?' · Revisit: '+e(trouble):'')+(record?.opinion?' · Opinion: '+e(options[record.opinion]||record.opinion):'')+'</small></div>';
+      return '<div><strong>'+e(student.displayName||record?.studentName||'Student')+'</strong><span>'+e(label)+'</span><small>'+e(activity)+(record&&Number(record.lessonVersion)===LESSON_VERSION?' · '+e(mark):'')+(trouble?' · Revisit: '+e(trouble):'')+(record?.opinion?' · Opinion: '+e(options[record.opinion]||record.opinion):'')+'</small></div>';
     }).join(''):'<p>No students found in this class.</p>')+'</div>';
  }catch(err){
    console.warn('Home reading report',err);
@@ -653,7 +669,7 @@ function click(event){
 }
 function init(){window.addEventListener('pagehide',()=>{stopAudio();if(audioURL)URL.revokeObjectURL(audioURL);audioURL='';});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.STEPUP_FLIPPED_U4={studentCard,teacherCard,setEnabled,report,copyLink,preview,open,close,loadOriginalAudio,version:VERSION,
+window.STEPUP_FLIPPED_U4={studentCard,teacherCard,reportPanel,setEnabled,report,copyLink,preview,open,close,loadOriginalAudio,version:VERSION,
  _checks:CHECKS,_chapters:CHAPTERS,_readiness:readiness,_completedCheck:completedCheck,
  classroom,_classroomPrompts:CLASSROOM,
   _checkClass:checkClass,_audioParts:ids,_audioSha:AUDIO_SHA256,_scenes:scenes,
