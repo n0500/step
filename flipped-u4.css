@@ -11,6 +11,10 @@
 .fw-teacher-actions{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:8px;min-width:175px}
 .fw-teacher-actions .secondary{background:#fff;color:#20587f;border:1px solid #c2d3df}
 .fw-teacher-status{font-weight:800;color:#476f85;text-align:center;font-size:13px}
+.fw-teacher-report-only{grid-template-columns:minmax(0,1fr) auto;margin:16px 0 22px}
+.fw-teacher-report-only .fw-report{min-width:0}
+.fw-teacher-report-only .fw-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.fw-teacher-report-only .fw-roster{max-height:500px}
 .fw-report{grid-column:1/-1;padding-top:10px;border-top:1px solid #d7e0e7}
 .fw-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .fw-stats>div{background:white;border-radius:14px;padding:14px;text-align:center}.fw-stats b{display:block;font-size:28px;color:#255e87}.fw-stats small{font-size:13px;color:#536d7f}
@@ -178,3 +182,5 @@
 .fw-word-meaning span:last-child{color:#4c6c7e}
 .fw-word-feedback small{display:block;margin-top:4px;color:#678598;font-size:12px}
 @media(max-width:700px){.fw-word-meaning{align-items:flex-start;flex-direction:column;gap:4px}.fw-vocab-pronounce{min-height:40px}.fw-word-selected button{font-size:12px}}
+
+@media(max-width:740px){.fw-teacher-report-only{grid-template-columns:minmax(0,1fr)}.fw-teacher-report-only .fw-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fw-teacher-report-only .fw-roster>div{grid-template-columns:minmax(0,1fr);gap:3px}.fw-teacher-report-only .fw-roster strong{font-size:15px}.fw-teacher-report-only .fw-roster small{font-size:13px}}
