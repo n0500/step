@@ -18,27 +18,33 @@
   function host(){return document.querySelector('.student-view');}
   function currentRun(unit){var b=bank(unit),r=load(unit);return valid(r,b)?r:null;}
   function hasPending(unit){var r=currentRun(unit);return !!(r&&r.keys.some(function(k){return !r.answers[k];}));}
+  // A fully answered run still on this device has not been confirmed saved.
+  function hasCompleteUnsaved(unit){var r=currentRun(unit);return !!(r&&r.keys.every(function(k){return !!r.answers[k];}));}
   function banner(){
     var h=host(),hero=h&&h.querySelector('.journey-unit-hero'),heading=hero&&hero.querySelector('h1');
     if(!hero||!heading||hero.getAttribute('data-u56-full-button')==='1')return;
     var u=window.STEPUP_JOURNEY?.data?.units?.find(function(x){return x.title===heading.textContent.trim();});
     if(!u||!allowed[u.id])return;
     var status=window.STEPUP_MASTERY?.studentStatus(u.id);
-    if(!status?.earned&&!hasPending(u.id))return;
+    if(!status?.earned&&!hasPending(u.id)&&!hasCompleteUnsaved(u.id))return;
     hero.setAttribute('data-u56-full-button','1');
-    var id=u.id,desc=hasPending(id)?'Resume your saved full review.':'Review all 28 questions, including the original revision questions.';
-    hero.insertAdjacentHTML('afterend','<section class="u56-full-entry" style="margin:14px 0;padding:15px;border:1px solid #d0e1eb;border-radius:16px;background:#f5faff"><strong>Practice Again • Unit '+esc(u.number)+'</strong><p style="margin:8px 0">'+esc(desc)+'</p><button type="button" style="min-height:46px;padding:11px 17px;border:0;border-radius:12px;background:#245b8e;color:#fff;font-weight:800" onclick="STEPUP_U56_PRACTICE.begin(\''+id+'\')">'+(hasPending(id)?'Resume Review':'Practice Again')+'</button></section>');
+    var id=u.id,unsaved=hasCompleteUnsaved(id),desc=unsaved?'Your answers are complete on this device. Retry saving your result.':hasPending(id)?'Resume your saved full review.':'Review all 28 questions, including the original revision questions.';
+    hero.insertAdjacentHTML('afterend','<section class="u56-full-entry" style="margin:14px 0;padding:15px;border:1px solid #d0e1eb;border-radius:16px;background:#f5faff"><strong>Practice Again • Unit '+esc(u.number)+'</strong><p style="margin:8px 0">'+esc(desc)+'</p><button type="button" style="min-height:46px;padding:11px 17px;border:0;border-radius:12px;background:#245b8e;color:#fff;font-weight:800" onclick="STEPUP_U56_PRACTICE.begin(\''+id+'\')">'+(unsaved?'Retry Saving':hasPending(id)?'Resume Review':'Practice Again')+'</button></section>');
   }
   function begin(unit){
     if(!allowed[unit])return;
     var b=bank(unit),id=uid(),h=host();
     if(!h||!b.length||!id){if(h)h.innerHTML='<section class="journey-content-card">Sign in to review this unit.</section>';return;}
     var r=currentRun(unit);
-    if(!r||!r.keys.some(function(k){return !r.answers[k];})){
+    if(!r){
       r={uid:id,unit:unit,runId:Date.now()+'-'+Math.random().toString(36).slice(2),startedAt:new Date().toISOString(),keys:listKeys(b),answers:{}};
       if(!store(unit,r)){h.innerHTML='<section class="journey-content-card">Unable to save local progress. Please enable local storage and try again.</section>';return;}
     }
-    live={uid:id,unit:unit,runId:r.runId};chosen=null;render(unit);
+    live={uid:id,unit:unit,runId:r.runId};chosen=null;
+    // Never discard a completed review after an interrupted final save.
+    // Successful saves clear this run, so its continued presence means retry.
+    if(position(r)<0){finish(unit);return;}
+    render(unit);
   }
   function active(unit){var r=currentRun(unit);return !!(live&&r&&live.uid===uid()&&live.unit===unit&&live.runId===r.runId);}
   function position(r){return r.keys.findIndex(function(k){return !r.answers[k];});}
