@@ -1,6 +1,6 @@
 /* STEP UP | Units 5 & 6 textbook-aligned compact learning banks.
- * Practice passages below are original teaching summaries, NOT verbatim textbook text.
- * For complete passages, consult Mega Goal 1 Student Book pp. 78-79 and 92-93.
+ * Reading passages transcribed from the teacher-supplied 2025 Student Book; PDF glyphs normalized.
+ * Passages sourced from Mega Goal 1 Student Book pp. 74 and 88.
  * Listening questions follow original Conversation tracks: CD2/13 and CD2/20.
  * Keeps Firebase records, access controls, certificates and historical attempts untouched.
  */
@@ -13,16 +13,7 @@
       title:'Did You Hurt Yourself?',
       objective:'Describe accidents, explain causes, express agreement, and talk about safety.',
       readingTitle:'Unusual Accidents and Deaths',
-      reading:`Unusual Accidents and Deaths
-Adapted study summary — read the complete original passage in your Student Book (pp. 78–79).
-
-1. According to a legend, the Greek writer Aeschylus was bald. An eagle mistook his head for a rock and appeared to hurl a tortoise toward it. The incident had a tragic ending.
-
-2. Another unusual event happened near Abha in Saudi Arabia. An ostrich escaped onto a busy highway and had to weave through traffic. Avoiding the unexpected bird was a challenge for drivers.
-
-3. Some accidents had happier endings. Skydiver Bob Hail survived when both of his parachutes failed. Drag racer Phil Lamattina survived when his car became airborne and burst into flames during a race.
-
-4. Railway worker Phineas Gage also survived a serious accident involving an explosion. In time, he was able to recover. The reading contrasts tragic accidents with surprising escapes.`,
+      reading:"Unusual Accidents and Deaths\n\nMany people are interested in stories of unusual accidents—some of these stories have happy endings, but some, unfortunately, have unhappy ones.\n\nUNHAPPY ENDINGS According to the legend, the ancient Greek playwright Aeschylus was killed when an eagle dropped a tortoise on his head. The bird was trying to break the tortoise’s shell on a rock in order to eat it. Aeschylus was bald, and the eagle thought the unfortunate man’s head was a good rock on which it could break the shell.\n\nAn eight-foot tall ostrich was seen weaving through heavy traffic on a Saudi Arabian highway, near Abha. One of the drivers filmed the scene and uploaded it on the internet. No one tried to stop and catch the 180-kg bird that was taller than humans and ran at almost 70 km per hour. It had probably escaped from a farm and ran into heavy traffic instead of the wild.\n\nSome people worry about being hit from things falling from outer space. There is only one person in all recorded history who has been killed by a meteorite—Manfredo Settala. The tragedy happened in 1680.\n\nAhmad Ali lost his eight-year-old son in a drowning accident at a friend’s house. His son had been invited to join other children at a friend’s house to play and swim in the pool. According to the invitation a lifeguard was going to be present. The young boy was really excited and begged his father to let him go. So, Ahmad Ali picked him up from school and drove him to his friend’s house before 1:00 p.m. That was the last time he saw him alive.\n\nHAPPY ENDINGS\n\nA German soldier was riding in the back seat of a World War I plane when the engine stalled as a result of an unusual gust of wind. He fell out of his seat while the plane was high above the ground. As he was falling, the plane’s engine started again, and he landed back in his own seat. The pilot was then able to land the plane safely.\n\nBob Hail jumped out of an airplane in November 1972, but his main parachute failed to open. His backup parachute also failed. Bob dropped about 3,000 feet (900 meters) at 80 miles (128 km) per hour and hit the ground face first. After a moment, he got up and walked away with only minor injuries. It was an amazing escape.\n\nIn September 2007, Phil Lamattina escaped death when he was driving at over 300 miles (500 km) per hour in a drag race in Brisbane, Australia. Phil was racing down the track when his car became airborne, split in two, and burst into a fireball. He was knocked out, but he survived. Although he was in the midst of the ball of fire, Phil was burned only on the tip of his finger. When his brothers later showed him the video of the accident, Phil couldn’t believe he was watching himself—and that he had such a lucky escape.\n\nRailroad worker Phineas P. Gage was working with some dynamite when it exploded unexpectedly. A bar that was 3 feet (1 meter) long and that weighed 13 pounds (6 kg) went clear through his head. He remained conscious, but was unable to see out of his left eye. After a while, his sight returned, and he fully recovered.",
       listening:'Original Unit 5 Conversation (CD2 Track 13): Samir and Jasem describe their road and cycling accidents. Samir skidded on oil while riding a motorcycle, crashed into a car, and says his helmet probably saved his life. Jasem swerved to avoid a squirrel while cycling in a park and hit a tree. They talk about injuries and lucky escapes.',
       sections:[
         ['m1','Real Talk & Accident Expressions','Conversation • useful expressions'],
@@ -54,11 +45,11 @@ Adapted study summary — read the complete original passage in your Student Boo
         [5,'Reading • Scanning','Where was an ostrich spotted in traffic?','Near Abha in Saudi Arabia',['At a hospital in London','At a race in Australia','At an airport in Canada'],'Scan paragraph 2 for the place.'],
         [5,'Reading • Inference','What do Bob Hail and Phil Lamattina have in common?','Both survived very dangerous accidents',['Both were famous writers','Both had minor bicycle falls','Both repaired a plane'],'Both stories describe unusual escapes.'],
         [7,'Vocabulary • After Reading','The word “bald” means ___.','having no hair on the head',['wearing a helmet','afraid of heights','very tired'],'The eagle mistook a head for a rock.','According to a legend, the Greek writer Aeschylus was bald.','bald',1],
-        [7,'Vocabulary • After Reading','The verb “hurl” means ___.','throw with great force',['walk slowly','hold carefully','read aloud'],'The tortoise moved toward the head from above.','An eagle mistook his head for a rock and appeared to hurl a tortoise toward it.','hurl',1],
-        [7,'Vocabulary • After Reading','The phrase “weave through” means ___.','move among obstacles while changing direction',['stop suddenly','remain completely still','fall from the sky'],'A bird moved among cars.','An ostrich escaped onto a busy highway and had to weave through traffic.','weave through',2],
-        [7,'Vocabulary • After Reading','A “challenge” is ___.','something difficult to do',['a simple daily routine','a written invitation','a type of bird'],'Think of what the drivers faced.','Avoiding the unexpected bird was a challenge for drivers.','challenge',2],
+        [7,'Vocabulary • After Reading','The verb “explode” means ___.','burst suddenly with force',['walk slowly','hold carefully','read aloud'],'Find the accident involving dynamite.','An eagle mistook his head for a rock and appeared to hurl a tortoise toward it.','exploded',1],
+        [7,'Vocabulary • After Reading','The phrase “weave through” means ___.','move among obstacles while changing direction',['stop suddenly','remain completely still','fall from the sky'],'A bird moved among cars.','An ostrich escaped onto a busy highway and had to weave through traffic.','weaving through',2],
+        [7,'Vocabulary • After Reading','“Conscious” means ___.','awake and aware',['a simple daily routine','a written invitation','a type of bird'],'Find how Phineas Gage felt after the explosion.','Avoiding the unexpected bird was a challenge for drivers.','conscious',2],
         [7,'Vocabulary • After Reading','To “burst” into flames means to ___.','suddenly catch fire',['move safely away','land softly','return to normal'],'The race car caught fire.','Drag racer Phil Lamattina survived when his car became airborne and burst into flames during a race.','burst',3],
-        [7,'Vocabulary • After Reading','To “recover” means to ___.','get better after an injury',['cause an accident','become more dangerous','move between cars'],'Think about the worker after the accident.','In time, he was able to recover.','recover',4],
+        [7,'Vocabulary • After Reading','To “recover” means to ___.','get better after an injury',['cause an accident','become more dangerous','move between cars'],'Think about the worker after the accident.','In time, he was able to recover.','recovered',4],
         [6,'Listening • Detail','Why did Samir crash his motorcycle?','It skidded on a patch of oil.',['A squirrel crossed the park.','The fuel ran out.','He forgot his bicycle.'],'Samir says his motorcycle skidded on oil.'],
         [6,'Listening • Detail','What probably saved Samir’s life?','His helmet',['His phone','His backpack','His shoes'],'He was wearing a helmet.'],
         [6,'Listening • Detail','Why did Jasem hit a tree?','He swerved to avoid a squirrel.',['He was escaping from a dog.','He was racing in a car.','He fell from a plane.'],'Jasem says a squirrel appeared, and he swerved.']
@@ -68,16 +59,7 @@ Adapted study summary — read the complete original passage in your Student Boo
       title:'Take My Advice',
       objective:'Discuss problems, give advice, use phrasal verbs, and make healthy choices.',
       readingTitle:'Breaking the Habit—Getting Healthy',
-      reading:`Breaking the Habit—Getting Healthy
-Adapted study summary — read the complete original passage in your Student Book (pp. 92–93).
-
-1. Eating too much junk food can become a habit. Some people feel addicted to fast food and reach for it as soon as they get hungry. Comfort eating is choosing food to deal with sadness or stress rather than hunger.
-
-2. The article explains that healthy meals can still be enjoyable. A person might choose salad instead of extra fries. Eating heavy junk-food meals may leave some people sleepy or tired.
-
-3. To cut down on junk food, you can reduce how much you eat gradually. Others prefer to give up junk food for a period of time. If a friend offers you fast food, you can politely turn down the offer and choose something healthier.
-
-4. An occasional setback does not mean failure. Set achievable goals, follow your plan, and treat yourself kindly. Lasting change takes time and a practical decision.`,
+      reading:"Breaking the habit—Getting healthy\n\nGood eating habits contribute to health and fitness and make you feel strong. “What is so good about a diet of vegetables and fruit combined with lean meat, preferably chicken or fish?”, you might ask. If you are very tired, hungry, and upset there is nothing better than a juicy beef burger with fries or a giant pizza, you think. That’s probably true if your brain has gotten used to the pleasure felt when tasting junk food. But is it good for you? Does it help you stay fit and control your weight? How do you feel after you’ve had a meal? Are you sure it’s not time to break the habit?\n\nThe following is a checklist to help you decide if it’s time for you or a friend to change eating habits. Just ONE “warning sign” should be enough reason to take action. Q You shouldn’t think ‘junk food’ the minute you start feeling hungry. There never is an acceptable reason for this. It is a definite sign of a habit that is on the way to becoming an addiction. Q Comfort eating is usually associated with junk food and in general, high calorie food that is also high in carbohydrates [starch and sugar] and saturated fat. If you run to the nearest fast food chain every time you feel down, you know it is out of control. Q A healthy, nutritious meal does not have to be bland and boring. When pushed you can picture appetizing dishes that do not contain fries or fatty ingredients but you still prefer to get hold of a beef burger or a pizza. You know it’s not the best food for you. You know that you are going to feel sleepy and tired after you have eaten. Q To be honest, healthy is a relative term. It all depends on what your alternatives are. There are ‘healthier’ choices you can make even at a fast food restaurant. You might, for example, order salad as a side dish instead of a second helping of fries. You could avoid condiments such as ketchup or mayonnaise, or eat a chicken burger. You know all this, you have promised yourself to do it next time you are there, but somehow it never happens. You keep on insisting that those dishes take longer to prepare.\n\nBut breaking a habit can leave you feeling down. Don’t worry, this is quite common; and it shouldn’t last very long if you stick to your decision to give up junk food. • You ought to decide on your own if it’s best to cut down on the amount of junk food you eat, gradually over a period of time, or whether it’s best to stop altogether for some time. • You should allow yourself some time to do it successfully • You shouldn’t give up simply because you were with friends and joined them for dinner at a fast food restaurant, or because you helped yourself to a few fries. • Pick up some menus from different restaurants and read them carefully, paying attention to the ingredients of each dish. Then highlight the dishes that you find interesting. • You might go to the supermarket and wander around making a list of all the food and ingredients that you find attractive. • If a friend insists on offering you junk food, turn down the offer and treat yourself to something nice. The important thing is to regain control and only eat junk food when nothing else is available or very occasionally for a change. • Make a list of all the things you enjoy doing but had to give up because you gained weight or do not feel energetic enough. Decide what you would like to do again and when. Set yourself goals that are achievable and enjoyable. Treat yourself right!",
       listening:'Original Unit 6 Conversation (CD2 Track 20): Mohammed feels down about upcoming exams and classmates who constantly call him for help. Hussain advises him to explain that he also needs time to study. Other classmates call Hussain first to find out Mohammed’s mood. Hussain would like Mohammed to talk to them.',
       sections:[
         ['m1','Real Talk & Useful Expressions','Conversation • how to express feelings'],
@@ -108,7 +90,7 @@ Adapted study summary — read the complete original passage in your Student Boo
         [5,'Reading • Detail','What is comfort eating?','Eating to cope with feelings rather than hunger',['Eating only breakfast','Cooking for a large family','Having a healthy snack after sport'],'The passage links stress or sadness with eating.'],
         [5,'Reading • Detail','Which choice is suggested instead of extra fries?','Salad',['Another burger','A sweet drink','Two desserts'],'A small substitution can improve a meal.'],
         [5,'Reading • Inference','If you eat fast food once after starting a healthier plan, you should ___.','continue your plan instead of giving up',['stop trying forever','ignore every goal','always eat fast food'],'One setback does not undo progress.'],
-        [7,'Vocabulary • Context','Someone who is “addicted” ___.','finds it very hard to stop a habit',['always eats slowly','never feels stressed','cannot cook'],'This describes a difficult-to-break habit.','Some people feel addicted to fast food and reach for it as soon as they get hungry.','addicted',1],
+        [7,'Vocabulary • Context','The word “addiction” means ___','a habit that is very difficult to control',['always eats slowly','never feels stressed','cannot cook'],'This describes a difficult-to-break habit.','Some people feel addicted to fast food and reach for it as soon as they get hungry.','addiction',1],
         [7,'Vocabulary • Context','“Comfort eating” means ___.','eating to manage uncomfortable feelings',['eating at a restaurant','sharing food with friends','learning a recipe'],'Notice the link to emotions.','Comfort eating is choosing food to deal with sadness or stress rather than hunger.','Comfort eating',1],
         [7,'Vocabulary • Context','To “cut down on” means ___.','reduce the amount of something',['increase it every day','completely forget it','buy it online'],'Think about eating less junk food.','To cut down on junk food, you can reduce how much you eat gradually.','cut down on',3],
         [7,'Vocabulary • Context','“Give up” means ___.','stop a habit or activity',['continue without change','order more food','ask for directions'],'The passage contrasts stopping with gradual reduction.','Others prefer to give up junk food for a period of time.','give up',3],
@@ -150,23 +132,30 @@ Adapted study summary — read the complete original passage in your Student Boo
         question_id:'U'+n+'R-'+String(i+1).padStart(3,'0'),unit_id:'MG1_U'+n,mission:m.source,
         stage,skill,difficulty:'متوسط',question_type:'multiple_choice',
         source_type:num===6?'Textbook Conversation listening review':'Teacher-created textbook-aligned practice',
-        source_ref:num===6?'Mega Goal 1 • Unit '+n+' • Conversation • CD2 Track '+(n===5?'13':'20'):(num===5||num===7?'Mega Goal 1 • Unit '+n+' • Reading pp. '+(n===5?'78–79':'92–93'):'Mega Goal 1 • Unit '+n+' • Grammar / Conversation / FMF'),
+        source_ref:num===6?'Mega Goal 1 • Unit '+n+' • Conversation • CD2 Track '+(n===5?'13':'20'):(num===5||num===7?'Mega Goal 1 • Unit '+n+' • Reading pp. '+(n===5?'74–75':'88–89'):'Mega Goal 1 • Unit '+n+' • Grammar / Conversation / FMF'),
         source_original_text:'Original review question (not copied from the textbook).',
         prompt,option_a_id:opt[0],option_a_text:choices[0],option_b_id:opt[1],option_b_text:choices[1],
         option_c_id:opt[2],option_c_text:choices[2],option_d_id:opt[3],option_d_text:choices[3],
-        correct_option_id:opt[answer],explanation,hint:num===7?'Find the highlighted clue in the reading summary.':explanation,
+        correct_option_id:opt[answer],explanation,hint:num===7?'Find the highlighted clue in the original reading.':explanation,
         next_if_correct:'update_mastery',next_if_wrong:'update_mastery',
         pool_id:'U'+n+'_'+m.id+'_Mastery',mastery_points:1,attempt_limit:2,
         certificate_eligible:true,randomize_options:false,review_status:'معتمد'
       };
       if(excerpt){
-        if(!passage[paragraph]?.includes(excerpt)||!excerpt.toLowerCase().includes(needle.toLowerCase()))throw Error('Bad passage context '+n+' '+i);
-        data.context_excerpt=excerpt;data.context_match=needle;data.context_paragraph=paragraph;
+        const original=s.reading;
+        const at=original.toLowerCase().indexOf(String(needle).toLowerCase());
+        if(at<0)throw Error('Vocabulary clue not found in original reading U'+n+' '+needle);
+        const st=Math.max(original.lastIndexOf('.',at-1)+1,original.lastIndexOf('\\n',at-1)+1,at-130);
+        const en=original.indexOf('.',at+needle.length);
+        const end=en<0?Math.min(original.length,at+160):Math.min(original.length,en+1);
+        data.context_excerpt=original.slice(st,end).trim();
+        data.context_match=original.slice(at,at+needle.length);
+        data.context_paragraph=Math.max(1,original.slice(0,at).split(/\\n\\s*\\n/).length);
       }
       counts[num]=(counts[num]||0)+1;allNew.push(data);
     });
     if(s.questions.length!==28||[2,4,4,5,4,6,3].some((v,i)=>counts[[1,2,3,4,5,7,6][i]]!==v))throw Error('Bad question counts for U'+n+': '+JSON.stringify(counts));
-    results['u'+n]={ready:true,questionCount:s.questions.length,reading:'textbook-aligned summary',listening:'CD2 Track '+(n===5?'13':'20'),teacherControlled:true};
+    results['u'+n]={ready:true,questionCount:s.questions.length,reading:'original 2025 Student Book passage',listening:'CD2 Track '+(n===5?'13':'20'),teacherControlled:true};
   });
   const old=J.data.questions.filter(q=>q.unit_id!=='MG1_U5'&&q.unit_id!=='MG1_U6');
   J.data.questions=old.concat(allNew);
