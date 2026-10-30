@@ -147,21 +147,22 @@
 
   function renderLanding(){
     app.innerHTML = `
-      <div class="auth-shell">
-        <div class="card hero">
-          <div class="hero-badge">✨ StepUp</div>
-          <div class="eyebrow" style="margin-top:12px">Mega Goal 1 • Your Learning Journey</div>
-          <h1>StepUp</h1>
+      <div class="auth-shell stepup-first-entry">
+        <div class="card hero stepup-first-hero">
+          <div class="hero-badge">StepUp</div>
+          <div class="eyebrow" style="margin-top:10px">Mega Goal 1 • Your Learning Journey</div>
+          <h1>Welcome to StepUp</h1>
           <p class="hero-subtitle">Learn • Master • Practice • Progress</p>
-          <p class="muted">A light learning journey that helps you master the unit, practise STEP skills, and see your progress without feeling like extra homework.</p>
           ${!state.fb?`<div class="notice">Demo mode is active. Connect Firebase before sharing with students.</div>`:""}
-          <h3>Choose your role</h3>
-          <div class="auth-role">
-            <div class="role-card active" data-role="student" onclick="PROVE.pickRole('student')"><strong>Student</strong><small>طالبة</small></div>
-            <div class="role-card" data-role="teacher" onclick="PROVE.pickRole('teacher')"><strong>Teacher</strong><small>معلمة</small></div>
-            <div class="role-card" data-role="owner" onclick="PROVE.pickRole('owner')"><strong>Owner</strong><small>المالكة</small></div>
-          </div>
           <div id="authBox"></div>
+          <div class="stepup-role-switch" aria-label="Account type">
+            <span>Sign in as</span>
+            <div class="auth-role" id="stepupRoleSelector">
+              <button type="button" class="role-card active" data-role="student" onclick="PROVE.pickRole('student')">Student</button>
+              <button type="button" class="role-card" data-role="teacher" onclick="PROVE.pickRole('teacher')">Teacher</button>
+              <button type="button" class="role-card" data-role="owner" onclick="PROVE.pickRole('owner')">Owner</button>
+            </div>
+          </div>
         </div>
       </div>`;
     pickRole("student");
@@ -170,29 +171,76 @@
   function pickRole(role){
     document.querySelectorAll(".role-card").forEach(x=>x.classList.toggle("active",x.dataset.role===role));
     const box=document.getElementById("authBox");
+    if(!box) return;
     if(role==="student"){
       box.innerHTML=`
-        <div style="margin-top:18px">
-          <div class="form-grid">
-            <div class="field"><label>Full name / الاسم الكامل</label><input id="stName" autocomplete="name"></div>
-            <div class="field"><label>Class code / كود الفصل</label><input id="stClassCode" autocapitalize="characters"></div>
-            <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+        <div class="stepup-name-card" dir="ltr">
+          <div class="stepup-name-first" id="stepupNameFirst">
+            <div class="stepup-step-tag">Step 1 of 2</div>
+            <h2>What's your name?</h2>
+            <p>Enter the name you use for your STEP UP account.</p>
+            <div class="field">
+              <label for="stName">Full name / الاسم الكامل</label>
+              <input id="stName" type="text" autocomplete="name" maxlength="80" dir="auto"
+                placeholder="Your full name"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();PROVE.advanceStudentLogin()}">
+            </div>
+            <button type="button" class="btn stepup-name-next" onclick="PROVE.advanceStudentLogin()">Continue →</button>
           </div>
-          <div class="quick-entry-note">Existing students only. New account registration is closed. / الدخول للحسابات الحالية فقط؛ تم إيقاف إنشاء الحسابات الجديدة.</div>
-          <button class="btn btn-primary" style="margin-top:12px" onclick="PROVE.studentContinue()">Continue</button>
+          <div class="stepup-login-details" id="stepupLoginDetails" hidden>
+            <div class="stepup-step-tag">Step 2 of 2</div>
+            <h2>Welcome, <span id="stepupLoginNameEcho"></span></h2>
+            <p>Enter your class code and 4-digit PIN.</p>
+            <div class="form-grid">
+              <div class="field"><label for="stClassCode">Class code / كود الفصل</label><input id="stClassCode" autocapitalize="characters"></div>
+              <div class="field"><label for="stPin">PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+            </div>
+            <div class="quick-entry-note">Existing students only. New account registration is closed. / الدخول للحسابات الحالية فقط؛ إنشاء حسابات جديدة متوقف.</div>
+            <button class="btn btn-primary stepup-login-submit" type="button" onclick="PROVE.studentContinue()">Sign in</button>
+            <button class="stepup-edit-name" type="button" onclick="PROVE.backToStudentName()">← Edit name</button>
+          </div>
         </div>`;
     } else {
       box.innerHTML=`
-        <div class="form-grid" style="margin-top:18px">
-          <div class="field"><label>Email</label><input id="authEmail" type="email"></div>
-          <div class="field"><label>Password</label><input id="authPassword" type="password"></div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-primary" onclick="PROVE.emailLogin('${role}')">Sign in</button>
-          
-        </div>
-        <p class="muted" style="font-size:12px">${role==="owner"?"Owner account must match the owner email configured in Firebase.":"Teacher sign-in is available for existing accounts only."}</p>`;
+        <div class="stepup-name-card stepup-staff-login">
+          <h2>${role==="owner"?"Owner":"Teacher"} sign in</h2>
+          <div class="form-grid">
+            <div class="field"><label>Email</label><input id="authEmail" type="email" autocomplete="username"></div>
+            <div class="field"><label>Password</label><input id="authPassword" type="password" autocomplete="current-password"></div>
+          </div>
+          <button class="btn btn-primary" type="button" style="margin-top:12px" onclick="PROVE.emailLogin('${role}')">Sign in</button>
+          <p class="muted" style="font-size:12px">${role==="owner"?"Owner account must match the owner email configured in Firebase.":"Teacher sign-in is available for existing accounts only."}</p>
+        </div>`;
     }
+  }
+
+  function advanceStudentLogin(){
+    const input=document.getElementById("stName");
+    const name=String(input?.value||"").trim().replace(/\s+/g," ");
+    if(name.length<2||name.length>80){
+      alert("Please enter your registered full name. / اكتبي الاسم الكامل المسجل في حسابك.");
+      input?.focus();
+      return;
+    }
+    input.value=name;
+    const first=document.getElementById("stepupNameFirst");
+    const details=document.getElementById("stepupLoginDetails");
+    if(!first||!details)return;
+    const echo=document.getElementById("stepupLoginNameEcho");
+    if(echo)echo.textContent=name.split(/\s+/)[0];
+    first.hidden=true;
+    details.hidden=false;
+    const code=document.getElementById("stClassCode");
+    (code||document.getElementById("stPin"))?.focus();
+  }
+
+  function backToStudentName(){
+    const first=document.getElementById("stepupNameFirst");
+    const details=document.getElementById("stepupLoginDetails");
+    if(!first||!details)return;
+    details.hidden=true;
+    first.hidden=false;
+    document.getElementById("stName")?.focus();
   }
 
   async function renderClassJoin(classCode){
@@ -204,22 +252,41 @@
       return;
     }
     app.innerHTML=`
-      <div class="auth-shell">
-        <div class="card student-entry-card">
+      <div class="auth-shell stepup-first-entry">
+        <div class="card student-entry-card stepup-first-class">
           <div class="student-entry-head">
             <div class="hero-badge">StepUp</div>
-            <div class="eyebrow" style="margin-top:12px">Student Access</div>
-            <h1>Welcome 👋</h1>
-            <p class="hero-subtitle">Learn • Master • Practice • Progress</p>
-            <div class="class-badge">📘 ${esc(classObj.name||"Your Class")}</div>
-            ${classObj.school?`<p class="muted">${esc(classObj.school)}</p>`:""}
+            <div class="eyebrow" style="margin-top:10px">Student Access</div>
+            <h1>Welcome to StepUp</h1>
+            <div class="class-badge">${esc(classObj.name||"Your Class")}</div>
           </div>
-          <div class="form-grid">
-            <div class="field"><label>Full name / الاسم الكامل</label><input id="stName" autocomplete="name"></div>
-            <div class="field"><label>PIN (4 digits)</label><input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password"></div>
+          <div class="stepup-name-card" dir="ltr">
+            <div class="stepup-name-first" id="stepupNameFirst">
+              <div class="stepup-step-tag">Step 1 of 2</div>
+              <h2>What's your name?</h2>
+              <p>Enter your registered name to continue.</p>
+              <div class="field">
+                <label for="stName">Full name / الاسم الكامل</label>
+                <input id="stName" type="text" autocomplete="name" maxlength="80" dir="auto"
+                  placeholder="Your full name"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();PROVE.advanceStudentLogin()}">
+              </div>
+              <button type="button" class="btn stepup-name-next" onclick="PROVE.advanceStudentLogin()">Continue →</button>
+            </div>
+            <div class="stepup-login-details" id="stepupLoginDetails" hidden>
+              <div class="stepup-step-tag">Step 2 of 2</div>
+              <h2>Welcome, <span id="stepupLoginNameEcho"></span></h2>
+              <p>Enter your 4-digit PIN to open your existing account.</p>
+              <div class="form-grid">
+                <div class="field"><label for="stPin">PIN (4 digits)</label>
+                  <input id="stPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password">
+                </div>
+              </div>
+              <div class="quick-entry-note">Use your registered name and PIN. New account registration is closed. / استخدمي الاسم ورمز PIN المسجلين؛ التسجيل الجديد مغلق.</div>
+              <button class="btn btn-primary stepup-login-submit" type="button" onclick="PROVE.studentContinue('${esc(classCode)}')">Sign in</button>
+              <button class="stepup-edit-name" type="button" onclick="PROVE.backToStudentName()">← Edit name</button>
+            </div>
           </div>
-          <div class="quick-entry-note">Use your registered name and PIN. New account registration is closed. / استخدمي اسمك ورمز PIN المسجلين؛ إنشاء الحسابات الجديدة مغلق.</div>
-          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="PROVE.studentContinue('${esc(classCode)}')">Continue</button>
         </div>
       </div>`;
   }
@@ -2390,7 +2457,7 @@ Do not start a new lesson unless I ask.`;
   function printPage(){window.print()}
 
   window.PROVE = {
-    pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
+    pickRole,advanceStudentLogin,backToStudentName,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
     renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,previewUnit4,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,readUnit4ClassPassage,stopUnit4ClassPassage,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
