@@ -198,8 +198,15 @@
       const msg=document.getElementById("edcafeStudentMessage");
       const action=document.getElementById("edcafeStudentAction");
       if(validEdcafeUrl(url)){
-        if(msg) msg.textContent=`Open the Edcafe tutor prepared for ${cls?.name||"your class"}.`;
-        if(action) action.innerHTML=`<a class="journey-main-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open AI Tutor →</a>`;
+        if(msg) msg.textContent=`Talk to the Edcafe tutor prepared for ${cls?.name||"your class"} without leaving STEP UP.`;
+        if(action){
+          action.innerHTML=`
+            <div class="edcafe-hub-actions">
+              <button type="button" class="journey-main-btn" data-edcafe-embed>Open AI Tutor here</button>
+              <a href="${esc(url)}" target="_blank" rel="noopener noreferrer" class="edcafe-external-link">Open in new tab</a>
+            </div>`;
+          action.querySelector("[data-edcafe-embed]")?.addEventListener("click",openCurrentTutor);
+        }
       }else{
         if(msg) msg.textContent="Your teacher has not added the Edcafe AI Tutor link for this class yet.";
         if(action) action.innerHTML="";
@@ -211,25 +218,68 @@
     }
   }
 
+  let tutorFocusReturn=null;
+
+  function closeTutorModal(){
+    const modal=document.getElementById("stepupEdcafeModal");
+    if(!modal) return;
+    modal.remove();
+    document.body.classList.remove("stepup-edcafe-modal-open");
+    if(tutorFocusReturn?.isConnected) tutorFocusReturn.focus();
+    tutorFocusReturn=null;
+  }
+
+  function showTutorInApp(url,className){
+    closeTutorModal();
+    tutorFocusReturn=document.activeElement;
+    const modal=document.createElement("div");
+    modal.id="stepupEdcafeModal";
+    modal.className="stepup-edcafe-overlay";
+    modal.setAttribute("role","dialog");
+    modal.setAttribute("aria-modal","true");
+    modal.setAttribute("aria-label","Edcafe AI Tutor");
+
+    modal.innerHTML=`
+      <div class="stepup-edcafe-dialog">
+        <header class="stepup-edcafe-header">
+          <div class="stepup-edcafe-heading">
+            <strong>AI Tutor • Edcafe</strong>
+            <span>${esc(className || "Your class")} | STEP UP</span>
+          </div>
+          <div class="stepup-edcafe-header-actions">
+            <a class="stepup-edcafe-external" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open externally</a>
+            <button type="button" class="stepup-edcafe-close" aria-label="Close AI Tutor">Close ×</button>
+          </div>
+        </header>
+        <div class="stepup-edcafe-frame-wrap">
+          <iframe title="Mega Goal 1 Tutor – ${esc(className||"Your class")}" src="${esc(url)}"
+            allow="microphone" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        </div>
+        <div class="stepup-edcafe-footnote">If the tutor is blank or the microphone does not work, choose <b>Open externally</b>.</div>
+      </div>`;
+    modal.querySelector(".stepup-edcafe-close")?.addEventListener("click",closeTutorModal);
+    modal.addEventListener("click",e=>{if(e.target===modal)closeTutorModal();});
+    document.body.classList.add("stepup-edcafe-modal-open");
+    document.body.appendChild(modal);
+    modal.querySelector(".stepup-edcafe-close")?.focus();
+  }
+
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape" && document.getElementById("stepupEdcafeModal")) closeTutorModal();
+  });
+
   async function openCurrentTutor(){
-    const popup=window.open("about:blank","_blank");
     try{
       const cls=await getCurrentStudentClass();
       const url=String(cls?.edcafeUrl||"").trim();
       if(!validEdcafeUrl(url)){
-        if(popup) popup.close();
         alert("Your teacher has not added the Edcafe AI Tutor link for this class yet.");
         return;
       }
-      if(popup){
-        popup.opener=null;
-        popup.location.href=url;
-      }else{
-        window.location.href=url;
-      }
+      showTutorInApp(url,cls?.name||"Your class");
     }catch(e){
-      if(popup) popup.close();
-      alert("Could not open the Edcafe AI Tutor link.");
+      console.warn("Could not open embedded Edcafe tutor",e);
+      alert("Could not open the Edcafe AI Tutor. Please try again.");
     }
   }
 
@@ -302,6 +352,29 @@
       .edcafe-class-panel{margin-top:16px;border-top:1px solid #e5edf4;padding-top:16px}
       .edcafe-class-panel input{width:100%;box-sizing:border-box}
       .edcafe-main-card .journey-main-btn{display:inline-flex;align-items:center;justify-content:center}
+      .edcafe-hub-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+      .edcafe-external-link{color:#fff;text-decoration:underline;text-underline-offset:3px;font-weight:700}
+      body.stepup-edcafe-modal-open{overflow:hidden}
+      .stepup-edcafe-overlay{position:fixed;inset:0;z-index:100000;background:rgba(14,19,42,.72);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+      .stepup-edcafe-dialog{display:flex;flex-direction:column;width:min(1080px,100%);height:min(860px,calc(100dvh - 24px));background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);color:#18243d}
+      .stepup-edcafe-header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:#f4f5fc;border-bottom:1px solid #dddff3;flex-wrap:wrap}
+      .stepup-edcafe-heading{display:flex;flex-direction:column;gap:3px;font:600 14px/1.35 Arial,Tahoma,sans-serif}
+      .stepup-edcafe-heading strong{font-size:17px;color:#2e2a72}
+      .stepup-edcafe-heading span{font-weight:400;color:#62677d}
+      .stepup-edcafe-header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+      .stepup-edcafe-header-actions a,.stepup-edcafe-header-actions button{font:700 13px/1.3 Arial,Tahoma,sans-serif;padding:10px 12px;border-radius:10px;cursor:pointer;text-decoration:none}
+      .stepup-edcafe-external{color:#554dd7;border:1px solid #a9a4ee;background:#fff}
+      .stepup-edcafe-close{color:#fff;border:0;background:#5148c2}
+      .stepup-edcafe-frame-wrap{flex:1;min-height:0;background:#fff}
+      .stepup-edcafe-frame-wrap iframe{width:100%;height:100%;border:0;display:block}
+      .stepup-edcafe-footnote{padding:8px 14px;background:#fafaff;color:#50566b;font:12px/1.4 Arial,Tahoma,sans-serif;text-align:center}
+      @media(max-width:600px){
+        .stepup-edcafe-overlay{padding:0}
+        .stepup-edcafe-dialog{width:100%;height:100dvh;max-height:100dvh;border-radius:0}
+        .stepup-edcafe-header{padding:9px 11px;gap:8px}
+        .stepup-edcafe-heading strong{font-size:15px}
+        .stepup-edcafe-header-actions a,.stepup-edcafe-header-actions button{font-size:12px;padding:8px 9px}
+      }
 
       .student-floating-ai-tutor{
         position:fixed;
@@ -356,5 +429,5 @@
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
   else start();
 
-  window.STEPUP_EDCAFE={saveClassEdcafeLink,openCurrentTutor,getCurrentStudentClass,syncStudentFloatingTutor};
+  window.STEPUP_EDCAFE={saveClassEdcafeLink,openCurrentTutor,closeTutorModal,getCurrentStudentClass,syncStudentFloatingTutor};
 })();
