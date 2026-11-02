@@ -75,7 +75,7 @@ function homeHTML(attempts,openUnits,profile){
 function hydrate(attempts,openUnits,profile){last.attempts=attempts||[];last.openIds=new Set((openUnits||[]).map(x=>typeof x==='string'?x:x.id));if(!last.openIds.size)last.openIds.add('u1');last.profile=profile||null;}
 function html(attempts,openUnits,profile){
   hydrate(attempts,openUnits,profile);
-  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u);const status=!open?'Locked':st.complete?'Complete':st.started?'In progress':'Ready';return `<button class="journey-unit-card ${open?'':'locked'} ${st.complete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?st.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?`${st.done}/${st.requiredStages} required stages`:'Teacher will open this unit'}</span><strong>${open?`${st.pct}%`:''}</strong></div></button>`}).join('');
+  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u);const certificateUnit=['u3','u4'].includes(u.id);const certified=certificateUnit&&!!window.STEPUP_MASTERY?.status?.(u.id,last.attempts)?.earned;const needsReview=certificateUnit&&st.complete&&!certified;const status=!open?'Locked':certified?'Certificate earned':needsReview?'Needs mastery review':st.complete?'Complete':st.started?'In progress':'Ready';const visuallyComplete=certified||(!certificateUnit&&st.complete);return `<button class="journey-unit-card ${open?'':'locked'} ${visuallyComplete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?st.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?`${st.done}/${st.requiredStages} required stages`:'Teacher will open this unit'}</span><strong>${open?`${st.pct}%`:''}</strong></div></button>`}).join('');
   return `<div class="journey-page-head"><span class="journey-kicker">My Journey</span><h1>Small steps. Real progress.</h1><p>One clear stop at a time — no long task list.</p></div><div class="journey-unit-grid">${cards}</div><div class="journey-extra"><button class="journey-link-btn" onclick="PROVE.setStudentTab('practice-library')">Want extra STEP practice? <span>Open practice library →</span></button></div>`;
 }
 function progressHTML(attempts,openUnits,profile){hydrate(attempts,openUnits,profile);const open=DATA.units.filter(u=>last.openIds.has(u.id));if(!open.length)return'';return `<section class="journey-progress-card"><div class="journey-progress-head"><div><span class="journey-kicker">Learning journey</span><h2>Units at a glance</h2></div><button class="journey-link-btn compact" onclick="PROVE.setStudentTab('journey')">Open Journey</button></div><div class="journey-progress-units">${open.map(u=>{const s=unitState(u);return `<div><span>Unit ${u.number}</span><b>${s.pct}%</b><i><em style="width:${s.pct}%"></em></i></div>`}).join('')}</div></section>`;}
@@ -156,23 +156,40 @@ async function finishQuiz(){
     const attempt=await window.PROVE?.recordJourneyAttempt?.(payload);
     if(attempt?.studentId){
       saved=true;
-      if(isU4Step)last.attempts=[...(last.attempts||[]),attempt];
+      // Refresh all saved stops, not only STEP. Do not replace the array:
+      // the unit map, certificate counter and celebration screen share it.
+      if(!last.attempts.some(a=>a===attempt||(
+        a?.studentId===attempt.studentId&&a?.trainingId===attempt.trainingId&&
+        a?.submittedAt===attempt.submittedAt
+      )))last.attempts.push(attempt);
     }
   }catch(e){console.warn('Journey save failed',e);}
   const h=host();if(!h)return;
-  const positive=pass;
-  const seal= isU4Step&&stepSealEarned(s.u);
-  const title=isU4Step
-    ? (seal?'🏅 STEP Seal earned!':'STEP Practice complete')
-    : s.kind==='step'?'Practice stop complete ⚡':positive?'Stop complete ✨':'A quick review will do';
-  const desc=isU4Step
-    ? !saved ? 'Your result was not confirmed as saved. The STEP Seal appears only after a qualifying saved attempt.'
-      : seal ? `STEP Seal achieved from a qualifying saved attempt. This attempt: ${score}/${total}. The seal stays earned even after retries and never affects your 80% unit certificate.`
-      : `You scored ${score}/${total}. Reach at least 5/6 to earn your independent STEP Seal. This practice does not affect your unit certificate.`
-    : s.kind==='step'?`You got ${score}/${total}. This practice is here to build strategy, not add pressure.`
-    : positive?`You got ${score}/${total}. Nice progress.`
-    :`You got ${score}/${total}. Review the clue and try this short stop again when you’re ready.`;
-  h.innerHTML=`<section class="journey-result ${positive?'good':'review'}"><div class="journey-result-score">${score}<span>/${total}</span></div><h2>${title}</h2><p>${desc}</p><div class="journey-result-actions"><button class="journey-main-btn" onclick="PROVE.setStudentTab('journey')">Continue Journey</button>${isU4Step&&!seal?`<button class="journey-link-btn" onclick="STEPUP_JOURNEY.go('${s.u.id}','step')">Try STEP Again</button>`:!positive?`<button class="journey-link-btn" onclick="STEPUP_JOURNEY.go('${s.u.id}','${key}')">Try again</button>`:''}</div></section>`;
+  const positive=pass&&saved;
+  const seal=isU4Step&&stepSealEarned(s.u);
+  const certificateUnit=s.u.id==='u4';
+  const progress=saved&&certificateUnit?window.STEPUP_MASTERY?.progressDetails?.(s.u.id,last.attempts):null;
+  const certificateEarned=saved&&certificateUnit&&!!window.STEPUP_MASTERY?.status?.(s.u.id,last.attempts)?.earned;
+  const needed=progress?Math.max(0,Math.ceil(progress.total*0.8)-progress.correct):0;
+  const certificateNote=progress?.total
+    ? certificateEarned?'Unit 4 certificate unlocked from your saved answers.'
+      : progress.remaining>0
+        ? `Certificate progress: ${progress.answered}/${progress.total} questions answered, ${progress.correct} correct. Complete the remaining ${progress.remaining} question(s) and reach 80% mastery.`
+        : `All ${progress.total} questions answered. ${progress.correct}/${progress.total} correct (${progress.accuracy}%). Fix ${needed} more answer(s) to unlock your certificate.`
+    : '';
+  const title=!saved?'Result not saved'
+    :isU4Step?(seal?'🏅 STEP Seal earned!':'STEP Practice complete')
+    :certificateEarned?'🏆 Unit certificate unlocked!'
+    :s.kind==='step'?'Practice stop complete ⚡'
+    :positive?'Stop complete ✨':'A quick review will do';
+  const desc=!saved?'Your answers could not be confirmed as saved. Use Save again before leaving this result.'
+    :isU4Step
+      ? seal?`STEP Seal achieved from a qualifying saved attempt. This attempt: ${score}/${total}. STEP does not affect your unit certificate.`
+      :`You scored ${score}/${total}. Reach at least 5/6 for the independent STEP Seal. STEP is optional.`
+    :s.kind==='step'?`You got ${score}/${total}. This practice builds strategy.`
+    :positive?`You got ${score}/${total}. Result saved.`
+    :`You got ${score}/${total}. Your saved correct answers still count when you retry.`;
+  h.innerHTML=`<section class="journey-result ${positive?'good':'review'}"><div class="journey-result-score">${score}<span>/${total}</span></div><h2>${title}</h2><p>${desc}</p>${certificateNote?`<p class="journey-certificate-update">${esc(certificateNote)}</p>`:''}<div class="journey-result-actions"><button class="journey-main-btn" onclick="PROVE.setStudentTab('journey')">Continue Journey</button>${!saved?`<button class="journey-link-btn" onclick="PROVE.retryUnsaved()">Save again</button>`:certificateEarned?`<button class="journey-link-btn" onclick="STEPUP_MASTERY.viewCertificate('${s.u.id}')">View Certificate</button>`:isU4Step&&!seal?`<button class="journey-link-btn" onclick="STEPUP_JOURNEY.go('${s.u.id}','step')">Try STEP Again</button>`:!positive?`<button class="journey-link-btn" onclick="STEPUP_JOURNEY.go('${s.u.id}','${key}')">Try again</button>`:''}</div></section>`;
   session=null;
 }
 function speak(uid){if(uid==='u3'||uid==='u4'){const a=document.querySelector(uid==='u3'?'.u3-original-conversation audio':'.u4-original-conversation audio');if(a){a.play().catch(()=>{});return;}}const u=unitById(uid);if(!u||!('speechSynthesis'in window))return alert('Audio is not available on this device.');speechSynthesis.cancel();const x=new SpeechSynthesisUtterance(u.listening);x.lang='en-US';x.rate=.88;speechSynthesis.speak(x);}
