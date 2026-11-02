@@ -367,7 +367,8 @@
       return '<div class="sum-section-row '+(!s.remaining&&!s.incorrect?'complete':'')+'"><span><b>'+esc(s.title)+'</b><small>'+s.correct+'/'+s.total+' correct</small></span><em>'+state+'</em></div>';
     }).join('');
     const action=st.earned
-      ? '<button type="button" data-mastery-view="'+id+'">View Certificate</button>'
+      ? '<button type="button" data-mastery-view="'+id+'">View Certificate</button>'+
+        (id==='u4'?'<button type="button" data-mastery-retry="u4">'+(d.remaining||d.incorrect?'Review remaining mistakes':'Practice Again')+'</button>':'')
       : '<button type="button" data-mastery-continue="'+id+'">'+(d.remaining?'Continue '+d.remaining+' remaining':'Fix '+need+' '+(need===1?'answer':'answers'))+'</button>';
     return '<div class="sum-card sum-whats-left"><div class="sum-card-head"><div><span class="sum-kicker">WHAT’S LEFT?</span><strong>'+title+'</strong><p>'+intro+'</p></div>'+
       '<span class="sum-certificate-state '+(st.earned?'earned':'')+'">'+(st.earned?'Certificate earned':'Certificate goal · 80%')+'</span></div>'+
@@ -418,6 +419,7 @@
     block.setAttribute('data-sig',signature);block.innerHTML=cardHTML(unit.id);
     block.querySelector('[data-mastery-view]')?.addEventListener('click',()=>viewCertificate(unit.id));
     block.querySelector('[data-mastery-continue]')?.addEventListener('click',()=>continueUnit(unit.id));
+    block.querySelector('[data-mastery-retry]')?.addEventListener('click',()=>reviewUnit(unit.id));
   }
   let scheduled=false;
   const host=document.getElementById('app');
@@ -440,6 +442,16 @@
     if(id==='u2'&&work.key==='reading'&&typeof unitApi.readingLesson==='function')return unitApi.readingLesson(true);
     if(typeof unitApi.start==='function')return unitApi.start(work.key,false,true);
     return unitApi.open?.();
+  }
+  // Optional Unit 4 review works even after the certificate is earned.
+  // Never remove a saved correct answer; the next attempt adds new evidence.
+  function reviewUnit(id){
+    if(id!=='u4'||!student)return continueUnit(id);
+    const sections=progressDetails(id,attempts).sections;
+    const target=sections.find(s=>s.remaining>0)||sections.find(s=>s.incorrect>0)||sections[0];
+    if(!target)return openUnit(id);
+    session=null;stopAudio();
+    return J?.go?.(id,target.key);
   }
   // The standalone mastery test has been retired.
   function start(id){openUnit(id);}
@@ -536,5 +548,5 @@
   }
   css();
   window.STEPUP_MASTERY={PASS,LEGACY_CUTOFF,status,legacyStatus,cumulativeStatus,progressDetails,bestCheck,fullReviewResult,bestFullReview,recordSaved,bank,requirements,validBank,
-    studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,continueUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
+    studentStatus,start,choose,prev,next,finish,retrySubmit,exit,openUnit,continueUnit,reviewUnit,viewCertificate,listen,stopAudio,decorate,hydrate};
 })();
