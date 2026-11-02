@@ -376,7 +376,7 @@
           confirm.disabled=true;confirm.textContent='Saving…';
           selecting=true;try{choices[idx].click();}finally{selecting=false;}
         });
-        if(!opts.parentElement.querySelector('.u2-help-actions')){
+        if(!opts.parentElement.querySelector('.u2-help-actions,.question-hint')){
           var unitId=(choices[0].getAttribute('onclick')||'').includes('U1_REVIEW')?'u1':(choices[0].getAttribute('onclick')||'').includes('U3_REVIEW')?'u3':null;
           var title=host.querySelector('.journey-question-card h2'),q=bank(unitId).find(function(x){return title&&x.prompt.trim()===title.textContent.trim();});
           if(q){

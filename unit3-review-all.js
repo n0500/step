@@ -424,6 +424,7 @@
         <div class="journey-question-meta"><span>${seenBefore?'Practice':'Required Review'}</span><b>${session.pos+1}/${session.queue.length}</b></div>
         <h2 dir="ltr">${esc(q.prompt)}</h2>
         <div class="journey-options">${choices.map((x,i) => `<button ${saving?'disabled':''} onclick="STEPUP_U3_REVIEW.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join('')}</div>
+        <details class="question-hint" style="margin:14px 0;padding:12px;border:1px solid #c6dae8;border-radius:12px"><summary style="cursor:pointer;font-weight:700">Hint</summary><p dir="ltr">${esc(q.hint || 'Look for the key words and eliminate choices that do not fit.')}</p></details>
         <small class="u3-review-source">${esc(q.source_ref || '')}</small>
       </section>`;
   }
@@ -438,7 +439,7 @@
     const h=document.querySelector('.student-view'); if(!h)return;
     const q=session.queue[session.pos];
     h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_U3_REVIEW.open()">Unit 3</button><span>›</span><b>STEP Practice</b></div>
-      <section class="journey-question-card u3-step-card"><div class="journey-question-meta"><span>STEP • ${esc(q.skill)}</span><b>${session.pos+1}/${session.queue.length}</b></div><h2 dir="ltr">${esc(q.prompt)}</h2><div class="journey-options">${q.choices.map((x,i)=>`<button onclick="STEPUP_U3_REVIEW.stepAnswer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join('')}</div><small class="u3-step-time">⏱ Timed practice • your best score and fastest time are kept</small><small class="u3-review-source">${esc(q.source||'STEP compilation')}</small></section>`;
+      <section class="journey-question-card u3-step-card"><div class="journey-question-meta"><span>STEP • ${esc(q.skill)}</span><b>${session.pos+1}/${session.queue.length}</b></div><h2 dir="ltr">${esc(q.prompt)}</h2><div class="journey-options">${q.choices.map((x,i)=>`<button onclick="STEPUP_U3_REVIEW.stepAnswer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join('')}</div><details class="question-hint" style="margin:14px 0;padding:12px;border:1px solid #c6dae8;border-radius:12px"><summary style="cursor:pointer;font-weight:700">Hint</summary><p dir="ltr">${esc(q.hint || 'Look for the key words and eliminate choices that do not fit.')}</p></details><small class="u3-step-time">⏱ Timed practice • your best score and fastest time are kept</small><small class="u3-review-source">${esc(q.source||'STEP compilation')}</small></section>`;
   }
   function stepAnswer(selected){
     if(!session || session.kind!=='step')return;

@@ -51,6 +51,8 @@
     var prior=b.slice(0,i).filter(function(x){return x.section===q.section;}).length;
     chosen=null;
     var context='';
+    var original=window.STEPUP_JOURNEY?.data?.questions?.find(function(x){return x.question_id===q.id;});
+    var hintText=original?.hint||'Look for the key words and eliminate choices that do not fit.';
     var contextRenderer=unit==='u4'?window.STEPUP_U4_CONTEXT:window.STEPUP_U56_CONTEXT;
     if(q.context_excerpt&&contextRenderer?.render){
       context=contextRenderer.render(q);
@@ -65,7 +67,7 @@
       '<h2>'+esc(q.sectionTitle||q.section)+'</h2>'+
       '<p>Question '+(i+1)+' of '+b.length+' · '+got+' answered · '+(prior+1)+'/'+group.length+' in this skill</p>'+
       '<div style="height:8px;background:#dce9f0;border-radius:8px;overflow:hidden"><div style="height:100%;background:#287c8a;width:'+(100*got/b.length)+'%"></div></div>'+
-      context+'<h3 dir="ltr" style="font-size:clamp(19px,3vw,25px);margin:17px 0">'+esc(q.prompt)+'</h3>'+
+      (unit==='u4'?'<details class="question-hint" style="margin:14px 0;padding:12px;border:1px solid #c6dae8;border-radius:12px"><summary style="cursor:pointer;font-weight:700">Hint</summary><p dir="ltr">'+esc(hintText)+'</p></details>':'')+context+'<h3 dir="ltr" style="font-size:clamp(19px,3vw,25px);margin:17px 0">'+esc(q.prompt)+'</h3>'+
       '<div class="u56-review-options" style="display:grid;gap:9px">'+q.choices.map(function(x,k){
         return '<button type="button" data-option="'+k+'" onclick="STEPUP_U56_PRACTICE.select('+k+')" style="min-height:52px;padding:12px 15px;text-align:left;border-radius:11px;border:2px solid #c6dae8;background:#fff;color:#173954;font-size:17px;font-weight:600"><b>'+String.fromCharCode(65+k)+'.</b> '+esc(x)+'</button>';
       }).join('')+'</div><p style="font-size:13px">Choose an answer, then confirm.</p>'+
