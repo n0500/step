@@ -161,3 +161,15 @@ test('previously saved Practice Again certificates appear when Progress is reope
     assert.equal(f.mastery.studentStatus('u2').earned,true);
   }finally{f.dom.window.close();}
 });
+
+test('home skips a mastered Unit 2 even when old journey-stage summaries are missing',()=>{
+ const f=fixture();try{
+  const records=[f.review('u2',30)];
+  const html=f.w.STEPUP_JOURNEY.homeHTML(records,['u2','u4'],f.student);
+  const view=f.w.document.createElement('div');view.innerHTML=html;
+  assert.equal(view.querySelector('.journey-continue h2').textContent,'Unit 4 • The Art of Advertising');
+  const completed=f.w.STEPUP_JOURNEY.homeHTML(records,['u2'],f.student);
+  assert.match(completed,/Journey complete/);
+  assert.doesNotMatch(completed,/Unit 2 • Careers/);
+ }finally{f.dom.window.close();}
+});

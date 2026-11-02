@@ -44,6 +44,7 @@ function unitState(u){
 function nextAction(){
   for(const u of DATA.units){
     if(!last.openIds.has(u.id))continue;
+    if(window.STEPUP_MASTERY?.status(u.id,last.attempts)?.earned)continue;
     const st=unitState(u);
     if(st.complete)continue;
     if(['u4','u5','u6'].includes(u.id)){

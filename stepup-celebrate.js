@@ -961,7 +961,7 @@
       return (h2?.textContent||'').trim()==='Unit '+state.u.number+' • '+state.u.title;
     });
     if(cont && cont.classList.contains('celebration')){
-      current=Object.keys(states).map(function(id){return states[id];}).find(function(state){return openReviewUnits.includes(state.u.id) && state.g.nextSection;});
+      current=Object.keys(states).map(function(id){return states[id];}).find(function(state){return openReviewUnits.includes(state.u.id) && !window.STEPUP_MASTERY?.studentStatus(state.u.id)?.earned && state.g.nextSection;});
       if(current){
         cont.classList.remove('celebration');
         putText(cont.querySelector('.journey-kicker'),'Review your answers');
