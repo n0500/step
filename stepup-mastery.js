@@ -269,7 +269,15 @@
   function recordSaved(record){
     if(!student||!record||record.studentId!==(student.id||student.uid))return;
     try{if(window.firebase?.auth&&window.firebase.auth().currentUser?.uid!==record.studentId)return;}catch(_){return;}
-    attempts=attempts.concat(record);
+    // Keep the shared attempt list live for Unit 3, Unit 4, the journey map,
+    // and the certificate renderer. Replacing the array left other modules
+    // displaying stale results immediately after a successful save.
+    const alreadySaved=attempts.some(a=>a===record||(
+      a?.studentId===record.studentId &&
+      a?.trainingId===record.trainingId &&
+      a?.submittedAt===record.submittedAt
+    ));
+    if(!alreadySaved)attempts.push(record);
   }
   function studentStatus(id){return status(id,attempts);}
   const J=window.STEPUP_JOURNEY;
