@@ -300,6 +300,7 @@
     if(document.getElementById('stepupMasteryCSS'))return;
     const style=document.createElement('style');style.id='stepupMasteryCSS';
     style.textContent=[
+      '.sum-card-slot{margin-bottom:16px;color:#203a58}',
       '.sum-card{margin-top:18px;padding:17px 19px;background:#f7fafc;border:2px solid #cfddea;border-radius:18px;display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}',
       '.sum-card strong{display:block;color:#17395b;font-size:20px;margin-bottom:6px}',
       '.sum-card p{margin:3px 0;color:#42546b;font-size:15px;line-height:1.7}',
@@ -413,9 +414,10 @@
     const hero=view.querySelector('.journey-unit-hero');if(!hero)return;
     const st=studentStatus(unit.id),p=st.progress||{};
     const signature=[unit.id,st.mode,st.accuracy,p.answered||0,p.correct||0,p.total||0].join('|');
-    let block=hero.querySelector('.sum-card-slot');
+    // Keep the light result card outside the teal hero's inherited white text.
+    let block=view.querySelector('.sum-card-slot');
     if(block?.getAttribute('data-sig')===signature)return;
-    if(!block){block=document.createElement('div');block.className='sum-card-slot';hero.appendChild(block);}
+    if(!block){block=document.createElement('div');block.className='sum-card-slot';hero.insertAdjacentElement('afterend',block);}
     block.setAttribute('data-sig',signature);block.innerHTML=cardHTML(unit.id);
     block.querySelector('[data-mastery-view]')?.addEventListener('click',()=>viewCertificate(unit.id));
     block.querySelector('[data-mastery-continue]')?.addEventListener('click',()=>continueUnit(unit.id));

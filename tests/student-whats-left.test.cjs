@@ -109,6 +109,10 @@ test('80 percent mastery replaces missing work with an earned certificate action
     await wait(20);
     const panel=f.view().querySelector('.sum-whats-left');
     assert.match(panel.textContent,/Nothing missing — certificate earned/);
+    assert.equal(panel.closest('.journey-unit-hero'),null,'Light result cards must not inherit the teal hero text styles');
+    assert.equal(f.view().querySelectorAll('.sum-card-slot').length,1);
+    f.w.STEPUP_MASTERY.decorate();
+    assert.equal(f.view().querySelectorAll('.sum-card-slot').length,1,'Repeated decoration must not duplicate the result');
     assert.equal(panel.querySelector('[data-mastery-continue]'),null);
     panel.querySelector('[data-mastery-view]').click();
     assert.deepEqual(f.calls.at(-1),['certificate','u1']);
