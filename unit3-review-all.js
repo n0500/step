@@ -621,8 +621,11 @@
     const h = document.querySelector('.student-view');
     session = null;
     if (!h) return;
+    const certificateNow=certificateEligible();
+    const certProgress=window.STEPUP_MASTERY?.progressDetails?.('u3',attempts);
+    const stillNeeded=certProgress?.total?Math.max(0,Math.ceil(certProgress.total*.8)-certProgress.correct):0;
     const nextKey = fullReview ? window.STEPUP_SMART?.nextSection?.('u3') : nextMissingSection();
-    const improveKey = !fullReview && !nextKey && !certificateEligible() ? weakestSection() : null;
+    const improveKey = !fullReview && !nextKey && !certificateNow ? weakestSection() : null;
     const nextAction=fullReview ? "STEPUP_SMART.advance('u3')" :
       nextKey ? "STEPUP_U3_REVIEW.start('"+nextKey+"',false,"+Boolean(ticket.continuePath)+")" :
       improveKey ? "STEPUP_U3_REVIEW.start('"+improveKey+"')" : "STEPUP_U3_REVIEW.open()";
@@ -635,8 +638,10 @@
       <h2>Your score this time: ${runPercentage}%</h2>
       <p>${allSeen ? `All ${result.total} approved questions in ${esc(sec.title)} have now been shown.` : `Your answers were saved.`}</p>
       <p>${runTotal-runScore?`${runTotal-runScore} answers to review. Check the corrections and try again.`:'Every answer in this attempt was correct.'}</p>
-      <p>Cumulative accuracy: ${result.score}/${result.total} • ${result.percentage}%. Your previous correct answers stay credited.</p>
+      <p>Cumulative accuracy: ${certProgress?.correct??result.score}/${certProgress?.total??result.total} • ${certProgress?.accuracy??result.percentage}%. Your previous correct answers stay credited.</p>
+      <p>${certificateNow?'Unit 3 certificate unlocked from your saved answers.':certProgress?.remaining>0?`Certificate: ${certProgress.remaining} required questions remain.`:`Certificate: ${stillNeeded} more correct answer(s) needed to reach 80%.`}</p>
       <div class="journey-result-actions">
+        ${certificateNow?'<button class="journey-link-btn" onclick="STEPUP_MASTERY.viewCertificate(\'u3\')">View Certificate</button>':''}
         <button class="journey-main-btn" data-unit-review-continue="1" onclick="${nextAction}">${nextLabel} →</button>
         ${fullReview ? '<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.open()">Exit to Unit 3</button>' :
           `<button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.start('${key}')">Practice again</button>`}
