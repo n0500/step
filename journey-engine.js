@@ -41,10 +41,30 @@ function unitState(u){
   const partial=done+(coreDone<cores.length&&cores.length?coreDone/cores.length:0);
   return {cores,coreDone,vocabDone,read,listen,step,stepSeal,final,finalRequired,requiredStages:stops.length,done,started:done>0||coreDone>0||step,pct:Math.round(partial/stops.length*100),complete:done===stops.length};
 }
+// Display Unit 4 question-level mastery, not the unrelated 67%-pass
+// journey completion percentage. This keeps Home, Journey and Progress aligned.
+function shownUnitProgress(u){
+  if(u.id==='u4'){
+    const d=window.STEPUP_MASTERY?.progressDetails?.('u4',last.attempts);
+    if(d?.total)return {pct:Math.round(d.accuracy),label:d.correct+'/'+d.total+' correct · certificate goal 80%'};
+  }
+  const st=unitState(u);
+  return {pct:st.pct,label:st.done+'/'+st.requiredStages+' required stages'};
+}
 function nextAction(){
   for(const u of DATA.units){
     if(!last.openIds.has(u.id))continue;
     if(window.STEPUP_MASTERY?.status(u.id,last.attempts)?.earned)continue;
+    if(u.id==='u4'){
+      // A finished journey with unanswered/incorrect questions must lead to a
+      // real retriable lesson instead of the misleading "Journey complete" card.
+      const d=window.STEPUP_MASTERY?.progressDetails?.('u4',last.attempts);
+      const pending=d?.sections?.find(row=>row.remaining>0)
+        ||d?.sections?.find(row=>row.incorrect>0);
+      if(pending)return {u,key:pending.key,label:'Review • '+pending.title,
+        desc:pending.correct+'/'+pending.total+' correct · '+(pending.remaining
+          ? pending.remaining+' unanswered' : pending.incorrect+' answers to review')};
+    }
     const st=unitState(u);
     if(st.complete)continue;
     if(['u4','u5','u6'].includes(u.id)){
@@ -67,18 +87,18 @@ function homeHTML(attempts,openUnits,profile){
   hydrate(attempts,openUnits,profile);
   const n=nextAction();
   const open=DATA.units.filter(u=>last.openIds.has(u.id));
-  const overall=open.length?Math.round(open.reduce((s,u)=>s+unitState(u).pct,0)/open.length):0;
+  const overall=open.length?Math.round(open.reduce((s,u)=>s+shownUnitProgress(u).pct,0)/open.length):0;
   if(!n)return `<section class="journey-continue celebration"><div><span class="journey-kicker">Journey complete</span><h2>You did it ✨</h2><p>Your open-unit journey is complete. Revisit any stop whenever you want a quick refresh.</p></div><button class="journey-main-btn" onclick="PROVE.setStudentTab('journey')">View My Journey</button></section>`;
-  return `<section class="journey-continue"><div class="journey-continue-copy"><span class="journey-kicker">Continue your journey</span><h2>Unit ${n.u.number} • ${esc(n.u.title)}</h2><p><strong>${esc(n.label)}</strong> — ${esc(n.desc)}</p><div class="journey-mini-progress"><i style="width:${unitState(n.u).pct}%"></i></div><small>${unitState(n.u).pct}% of this unit journey</small></div><button class="journey-main-btn" onclick="STEPUP_JOURNEY.go('${n.u.id}','${n.key}')">Continue</button></section>
+  return `<section class="journey-continue"><div class="journey-continue-copy"><span class="journey-kicker">Continue your journey</span><h2>Unit ${n.u.number} • ${esc(n.u.title)}</h2><p><strong>${esc(n.label)}</strong> — ${esc(n.desc)}</p><div class="journey-mini-progress"><i style="width:${shownUnitProgress(n.u).pct}%"></i></div><small>${shownUnitProgress(n.u).pct}% • ${esc(shownUnitProgress(n.u).label)}</small></div><button class="journey-main-btn" onclick="STEPUP_JOURNEY.go('${n.u.id}','${n.key}')">Continue</button></section>
   <section class="journey-home-tools"><button onclick="PROVE.openStudentTool('dictionary')"><span>📘</span><b>Dictionary</b><small>Search + My Words</small></button><button onclick="PROVE.openStudentTool('assistant')"><span>✦</span><b>Ask Assistant</b><small>Get help when you need it</small></button><div class="journey-overall"><span>Journey progress</span><strong>${overall}%</strong></div></section>`;
 }
 function hydrate(attempts,openUnits,profile){last.attempts=attempts||[];last.openIds=new Set((openUnits||[]).map(x=>typeof x==='string'?x:x.id));if(!last.openIds.size)last.openIds.add('u1');last.profile=profile||null;}
 function html(attempts,openUnits,profile){
   hydrate(attempts,openUnits,profile);
-  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u);const certificateUnit=['u3','u4'].includes(u.id);const certified=certificateUnit&&!!window.STEPUP_MASTERY?.status?.(u.id,last.attempts)?.earned;const needsReview=certificateUnit&&st.complete&&!certified;const status=!open?'Locked':certified?'Certificate earned':needsReview?'Needs mastery review':st.complete?'Complete':st.started?'In progress':'Ready';const visuallyComplete=certified||(!certificateUnit&&st.complete);return `<button class="journey-unit-card ${open?'':'locked'} ${visuallyComplete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?st.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?`${st.done}/${st.requiredStages} required stages`:'Teacher will open this unit'}</span><strong>${open?`${st.pct}%`:''}</strong></div></button>`}).join('');
+  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u),display=shownUnitProgress(u);const certificateUnit=['u3','u4'].includes(u.id);const certified=certificateUnit&&!!window.STEPUP_MASTERY?.status?.(u.id,last.attempts)?.earned;const needsReview=certificateUnit&&st.complete&&!certified;const status=!open?'Locked':certified?'Certificate earned':needsReview?'Needs mastery review':st.complete?'Complete':st.started?'In progress':'Ready';const visuallyComplete=certified||(!certificateUnit&&st.complete);return `<button class="journey-unit-card ${open?'':'locked'} ${visuallyComplete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?display.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?esc(display.label):'Teacher will open this unit'}</span><strong>${open?`${display.pct}%`:''}</strong></div></button>`}).join('');
   return `<div class="journey-page-head"><span class="journey-kicker">My Journey</span><h1>Small steps. Real progress.</h1><p>One clear stop at a time — no long task list.</p></div><div class="journey-unit-grid">${cards}</div><div class="journey-extra"><button class="journey-link-btn" onclick="PROVE.setStudentTab('practice-library')">Want extra STEP practice? <span>Open practice library →</span></button></div>`;
 }
-function progressHTML(attempts,openUnits,profile){hydrate(attempts,openUnits,profile);const open=DATA.units.filter(u=>last.openIds.has(u.id));if(!open.length)return'';return `<section class="journey-progress-card"><div class="journey-progress-head"><div><span class="journey-kicker">Learning journey</span><h2>Units at a glance</h2></div><button class="journey-link-btn compact" onclick="PROVE.setStudentTab('journey')">Open Journey</button></div><div class="journey-progress-units">${open.map(u=>{const s=unitState(u);return `<div><span>Unit ${u.number}</span><b>${s.pct}%</b><i><em style="width:${s.pct}%"></em></i></div>`}).join('')}</div></section>`;}
+function progressHTML(attempts,openUnits,profile){hydrate(attempts,openUnits,profile);const open=DATA.units.filter(u=>last.openIds.has(u.id));if(!open.length)return'';return `<section class="journey-progress-card"><div class="journey-progress-head"><div><span class="journey-kicker">Learning journey</span><h2>Units at a glance</h2></div><button class="journey-link-btn compact" onclick="PROVE.setStudentTab('journey')">Open Journey</button></div><div class="journey-progress-units">${open.map(u=>{const s=shownUnitProgress(u);return `<div><span>Unit ${u.number}</span><b>${s.pct}%</b><i><em style="width:${s.pct}%"></em></i></div>`}).join('')}</div></section>`;}
 function station(label,icon,done,unlocked,action,sub,current=false){return `<button class="journey-stop ${done?'done':''} ${!unlocked?'locked':''} ${current?'current':''}" ${unlocked?`onclick="${action}"`:''}><span class="journey-stop-icon">${done?'✓':icon}</span><span class="journey-stop-copy"><b>${label}</b><small>${done?'Completed':unlocked?sub:'Complete the previous stop first'}</small></span><span class="journey-stop-arrow">${unlocked?'›':'🔒'}</span></button>`;}
 function openUnit(id){
   const u=unitById(id);if(!u||!last.openIds.has(id))return;const st=unitState(u);const host=$('.student-view');if(!host)return;
