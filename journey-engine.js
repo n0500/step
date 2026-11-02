@@ -108,10 +108,29 @@ function unit3OriginalAudioHTML(){return `<section class="u3-original-conversati
 function unit4OriginalAudioHTML(){return `<section class="u4-original-conversation" aria-label="Unit 4 Conversation audio" style="margin:14px 0;display:grid;gap:7px;padding:12px;border:1px solid #cedded;border-radius:13px;background:#f8fbff;text-align:left"><b style="font-size:15px">Original Conversation • Adnan &amp; Omar</b><small>Listen or replay the recording before and during the questions.</small><audio controls preload="metadata" style="width:100%;min-height:48px" src="assets/audio/mega-goal-1/unit-04/conversation.mp3"></audio></section>`;}
 function unit56OriginalAudioHTML(uid){const n=uid==='u5'?'05':'06';const people=uid==='u5'?'Samir &amp; Jasem':'Hussain &amp; Mohammed';return '<section class="u56-original-conversation" style="margin:14px 0;display:grid;gap:8px;padding:12px;border:1px solid #cedded;border-radius:13px;background:#f8fbff;text-align:left"><b>Original Conversation • '+people+'</b><small>Listen and replay the textbook dialogue (CD2).</small><audio controls preload="metadata" playsinline style="width:100%;min-height:48px" src="assets/audio/mega-goal-1/unit-'+n+'/conversation.mp3"></audio></section>';}
 function renderQuizQuestion(){const h=host();if(!h||!session)return;const q=session.queue[session.pos];const total=session.queue.length;const phase=session.kind==='core'?(session.phase==='mastery'?'Mastery':session.phase==='diagnostic'?'Quick Check':'Smart Support'):session.label;h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_JOURNEY.openUnit('${session.u.id}')">Unit ${session.u.number}</button><span>›</span><b>${esc(phase)}</b></div><section class="journey-question-card"><div class="journey-question-meta"><span>${esc(phase)}</span>${total>1?`<b>${session.pos+1}/${total}</b>`:''}</div>${session.kind==='listening'?(session.u.id==='u4'?unit4OriginalAudioHTML():session.u.id==='u3'?unit3OriginalAudioHTML():['u5','u6'].includes(session.u.id)?unit56OriginalAudioHTML(session.u.id):''):''}${q.context_excerpt?((session.u.id==='u4'?window.STEPUP_U4_CONTEXT?.render(q):window.STEPUP_U56_CONTEXT?.render(q))||''):''}<h2 dir="ltr">${esc(q.prompt)}</h2><div class="journey-options">${q.choices.map((x,i)=>`<button onclick="STEPUP_JOURNEY.answer(${i})"><span>${String.fromCharCode(65+i)}</span><b dir="ltr">${esc(x)}</b></button>`).join('')}</div>${['u3','u4'].includes(session.u.id)?`<details class="question-hint" style="margin:14px 0;padding:12px;border:1px solid #c6dae8;border-radius:12px"><summary style="cursor:pointer;font-weight:700">Hint</summary><p dir="ltr">${esc(q.hint || 'Look for the key words and eliminate choices that do not fit.')}</p></details>`:''}</section>`;}
-function answer(i){if(!session)return;const q=session.queue[session.pos],ok=i===q.answer;session.answers.push({question_id:q.question_id,stem:q.prompt,skill:q.skill,selected:i,correctAnswer:q.answer,correct:ok,selectedText:q.choices[i],correctText:q.choices[q.answer],explanation:q.explanation||'',need:q.hint||''});
+function answer(i){if(!session||session.awaitingFeedback||!Number.isInteger(i)||i<0||i>=session.queue[session.pos].choices.length)return;const q=session.queue[session.pos],ok=i===q.answer;session.answers.push({question_id:q.question_id,stem:q.prompt,skill:q.skill,selected:i,correctAnswer:q.answer,correct:ok,selectedText:q.choices[i],correctText:q.choices[q.answer],explanation:q.explanation||'',need:q.hint||''});
   if(session.kind==='core'&&session.phase==='diagnostic')return coreFeedback(ok,q,i,'diagnostic');
   if(session.kind==='core'&&(session.phase==='support'||session.phase==='reinforcement'))return coreFeedback(ok,q,i,session.phase);
-  if(ok)session.correct++; if(session.pos<session.queue.length-1){session.pos++;return renderQuizQuestion();} finishQuiz();}
+  if(ok)session.correct++;
+  if(['u3','u4'].includes(session.u.id)){session.awaitingFeedback=true;return questionFeedback(q,i,ok);}
+  if(session.pos<session.queue.length-1){session.pos++;return renderQuizQuestion();} finishQuiz();}
+function questionFeedback(q,selected,ok){
+  const h=host();if(!h)return;
+  h.innerHTML=`<section class="journey-feedback ${ok?'good':'support'}" role="status">
+    <span>${ok?'✓':'✕'}</span><h2>${ok?'Correct!':'Not quite'}</h2>
+    <h3 dir="ltr">${esc(q.prompt)}</h3>
+    <p dir="ltr"><b>Your answer:</b> ${esc(q.choices[selected])}</p>
+    ${!ok?`<p dir="ltr"><b>Correct answer:</b> ${esc(q.choices[q.answer])}</p>`:''}
+    <p class="answer-explanation" dir="ltr"><b>Why:</b> ${esc(q.explanation||q.hint||'Use the meaning and grammar of the complete sentence.')}</p>
+    <button type="button" class="journey-main-btn" onclick="STEPUP_JOURNEY.feedbackNext()">${session.pos<session.queue.length-1?'Next Question':'See Result'}</button>
+  </section>`;
+}
+function feedbackNext(){
+  if(!session?.awaitingFeedback)return;
+  session.awaitingFeedback=false;
+  if(session.pos<session.queue.length-1){session.pos++;return renderQuizQuestion();}
+  return finishQuiz();
+}
 function coreFeedback(ok,q,i,phase){const h=host();if(!h)return;const title=ok?'Nice — you already know this ✨':'Here’s the quick clue';const text=ok?(q.explanation||'You spotted the right clue.'):(q.hint||q.explanation||'Look at the clue in the sentence and try one short support question.');let next='';if(phase==='diagnostic')next=ok?`STEPUP_JOURNEY.coreNext('mastery')`:`STEPUP_JOURNEY.coreNext('support')`;else if(phase==='support')next=ok?`STEPUP_JOURNEY.coreNext('mastery')`:`STEPUP_JOURNEY.coreNext('reinforcement')`;else next=`STEPUP_JOURNEY.coreNext('mastery')`;h.innerHTML=`<section class="journey-feedback ${ok?'good':'support'}"><span>${ok?'✓':'✦'}</span><h2>${title}</h2><p>${esc(text)}</p><button class="journey-main-btn" onclick="${next}">${ok?'Keep going':'Try one quick support question'}</button></section>`;}
 function coreNext(x){if(x==='mastery')beginCoreMastery();else if(x==='support')coreSupport(1);else coreSupport(2);}
 function startReading(uid){const u=unitById(uid),m=u?.missions.find(x=>x.type==='reading');if(!u||!m)return;const pool=shuffle(qs(u,m,'Mastery')).slice(0,4).map(qObj);session={kind:'reading',label:'Reading',u,m,queue:pool,pos:0,correct:0,answers:[],started:Date.now(),pass:u.id==='u4'?2:3};const h=host();h.innerHTML=`<div class="journey-breadcrumb"><button onclick="STEPUP_JOURNEY.openUnit('${u.id}')">Unit ${u.number}</button><span>›</span><b>Read</b></div><section class="journey-content-card"><span class="journey-kicker">Read • Find • Prove</span><h2>${esc(m.title)}</h2><div class="journey-passage" dir="ltr" style="white-space:pre-line">${esc(u.reading)}</div><button class="journey-main-btn" onclick="STEPUP_JOURNEY.beginStandardQuiz()">Start ${pool.length} question${pool.length===1?'':'s'}</button></section>`;}
@@ -157,5 +176,5 @@ async function finishQuiz(){
   session=null;
 }
 function speak(uid){if(uid==='u3'||uid==='u4'){const a=document.querySelector(uid==='u3'?'.u3-original-conversation audio':'.u4-original-conversation audio');if(a){a.play().catch(()=>{});return;}}const u=unitById(uid);if(!u||!('speechSynthesis'in window))return alert('Audio is not available on this device.');speechSynthesis.cancel();const x=new SpeechSynthesisUtterance(u.listening);x.lang='en-US';x.rate=.88;speechSynthesis.speak(x);}
-window.STEPUP_JOURNEY={data:DATA,html,homeHTML,progressHTML,openUnit,go,startCore,startReading,startListening,startStep,startFinal,answer,coreNext,beginStandardQuiz,speak};
+window.STEPUP_JOURNEY={data:DATA,html,homeHTML,progressHTML,openUnit,go,startCore,startReading,startListening,startStep,startFinal,answer,feedbackNext,coreNext,beginStandardQuiz,speak};
 })();

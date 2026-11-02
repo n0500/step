@@ -447,7 +447,7 @@
     session.runAnswers.push({question_id:q.id,stem:q.prompt,skill:q.skill,selected:Number(selected),correctAnswer:q.answer,correct:ok,selectedText:q.choices[selected]||'',correctText:q.choices[q.answer],explanation:q.explanation,source:q.source||''});
     if(ok)session.correct++;
     const h=document.querySelector('.student-view'); if(!h)return;
-    h.innerHTML=`<section class="journey-feedback ${ok?'good':'support'}"><span>${ok?'✓':'✕'}</span><h2>${ok?'Correct!':'Not quite'}</h2>${!ok?`<div class="u3-review-correct" dir="ltr"><b>Correct answer:</b> ${esc(q.choices[q.answer])}</div>`:''}<p>${esc(q.explanation)}</p><button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.stepNext()">${session.pos<session.queue.length-1?'Next STEP Question':'See STEP Result'}</button></section>`;
+    h.innerHTML=`<section class="journey-feedback ${ok?'good':'support'}"><span>${ok?'✓':'✕'}</span><h2>${ok?'Correct!':'Not quite'}</h2><h3 dir="ltr">${esc(q.prompt)}</h3><p dir="ltr"><b>Your answer:</b> ${esc(q.choices[selected])}</p>${!ok?`<div class="u3-review-correct" dir="ltr"><b>Correct answer:</b> ${esc(q.choices[q.answer])}</div>`:''}<p class="answer-explanation" dir="ltr"><b>Why:</b> ${esc(q.explanation)}</p><button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.stepNext()">${session.pos<session.queue.length-1?'Next STEP Question':'See STEP Result'}</button></section>`;
   }
   async function stepNext(){
     if(!session || session.kind!=='step')return;
@@ -507,8 +507,9 @@
     h.innerHTML = `<div class="journey-breadcrumb"><button onclick="STEPUP_U3_REVIEW.open()">Unit 3</button><span>›</span><b>${esc(session.sec.title)}</b></div>
       <section class="journey-feedback ${ok?'good':'support'}">
         <span>${ok?'✓':'✕'}</span><h2>${ok?'Correct!':'Not quite'}</h2>
+        <h3 dir="ltr">${esc(q.prompt)}</h3><p dir="ltr"><b>Your answer:</b> ${esc(choices[record.selected])}</p>
         ${!ok ? `<div class="u3-review-correct" dir="ltr"><b>Correct answer:</b> ${esc(choices[answer])}</div>` : ''}
-        <p>${esc(q.explanation || (ok?'Great work.':'Review the clue and keep going.'))}</p>
+        <p class="answer-explanation" dir="ltr"><b>Why:</b> ${esc(q.explanation || q.hint || 'Use the meaning and grammar of the complete sentence.')}</p>
         ${!ok && q.hint ? `<div class="u3-review-hint">💡 ${esc(q.hint)}</div>` : ''}
         ${context?`<div class="u3-feedback-context">${context}</div>`:''}
         <div class="u3-review-saved">Saved ✓</div>

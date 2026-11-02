@@ -90,9 +90,11 @@
     var unit=live.unit,r=currentRun(unit),b=bank(unit),i=r&&position(r);
     if(!r||i<0||!active(unit))return;
     var q=b[i],choice=chosen,k=r.keys[i];if(r.answers[k])return;
+    var original=window.STEPUP_JOURNEY?.data?.questions?.find(function(x){return x.question_id===q.id;});
+    var explanation=original?.explanation||original?.hint||'Use the meaning and grammar of the complete sentence.';
     r.answers[k]={section:q.section,question_id:q.id,skill:q.sectionTitle||q.section,stem:q.prompt,
       correct:choice===q.answer,selected:choice,selectedText:q.choices[choice],
-      correctText:q.choices[q.answer],explanation:choice===q.answer?'': 'Review the clue and the correct choice.'};
+      correctText:q.choices[q.answer],explanation:explanation};
     if(!store(unit,r))return;
     chosen=null;
     var h=host(),done=position(r)<0,next=done?null:b[position(r)];
@@ -100,8 +102,10 @@
     var skillAnswers=b.filter(function(x){return x.section===q.section;}).map(function(x){return r.answers[x.section+'|'+x.id];}).filter(Boolean);
     var groupScore=skillAnswers.filter(function(a){return a.correct;}).length;
     if(h)h.innerHTML='<section class="journey-content-card" style="max-width:800px;margin:auto"><span class="journey-kicker">'+esc(q.sectionTitle||'Skill Review')+'</span>'+
-      '<h2>'+(choice===q.answer?'✓ Correct':'Review this answer')+'</h2>'+
+      '<h2>'+(choice===q.answer?'✓ Correct':'Not quite')+'</h2>'+
+      '<h3 dir="ltr">'+esc(q.prompt)+'</h3><p dir="ltr"><b>Your answer:</b> '+esc(q.choices[choice])+'</p>'+
       (choice!==q.answer?'<p><b>Correct answer:</b> '+esc(q.choices[q.answer])+'</p>':'')+
+      '<p class="answer-explanation" dir="ltr"><b>Why:</b> '+esc(explanation)+'</p>'+
       (groupDone||done?'<p><strong>Skill result: '+groupScore+'/'+skillAnswers.length+'</strong></p>':'')+
       '<button class="journey-main-btn" type="button" onclick="STEPUP_U56_PRACTICE.next()">'+(done?'See full review result':groupDone?'Continue to '+esc(next.sectionTitle||next.section):'Next Question')+'</button></section>';
   }
