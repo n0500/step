@@ -191,7 +191,9 @@
     list.push({key:'reading', id:'journey-'+u.id+'-reading', label:'Reading', icon:'📖', pass:67, go:function(){ J.go(u.id,'reading'); }});
     list.push({key:'listening', id:'journey-'+u.id+'-listening', label:'Listening', icon:'🎧', pass:67, go:function(){ J.go(u.id,'listening'); }});
     list.push({key:'step', id:'journey-'+u.id+'-step', label:'STEP Practice', icon:'⚡', pass:0, go:function(){ J.go(u.id,'step'); }});
-    list.push({key:'final', id:'journey-'+u.id+'-final', label:'Final Challenge', icon:'🏁', pass:83, go:function(){ J.go(u.id,'final'); }});
+    // A retired Final Challenge must never become an eighth phantom skill.
+    if((u.missions||[]).some(function(m){return m.type==='final';}))
+      list.push({key:'final', id:'journey-'+u.id+'-final', label:'Final Challenge', icon:'🏁', pass:83, go:function(){ J.go(u.id,'final'); }});
     return list;
   }
   function statusOf(stop){
@@ -238,6 +240,18 @@
     var s = stopsOf(u); return s.length > 0 && s.every(passedStop);
   }
   function unitStats(u){
+    // Use question-level cumulative evidence for Unit 4, not the last stop
+    // percentage. The journey's 67% completion threshold is different from
+    // certificate mastery, and each retried correct answer remains credited.
+    if(u?.id==='u4'){
+      var details=window.STEPUP_MASTERY?.progressDetails?.('u4',attempts);
+      if(details?.sections?.length){
+        var sectionCount=details.sections.length;
+        var fullyCorrect=details.sections.filter(function(x){return x.total>0&&x.correct===x.total;}).length;
+        return {mastered:fullyCorrect,total:sectionCount,accuracy:details.accuracy,
+          needs:details.sections.filter(function(x){return x.remaining>0||x.incorrect>0;}).length};
+      }
+    }
     var s = usesUnit1Mastery(u) ? unit1RequiredStops(u) : usesUnit3Mastery(u) ? unit3RequiredStops(u) : stopsOf(u).filter(function(x){ return x.key !== 'step' && x.key !== 'final'; }), acc;
     if(usesExam(u)){ try{ acc = U2().getProgress().accuracy; }catch(_){} }
     if(usesUnit1Mastery(u)){ acc = unit1Progress(u).accuracy; }
@@ -838,7 +852,7 @@
     var head = view.querySelector('.journey-focus-head');
     if(!road || !head) return;
     // Full reviews own their per-question accuracy and unresolved-error labels.
-    if(['u1','u2','u3'].includes(road.getAttribute('data-review-unit'))) return;
+    if(['u1','u2','u3','u4'].includes(road.getAttribute('data-review-unit'))) return;
     var t = ((head.querySelector('h1')||{}).textContent||'').trim();
     var u = J.data.units.find(function(x){ return x.title === t; });
     if(!u) return;
