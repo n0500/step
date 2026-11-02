@@ -150,7 +150,11 @@
   function sectionProgress(key){
     const sec=sections[key];if(!sec)return null;
     const answered=answeredCount(key),total=sec.questions.length,correct=correctCount(key);
-    const reviewCorrect=sec.questions.filter(q=>reviewQuestion(key,q.question_id)?.correct===true).length;
+    // Count the best saved answer, consistent with cumulative certificate mastery.
+    const reviewCorrect=sec.questions.filter(q=>{
+      const best=bestQuestion(key,q.question_id);
+      return best?.correct===true || best?.bestCorrect===true;
+    }).length;
     return {answered,total,correct,done:total>0&&answered===total,reviewCorrect,missed:answered-reviewCorrect,
       reviewAccuracy:Math.min(reviewCorrect<total?99:100,Math.round(reviewCorrect/Math.max(1,total)*100)),mastered:total>0&&reviewCorrect===total};
   }
@@ -237,7 +241,10 @@
   function pendingQuestions(sectionKey){
     const sec = sections[sectionKey];
     const missing = sec.questions.filter(q => !latestQuestion(sectionKey, q.question_id));
-    const missed=sec.questions.filter(q=>reviewQuestion(sectionKey,q.question_id)?.correct!==true);
+    const missed=sec.questions.filter(q=>{
+      const best=bestQuestion(sectionKey,q.question_id);
+      return best?.correct!==true && best?.bestCorrect!==true;
+    });
     return missing.length ? missing : missed.length ? missed : [...sec.questions];
   }
 
@@ -455,7 +462,13 @@
     const s=session,total=s.queue.length,score=s.correct,pct=Math.round(score/total*100),elapsed=Math.max(1,Math.round((Date.now()-s.started)/1000));
     const prior=stepAttempts(), priorBest=prior.reduce((m,a)=>Math.max(m,Number(a.bestPercentage??a.percentage??0)),0);
     const payload={trainingId:'journey-u3-step',trainingTitle:'Unit 3 STEP Practice',trainingType:'step',unitId:'u3',unitNumber:3,score,total,percentage:pct,attemptNumber:prior.length+1,bestScore:Math.max(score,Math.round(priorBest*total/100)),bestTotal:total,bestPercentage:Math.max(pct,priorBest),elapsedSeconds:elapsed,answers:s.runAnswers,studyMethod:'u3-step-compilations'};
-    try{await window.PROVE?.recordJourneyAttempt?.(payload);attempts.push({...payload,submittedAt:new Date().toISOString()});}catch(e){console.warn('Unit 3 STEP save failed',e);}
+    try{
+      const saved=await window.PROVE?.recordJourneyAttempt?.(payload);
+      if(saved?.studentId && !attempts.some(a=>a===saved || (
+        a.studentId===saved.studentId && a.trainingId===saved.trainingId &&
+        a.submittedAt===saved.submittedAt
+      )))attempts.push(saved);
+    }catch(e){console.warn('Unit 3 STEP save failed',e);}
     const h=document.querySelector('.student-view'); session=null; if(!h)return; const ss=stepStats();
     h.innerHTML=`<section class="journey-result ${pct>=STEP_READY?'good':'review'}"><div class="journey-result-score">${score}<span>/${total}</span></div><h2>${pct>=STEP_READY?'STEP Ready 🏅':'STEP Practice complete ⚡'}</h2><p>${pct>=STEP_READY?'Excellent strategy work. Your STEP Ready badge is earned.':`Your best score is ${Math.max(pct,ss.best)}%. Reach ${STEP_READY}% for STEP Ready.`}</p><div class="u3-step-result"><b>${pct}%</b><small>Current</small><b>${fmtTime(elapsed)}</b><small>Time</small></div><div class="journey-result-actions"><button class="journey-main-btn" onclick="STEPUP_U3_REVIEW.open()">Back to Unit 3</button><button class="journey-link-btn" onclick="STEPUP_U3_REVIEW.startStep()">Practice again</button></div></section>`;
   }
@@ -494,6 +507,8 @@
     };
     await firebase.firestore().collection('attempts').add(record);
     attempts.push(record);
+    // Direct per-question saves must update the shared certificate counter too.
+    window.STEPUP_MASTERY?.recordSaved?.(record);
     return record;
   }
 
@@ -569,9 +584,13 @@
       elapsedSeconds:Math.max(1, Math.round((Date.now()-(session?.started || Date.now()))/1000)),
       answers, studyMethod:'u3-full-review'
     };
-    await window.PROVE?.recordJourneyAttempt?.(payload);
-    attempts.push({...payload, submittedAt:new Date().toISOString()});
-    return payload;
+    const saved=await window.PROVE?.recordJourneyAttempt?.(payload);
+    if(!saved?.studentId)throw new Error('Unit 3 summary was not confirmed as saved');
+    if(!attempts.some(a=>a===saved || (
+      a.studentId===saved.studentId && a.trainingId===saved.trainingId &&
+      a.submittedAt===saved.submittedAt
+    )))attempts.push(saved);
+    return saved;
   }
 
   async function next(){
