@@ -138,6 +138,13 @@
     const master=host?.querySelector('.journey-master-card');
     if(!host||!hero||!master||host.querySelector('.journey-focus-shell')) return;
 
+    // Unit 4 has seven independently revisitable lessons and an 80% cumulative
+    // certificate. Collapsing those lessons into a decorative five-stop roadmap
+    // hid their real buttons and showed "Unit complete" even when corrections
+    // were outstanding. Keep the full accessible lesson view for this unit.
+    const unitTitle=text(hero.querySelector('h1'));
+    if(window.STEPUP_JOURNEY?.data?.units?.some(u=>u.id==='u4'&&u.title===unitTitle)) return;
+
     const unitId=hero.dataset.reviewUnit;
     const api=reviewApi(unitId);
     const review=!!api?.sectionProgress;
