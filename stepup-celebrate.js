@@ -58,7 +58,12 @@
       var prev = history(payload && payload.trainingId);
       lastResult = {payload: payload, prev: prev, at: Date.now()};
       var r = await origRecord.apply(this, arguments);
-      attempts.push(Object.assign({}, payload, {submittedAt: new Date().toISOString()}));
+      // Use the confirmed saved record, not a synthetic duplicate. Mastery and
+      // Journey share this array and must see exactly one persisted attempt.
+      if(r && r.studentId && !attempts.some(function(a){
+        return a===r || (a && a.studentId===r.studentId &&
+          a.trainingId===r.trainingId && a.submittedAt===r.submittedAt);
+      }))attempts.push(r);
       return r;
     };
     rec.__sxCelebrate = true; P.recordJourneyAttempt = rec;
