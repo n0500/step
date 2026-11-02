@@ -28,9 +28,10 @@
     const best = new Map();
     for(const a of (attempts || [])){
       const id = String(a?.trainingId || '');
-      // Full-review mastery credits answers across every saved Unit 1/2 attempt.
-      // Older adaptive runs can contain different question IDs, even at lower scores.
-      if(!id.startsWith('journey-') || id.startsWith('journey-u1-') || id.startsWith('journey-u2-')){
+      // All six units use cumulative question mastery for certificates.
+      // A lower-scoring retry may fix previously missed questions, so never
+      // discard its saved answers when rendering the journey or progress.
+      if(!id.startsWith('journey-') || /^journey-u[1-6]-/.test(id)){
         keep.push(a);
         continue;
       }
