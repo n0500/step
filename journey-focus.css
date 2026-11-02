@@ -72,3 +72,15 @@ html.sx body.sx .journey-focus-head[data-review-unit] :is(.u1-review-stats,.u2-p
 @media(max-width:700px){
   .journey-focus-shell.journey-focus-replay-ready{padding-bottom:14px!important}
 }
+
+/* Unit 4 uses the same six-skill review layout as earlier units. */
+.u4-lesson-choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.journey-focus-shell[data-unit="u4"] .u2-progress-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.journey-focus-shell[data-unit="u4"] .u2-progress-stats>span{display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:14px;background:#fff}
+.journey-focus-shell[data-unit="u4"] [hidden]{display:none!important}
+
+html.sx body.sx .journey-focus-head .u3-cert-goal{color:#624b13!important}
+html.sx body.sx .journey-focus-head .u3-cert-goal.unlocked{color:#24623f!important}
+html.sx body.sx .journey-focus-head .u3-cert-goal b,
+html.sx body.sx .journey-focus-head .u3-cert-goal small{color:inherit!important;opacity:1}
+html.sx body.sx .journey-focus-head .u3-cert-goal button{color:#fff!important}

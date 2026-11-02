@@ -169,7 +169,7 @@
 
   // Credits every correct answer once across all saved attempts, by unit.
   // STEP practice is not a certificate requirement.
-  function progressDetails(id,records){
+  function progressDetails(id,records=attempts){
     const req=requirements(id);
     if(!req||!req.length)return {earned:false,answered:0,total:0,correct:0,accuracy:0,remaining:0,incorrect:0,sections:[]};
     const sourceBank=bank(id)||[],titles=new Map();
