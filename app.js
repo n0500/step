@@ -894,6 +894,21 @@
     return best;
   }
 
+  function unit5StepClassTrainings(){
+    const feature=window.STEPUP_U5_STEP;
+    if(!feature?.banks)return [];
+    return ['grammar','fmf'].map(section=>({
+      id:'u5-step-class-'+section,unitId:'u5',unitNumber:5,
+      title:'Unit 5 STEP • '+feature.titles[section],type:'grammar',
+      subtitle:'6 questions • 60 seconds per question • Reveal answer and explanation',
+      durationSeconds:60,perQuestionTimer:true,
+      questions:feature.banks[section].map(q=>({
+        id:q.question_id,stem:q.prompt,choices:[...q.choices],answer:q.answer,
+        explanation:q.explanation,skill:q.skill,source:q.source_ref,sourceUrl:q.source_url
+      }))
+    }));
+  }
+
   async function teacherClassMode(classes,cls){
     if(!cls)return `<section class="teacher-classmode-v2"><div class="teacher-section-head"><div><div class="eyebrow">In the Classroom</div><h1>Class Mode</h1></div></div><div class="notice">Create a class first.</div></section>`;
     const open=openUnitsForClass(cls),r=await classReportData(cls.id),rec=findRecommendedClassTraining(open,r.attempts);
@@ -908,6 +923,7 @@
       </div>`)).join("");
 
 
+    const u5StepRows=open.some(u=>u.id==="u5")?unit5StepClassTrainings().map(t=>`<div class="teacher-practice-row"><div class="teacher-practice-icon">STEP</div><div class="teacher-practice-copy"><strong>${esc(t.title)}</strong><span>${esc(t.subtitle)}</span></div><button class="btn btn-primary" onclick="PROVE.startClassMode('${t.id}')">Start Class Mode</button></div>`).join(""):"";
     const u4ReadingRow=open.some(u=>u.id==="u4")&&window.STEPUP_U4_READY===true
       ? '<div class="teacher-practice-row"><div class="teacher-practice-icon">📖</div><div class="teacher-practice-copy"><strong>Unit 4 • The World of Plastic</strong><span>Reading Class Mode • 4 comprehension questions • 40 seconds per question</span></div><button class="btn btn-primary" onclick="PROVE.startClassMode(&quot;u4-reading-classmode&quot;)">Teach Reading</button></div>'
       : "";
@@ -947,7 +963,7 @@
 
       <div class="card">
         <div class="teacher-card-head"><div><div class="eyebrow">Available Content</div><h2>Practice in Open Units</h2></div></div>
-        <div class="teacher-practice-list">${(items+u4ReadingRow)||"<p class='muted'>There are no open units yet.</p>"}</div>
+        <div class="teacher-practice-list">${(items+u4ReadingRow+u5StepRows)||"<p class='muted'>There are no open units yet.</p>"}</div>
       </div>
     </section>`;
   }
@@ -1693,6 +1709,7 @@
   }
 
   function findTraining(id){
+    if(id==="u5-step-class-grammar"||id==="u5-step-class-fmf")return unit5StepClassTrainings().find(t=>t.id===id)||null;
     if(id==="u4-reading-classmode")return buildUnit4ReadingClassTraining();
     for(const u of DATA.units){const t=u.trainings.find(x=>x.id===id);if(t)return {...t,unitId:u.id,unitNumber:u.number,unitTitle:u.title}}
     return null;
@@ -2058,17 +2075,17 @@ Do not start a new lesson unless I ask.`;
     if(unit4ClassAudio)unit4ClassAudio.pause();
   }
   function resetUnit4QuestionTimer(){
-    if(state.classMode?.training?.id!=="u4-reading-classmode")return;
+    if(state.classMode?.training?.id!=="u4-reading-classmode"&&!state.classMode?.training?.perQuestionTimer)return;
     state.classMode.remaining=state.classMode.training.durationSeconds;
     state.classMode.paused=false;
-    stopUnit4ClassPassage();
+    if(state.classMode.training.id==="u4-reading-classmode")stopUnit4ClassPassage();
     runClassModeTimer();
   }
 
-  function classQuestionHtml(q,cm){return `<div class="eyebrow">Question ${cm.index+1}</div><div class="classmode-stem">${esc(q.stem)}</div>${q.choices.map((c,i)=>`<div class="classmode-choice ${cm.revealed&&i===q.answer?"correct":""}"><strong>${String.fromCharCode(65+i)}.</strong> ${esc(c)}</div>`).join("")}${cm.revealed?`<div class="classmode-explain"><strong>Answer: ${String.fromCharCode(65+q.answer)}</strong><br>${esc(q.explanation||"")}</div>`:""}<div class="exam-actions"><button class="btn btn-secondary" ${cm.index===0?"disabled":""} onclick="PROVE.classPrev()">Previous</button><div><button class="btn btn-secondary" onclick="PROVE.revealClassAnswer()">Reveal Answer</button> <button class="btn btn-primary" onclick="PROVE.classNext()">${cm.index===cm.training.questions.length-1?"Finish":"Next Question"}</button></div></div>`}
+  function classQuestionHtml(q,cm){return `<div class="eyebrow">Question ${cm.index+1}</div><div class="classmode-stem">${esc(q.stem)}</div>${q.choices.map((c,i)=>`<div class="classmode-choice ${cm.revealed&&i===q.answer?"correct":""}"><strong>${String.fromCharCode(65+i)}.</strong> ${esc(c)}</div>`).join("")}${cm.revealed?`<div class="classmode-explain"><strong>Answer: ${String.fromCharCode(65+q.answer)}</strong><br>${esc(q.explanation||"")}${q.source?`<small style="display:block;margin-top:12px;font-size:14px">${esc(q.source)}${q.sourceUrl?` · <a href="${esc(q.sourceUrl)}" target="_blank" rel="noopener noreferrer">Source</a>`:""}</small>`:""}</div>`:""}<div class="exam-actions"><button class="btn btn-secondary" ${cm.index===0?"disabled":""} onclick="PROVE.classPrev()">Previous</button><div><button class="btn btn-secondary" onclick="PROVE.revealClassAnswer()">Reveal Answer</button> <button class="btn btn-primary" onclick="PROVE.classNext()">${cm.index===cm.training.questions.length-1?"Finish":"Next Question"}</button></div></div>`}
   function renderClassModeScreen(){const cm=state.classMode,t=cm.training,q=t.questions[cm.index];app.innerHTML=`<div class="classmode-shell"><div class="classmode-toolbar"><div><strong>Class Mode • ${esc(t.title)}</strong><div style="font-size:12px;opacity:.8">Question ${cm.index+1} of ${t.questions.length}</div></div><div style="display:flex;gap:8px;align-items:center"><strong id="cmTimer">${fmtTime(cm.remaining)}</strong><button class="btn btn-outline" onclick="PROVE.toggleClassPause()">${cm.paused?"Resume":"Pause & Discuss"}</button><button class="btn btn-outline" onclick="PROVE.exitClassMode()">Exit</button></div></div><div class="classmode-content">${t.type==="reading"?`<div class="grid grid-2"><div class="classmode-card"><h2>Reading Passage</h2>${t.id==="u4-reading-classmode"?`<p style="font-size:14px">Read together, then select Resume to start the first 40-second question.</p><div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn btn-secondary" onclick="PROVE.readUnit4ClassPassage()">▶ Read Aloud</button><button class="btn btn-outline" onclick="PROVE.stopUnit4ClassPassage()">Stop Audio</button></div>`:""}<div class="passage-text">${t.passage}</div></div><div class="classmode-card">${classQuestionHtml(q,cm)}</div></div>`:`<div class="classmode-card">${classQuestionHtml(q,cm)}</div>`}</div></div>`}
   function toggleClassPause(){if(!state.classMode)return;state.classMode.paused=!state.classMode.paused;if(state.classMode.paused)stopClassModeTimer();else runClassModeTimer();renderClassModeScreen()}
-  function revealClassAnswer(){if(state.classMode){state.classMode.revealed=true;if(state.classMode.training.id==="u4-reading-classmode"){state.classMode.paused=true;stopClassModeTimer();}renderClassModeScreen()}}
+  function revealClassAnswer(){if(state.classMode){state.classMode.revealed=true;if(state.classMode.training.id==="u4-reading-classmode"||state.classMode.training.perQuestionTimer){state.classMode.paused=true;stopClassModeTimer();}renderClassModeScreen()}}
   function classPrev(){if(state.classMode&&state.classMode.index>0){state.classMode.index--;state.classMode.revealed=false;resetUnit4QuestionTimer();renderClassModeScreen()}}
   function classNext(){if(!state.classMode)return;if(state.classMode.index<state.classMode.training.questions.length-1){state.classMode.index++;state.classMode.revealed=false;resetUnit4QuestionTimer();renderClassModeScreen()}else exitClassMode()}
   function exitClassMode(){stopClassModeTimer();if(state.classMode?.training?.id==="u4-reading-classmode")stopUnit4ClassPassage();state.classMode=null;state.teacherTab="classmode";renderTeacher()}
