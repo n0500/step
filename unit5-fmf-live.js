@@ -239,8 +239,8 @@
     view.innerHTML='<section class="u5live-shell u5live-student"><div class="u5live-top"><b>STEP UP · FMF Live Lesson</b><small>Mega Goal 1 · pp. 78–79</small></div>'+
       '<div class="u5live-panel">'+body+'</div></section>';
   }
-  function startPre(){if(!student)return;student.phase="pre";student.question=0;student.selected=null;renderStudent();}
-  function startPost(){if(!student)return;student.phase="post";student.question=0;student.selected=null;renderStudent();}
+  function startPre(){if(!student)return;student.phase="pre";student.question=0;student.selected=null;student.startedAt=Date.now();renderStudent();}
+  function startPost(){if(!student)return;student.phase="post";student.question=0;student.selected=null;student.startedAt=Date.now();renderStudent();}
   function studentChoose(n){
     if(!student||student.pending)return;
     const arr=student.phase==="pre"?PRE:student.phase==="post"?POST:null;
