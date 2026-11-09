@@ -933,7 +933,7 @@
         <div class="teacher-practice-copy"><strong>Unit 5 · Full LIVE Lesson (30 min)</strong>
         <span>Pre-check → Must / Should → Adverbs → Places → Directions → Group challenge → Exit ticket.
         ${u5LiveOpen?"Unit 5 is open to this class.":"Students cannot access this yet: open Unit 5 under Classes & Units."}</span></div>
-        <button class="btn btn-primary" type="button" onclick="STEPUP_U5_LIVE.openTeacher('${esc(cls.id)}','${esc(cls.code)}')">Open Full Lesson</button>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">${!u5LiveOpen?`<button class="btn btn-secondary" type="button" onclick="PROVE.toggleUnit('${esc(cls.id)}','u5',true)">Enable Unit 5</button>`:""}<button class="btn btn-secondary" type="button" onclick="PROVE.copyStudentLink('${esc(cls.code)}')">Copy Class Link</button><button class="btn btn-primary" type="button" onclick="STEPUP_U5_LIVE.openTeacher('${esc(cls.id)}','${esc(cls.code)}')">Open Full Lesson</button></div>
       </div>`
       : "";
     const u4ReadingRow=open.some(u=>u.id==="u4")&&window.STEPUP_U4_READY===true
@@ -1675,7 +1675,7 @@
       document.getElementById("stepupUnsavedBanner")?.remove();
       // Completing an old background save must not replace a live question,
       // skill result, final report or mistake-repair screen with the dashboard.
-      const activeReview=document.querySelector('.student-view .journey-question-card,.student-view .journey-feedback,.student-view .journey-result,.student-view .smart-results,.student-view .fix-recovery');
+      const activeReview=document.querySelector('.student-view .journey-question-card,.student-view .journey-feedback,.student-view .journey-result,.student-view .smart-results,.student-view .fix-recovery,.student-view .u5live-shell');
       if((manual||mine.length) && state.studentTab && !activeReview)renderStudent();
     }
   }
