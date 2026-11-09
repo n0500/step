@@ -541,6 +541,8 @@
     // Unit 4 is prepared but NOT auto-opened for classes.
     // Its teacher-controlled Open Unit switch stays authoritative.
     if(unit?.id==="u4")return window.STEPUP_U4_READY===true;
+    // Unit 5 is a complete FMF live lesson + student practice; access remains teacher-controlled.
+    if(unit?.id==="u5")return !!window.STEPUP_U5_LIVE && !!window.STEPUP_U5_STEP;
     return false;
   }
   function openUnitsForClass(cls){
@@ -924,6 +926,16 @@
 
 
     const u5StepRows=open.some(u=>u.id==="u5")?unit5StepClassTrainings().map(t=>`<div class="teacher-practice-row"><div class="teacher-practice-icon">STEP</div><div class="teacher-practice-copy"><strong>${esc(t.title)}</strong><span>${esc(t.subtitle)}</span></div><button class="btn btn-primary" onclick="PROVE.startClassMode('${t.id}')">Start Class Mode</button></div>`).join(""):"";
+    const u5LiveOpen=open.some(u=>u.id==="u5");
+    const u5LiveRow=window.STEPUP_U5_LIVE
+      ? `<div class="teacher-practice-row" style="border:2px solid #aadbd2;background:#effaf7;border-radius:14px;margin-bottom:14px;padding:13px">
+        <div class="teacher-practice-icon">FMF</div>
+        <div class="teacher-practice-copy"><strong>Unit 5 · Full LIVE Lesson (30 min)</strong>
+        <span>Pre-check → Must / Should → Adverbs → Places → Directions → Group challenge → Exit ticket.
+        ${u5LiveOpen?"Unit 5 is open to this class.":"Students cannot access this yet: open Unit 5 under Classes & Units."}</span></div>
+        <button class="btn btn-primary" type="button" onclick="STEPUP_U5_LIVE.openTeacher('${esc(cls.id)}','${esc(cls.code)}')">Open Full Lesson</button>
+      </div>`
+      : "";
     const u4ReadingRow=open.some(u=>u.id==="u4")&&window.STEPUP_U4_READY===true
       ? '<div class="teacher-practice-row"><div class="teacher-practice-icon">📖</div><div class="teacher-practice-copy"><strong>Unit 4 • The World of Plastic</strong><span>Reading Class Mode • 4 comprehension questions • 40 seconds per question</span></div><button class="btn btn-primary" onclick="PROVE.startClassMode(&quot;u4-reading-classmode&quot;)">Teach Reading</button></div>'
       : "";
@@ -963,7 +975,7 @@
 
       <div class="card">
         <div class="teacher-card-head"><div><div class="eyebrow">Available Content</div><h2>Practice in Open Units</h2></div></div>
-        <div class="teacher-practice-list">${(items+u4ReadingRow+u5StepRows)||"<p class='muted'>There are no open units yet.</p>"}</div>
+        <div class="teacher-practice-list">${(u5LiveRow+items+u4ReadingRow+u5StepRows)||"<p class='muted'>There are no open units yet.</p>"}</div>
       </div>
     </section>`;
   }
