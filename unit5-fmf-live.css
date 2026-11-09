@@ -1,0 +1,70 @@
+
+/* STEP UP · Unit 5 Form, Meaning & Function · live remote lesson */
+.u5live-shell{--u5navy:#143451;--u5teal:#0c817e;--u5mint:#e9f7f2;--u5gold:#efba5a;font-family:"Tajawal",system-ui,sans-serif;color:#17324d;background:linear-gradient(135deg,#ecf7f8 0%,#f5f7fc 55%,#fff8ee 100%);min-height:95vh;padding:clamp(14px,3vw,32px)}
+.u5live-shell *{box-sizing:border-box}
+.u5live-shell button{font:inherit;cursor:pointer}
+.u5live-shell .u5live-wrap{max-width:1120px;margin:auto}
+.u5live-top{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.u5live-brand{font-weight:800;color:var(--u5navy);letter-spacing:.03em}
+.u5live-kicker{display:inline-flex;background:#dceeea;color:#0d645e;border-radius:999px;padding:7px 13px;font-size:14px;font-weight:800;letter-spacing:.04em}
+.u5live-exit,.u5live-lite{border:1px solid #b6c9d4;color:#153853;background:#fff;padding:11px 16px;border-radius:12px;font-weight:700}
+.u5live-progress{display:flex;gap:6px;margin-bottom:18px}
+.u5live-progress i{height:7px;flex:1;border-radius:20px;background:#d5e1ea}
+.u5live-progress i.done{background:var(--u5teal)}
+.u5live-panel{background:#fff;border:1px solid #d9e7eb;border-radius:24px;box-shadow:0 16px 40px rgba(15,55,81,.08);padding:clamp(18px,3vw,34px)}
+.u5live-panel h1,.u5live-panel h2{color:var(--u5navy);margin:10px 0 12px;line-height:1.3}
+.u5live-panel h1{font-size:clamp(27px,4.3vw,45px)}
+.u5live-panel h2{font-size:clamp(24px,3.6vw,36px)}
+.u5live-sub{color:#4c6272;font-size:clamp(16px,2vw,20px);line-height:1.6}
+.u5live-sectionline{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#367b86}
+.u5live-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.u5live-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.u5live-tile{border-radius:17px;border:1px solid #d5e4e9;background:#f8fbfd;padding:18px}
+.u5live-tile h3{color:#1e4962;margin:0 0 10px}
+.u5live-tile p{margin:5px 0;line-height:1.7}
+.u5live-tile.strong{background:#eaf8f5;border-color:#98d7c9}
+.u5live-tile.warn{background:#fff5ea;border-color:#e8cc9e}
+.u5live-en{font-family:Arial,Helvetica,sans-serif;direction:ltr;text-align:left;line-height:1.65;font-size:clamp(17px,2.15vw,23px);color:#133b56}
+.u5live-en b{color:#076d69}
+.u5live-ar{direction:rtl;text-align:right;font-size:clamp(15px,1.65vw,18px);line-height:1.8}
+.u5live-key{display:inline-block;color:#145f5f;background:#dcefe9;padding:3px 9px;border-radius:8px;font-weight:800}
+.u5live-rule{border-right:5px solid #16a199;background:#eef8f7;padding:14px 20px;border-radius:12px;margin:20px 0;line-height:1.9}
+.u5live-question{background:#173c56;color:white;border-radius:18px;padding:22px;margin:20px 0}
+.u5live-question .u5live-en{color:#fff;font-weight:700}
+.u5live-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.u5live-option{background:white;border:2px solid #d7e7ec;color:#14324b;text-align:left;border-radius:12px;padding:14px 16px;font-family:Arial,Helvetica,sans-serif!important;font-size:18px!important;min-height:57px}
+.u5live-option:hover{border-color:#37a5a0}
+.u5live-option.chosen{border-color:#1e8ec8;background:#eff9ff}
+.u5live-option.good{border-color:#0c9575;background:#e0f7ea;color:#086645}
+.u5live-option.bad{border-color:#c95757;background:#fff1f1;color:#952e2e}
+.u5live-answer{background:#fff;border:1px solid #b9dcd3;border-radius:12px;padding:14px;margin-top:12px;line-height:1.7;color:#173f3a}
+.u5live-navigation{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:24px}
+.u5live-primary{border:0;background:var(--u5teal);color:white;border-radius:13px;padding:12px 23px;font-size:17px;font-weight:800}
+.u5live-primary:disabled{opacity:.5;cursor:not-allowed}
+.u5live-primary:hover:not(:disabled){background:#0a6763}
+.u5live-note{margin-top:14px;border-top:1px solid #e4edf1;padding-top:14px;color:#637685;font-size:14px;line-height:1.7}
+.u5live-map{background:#edf4f6;border:2px solid #cddce4;padding:12px;border-radius:17px;max-width:720px;margin:18px auto;direction:ltr;text-align:center}
+.u5live-map-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.u5live-place{background:#fff;border:2px solid #b9d5da;border-radius:12px;padding:17px 5px;font:bold clamp(12px,1.8vw,20px) Arial,sans-serif;color:#1d5066}
+.u5live-street{height:52px;margin:12px 0;background:#596b76;color:white;border-radius:8px;display:flex;align-items:center;justify-content:center;letter-spacing:.13em;font:bold 14px Arial,sans-serif;border-top:4px dashed #e9d7a0;border-bottom:4px dashed #e9d7a0}
+.u5live-directions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+.u5live-direction{border-radius:14px;background:#e7f6f3;padding:13px 18px;text-align:center;color:#126968;font-weight:800;font-size:22px;min-width:130px}
+.u5live-footer{font-size:14px;color:#63758a;margin-top:15px}
+.u5live-student{max-width:900px;margin:0 auto}
+.u5live-student .u5live-panel{padding:clamp(17px,3vw,28px)}
+.u5live-student .u5live-question{background:#f4f8fb;color:#183c56;border:1px solid #d7e7ec}
+.u5live-student .u5live-question .u5live-en{color:#173b55}
+.u5live-student .u5live-option{border-color:#b7cdd9}
+.u5live-student .u5live-option:disabled{cursor:default}
+.u5live-pill{border:1px solid #b7d8d3;background:#f1faf7;border-radius:15px;padding:12px;margin:8px 0;font-weight:700}
+.u5live-student-lesson{margin:18px 0 26px}
+.u5live-feedback{margin:14px 0;border-radius:11px;padding:14px;background:#edf7f2;border:1px solid #b4dbc8;line-height:1.7}
+.u5live-student .u5live-tile p{font-size:15px}
+.u5live-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:15px 0}
+.u5live-stat{padding:17px;border-radius:14px;background:#f2f7fa;text-align:center}
+.u5live-stat b{font-size:28px;display:block;color:#126a72}
+.u5live-stat small{color:#526477;font-size:13px}
+.u5live-teams{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.u5live-team{background:#fff;border:1px solid #cadae0;border-radius:12px;padding:11px 16px}
+.u5live-team b{color:#0f7770}
+@media(max-width:720px){.u5live-grid,.u5live-grid.three,.u5live-options,.u5live-stats{grid-template-columns:1fr}.u5live-panel{border-radius:18px}.u5live-street{height:39px}.u5live-place{padding:12px 2px}.u5live-direction{min-width:0;font-size:17px}.u5live-navigation button{flex:1}.u5live-shell{padding:12px}}
