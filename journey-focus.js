@@ -141,7 +141,7 @@
     const groups=[['Vocab',['core-1','core-5']],['Grammar',['core-2','core-3']],['Functions',['core-4']],['Read',['reading']],['Listen',['listening']]];
     const summary=keys=>keys.reduce((a,key)=>{const s=d.sections.find(s=>s.key===key);if(s)for(const k of ['correct','total','answered','incorrect','remaining'])a[k]+=s[k];return a;},{correct:0,total:0,answered:0,incorrect:0,remaining:0});
     const shell=document.createElement('div');shell.className='journey-focus-shell';shell.dataset.unit=uid;
-    shell.innerHTML=`<section class="journey-focus-head" data-review-unit="${uid}" data-ring-pct="${Math.round(d.accuracy)}" data-ring-label="mastery"><div class="journey-focus-head-copy"><span>Unit ${unit.number} • Review</span><h1>${unit.title}</h1><p>${uid==='u5'?'Answer the entire unit in one continuous question sequence. Individual skill buttons are optional.':'Review each skill and practise any answers you missed.'}</p></div><div class="journey-focus-progress-row"><strong>${d.answered}/${d.total} questions answered</strong></div><div class="u2-progress-stats"><span><b>${d.answered}/${d.total}</b><small>Questions answered</small></span><span><b>${d.correct}/${d.total}</b><small>Mastery · ${Math.round(d.accuracy)}%</small></span></div><small class="journey-review-skill-count">${groups.filter(g=>{const s=summary(g[1]);return s.total&&s.correct===s.total;}).length} of 5 skills correct · Tap a skill to review</small><div class="sxc-u2-award ${earned?'unlocked':''}"><span class="sxc-u2-award-icon">${earned?'🏆':'◇'}</span><div><b>${earned?'Certificate unlocked':'Certificate goal · 80%'}</b><small>Cumulative accuracy · ${d.accuracy}%</small></div></div></section>`;
+    shell.innerHTML=`<section class="journey-focus-head" data-review-unit="${uid}" data-ring-pct="${Math.round(d.accuracy)}" data-ring-label="mastery"><div class="journey-focus-head-copy"><span>Unit ${unit.number} • Review</span><h1>${unit.title}</h1><p>${uid==='u5'?'Complete the unit questions in one sequence. Your progress is saved.':'Review each skill and practise any answers you missed.'}</p></div><div class="journey-focus-progress-row"><strong>${d.answered}/${d.total} questions answered</strong></div><div class="u2-progress-stats"><span><b>${d.answered}/${d.total}</b><small>Questions answered</small></span><span><b>${d.correct}/${d.total}</b><small>Mastery · ${Math.round(d.accuracy)}%</small></span></div><small class="journey-review-skill-count">${groups.filter(g=>{const s=summary(g[1]);return s.total&&s.correct===s.total;}).length} of 5 skills correct · Tap a skill to review</small><div class="sxc-u2-award ${earned?'unlocked':''}"><span class="sxc-u2-award-icon">${earned?'🏆':'◇'}</span><div><b>${earned?'Certificate unlocked':'Certificate goal · 80%'}</b><small>Cumulative accuracy · ${d.accuracy}%</small></div></div></section>`;
     const roadmap=document.createElement('div');roadmap.className='journey-focus-roadmap';roadmap.dataset.reviewUnit=uid;roadmap.setAttribute('aria-label','Unit '+unit.number+' skills');
     const choose=document.createElement('section');choose.className='journey-focus-task';choose.hidden=true;
     groups.forEach(([label,keys],i)=>{
@@ -156,9 +156,9 @@
       });roadmap.append(b);
     });
     const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';step.addEventListener('click',()=>J.startStep(uid));roadmap.append(step);
-    shell.append(roadmap,choose);
-    if(uid==='u5'&&window.STEPUP_U5_LIVE){const live=document.createElement('button');live.type='button';live.className='journey-link-btn';live.textContent='FMF Live Lesson · Learn + Quick Check + Exit Ticket';live.addEventListener('click',()=>window.STEPUP_U5_LIVE.openStudent());shell.append(live);}
-    if(uid==='u5'){
+    if(uid!=='u5')shell.append(roadmap,choose);
+    if(false&&uid==='u5'&&window.STEPUP_U5_LIVE){const live=document.createElement('button');live.type='button';live.className='journey-link-btn';live.textContent='FMF Live Lesson · Learn + Quick Check + Exit Ticket';live.addEventListener('click',()=>window.STEPUP_U5_LIVE.openStudent());shell.append(live);}
+    if(false&&uid==='u5'){
       const guide=document.createElement('details');guide.className='journey-focus-task';
       guide.innerHTML=`<summary>Grammar · Quick Review</summary><div dir="ltr" style="line-height:1.8;text-align:left">
       <p><b>Reflexive pronouns:</b> I → myself; you → yourself/yourselves; he → himself; she → herself; it → itself; we → ourselves; they → themselves.<br>I hurt myself. We did it by ourselves (without help).</p>
@@ -176,10 +176,15 @@
           action:"STEPUP_U56_PRACTICE.begin('u5')",button:pending?'Resume Continuous Questions':'Start All Questions'}
        : {title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:"STEPUP_U56_PRACTICE.begin('"+uid+"')",button:pending?'Resume Review':'Practice Again'});
     const actions=document.createElement('div');actions.className='u4-lesson-choices';
-    if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
+    if(uid!=='u5'&&(d.incorrect||d.remaining)){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
     if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate(uid));actions.append(b);}
     card.append(actions);const back=document.createElement('button');back.type='button';back.className='journey-focus-back-secondary';back.textContent='Back to units';back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));card.append(back);if(uid==='u5')shell.insertBefore(card,roadmap);else shell.append(card);
-     if(uid==='u5')window.STEPUP_U5_VOCAB?.attach(shell);
+     if(uid==='u5'){
+      const vocab=document.createElement('button');vocab.type='button';vocab.className='journey-link-btn';
+      vocab.textContent='Real Talk & After Reading · 10 vocabulary questions';
+      vocab.addEventListener('click',()=>window.STEPUP_U5_VOCAB?.begin());
+      card.appendChild(vocab);
+    }
     host.querySelector('.journey-breadcrumb')?.remove();hero.replaceWith(shell);master.remove();
     host.querySelectorAll('.journey-stops,.journey-celebrate,.sum-card-slot,.u56-full-entry').forEach(el=>el.remove());
   }
