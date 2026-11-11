@@ -155,7 +155,13 @@
         choose.scrollIntoView?.({block:'nearest',behavior:'smooth'});
       });roadmap.append(b);
     });
-    const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';step.addEventListener('click',()=>J.startStep(uid));roadmap.append(step);
+    const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';if(uid==='u5'){
+      const completed=!!(window.STEPUP_MASTERY?.studentStatus(uid)?.earned);
+      step.disabled=!completed;
+      step.setAttribute('aria-label',completed?'STEP Practice after completing unit skills':'STEP Practice unlocks after finishing unit skills');
+      step.querySelector('.journey-review-status').textContent=completed?'Ready':'Finish skills first';
+      step.addEventListener('click',()=>{if(completed)J.startStep(uid,'grammar');});
+    }else step.addEventListener('click',()=>J.startStep(uid));roadmap.append(step);
     shell.append(roadmap,choose);
     if(false&&uid==='u5'&&window.STEPUP_U5_LIVE){const live=document.createElement('button');live.type='button';live.className='journey-link-btn';live.textContent='FMF Live Lesson · Learn + Quick Check + Exit Ticket';live.addEventListener('click',()=>window.STEPUP_U5_LIVE.openStudent());shell.append(live);}
     if(false&&uid==='u5'){
