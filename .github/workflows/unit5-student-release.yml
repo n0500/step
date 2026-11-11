@@ -1,0 +1,36 @@
+name: Unit 5 Student Release and Vocabulary Checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'journey-focus.js'
+      - 'unit5-6-practice-again.js'
+      - 'unit5-vocabulary.js'
+      - 'unit5-teacher-preview.html'
+      - 'tests/unit5-release-vocabulary-flow.test.cjs'
+      - 'tests/unit5-completeness.test.cjs'
+      - 'tests/unit5-teacher-preview.test.cjs'
+      - '.github/workflows/unit5-student-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit5:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install DOM test dependency
+        run: npm install --no-save --ignore-scripts jsdom@26
+      - name: Check syntax
+        run: |
+          node --check app.js
+          node --check journey-focus.js
+          node --check unit5-vocabulary.js
+          node --check unit5-6-practice-again.js
+      - name: Check Unit 5 access, vocabulary and student flows
+        run: node --test tests/unit5-release-vocabulary-flow.test.cjs tests/unit5-completeness.test.cjs tests/unit5-teacher-preview.test.cjs tests/unit3-access-release.test.cjs
