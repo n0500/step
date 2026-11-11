@@ -156,7 +156,7 @@
       });roadmap.append(b);
     });
     const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';step.addEventListener('click',()=>J.startStep(uid));roadmap.append(step);
-    if(uid!=='u5')shell.append(roadmap,choose);
+    shell.append(roadmap,choose);
     if(false&&uid==='u5'&&window.STEPUP_U5_LIVE){const live=document.createElement('button');live.type='button';live.className='journey-link-btn';live.textContent='FMF Live Lesson · Learn + Quick Check + Exit Ticket';live.addEventListener('click',()=>window.STEPUP_U5_LIVE.openStudent());shell.append(live);}
     if(false&&uid==='u5'){
       const guide=document.createElement('details');guide.className='journey-focus-task';
@@ -176,15 +176,10 @@
           action:"STEPUP_U56_PRACTICE.begin('u5')",button:pending?'Resume Continuous Questions':'Start All Questions'}
        : {title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:"STEPUP_U56_PRACTICE.begin('"+uid+"')",button:pending?'Resume Review':'Practice Again'});
     const actions=document.createElement('div');actions.className='u4-lesson-choices';
-    if(uid!=='u5'&&(d.incorrect||d.remaining)){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
+    if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
     if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate(uid));actions.append(b);}
     card.append(actions);const back=document.createElement('button');back.type='button';back.className='journey-focus-back-secondary';back.textContent='Back to units';back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));card.append(back);if(uid==='u5')shell.insertBefore(card,roadmap);else shell.append(card);
-     if(uid==='u5'){
-      const vocab=document.createElement('button');vocab.type='button';vocab.className='journey-link-btn';
-      vocab.textContent='Real Talk & After Reading · 10 vocabulary questions';
-      vocab.addEventListener('click',()=>window.STEPUP_U5_VOCAB?.begin());
-      card.appendChild(vocab);
-    }
+ 
     host.querySelector('.journey-breadcrumb')?.remove();hero.replaceWith(shell);master.remove();
     host.querySelectorAll('.journey-stops,.journey-celebrate,.sum-card-slot,.u56-full-entry').forEach(el=>el.remove());
   }
