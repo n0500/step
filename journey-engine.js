@@ -200,6 +200,10 @@ async function finishQuiz(){
       )))last.attempts.push(attempt);
     }
   }catch(e){console.warn('Journey save failed',e);}
+  if(s.u.id==='u5'&&s.kind==='step'&&s.stepSection==='grammar'&&saved){
+    session=null;
+    return startStep('u5','fmf');
+  }
   const h=host();if(!h)return;
   const positive=pass&&saved;
   const seal=isU4Step&&stepSealEarned(s.u);
