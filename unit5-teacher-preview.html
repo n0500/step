@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' https://n0500.github.io; style-src 'unsafe-inline' https://n0500.github.io https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: https://n0500.github.io; media-src https://n0500.github.io; connect-src 'none'; form-action 'none'; frame-src 'none'">
+<title>Unit 5 · Teacher Preview</title>
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="journey.css"><link rel="stylesheet" href="journey-focus.css"><link rel="stylesheet" href="unit5-fmf-live.css">
+<style>body{margin:0;background:#f4f8fc}.preview-note{position:sticky;top:0;z-index:100;background:#fff4d8;color:#573e0a;padding:12px;text-align:center;font:700 15px Arial;line-height:1.6}.student-view{max-width:1050px;margin:auto;padding:16px}</style></head><body>
+<div class="preview-note" dir="rtl">معاينة المعلمة · النتائج تجريبية داخل هذه النافذة فقط، وتُمسح عند إغلاقها.<br><button type="button" onclick="previewHome()">العودة إلى الوحدة</button></div>
+<div id="app"><section class="student-view"></section></div>
+<script>
+// Isolated in-memory adapters. No Firebase SDK, account, database or durable storage.
+const previewRecords=[];const previewProfile={id:'teacher-preview',uid:'teacher-preview',role:'student',displayName:'Teacher Preview'};
+const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,String(v)),removeItem:k=>memory.delete(k),clear:()=>memory.clear()}});
+window.firebase={auth:()=>({currentUser:{uid:previewProfile.id}})};
+function previewHome(){STEPUP_JOURNEY.html(previewRecords,['u5'],previewProfile);STEPUP_JOURNEY.openUnit('u5');}
+window.PROVE={setStudentTab:()=>previewHome(),recordJourneyAttempt:async data=>{const r={...data,studentId:previewProfile.id,submittedAt:new Date().toISOString()};previewRecords.push(r);return r;},retryUnsaved:()=>previewHome()};
+window.STEPUP_CELEBRATE={showCertificate:()=>alert('معاينة فقط: وصلتِ إلى شرط الشهادة. لن تُصدر شهادة حقيقية.')};
+</script>
+<script src="journey-engine.js?v=20261111-u5-unified-1"></script>
+<script src="answer-response-guard.js"></script>
+<script src="unit5-step-compilations.js"></script><script src="unit5-fmf-live.js"></script>
+<script src="unit5-6-content.js"></script><script src="unit5-6-revision.js"></script>
+<script src="stepup-mastery.js?v=20261111-u5-unified-1"></script>
+<script src="unit5-6-practice-again.js?v=20261111-u5-unified-1"></script>
+<script src="journey-focus.js?v=20261111-u5-unified-1"></script>
+<script>previewHome();</script>
+</body></html>

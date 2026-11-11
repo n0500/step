@@ -870,6 +870,7 @@
               <div class="teacher-unit-actions">
                 <span class="pill ${isOpen&&ready?"open-chip":"locked-chip"}">${isOpen&&ready?"Open":"Closed"}</span>
                 ${u.id!=="u1"&&ready?`<button class="btn btn-secondary" onclick="PROVE.toggleUnit('${c.id}','${u.id}',${!isOpen})">${isOpen?"Close":"Open Unit"}</button>`:""}
+                ${u.id==="u5"&&ready?`<button type="button" class="btn btn-secondary" onclick="PROVE.previewUnit5()">معاينة الوحدة</button>`:""}
                 ${u.id==="u4"&&ready?`<button type="button" class="btn btn-secondary" onclick="PROVE.previewUnit4()">Preview Content</button>`:""}
               </div>
             </div>`;
@@ -933,7 +934,7 @@
         <div class="teacher-practice-copy"><strong>Unit 5 · Full LIVE Lesson (30 min)</strong>
         <span>Pre-check → Must / Should → Adverbs → Places → Directions → Group challenge → Exit ticket.
         ${u5LiveOpen?"Unit 5 is open to this class.":"Students cannot access this yet: open Unit 5 under Classes & Units."}</span></div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">${!u5LiveOpen?`<button class="btn btn-secondary" type="button" onclick="PROVE.toggleUnit('${esc(cls.id)}','u5',true)">Enable Unit 5</button>`:""}<button class="btn btn-secondary" type="button" onclick="PROVE.copyStudentLink('${esc(cls.code)}')">Copy Class Link</button><button class="btn btn-primary" type="button" onclick="STEPUP_U5_LIVE.openTeacher('${esc(cls.id)}','${esc(cls.code)}')">Open Full Lesson</button></div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">${!u5LiveOpen?`<button class="btn btn-secondary" type="button" onclick="PROVE.toggleUnit('${esc(cls.id)}','u5',true)">Enable Unit 5</button>`:""}<button class="btn btn-secondary" type="button" onclick="PROVE.copyStudentLink('${esc(cls.code)}')">Copy Class Link</button><button class="btn btn-secondary" type="button" onclick="PROVE.previewUnit5()">معاينة الوحدة</button><button class="btn btn-primary" type="button" onclick="STEPUP_U5_LIVE.openTeacher('${esc(cls.id)}','${esc(cls.code)}')">Open Full Lesson</button></div>
       </div>`
       : "";
     const u4ReadingRow=open.some(u=>u.id==="u4")&&window.STEPUP_U4_READY===true
@@ -1071,6 +1072,18 @@
       c.id=uid();local.saveClass(c);state.selectedClassId=c.id;
     }
     renderTeacher();
+  }
+  function previewUnit5(){
+    if(state.profile?.role!=="teacher")return;
+    document.getElementById('stepupU5Preview')?.remove();
+    const previous=document.activeElement,dialog=document.createElement('dialog');
+    dialog.id='stepupU5Preview';dialog.setAttribute('aria-label','معاينة الوحدة الخامسة');
+    dialog.style.cssText='width:min(1100px,96vw);height:94dvh;max-width:96vw;padding:0;border:0;border-radius:16px;background:#f4f8fc';
+    dialog.innerHTML='<header style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:#eaf3fa"><strong>Unit 5 · معاينة الوحدة</strong><button type="button" class="btn btn-secondary" data-close-preview>إغلاق المعاينة</button></header><iframe title="Unit 5 student experience preview" sandbox="allow-scripts allow-modals" src="unit5-teacher-preview.html?v=20261111-preview-1" style="border:0;width:100%;height:calc(100% - 70px)"></iframe>';
+    const close=()=>{dialog.close();dialog.remove();previous?.focus();};
+    dialog.querySelector('[data-close-preview]').addEventListener('click',close);
+    dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+    document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('button').focus();
   }
   function previewUnit4(){
     if(state.profile?.role!=="teacher")return;
@@ -2421,7 +2434,7 @@ Do not start a new lesson unless I ask.`;
 
   window.PROVE = {
     pickRole,studentContinue,studentRegister,studentLogin,teacherRegister,emailLogin,logout,goMainLogin,
-    renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,previewUnit4,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
+    renderOwner,renderTeacher,renderStudent,refreshStudentProfile,createClass,selectClass,toggleUnit,previewUnit4,previewUnit5,openStudent,deleteStudent,setStudentTab,setTeacherTab,refreshTeacher,openStudentTool,editStudentName,startTraining,startRemedial,startMiniChallenge,reviewError,choose,goQ,toggleFlag,prevQ,nextQ,explainMyMistake,copyStudentLink,showClassQR,closeClassQR,
     startClassMode,toggleClassPause,revealClassAnswer,classPrev,classNext,exitClassMode,readUnit4ClassPassage,stopUnit4ClassPassage,
     downloadStudentPDF,downloadStudentExcel,exportClassPDF,exportClassExcel,exportTeacherCSV,exportOwnerCSV,printPage,recordJourneyAttempt,retryUnsaved
   };
