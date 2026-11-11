@@ -61,6 +61,25 @@
     const r=bank.filter(q=>q.source_type==='Teacher-supplied revision question');
     if(r.length!==byUnit['u'+unit])throw Error('Unit '+unit+' review count mismatch');
   }
-  j.data.questions=revised;
-  window.STEPUP_U56_REVISION={ready:true,total:staged.size,byUnit,sourceNames};
+  // Four additional teacher-file questions are part of the normal Unit 5 mastery
+  // sequence, not a separate STEP or vocabulary section.
+  const additions=[
+    {m:3,key:'PDF-P1-Q13',prompt:'I am not tired. ______',choices:['Neither am I','So did I','So am I','Neither did I'],correct:0,explanation:'Neither am I agrees with a negative statement using am.'},
+    {m:4,key:'PDF-P1-Q23',prompt:'Abdullah doesn’t drive ______.',choices:['care','careful','carefully','carefulness'],correct:2,explanation:'Carefully is the adverb describing how Abdullah drives.'},
+    {m:4,key:'PDF-P1-Q17',prompt:'The post office is next ______ the bookstore.',choices:['in','to','off','from'],correct:1,explanation:'Next to means beside.'},
+    {m:4,key:'PDF-P1-Q25',prompt:'Where is the museum? ______ straight ahead on this street.',choices:['Go','Turn','Cross','Going'],correct:0,explanation:'Go straight ahead gives directions.'}
+  ];
+  const unit5=j.data.units.find(u=>Number(u.number)===5);
+  const extra=additions.map((item,i)=>{
+    const mission=unit5.missions.find(m=>m.id==='m'+item.m);
+    const template=revised.find(q=>q.unit_id==='MG1_U5'&&q.mission===mission.source&&q.stage==='Mastery');
+    if(!template)throw Error('Missing Unit 5 template for '+item.key);
+    const q={...template,question_id:'U5-REV-EXTRA-'+item.key,skill:item.m===3?'Agreement • Neither':'Form, Meaning & Function',prompt:item.prompt,correct_option_id:'opt_'+['a','b','c','d'][item.correct],explanation:item.explanation,hint:item.explanation,source_type:'Teacher-supplied revision question',source_ref:sourceNames.pdf+' • page 1, Q'+[13,23,17,25][i],source_original_text:item.prompt,certificate_eligible:true};
+    ['a','b','c','d'].forEach((letter,n)=>{q['option_'+letter+'_text']=item.choices[n];});
+    delete q.context_excerpt;delete q.context_match;delete q.context_paragraph;
+    return q;
+  });
+  if(new Set(revised.concat(extra).filter(q=>q.unit_id==='MG1_U5').map(q=>q.question_id)).size!==32)throw Error('Unit 5 must have 32 unique questions');
+  j.data.questions=revised.concat(extra);
+  window.STEPUP_U56_REVISION={ready:true,total:staged.size+extra.length,byUnit:{...byUnit,u5:byUnit.u5+extra.length},sourceNames};
 })();
