@@ -136,6 +136,10 @@
         var label=b.find(function(x){return x.section===section;})?.sectionTitle||section;
         pieces.push('<p>'+esc(label)+': <b>'+a.filter(function(x){return x.correct;}).length+'/'+a.length+'</b></p>');
       });
+      if(unit==='u5'&&mastered&&window.STEPUP_JOURNEY?.startStep){
+        window.STEPUP_JOURNEY.startStep('u5','grammar');
+        return;
+      }
       h.innerHTML='<section class="journey-content-card" style="max-width:800px;margin:auto">'+
         '<h2>Complete Review • Unit '+unit.slice(1)+'</h2><div class="journey-result-score">'+score+'/'+total+'</div>'+
         '<p><strong>'+Math.round(score*100/total)+'%</strong> · Result saved successfully.</p>'+
