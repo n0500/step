@@ -169,17 +169,30 @@
       <button type="button" class="journey-link-btn" onclick="STEPUP_JOURNEY.startStep('u5','grammar')">Practise all three grammar topics</button></div>`;
       shell.append(guide);
     }
-    const pending=window.STEPUP_U56_PRACTICE?.pending(uid);
-    const card=taskCard(uid==='u5'
-       ? {title:'All Unit 5 Questions in One Flow',meta:'Continuous Review · '+d.total+' questions',
-          detail:'Questions move automatically from vocabulary to grammar, functions, reading and listening. One final result at the end; saved attempts and certificate rules stay unchanged.',
-          action:"STEPUP_U56_PRACTICE.begin('u5')",button:pending?'Resume Continuous Questions':'Start All Questions'}
-       : {title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:"STEPUP_U56_PRACTICE.begin('"+uid+"')",button:pending?'Resume Review':'Practice Again'});
-    const actions=document.createElement('div');actions.className='u4-lesson-choices';
-    if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
-    if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate(uid));actions.append(b);}
-    card.append(actions);const back=document.createElement('button');back.type='button';back.className='journey-focus-back-secondary';back.textContent='Back to units';back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));card.append(back);if(uid==='u5')shell.insertBefore(card,roadmap);else shell.append(card);
- 
+    if(uid==='u5'){
+      // Keep the familiar skill roadmap directly below the unit header.
+      // Both actions use the existing continuous 28-question bank, not per-skill stops.
+      const controls=document.createElement('section');
+      controls.className='journey-focus-task u5-simple-actions';
+      controls.style.cssText='display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px;margin-top:12px';
+      const start=document.createElement('button');start.type='button';start.className='journey-focus-start';
+      start.style.cssText='flex:1 1 190px;min-height:48px';start.textContent='Start Learning';
+      start.addEventListener('click',()=>window.STEPUP_U56_PRACTICE?.begin('u5'));
+      const again=document.createElement('button');again.type='button';again.className='journey-link-btn';
+      again.style.cssText='flex:1 1 190px;min-height:48px';again.textContent='Practice Again';
+      again.addEventListener('click',()=>window.STEPUP_U56_PRACTICE?.begin('u5'));
+      controls.append(start,again);
+      if(earned){const certificate=document.createElement('button');certificate.type='button';certificate.className='journey-link-btn';certificate.textContent='View Certificate';certificate.addEventListener('click',()=>M.viewCertificate(uid));controls.append(certificate);}
+      shell.append(controls);
+    }else{
+      const pending=window.STEPUP_U56_PRACTICE?.pending(uid);
+      const card=taskCard({title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:"STEPUP_U56_PRACTICE.begin('"+uid+"')",button:pending?'Resume Review':'Practice Again'});
+      const actions=document.createElement('div');actions.className='u4-lesson-choices';
+      if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
+      if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate(uid));actions.append(b);}
+      card.append(actions);const back=document.createElement('button');back.type='button';back.className='journey-focus-back-secondary';back.textContent='Back to units';back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));card.append(back);shell.append(card);
+    }
+  
     host.querySelector('.journey-breadcrumb')?.remove();hero.replaceWith(shell);master.remove();
     host.querySelectorAll('.journey-stops,.journey-celebrate,.sum-card-slot,.u56-full-entry').forEach(el=>el.remove());
   }
