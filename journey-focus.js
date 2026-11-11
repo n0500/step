@@ -156,7 +156,7 @@
       });roadmap.append(b);
     });
     const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';if(uid==='u5'){
-      const completed=!!(window.STEPUP_MASTERY?.studentStatus(uid)?.earned);
+      const completed=!!(window.STEPUP_MASTERY?.studentStatus(uid)?.earned)||d.remaining===0;
       step.disabled=!completed;
       step.setAttribute('aria-label',completed?'STEP Practice after completing unit skills':'STEP Practice unlocks after finishing unit skills');
       step.querySelector('.journey-review-status').textContent=completed?'Ready':'Finish skills first';
