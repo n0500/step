@@ -1,4 +1,4 @@
-/* STEP UP | Unit 5 exercise vocabulary from Listen & Discuss, Real Talk and After Reading
+/* STEP UP | Unit 5 exercise vocabulary from Real Talk and After Reading
  * Student Book exercises only; grammar vocabulary excluded.
  * Separate supplemental practice does not change the 28-question mastery bank.
  */
@@ -7,13 +7,12 @@
   var sourceGroups=[["Nouns • Listen & Discuss",[["badge","an identification or achievement symbol"],["equipment","tools or items needed for a task"],["fog","a thick cloud near the ground that reduces visibility"],["helmet","a hard protective covering for the head"],["injury","physical harm to the body"],["intersection","a place where roads meet or cross"],["knee pad","protective padding worn over a knee"],["ostrich","a very large, fast-running flightless bird"],["risk","the possibility of harm or danger"],["shock","a sudden strong feeling of surprise or distress"],["snowstorm","a storm with heavy snow and wind"]]],["Verbs • Accidents & Safety",[["adjust","change something slightly to make it fit or work better"],["avoid","stay away from or prevent contact with"],["crash","hit something violently in an accident"],["encounter","meet or experience something unexpectedly"],["misjudge","estimate or assess something incorrectly"],["obey","follow a rule or instruction"],["occur","happen or take place"],["pay attention","focus carefully on something"],["prevent","stop something from happening"],["release","let go or allow something to be free"],["skid","slide out of control on a slippery surface"],["speed","move or drive faster than is safe or allowed"],["swerve","change direction suddenly"],["tailgate","drive dangerously close behind another vehicle"],["weave","move from side to side while going forward"]]],["Adjectives • Road Safety",[["aggressive","ready to attack or behave forcefully"],["cautious","careful to avoid danger or mistakes"],["distracted","unable to focus because attention is elsewhere"],["drowsy","sleepy and struggling to stay alert"],["injured","physically hurt or harmed"],["rude","impolite and disrespectful"],["severe","very serious or intense"],["unconscious","not awake or aware of surroundings"]]],["Injury Verbs",[["break","cause something, such as a bone, to separate into pieces"],["burn","injure with heat, fire or a hot substance"],["cut","wound using something sharp"],["die","stop being alive"],["fracture","crack or break a bone"],["poke","push or jab with a finger or pointed object"],["scar","leave a permanent mark after a wound heals"],["slip","lose footing and slide unexpectedly"],["sprain","injure a joint by twisting a ligament"]]],["Reflexive Pronouns • Grammar Vocabulary",[["herself","the same female person as the subject she"],["himself","the same male person as the subject he"],["itself","the same thing or animal as the subject it"],["myself","the same person as the subject I"],["ourselves","the same people as the subject we"],["themselves","the same people as the subject they"],["yourself","the same one person addressed as you"],["yourselves","the same multiple people addressed as you"]]],["Connectors • Cause & Result",[["because","introduces a reason or cause"],["so","introduces a result or consequence"]]],["Real Talk • Conversation",[["I guess","I am not completely sure"],["lucky day","a day when something fortunate happens"],["look at it this way","consider the situation from another perspective"],["stuck in","caught in a place and unable to get out"]]],["After Reading • Textbook Page 75",[["bald","having no hair on the head"],["to challenge","to contest or fight against"],["to weave through","to move through by turning to avoid obstacles"],["to hurl","to throw with great force"],["to burst","to break open or explode suddenly"],["to recover","to get better after an injury or illness"]]]];  // Only the three vocabulary exercise sources requested by the teacher.
   // Grammar pronouns and connectors are intentionally excluded.
   var groups=[
-    ["Listen & Discuss",sourceGroups.slice(0,4).flatMap(function(g){return g[1];})],
     ["Real Talk",sourceGroups[6][1]],
     ["After Reading",sourceGroups[7][1]]
   ];
   var entries=[];
   groups.forEach(function(g){g[1].forEach(function(pair){entries.push({group:g[0],word:pair[0],meaning:pair[1]});});});
-  var keyPrefix='stepup-unit5-vocabulary-v2-', active=null, selected=null, saving=false;
+  var keyPrefix='stepup-unit5-vocabulary-v3-', active=null, selected=null, saving=false;
   function userId(){try{return window.firebase.auth().currentUser?.uid||null;}catch(_){return null;}}
   function key(){return keyPrefix+(userId()||'guest');}
   function read(){try{return JSON.parse(localStorage.getItem(key())||'null');}catch(_){return null;}}
@@ -23,7 +22,7 @@
   function host(){return document.querySelector('.student-view');}
   function glossary(){
     return '<section class="journey-focus-task" style="text-align:left"><details class="u5-vocab-glossary"><summary style="cursor:pointer;font-weight:800">Unit 5 Exercise Vocabulary · '+entries.length+' items</summary>'+
-      '<p>Vocabulary from Listen & Discuss, Real Talk and After Reading exercises only.</p>'+
+      '<p>Vocabulary from Real Talk and After Reading exercises only.</p>'+
       groups.map(function(g){return '<details style="margin:8px 0;padding:10px;border:1px solid #d6e4ed;border-radius:10px"><summary style="cursor:pointer;font-weight:700">'+esc(g[0])+' ('+g[1].length+')</summary>'+
         '<ul dir="ltr" style="line-height:1.9;padding-left:22px">'+g[1].map(function(p){return '<li><b>'+esc(p[0])+'</b> — '+esc(p[1])+'</li>';}).join('')+'</ul></details>';}).join('')+
       '</details><button type="button" class="journey-main-btn" style="margin-top:10px" onclick="STEPUP_U5_VOCAB.begin()">Practice All Vocabulary · '+entries.length+' Questions</button>'+
@@ -93,7 +92,7 @@
     var r=session(),h=host();if(!r||!h||position(r)>=0)return;
     var score=r.answers.filter(function(a){return a.correct;}).length;
     var data={recordKind:'vocabulary-coverage',trainingId:'u5-vocabulary-all',trainingTitle:'Unit 5 Exercise Vocabulary',
-      trainingType:'vocabulary',studyMethod:'unit5-exercise-vocabulary-v2',unitId:'u5',unitNumber:5,
+      trainingType:'vocabulary',studyMethod:'unit5-real-talk-after-reading-v3',unitId:'u5',unitNumber:5,
       score:score,total:entries.length,percentage:Math.round(100*score/entries.length),
       answers:r.answers,startedAt:r.startedAt,submittedAt:new Date().toISOString()};
     saving=true;h.innerHTML='<section class="journey-content-card"><h2>Saving vocabulary practice…</h2></section>';
