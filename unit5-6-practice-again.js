@@ -98,7 +98,7 @@
     if(!store(unit,r))return;
     chosen=null;
     var h=host(),done=position(r)<0,next=done?null:b[position(r)];
-    var groupDone=!done&&next.section!==q.section;
+    var groupDone=!done&&next.section!==q.section; // For progress tracking; no section-results interruption.
     var skillAnswers=b.filter(function(x){return x.section===q.section;}).map(function(x){return r.answers[x.section+'|'+x.id];}).filter(Boolean);
     var groupScore=skillAnswers.filter(function(a){return a.correct;}).length;
     if(h)h.innerHTML='<section class="journey-content-card" style="max-width:800px;margin:auto"><span class="journey-kicker">'+esc(q.sectionTitle||'Skill Review')+'</span>'+
@@ -106,8 +106,8 @@
       '<h3 dir="ltr">'+esc(q.prompt)+'</h3><p dir="ltr"><b>Your answer:</b> '+esc(q.choices[choice])+'</p>'+
       (choice!==q.answer?'<p><b>Correct answer:</b> '+esc(q.choices[q.answer])+'</p>':'')+
       '<p class="answer-explanation" dir="ltr"><b>Why:</b> '+esc(explanation)+'</p>'+
-      (groupDone||done?'<p><strong>Skill result: '+groupScore+'/'+skillAnswers.length+'</strong></p>':'')+
-      '<button class="journey-main-btn" type="button" onclick="STEPUP_U56_PRACTICE.next()">'+(done?'See full review result':groupDone?'Continue to '+esc(next.sectionTitle||next.section):'Next Question')+'</button></section>';
+      (unit==='u5'?'':(groupDone||done?'<p><strong>Skill result: '+groupScore+'/'+skillAnswers.length+'</strong></p>':''))+
+      '<button class="journey-main-btn" type="button" onclick="STEPUP_U56_PRACTICE.next()">'+(done?'See full review result':unit==='u5'?'Next Question':groupDone?'Continue to '+esc(next.sectionTitle||next.section):'Next Question')+'</button></section>';
   }
   function next(){if(!live||saving)return;render(live.unit);}
   async function finish(unit){
