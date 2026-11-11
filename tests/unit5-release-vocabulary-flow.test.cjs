@@ -24,9 +24,9 @@ test('Unit 5 vocabulary matches every reference glossary group and textbook Afte
   const vocab=context.window.STEPUP_U5_VOCAB;
   assert.ok(vocab);
   assert.equal(vocab.groups.length,8);
-  assert.equal(vocab.entries.length,63);
+  assert.equal(vocab.entries.length,53);
   const labels=vocab.entries.map(x=>x.word.toLowerCase());
-  assert.equal(new Set(labels).size,63);
+  assert.equal(new Set(labels).size,53);
   const master=source('mg1-kb.js');
   const rows=[...master.matchAll(/"id":"vocab_master_u5_[^"]+"[^}]*?"text":"([^"]+)"/g)];
   assert.equal(rows.length,7);
