@@ -136,7 +136,7 @@
         var label=b.find(function(x){return x.section===section;})?.sectionTitle||section;
         pieces.push('<p>'+esc(label)+': <b>'+a.filter(function(x){return x.correct;}).length+'/'+a.length+'</b></p>');
       });
-      if(unit==='u5'&&mastered&&window.STEPUP_JOURNEY?.startStep){
+      if(unit==='u5'&&window.STEPUP_JOURNEY?.startStep){
         window.STEPUP_JOURNEY.startStep('u5','grammar');
         return;
       }
