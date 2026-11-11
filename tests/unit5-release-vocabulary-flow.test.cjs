@@ -18,24 +18,18 @@ test('Unit 5 is released to existing classes while newer teacher closures remain
   assert.match(app,/getClassById\(id\)[\s\S]{0,360}withReleasedUnitAccess/);
 });
 
-test('Unit 5 vocabulary matches every reference glossary group and textbook After Reading word',()=>{
+test('Unit 5 vocabulary contains only Real Talk and After Reading',()=>{
   const context={window:{}};
   vm.runInNewContext(source('unit5-vocabulary.js'),context);
   const vocab=context.window.STEPUP_U5_VOCAB;
   assert.ok(vocab);
-  assert.equal(vocab.groups.length,8);
+  assert.equal(vocab.groups.length,2);
   assert.equal(vocab.entries.length,10);
   const labels=vocab.entries.map(x=>x.word.toLowerCase());
   assert.equal(new Set(labels).size,10);
-  const master=source('mg1-kb.js');
-  const rows=[...master.matchAll(/"id":"vocab_master_u5_[^"]+"[^}]*?"text":"([^"]+)"/g)];
-  assert.equal(rows.length,7);
-  for(const row of rows){
-    const words=row[1].split(' — ')[1].split(': ').slice(1).join(': ').split(', ');
-    for(const word of words)assert.ok(labels.includes(word.toLowerCase()),'Missing textbook vocabulary: '+word);
-  }
-  for(const word of ['bald','to challenge','to weave through','to hurl','to burst','to recover'])
-    assert.ok(labels.includes(word),'Missing After Reading: '+word);
+  for(const word of ['i guess','lucky day','look at it this way','stuck in','bald','to challenge','to weave through','to hurl','to burst','to recover'])
+    assert.ok(labels.includes(word),'Missing selected vocabulary: '+word);
+  assert.ok(vocab.entries.every(x=>x.group==='Real Talk'||x.group==='After Reading'));
 });
 
 test('Unit 5 primary flow is continuous; preview and deployment include complete vocabulary',()=>{
