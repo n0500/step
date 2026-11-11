@@ -15,12 +15,14 @@
   const nowISO = () => new Date().toISOString();
   const fmtTime = sec => `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;
   const slug = s => String(s).toLowerCase().trim().replace(/\s+/g," ").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");
-  const UNIT_ACCESS_RELEASE = 3;
+  // Revision 5 publishes the completed Unit 5 to all existing classes.
+  // Persisted teacher choices made AFTER this release remain authoritative.
+  const UNIT_ACCESS_RELEASE = 5;
   function releasedOpenUnitIds(record){
     const ids=[...(record?.openUnits||["u1"])];
-    // Unit 3 was released on 2026-10-19. Existing classes receive it once;
-    // after a teacher changes access, the release version preserves her choice.
-    if(Number(record?.unitAccessRelease||0)<UNIT_ACCESS_RELEASE&&!ids.includes("u3"))ids.push("u3");
+    const release=Number(record?.unitAccessRelease||0);
+    if(release<3&&!ids.includes("u3"))ids.push("u3");
+    if(release<5&&!ids.includes("u5"))ids.push("u5");
     if(!ids.includes("u1"))ids.unshift("u1");
     return [...new Set(ids)].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
   }
