@@ -24,7 +24,7 @@
     var u=window.STEPUP_JOURNEY?.data?.units?.find(function(x){return x.title===heading.textContent.trim();});
     if(!u||!allowed[u.id])return;
     var status=window.STEPUP_MASTERY?.studentStatus(u.id);
-    if(u.id!=='u4'&&!status?.earned&&!hasPending(u.id))return;
+    if(!['u4','u5'].includes(u.id)&&!status?.earned&&!hasPending(u.id))return;
     hero.setAttribute('data-u56-full-button','1');
     var id=u.id,desc=hasPending(id)?'Resume your saved full review.':'Optional extra practice: review all '+bank(id).length+' questions at your own pace.';
     hero.insertAdjacentHTML('afterend','<section class="u56-full-entry" style="margin:14px 0;padding:15px;border:1px solid #d0e1eb;border-radius:16px;background:#f5faff"><strong>Review &amp; Practice • Unit '+esc(u.number)+'</strong><p style="margin:8px 0">'+esc(desc)+'</p><button type="button" style="min-height:46px;padding:11px 17px;border:0;border-radius:12px;background:#245b8e;color:#fff;font-weight:800" onclick="STEPUP_U56_PRACTICE.begin(\''+id+'\')">'+(hasPending(id)?'Resume Review':'Practice Again')+'</button></section>');

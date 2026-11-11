@@ -44,8 +44,8 @@ function unitState(u){
 // Display Unit 4 question-level mastery, not the unrelated 67%-pass
 // journey completion percentage. This keeps Home, Journey and Progress aligned.
 function shownUnitProgress(u){
-  if(u.id==='u4'){
-    const d=window.STEPUP_MASTERY?.progressDetails?.('u4',last.attempts);
+  if(['u4','u5'].includes(u.id)){
+    const d=window.STEPUP_MASTERY?.progressDetails?.(u.id,last.attempts);
     if(d?.total)return {pct:Math.round(d.accuracy),label:d.correct+'/'+d.total+' correct · certificate goal 80%'};
   }
   const st=unitState(u);
@@ -55,10 +55,10 @@ function nextAction(){
   for(const u of DATA.units){
     if(!last.openIds.has(u.id))continue;
     if(window.STEPUP_MASTERY?.status(u.id,last.attempts)?.earned)continue;
-    if(u.id==='u4'){
+    if(['u4','u5'].includes(u.id)){
       // A finished journey with unanswered/incorrect questions must lead to a
       // real retriable lesson instead of the misleading "Journey complete" card.
-      const d=window.STEPUP_MASTERY?.progressDetails?.('u4',last.attempts);
+      const d=window.STEPUP_MASTERY?.progressDetails?.(u.id,last.attempts);
       const pending=d?.sections?.find(row=>row.remaining>0)
         ||d?.sections?.find(row=>row.incorrect>0);
       if(pending)return {u,key:pending.key,label:'Review • '+pending.title,
@@ -95,7 +95,7 @@ function homeHTML(attempts,openUnits,profile){
 function hydrate(attempts,openUnits,profile){last.attempts=attempts||[];last.openIds=new Set((openUnits||[]).map(x=>typeof x==='string'?x:x.id));if(!last.openIds.size)last.openIds.add('u1');last.profile=profile||null;}
 function html(attempts,openUnits,profile){
   hydrate(attempts,openUnits,profile);
-  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u),display=shownUnitProgress(u);const certificateUnit=['u3','u4'].includes(u.id);const certified=certificateUnit&&!!window.STEPUP_MASTERY?.status?.(u.id,last.attempts)?.earned;const needsReview=certificateUnit&&st.complete&&!certified;const status=!open?'Locked':certified?'Certificate earned':needsReview?'Needs mastery review':st.complete?'Complete':st.started?'In progress':'Ready';const visuallyComplete=certified||(!certificateUnit&&st.complete);return `<button class="journey-unit-card ${open?'':'locked'} ${visuallyComplete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?display.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?esc(display.label):'Teacher will open this unit'}</span><strong>${open?`${display.pct}%`:''}</strong></div></button>`}).join('');
+  const cards=DATA.units.map(u=>{const open=last.openIds.has(u.id),st=unitState(u),display=shownUnitProgress(u);const certificateUnit=['u3','u4','u5'].includes(u.id);const certified=certificateUnit&&!!window.STEPUP_MASTERY?.status?.(u.id,last.attempts)?.earned;const needsReview=certificateUnit&&st.complete&&!certified;const status=!open?'Locked':certified?'Certificate earned':needsReview?'Needs mastery review':st.complete?'Complete':st.started?'In progress':'Ready';const visuallyComplete=certified||(!certificateUnit&&st.complete);return `<button class="journey-unit-card ${open?'':'locked'} ${visuallyComplete?'complete':''}" ${open?`onclick="STEPUP_JOURNEY.openUnit('${u.id}')"`:''}><div class="journey-unit-top"><span class="journey-unit-num">${String(u.number).padStart(2,'0')}</span><span class="journey-status">${status}</span></div><h3>${esc(u.title)}</h3><p>${esc(u.objective)}</p>${open&&st.stepSeal?'<span style="display:inline-block;padding:6px 11px;margin:5px 0 8px;border-radius:11px;background:#fff4d8;color:#79510d;font-weight:800;font-size:13px">🏅 STEP Seal Earned</span>':''}<div class="journey-mini-progress"><i style="width:${open?display.pct:0}%"></i></div><div class="journey-unit-foot"><span>${open?esc(display.label):'Teacher will open this unit'}</span><strong>${open?`${display.pct}%`:''}</strong></div></button>`}).join('');
   return `<div class="journey-page-head"><span class="journey-kicker">My Journey</span><h1>Small steps. Real progress.</h1><p>One clear stop at a time — no long task list.</p></div><div class="journey-unit-grid">${cards}</div><div class="journey-extra"><button class="journey-link-btn" onclick="PROVE.setStudentTab('practice-library')">Want extra STEP practice? <span>Open practice library →</span></button></div>`;
 }
 function progressHTML(attempts,openUnits,profile){hydrate(attempts,openUnits,profile);const open=DATA.units.filter(u=>last.openIds.has(u.id));if(!open.length)return'';return `<section class="journey-progress-card"><div class="journey-progress-head"><div><span class="journey-kicker">Learning journey</span><h2>Units at a glance</h2></div><button class="journey-link-btn compact" onclick="PROVE.setStudentTab('journey')">Open Journey</button></div><div class="journey-progress-units">${open.map(u=>{const s=shownUnitProgress(u);return `<div><span>Unit ${u.number}</span><b>${s.pct}%</b><i><em style="width:${s.pct}%"></em></i></div>`}).join('')}</div></section>`;}
@@ -106,25 +106,25 @@ function openUnit(id){
   const isCompact=['u4','u5','u6'].includes(u.id);
   // Question-level progress is the authority for Unit 4 mastery and certificates.
   // Passing a stop at 67% does not mean that all its answers are correct.
-  const u4Details=u.id==='u4'?window.STEPUP_MASTERY?.progressDetails?.('u4',last.attempts):null;
+  const u4Details=['u4','u5'].includes(u.id)?window.STEPUP_MASTERY?.progressDetails?.(u.id,last.attempts):null;
   const u4Section=key=>u4Details?.sections?.find(row=>row.key===key);
   const correctSection=(key,oldValue)=>{
-    if(u.id!=='u4')return oldValue;
+    if(!['u4','u5'].includes(u.id))return oldValue;
     const row=u4Section(key);
     return !!(row?.total && row.correct===row.total);
   };
   const sectionNote=(key,defaultNote)=>{
     const row=u4Section(key);
-    if(u.id!=='u4'||!row)return defaultNote;
+    if(!['u4','u5'].includes(u.id)||!row)return defaultNote;
     return row.correct+'/'+row.total+' correct • '+(row.remaining
       ? row.remaining+' unanswered' : row.incorrect
         ? row.incorrect+' to review' : 'Tap to practise again');
   };
   const visibleCores=isCompact?cores.slice(0,4):cores;
-  const masterSubs=visibleCores.map((m,i)=>{const a=bestStage(last.attempts,attemptId(u,`core-${i+1}`));const done=correctSection(`core-${i+1}`,passed(a,'core'));const unlock=u.id==='u4'||i===0||passed(bestStage(last.attempts,attemptId(u,`core-${i}`)),'core');return `<button class="journey-subtask ${done?'done':''} ${!unlock?'locked':''}" ${unlock?`onclick="STEPUP_JOURNEY.startCore('${u.id}',${i})"`:''}><span>${done?'✓':i+1}</span><div><b>${esc(m.title)}</b><small>${esc(sectionNote(`core-${i+1}`,done?'Mastered':unlock?'Quick adaptive check':'Unlocks next'))}</small></div></button>`}).join('');
+  const masterSubs=visibleCores.map((m,i)=>{const a=bestStage(last.attempts,attemptId(u,`core-${i+1}`));const done=correctSection(`core-${i+1}`,passed(a,'core'));const unlock=['u4','u5'].includes(u.id)||i===0||passed(bestStage(last.attempts,attemptId(u,`core-${i}`)),'core');return `<button class="journey-subtask ${done?'done':''} ${!unlock?'locked':''}" ${unlock?`onclick="STEPUP_JOURNEY.startCore('${u.id}',${i})"`:''}><span>${done?'✓':i+1}</span><div><b>${esc(m.title)}</b><small>${esc(sectionNote(`core-${i+1}`,done?'Mastered':unlock?'Quick adaptive check':'Unlocks next'))}</small></div></button>`}).join('');
   const masterDone=st.coreDone===cores.length;
-  const readUnlock=(isCompact||masterDone),listenUnlock=u.id==='u4'||(isCompact?st.vocabDone:st.read),stepUnlock=u.id==='u4'||st.listen,finalUnlock=st.listen, vocabUnlock=u.id==='u4'||st.read;
-  host.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit ${u.number}</b></div><section class="journey-unit-hero" ${u4Details?.total?`data-ring-pct="${Math.round(u4Details.accuracy)}" data-ring-label="mastery"`:''}><span class="journey-kicker">Unit ${u.number}</span><h1>${esc(u.title)}</h1><p>${esc(u.objective)}</p><div class="journey-mini-progress"><i style="width:${u4Details?.total?Math.round(u4Details.accuracy):st.pct}%"></i></div><small>${u4Details?.total?`${u4Details.answered}/${u4Details.total} questions answered • ${u4Details.correct}/${u4Details.total} correct • 80% needed for certificate`:`${st.done}/${st.requiredStages} required stages complete`}</small>${st.stepSeal?'<div style="margin-top:9px;padding:8px 12px;background:#fff4d8;color:#79510d;border-radius:10px;font-weight:800;display:inline-block">🏅 STEP Seal Earned · 75%+</div>':''}</section><section class="journey-master-card"><div class="journey-stage-title"><span>01</span><div><h2>Master the Unit</h2><p>${u.id==='u4'?'The count shows sections with every answer correct. Your certificate needs 80% overall; you can still review any section.':'StepUp checks what you know and gives support only when needed.'}</p></div><b>${u.id==='u4'?visibleCores.filter((m,i)=>correctSection(`core-${i+1}`,false)).length:isCompact?Math.min(st.coreDone,4):st.coreDone}/${visibleCores.length}</b></div><div class="journey-subtasks">${masterSubs}</div></section><div class="journey-stops">${u.id==="u5"&&window.STEPUP_U5_LIVE?station("LIVE Lesson · Form, Meaning & Function","🎯",false,true,"STEPUP_U5_LIVE.openStudent()","30 min • Quick Check • Learn • Exit Ticket",true):""}${station(u.id==='u4'?'Reading · The World of Plastic':'Read','📖',correctSection('reading',st.read),readUnlock,`STEPUP_JOURNEY.startReading('${u.id}')`,sectionNote('reading','Find evidence in a short reading.'),!st.read&&readUnlock,u.id==='u4')}${isCompact?station(u.id==='u4'?'Vocabulary · After Reading':'Vocabulary in Context','📘',correctSection('core-5',st.vocabDone),vocabUnlock,`STEPUP_JOURNEY.startCore('${u.id}',4)`,sectionNote('core-5',u.id==='u4'?'After Reading · 7 word clues from the original story':'After Reading · 6 word clues from the original text'),!st.vocabDone&&vocabUnlock,u.id==='u4'):''}${station(u.id==='u4'?'Listening · The Flying Helicopter Alarm':'Listen','🎧',correctSection('listening',st.listen),listenUnlock,`STEPUP_JOURNEY.startListening('${u.id}')`,sectionNote('listening','Listen for the idea and key details.'),!st.listen&&listenUnlock,u.id==='u4')}${station(isCompact&&st.stepSeal?'STEP Seal Earned 🏅':'STEP Practice','⚡',isCompact?st.stepSeal:st.step,stepUnlock,`STEPUP_JOURNEY.startStep('${u.id}')`,u.id==='u4'?'Optional • 5 of 6 correct earns the STEP Seal':u.id==='u5'?'Grammar and Form, Meaning & Function • 6 questions each.':'6 quick questions • strategy first.',!(isCompact?st.stepSeal:st.step)&&stepUnlock)}${st.finalRequired?station('Final Challenge','🏁',st.final,finalUnlock,`STEPUP_JOURNEY.startFinal('${u.id}')`,'Finish the unit with confidence.',!st.final&&finalUnlock):''}</div>${st.complete&&u.id!=='u4'?`<section class="journey-celebrate"><span>✨</span><div><b>${u.id==='u4'?'Required practice stages complete!':`Unit ${u.number} complete!`}</b><p>${u.id==='u4'?'Unit certificate requires 80% mastery across the 28 required questions. STEP Practice is optional and does not count.':'You finished the full journey. Nice work.'}</p></div></section>`:''}`;
+  const readUnlock=(isCompact||masterDone),listenUnlock=['u4','u5'].includes(u.id)||(isCompact?st.vocabDone:st.read),stepUnlock=['u4','u5'].includes(u.id)||st.listen,finalUnlock=st.listen, vocabUnlock=['u4','u5'].includes(u.id)||st.read;
+  host.innerHTML=`<div class="journey-breadcrumb"><button onclick="PROVE.setStudentTab('journey')">My Journey</button><span>›</span><b>Unit ${u.number}</b></div><section class="journey-unit-hero" ${u4Details?.total?`data-ring-pct="${Math.round(u4Details.accuracy)}" data-ring-label="mastery"`:''}><span class="journey-kicker">Unit ${u.number}</span><h1>${esc(u.title)}</h1><p>${esc(u.objective)}</p><div class="journey-mini-progress"><i style="width:${u4Details?.total?Math.round(u4Details.accuracy):st.pct}%"></i></div><small>${u4Details?.total?`${u4Details.answered}/${u4Details.total} questions answered • ${u4Details.correct}/${u4Details.total} correct • 80% needed for certificate`:`${st.done}/${st.requiredStages} required stages complete`}</small>${st.stepSeal?'<div style="margin-top:9px;padding:8px 12px;background:#fff4d8;color:#79510d;border-radius:10px;font-weight:800;display:inline-block">🏅 STEP Seal Earned · 75%+</div>':''}</section><section class="journey-master-card"><div class="journey-stage-title"><span>01</span><div><h2>Master the Unit</h2><p>${['u4','u5'].includes(u.id)?'The count shows sections with every answer correct. Your certificate needs 80% overall; you can still review any section.':'StepUp checks what you know and gives support only when needed.'}</p></div><b>${['u4','u5'].includes(u.id)?visibleCores.filter((m,i)=>correctSection(`core-${i+1}`,false)).length:isCompact?Math.min(st.coreDone,4):st.coreDone}/${visibleCores.length}</b></div><div class="journey-subtasks">${masterSubs}</div></section><div class="journey-stops">${u.id==="u5"&&window.STEPUP_U5_LIVE?station("LIVE Lesson · Form, Meaning & Function","🎯",false,true,"STEPUP_U5_LIVE.openStudent()","30 min • Quick Check • Learn • Exit Ticket",true):""}${station(u.id==='u4'?'Reading · The World of Plastic':'Read','📖',correctSection('reading',st.read),readUnlock,`STEPUP_JOURNEY.startReading('${u.id}')`,sectionNote('reading','Find evidence in a short reading.'),!st.read&&readUnlock,['u4','u5'].includes(u.id))}${isCompact?station(['u4','u5'].includes(u.id)?'Vocabulary · After Reading':'Vocabulary in Context','📘',correctSection('core-5',st.vocabDone),vocabUnlock,`STEPUP_JOURNEY.startCore('${u.id}',4)`,sectionNote('core-5',u.id==='u4'?'After Reading · 7 word clues from the original story':'After Reading · 6 word clues from the original text'),!st.vocabDone&&vocabUnlock,['u4','u5'].includes(u.id)):''}${station(u.id==='u4'?'Listening · The Flying Helicopter Alarm':'Listen','🎧',correctSection('listening',st.listen),listenUnlock,`STEPUP_JOURNEY.startListening('${u.id}')`,sectionNote('listening','Listen for the idea and key details.'),!st.listen&&listenUnlock,['u4','u5'].includes(u.id))}${station(isCompact&&st.stepSeal?'STEP Seal Earned 🏅':'STEP Practice','⚡',isCompact?st.stepSeal:st.step,stepUnlock,`STEPUP_JOURNEY.startStep('${u.id}')`,['u4','u5'].includes(u.id)?'Optional • 5 of 6 correct earns the STEP Seal':u.id==='u5'?'Grammar and Form, Meaning & Function • 6 questions each.':'6 quick questions • strategy first.',!(isCompact?st.stepSeal:st.step)&&stepUnlock)}${st.finalRequired?station('Final Challenge','🏁',st.final,finalUnlock,`STEPUP_JOURNEY.startFinal('${u.id}')`,'Finish the unit with confidence.',!st.final&&finalUnlock):''}</div>${st.complete&&!['u4','u5'].includes(u.id)?`<section class="journey-celebrate"><span>✨</span><div><b>${['u4','u5'].includes(u.id)?'Required practice stages complete!':`Unit ${u.number} complete!`}</b><p>${['u4','u5'].includes(u.id)?'Unit certificate requires 80% mastery across the 28 required questions. STEP Practice is optional and does not count.':'You finished the full journey. Nice work.'}</p></div></section>`:''}`;
 }
 function go(uid,key){const u=unitById(uid);if(!u)return;if(key.startsWith('core-'))return startCore(uid,Number(key.split('-')[1])-1);if(key==='reading')return startReading(uid);if(key==='listening')return startListening(uid);if(key==='step')return startStep(uid);if(key==='final')return startFinal(uid);openUnit(uid);}
 function host(){return $('.student-view');}
@@ -134,7 +134,7 @@ function qChoices(q){return [q.option_a_text,q.option_b_text,q.option_c_text,q.o
 function qObj(q){return {...q,choices:qChoices(q),answer:optionIndex(q)};}
 function startCore(uid,idx){const u=unitById(uid),m=u?.missions.filter(x=>x.type==='core')[idx];if(!u||!m)return;
   // After Reading vocabulary becomes available only after reading has been completed.
-  if(['u5','u6'].includes(uid)&&idx===4&&!passed(bestStage(last.attempts,attemptId(u,'reading')),'reading'))return openUnit(uid);
+  if(uid==='u6'&&idx===4&&!passed(bestStage(last.attempts,attemptId(u,'reading')),'reading'))return openUnit(uid);
   // Unit 4 uses a compact mastery-only route: don't repeat a mastery question as an extra diagnostic.
   if(['u4','u5','u6'].includes(uid)){session={kind:'core',u,m,idx,phase:'mastery',queue:[],pos:0,correct:0,answers:[],started:Date.now()};return beginCoreMastery();}
   const diag=shuffle(qs(u,m,'Diagnostic'))[0]||shuffle(qs(u,m,'Mastery'))[0];session={kind:'core',u,m,idx,phase:'diagnostic',queue:[qObj(diag)],pos:0,correct:0,answers:[],started:Date.now()};renderQuizQuestion();}
@@ -148,7 +148,7 @@ function answer(i){if(!session||session.awaitingFeedback||!Number.isInteger(i)||
   if(session.kind==='core'&&session.phase==='diagnostic')return coreFeedback(ok,q,i,'diagnostic');
   if(session.kind==='core'&&(session.phase==='support'||session.phase==='reinforcement'))return coreFeedback(ok,q,i,session.phase);
   if(ok)session.correct++;
-  if(['u3','u4'].includes(session.u.id)||session.stepSection){session.awaitingFeedback=true;return questionFeedback(q,i,ok);}
+  if(['u3','u4','u5'].includes(session.u.id)||session.stepSection){session.awaitingFeedback=true;return questionFeedback(q,i,ok);}
   if(session.pos<session.queue.length-1){session.pos++;return renderQuizQuestion();} finishQuiz();}
 function questionFeedback(q,selected,ok){
   const h=host();if(!h)return;
@@ -203,12 +203,12 @@ async function finishQuiz(){
   const h=host();if(!h)return;
   const positive=pass&&saved;
   const seal=isU4Step&&stepSealEarned(s.u);
-  const certificateUnit=s.u.id==='u4';
+  const certificateUnit=['u4','u5'].includes(s.u.id);
   const progress=saved&&certificateUnit?window.STEPUP_MASTERY?.progressDetails?.(s.u.id,last.attempts):null;
   const certificateEarned=saved&&certificateUnit&&!!window.STEPUP_MASTERY?.status?.(s.u.id,last.attempts)?.earned;
   const needed=progress?Math.max(0,Math.ceil(progress.total*0.8)-progress.correct):0;
   const certificateNote=progress?.total
-    ? certificateEarned?'Unit 4 certificate unlocked from your saved answers.'
+    ? certificateEarned?`Unit ${s.u.number} certificate unlocked from your saved answers.`
       : progress.remaining>0
         ? `Certificate progress: ${progress.answered}/${progress.total} questions answered, ${progress.correct} correct. Complete the remaining ${progress.remaining} question(s) and reach 80% mastery.`
         : `All ${progress.total} questions answered. ${progress.correct}/${progress.total} correct (${progress.accuracy}%). Fix ${needed} more answer(s) to unlock your certificate.`

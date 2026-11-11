@@ -132,35 +132,48 @@
     return section;
   }
 
-  function simplifyUnit4(host,hero,master){
+  function simplifyUnit4(host,hero,master,uid='u4'){
     const M=window.STEPUP_MASTERY,J=window.STEPUP_JOURNEY;
     if(!M)return;
-    const d=M.progressDetails('u4'),earned=M.studentStatus('u4').earned;
-    const labels={'core-1':'Real Talk','core-2':'Passive','core-3':'Comparisons','core-4':'Functions',reading:'Reading','core-5':'Vocabulary',listening:'Listening'};
+    const unit=J.data.units.find(u=>u.id===uid);
+    const d=M.progressDetails(uid),earned=M.studentStatus(uid).earned;
+    const labels={'core-1':'Real Talk','core-2':uid==='u5'?'Reflexive Pronouns':'Passive','core-3':uid==='u5'?'Because / So · So / Neither':'Comparisons','core-4':'Functions',reading:'Reading','core-5':'Vocabulary',listening:'Listening'};
     const groups=[['Vocab',['core-1','core-5']],['Grammar',['core-2','core-3']],['Functions',['core-4']],['Read',['reading']],['Listen',['listening']]];
     const summary=keys=>keys.reduce((a,key)=>{const s=d.sections.find(s=>s.key===key);if(s)for(const k of ['correct','total','answered','incorrect','remaining'])a[k]+=s[k];return a;},{correct:0,total:0,answered:0,incorrect:0,remaining:0});
-    const shell=document.createElement('div');shell.className='journey-focus-shell';shell.dataset.unit='u4';
-    shell.innerHTML=`<section class="journey-focus-head" data-review-unit="u4" data-ring-pct="${Math.round(d.accuracy)}" data-ring-label="mastery"><div class="journey-focus-head-copy"><span>Unit 4 • Review</span><h1>The Art of Advertising</h1><p>Review each skill and practise any answers you missed.</p></div><div class="journey-focus-progress-row"><strong>${d.answered}/${d.total} questions answered</strong></div><div class="u2-progress-stats"><span><b>${d.answered}/${d.total}</b><small>Questions answered</small></span><span><b>${d.correct}/${d.total}</b><small>Mastery · ${Math.round(d.accuracy)}%</small></span></div><small class="journey-review-skill-count">${groups.filter(g=>{const s=summary(g[1]);return s.total&&s.correct===s.total;}).length} of 5 skills correct · Tap a skill to review</small><div class="sxc-u2-award ${earned?'unlocked':''}"><span class="sxc-u2-award-icon">${earned?'🏆':'◇'}</span><div><b>${earned?'Certificate unlocked':'Certificate goal · 80%'}</b><small>Cumulative accuracy · ${d.accuracy}%</small></div></div></section>`;
-    const roadmap=document.createElement('div');roadmap.className='journey-focus-roadmap';roadmap.dataset.reviewUnit='u4';roadmap.setAttribute('aria-label','Unit 4 skills');
+    const shell=document.createElement('div');shell.className='journey-focus-shell';shell.dataset.unit=uid;
+    shell.innerHTML=`<section class="journey-focus-head" data-review-unit="${uid}" data-ring-pct="${Math.round(d.accuracy)}" data-ring-label="mastery"><div class="journey-focus-head-copy"><span>Unit ${unit.number} • Review</span><h1>${unit.title}</h1><p>Review each skill and practise any answers you missed.</p></div><div class="journey-focus-progress-row"><strong>${d.answered}/${d.total} questions answered</strong></div><div class="u2-progress-stats"><span><b>${d.answered}/${d.total}</b><small>Questions answered</small></span><span><b>${d.correct}/${d.total}</b><small>Mastery · ${Math.round(d.accuracy)}%</small></span></div><small class="journey-review-skill-count">${groups.filter(g=>{const s=summary(g[1]);return s.total&&s.correct===s.total;}).length} of 5 skills correct · Tap a skill to review</small><div class="sxc-u2-award ${earned?'unlocked':''}"><span class="sxc-u2-award-icon">${earned?'🏆':'◇'}</span><div><b>${earned?'Certificate unlocked':'Certificate goal · 80%'}</b><small>Cumulative accuracy · ${d.accuracy}%</small></div></div></section>`;
+    const roadmap=document.createElement('div');roadmap.className='journey-focus-roadmap';roadmap.dataset.reviewUnit=uid;roadmap.setAttribute('aria-label','Unit '+unit.number+' skills');
     const choose=document.createElement('section');choose.className='journey-focus-task';choose.hidden=true;
     groups.forEach(([label,keys],i)=>{
       const s=summary(keys),done=s.total>0&&s.correct===s.total;
       const b=document.createElement('button');b.type='button';b.dataset.skill=label;b.className='journey-focus-stage '+(done?'done':s.incorrect?'needs-review':'');
       b.innerHTML=`<span class="journey-focus-dot">${done?'✓':s.incorrect?'↻':i+1}</span><small>${label}</small><em class="journey-review-status">${done?'Correct':s.incorrect?'Review':s.answered?'In progress':'Ready'}</em><span class="journey-review-score">${s.correct}/${s.total}</span>`;
       b.addEventListener('click',()=>{
-        if(keys.length===1)return J.go('u4',keys[0]);
+        if(keys.length===1)return J.go(uid,keys[0]);
         choose.hidden=false;choose.innerHTML='<h2>'+label+'</h2><div class="u4-lesson-choices"></div>';
-        keys.forEach(key=>{const row=d.sections.find(s=>s.key===key),btn=document.createElement('button');btn.type='button';btn.className='journey-link-btn';btn.textContent=labels[key]+' · '+row.correct+'/'+row.total;btn.dataset.lesson=key;btn.addEventListener('click',()=>J.go('u4',key));choose.querySelector('div').append(btn);});
+        keys.forEach(key=>{const row=d.sections.find(s=>s.key===key),btn=document.createElement('button');btn.type='button';btn.className='journey-link-btn';btn.textContent=labels[key]+' · '+row.correct+'/'+row.total;btn.dataset.lesson=key;btn.addEventListener('click',()=>J.go(uid,key));choose.querySelector('div').append(btn);});
         choose.scrollIntoView?.({block:'nearest',behavior:'smooth'});
       });roadmap.append(b);
     });
-    const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';step.addEventListener('click',()=>J.startStep('u4'));roadmap.append(step);
+    const step=document.createElement('button');step.type='button';step.className='journey-focus-stage'+(host.querySelector('.journey-stop.done[onclick*="startStep"]')?' done':'');step.dataset.skill='STEP';step.innerHTML='<span class="journey-focus-dot">⚡</span><small>STEP</small><em class="journey-review-status">Optional</em>';step.addEventListener('click',()=>J.startStep(uid));roadmap.append(step);
     shell.append(roadmap,choose);
-    const pending=window.STEPUP_U56_PRACTICE?.pending('u4');
-    const card=taskCard({title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:"STEPUP_U56_PRACTICE.begin('u4')",button:pending?'Resume Review':'Practice Again'});
+    if(uid==='u5'&&window.STEPUP_U5_LIVE){const live=document.createElement('button');live.type='button';live.className='journey-link-btn';live.textContent='FMF Live Lesson · Learn + Quick Check + Exit Ticket';live.addEventListener('click',()=>window.STEPUP_U5_LIVE.openStudent());shell.append(live);}
+    if(uid==='u5'){
+      const guide=document.createElement('details');guide.className='journey-focus-task';
+      guide.innerHTML=`<summary>Grammar · Quick Review</summary><div dir="ltr" style="line-height:1.8;text-align:left">
+      <p><b>Reflexive pronouns:</b> I → myself; you → yourself/yourselves; he → himself; she → herself; it → itself; we → ourselves; they → themselves.<br>I hurt myself. We did it by ourselves (without help).</p>
+      <p><b>Because = reason:</b> She stayed home because she was ill.<br><b>So = result:</b> She was ill, so she stayed home.</p>
+      <p><b>Positive agreement:</b> So + auxiliary + subject. “I am careful.” → “So am I.” “I wear a helmet.” → “So do I.” “I fell.” → “So did I.”</p>
+      <p><b>Negative agreement:</b> Neither + auxiliary + subject. “I don't drive.” → “Neither do I.” “I haven't fallen.” → “Neither have I.” Do not add not after neither.</p>
+      <p>“Me too” is a common conversational reply to a positive statement. “So am I / So do I” uses the auxiliary that matches the first statement.</p>
+      <button type="button" class="journey-link-btn" onclick="STEPUP_JOURNEY.startStep('u5','grammar')">Practise all three grammar topics</button></div>`;
+      shell.append(guide);
+    }
+    const pending=window.STEPUP_U56_PRACTICE?.pending(uid);
+    const card=taskCard({title:d.incorrect?'Review your mistakes':d.remaining?'Continue learning':'All answers correct',meta:'Unit Review · '+d.total+' questions',detail:d.incorrect?d.incorrect+' answers to review. Your saved correct answers still count.':d.remaining?d.remaining+' questions left. Tap any skill above to continue.':'Revisit any skill or practise the whole unit.',action:`STEPUP_U56_PRACTICE.begin('${uid}')`,button:pending?'Resume Review':'Practice Again'});
     const actions=document.createElement('div');actions.className='u4-lesson-choices';
-    if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit('u4'));actions.append(b);}
-    if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate('u4'));actions.append(b);}
+    if(d.incorrect||d.remaining){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent=d.remaining?'Continue Learning':'Review Mistakes';b.dataset.u4Action='review';b.addEventListener('click',()=>M.reviewUnit(uid));actions.append(b);}
+    if(earned){const b=document.createElement('button');b.type='button';b.className='journey-link-btn';b.textContent='View Certificate';b.dataset.u4Action='certificate';b.addEventListener('click',()=>M.viewCertificate(uid));actions.append(b);}
     card.append(actions);const back=document.createElement('button');back.type='button';back.className='journey-focus-back-secondary';back.textContent='Back to units';back.addEventListener('click',()=>window.PROVE?.setStudentTab?.('journey'));card.append(back);shell.append(card);
     host.querySelector('.journey-breadcrumb')?.remove();hero.replaceWith(shell);master.remove();
     host.querySelectorAll('.journey-stops,.journey-celebrate,.sum-card-slot,.u56-full-entry').forEach(el=>el.remove());
@@ -173,8 +186,9 @@
     if(!host||!hero||!master||host.querySelector('.journey-focus-shell')) return;
 
     const unitTitle=text(hero.querySelector('h1'));
-    if(window.STEPUP_JOURNEY?.data?.units?.some(u=>u.id==='u4'&&u.title===unitTitle)){
-      simplifyUnit4(host,hero,master);return;
+    const compactUnit=window.STEPUP_JOURNEY?.data?.units?.find(u=>['u4','u5'].includes(u.id)&&u.title===unitTitle);
+    if(compactUnit){
+      simplifyUnit4(host,hero,master,compactUnit.id);return;
     }
 
     const unitId=hero.dataset.reviewUnit;

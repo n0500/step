@@ -448,7 +448,7 @@
   // Optional Unit 4 review works even after the certificate is earned.
   // Never remove a saved correct answer; the next attempt adds new evidence.
   function reviewUnit(id){
-    if(id!=='u4'||!student)return continueUnit(id);
+    if(!['u4','u5'].includes(id)||!student)return continueUnit(id);
     const sections=progressDetails(id,attempts).sections;
     const target=sections.find(s=>s.remaining>0)||sections.find(s=>s.incorrect>0)||sections[0];
     if(!target)return openUnit(id);
